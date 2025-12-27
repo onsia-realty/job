@@ -118,16 +118,17 @@ export default function MainPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50">
       {/* 헤더 */}
       <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        {/* 상단 네비게이션 */}
-        <div className="bg-gradient-to-r from-blue-600 to-cyan-600">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-end gap-4">
-              <Link href="/auth/login" className="text-white text-base font-semibold hover:bg-white/20 transition-all flex items-center gap-1 px-4 py-2 rounded-lg border border-white/30 hover:border-white/50">
-                로그인 및 회원가입
+        {/* 상단 네비게이션 - 모바일에서 숨김 */}
+        <div className="hidden md:block bg-gradient-to-r from-blue-600 to-cyan-600">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-end gap-3">
+              <Link href="/auth/login" className="text-white text-sm font-semibold hover:bg-white/20 transition-all flex items-center gap-1 px-3 py-2 rounded-lg border border-white/30 hover:border-white/50">
+                로그인
               </Link>
-              <Link href="/contact" className="text-white text-base font-semibold hover:bg-white/20 transition-all flex items-center gap-2 group px-4 py-2 rounded-lg border border-white/30 hover:border-white/50">
-                중개사무소 가입 및 상품문의
-                <div className="w-5 h-5 group-hover:translate-x-1 transition-transform">
+              <Link href="/contact" className="text-white text-sm font-semibold hover:bg-white/20 transition-all flex items-center gap-2 group px-3 py-2 rounded-lg border border-white/30 hover:border-white/50">
+                <span className="hidden lg:inline">중개사무소 가입 및 상품문의</span>
+                <span className="lg:hidden">문의</span>
+                <div className="w-4 h-4 group-hover:translate-x-1 transition-transform">
                   <svg width="28" height="28" fill="none" viewBox="0 0 28 28" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
                     <path vectorEffect="non-scaling-stroke" stroke="#ffffff" strokeWidth="1.8" d="m11.375 19.95 5.682-5.682a.131.131 0 0 0 0-.186L11.375 8.4"></path>
                     <circle vectorEffect="non-scaling-stroke" cx="14" cy="14" r="12" stroke="#ffffff" strokeWidth="1.8"></circle>
@@ -151,28 +152,28 @@ export default function MainPage() {
           <div className="absolute inset-0 bg-gradient-to-r from-blue-900/30 to-cyan-900/30 z-10"></div>
 
           {/* 컨텐츠 */}
-          <div className="relative z-20 max-w-7xl mx-auto px-4 py-20 md:py-28">
+          <div className="relative z-20 max-w-7xl mx-auto px-4 py-8 md:py-20 lg:py-28">
             <div className="flex items-center justify-between">
               {/* 로고 & 타이틀 */}
-              <Link href="/" className="flex items-center gap-4 group">
-                <div className="w-16 h-16 bg-black/30 backdrop-blur-sm border-2 border-white/50 rounded-2xl flex items-center justify-center shadow-2xl group-hover:bg-black/40 transition-all">
-                  <Building2 className="w-10 h-10 text-white" />
+              <Link href="/" className="flex items-center gap-2 md:gap-4 group">
+                <div className="w-10 h-10 md:w-16 md:h-16 bg-black/30 backdrop-blur-sm border-2 border-white/50 rounded-xl md:rounded-2xl flex items-center justify-center shadow-2xl group-hover:bg-black/40 transition-all">
+                  <Building2 className="w-5 h-5 md:w-10 md:h-10 text-white" />
                 </div>
                 <div>
-                  <h1 className="font-black text-3xl md:text-4xl lg:text-5xl text-white" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
+                  <h1 className="font-black text-lg md:text-3xl lg:text-4xl xl:text-5xl text-white leading-tight" style={{ textShadow: '2px 2px 8px rgba(0,0,0,0.8)' }}>
                     부동산 일자리는 온시아로
                   </h1>
-                  <p className="text-base md:text-lg text-white mt-2" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
-                    공인중개사부터 분양상담사, 그리고 부동산 전문가 채용까지
+                  <p className="hidden md:block text-sm md:text-base lg:text-lg text-white mt-1 md:mt-2" style={{ textShadow: '1px 1px 4px rgba(0,0,0,0.8)' }}>
+                    공인중개사부터 분양상담사까지
                   </p>
                 </div>
               </Link>
 
               {/* 우측 버튼 */}
-              <div className="flex items-center gap-3">
-                <button className="p-3 bg-black/30 backdrop-blur-sm hover:bg-black/40 border border-white/50 rounded-xl transition-all relative">
-                  <Bell className="w-6 h-6 text-white" />
-                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-cyan-400 rounded-full animate-pulse"></span>
+              <div className="flex items-center gap-2 md:gap-3">
+                <button className="p-2 md:p-3 bg-black/30 backdrop-blur-sm hover:bg-black/40 border border-white/50 rounded-lg md:rounded-xl transition-all relative">
+                  <Bell className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                  <span className="absolute top-1 right-1 md:top-2 md:right-2 w-2 h-2 md:w-2.5 md:h-2.5 bg-cyan-400 rounded-full animate-pulse"></span>
                 </button>
               </div>
             </div>
@@ -180,10 +181,10 @@ export default function MainPage() {
         </div>
       </header>
 
-      {/* 탭 네비게이션 */}
-      <nav className="sticky top-[240px] z-40 bg-white/80 backdrop-blur-lg border-b border-gray-200">
+      {/* 탭 네비게이션 - 데스크톱에서만 표시 */}
+      <nav className="hidden md:block sticky top-0 z-40 bg-white/80 backdrop-blur-lg border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar py-3">
             <TabButton
               active={activeTab === "jobs"}
               onClick={() => setActiveTab("jobs")}
@@ -338,24 +339,24 @@ function MobileNavButton({
 // 홈 탭
 function HomeTab() {
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-12">
+    <div className="max-w-7xl mx-auto px-4 py-6 md:py-8 space-y-8 md:space-y-12">
       {/* 히어로 섹션 */}
-      <section className="text-center py-12">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-100 mb-6">
-          <Sparkles className="w-4 h-4 text-cyan-600" />
-          <span className="text-sm text-gray-700 font-medium">AI 기반 부동산 구인구직 플랫폼</span>
+      <section className="text-center py-8 md:py-12">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-50 rounded-full border border-blue-100 mb-4 md:mb-6">
+          <Sparkles className="w-3 h-3 md:w-4 md:h-4 text-cyan-600" />
+          <span className="text-xs md:text-sm text-gray-700 font-medium">AI 기반 부동산 구인구직 플랫폼</span>
         </div>
-        <h1 className="text-5xl md:text-7xl font-black mb-6 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent leading-tight">
+        <h1 className="text-3xl md:text-5xl lg:text-7xl font-black mb-4 md:mb-6 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 bg-clip-text text-transparent leading-tight">
           당신의 커리어를<br />AI가 설계합니다
         </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+        <p className="text-base md:text-xl text-gray-600 mb-6 md:mb-8 max-w-2xl mx-auto px-4">
           부동산 전문가를 위한 스마트한 구인구직 · 실시간 뉴스 · AI 콘텐츠
         </p>
-        <div className="flex items-center justify-center gap-4">
-          <button className="px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all transform hover:scale-105">
+        <div className="flex flex-col md:flex-row items-center justify-center gap-3 md:gap-4 px-4">
+          <button className="w-full md:w-auto px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold rounded-xl hover:shadow-lg hover:shadow-blue-500/30 transition-all transform hover:scale-105">
             지금 시작하기
           </button>
-          <button className="px-8 py-4 bg-white text-gray-700 font-bold rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all">
+          <button className="w-full md:w-auto px-6 md:px-8 py-3 md:py-4 bg-white text-gray-700 font-bold rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all">
             더 알아보기
           </button>
         </div>
@@ -493,50 +494,50 @@ function HomeTab() {
 // 구인구직 탭 (카테고리 선택)
 function JobsTab() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
+    <div className="max-w-6xl mx-auto px-4 py-6 md:py-12">
       {/* 실시간 통계 배너 */}
-      <div className="mb-8 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-2xl p-6 text-white shadow-lg">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="mb-6 md:mb-8 bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-600 rounded-xl md:rounded-2xl p-4 md:p-6 text-white shadow-lg">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingUp className="w-4 h-4" />
+              <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
               <span className="text-xs opacity-90">오늘 신규</span>
             </div>
-            <div className="text-2xl font-black">23건</div>
+            <div className="text-xl md:text-2xl font-black">23건</div>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <Users className="w-4 h-4" />
+              <Users className="w-3 h-3 md:w-4 md:h-4" />
               <span className="text-xs opacity-90">온라인</span>
             </div>
-            <div className="text-2xl font-black">156명</div>
+            <div className="text-xl md:text-2xl font-black">156명</div>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <Zap className="w-4 h-4" />
+              <Zap className="w-3 h-3 md:w-4 md:h-4" />
               <span className="text-xs opacity-90">급구 공고</span>
             </div>
-            <div className="text-2xl font-black">8건</div>
+            <div className="text-xl md:text-2xl font-black">8건</div>
           </div>
           <div className="text-center">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <Star className="w-4 h-4" />
+              <Star className="w-3 h-3 md:w-4 md:h-4" />
               <span className="text-xs opacity-90">이번주 채용</span>
             </div>
-            <div className="text-2xl font-black">34명</div>
+            <div className="text-xl md:text-2xl font-black">34명</div>
           </div>
         </div>
       </div>
 
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-100 mb-4">
-          <Briefcase className="w-4 h-4 text-cyan-600" />
-          <span className="text-sm text-gray-700 font-medium">구인구직</span>
+      <div className="text-center mb-8 md:mb-10">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-50 rounded-full border border-blue-100 mb-3 md:mb-4">
+          <Briefcase className="w-3 h-3 md:w-4 md:h-4 text-cyan-600" />
+          <span className="text-xs md:text-sm text-gray-700 font-medium">구인구직</span>
         </div>
-        <h1 className="text-4xl md:text-5xl font-black mb-3 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+        <h1 className="text-2xl md:text-4xl lg:text-5xl font-black mb-2 md:mb-3 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent px-4">
           어떤 일을 찾으시나요?
         </h1>
-        <p className="text-gray-600">AI가 맞춤형 일자리를 추천해드립니다</p>
+        <p className="text-sm md:text-base text-gray-600 px-4">AI가 맞춤형 일자리를 추천해드립니다</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 mb-12">
@@ -660,7 +661,7 @@ function JobsTab() {
       </div>
 
       {/* 비디오/이미지 섹션 (직방 스타일 - 전체 너비) */}
-      <div className="grid md:grid-cols-3 gap-4 mb-12 w-full max-w-full">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12 w-full max-w-full">
         {/* 왼쪽: 영상 (2/3) */}
         <video
           src="https://vizeo.zigbang.com/custom/gateway_left_video_ad.mp4"
@@ -670,7 +671,7 @@ function JobsTab() {
           loop
           playsInline
           className="w-full rounded-lg cursor-pointer md:col-span-2"
-          style={{ height: '400px', objectFit: 'cover' }}
+          style={{ height: '250px', objectFit: 'cover' }}
         />
 
         {/* 오른쪽: 이미지 (1/3) */}
@@ -678,24 +679,24 @@ function JobsTab() {
           src="https://s.zigbang.com/zigbang-www/_next/static/img_webpromo_join_255-ef58d02199e9ca86134f6a74b06a802a.jpg"
           alt="광고"
           className="w-full rounded-lg cursor-pointer object-cover md:col-span-1"
-          style={{ height: '400px' }}
+          style={{ height: '250px' }}
         />
       </div>
 
       {/* 부동산 뉴스 */}
-      <div className="mb-12">
+      <div className="mb-8 md:mb-12">
         {/* 헤더 */}
-        <div className="text-center mb-8">
-          <h3 className="text-2xl md:text-3xl font-normal text-gray-900 mb-2">
+        <div className="text-center mb-6 md:mb-8 px-4">
+          <h3 className="text-xl md:text-2xl lg:text-3xl font-normal text-gray-900 mb-2">
             발빠르게 전달하는 <span className="font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">부동산 뉴스</span>
           </h3>
-          <p className="text-base text-gray-600">
+          <p className="text-sm md:text-base text-gray-600">
             부동산 동향을 요점만 정리해서 알려드려요
           </p>
         </div>
 
         {/* 뉴스 리스트 */}
-        <div className="space-y-3 mb-8">
+        <div className="space-y-2 md:space-y-3 mb-6 md:mb-8">
           {[
             { title: "2026년 전국 아파트 입주물량 17만 여 세대, 전년 대비 28% '감소'", date: "2025.12.22" },
             { title: "10·15대책 이후 서울 오피스텔 거래량 32% 증가", date: "2025.12.16" },
@@ -703,13 +704,13 @@ function JobsTab() {
           ].map((item, i) => (
             <div
               key={i}
-              className="bg-white rounded-2xl px-6 py-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer group"
+              className="bg-white rounded-xl md:rounded-2xl px-4 md:px-6 py-4 md:py-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer group"
             >
-              <div className="flex items-start justify-between gap-4">
-                <h4 className="flex-1 text-base md:text-lg font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors leading-relaxed">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-4">
+                <h4 className="flex-1 text-sm md:text-base lg:text-lg font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors leading-relaxed">
                   {item.title}
                 </h4>
-                <span className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
+                <span className="text-xs md:text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
                   {item.date}
                 </span>
               </div>
@@ -718,9 +719,9 @@ function JobsTab() {
         </div>
 
         {/* 광고 배너 섹션 */}
-        <div className="grid md:grid-cols-2 gap-4 mb-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 mb-6 md:mb-8 w-full">
           {/* 광고 배너 1 */}
-          <div className="cursor-pointer group relative overflow-hidden rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all">
+          <div className="cursor-pointer group relative overflow-hidden rounded-xl md:rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all">
             <video
               src="https://vizeo.zigbang.com/custom/gateway_left_video_ad.mp4"
               poster="https://s.zigbang.com/zigbang-www/_next/static/2025_zigbang_cf_30sec_thumbnail-fede43804b9bfaeedaf7c08140575a10.jpg"
@@ -729,32 +730,32 @@ function JobsTab() {
               loop
               playsInline
               className="w-full rounded-xl"
-              style={{ height: '300px', objectFit: 'cover' }}
+              style={{ height: '200px', objectFit: 'cover' }}
             />
-            <div className="absolute top-4 left-4 bg-blue-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+            <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-blue-600 text-white text-xs font-bold px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg">
               SPONSORED
             </div>
           </div>
 
           {/* 광고 배너 2 */}
-          <div className="cursor-pointer group relative overflow-hidden rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all">
+          <div className="cursor-pointer group relative overflow-hidden rounded-xl md:rounded-2xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all">
             <img
               src="https://s.zigbang.com/zigbang-www/_next/static/img_webpromo_join_255-ef58d02199e9ca86134f6a74b06a802a.jpg"
               alt="광고 배너"
               className="w-full rounded-xl object-cover"
-              style={{ height: '300px' }}
+              style={{ height: '200px' }}
             />
-            <div className="absolute top-4 left-4 bg-cyan-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">
+            <div className="absolute top-3 left-3 md:top-4 md:left-4 bg-cyan-600 text-white text-xs font-bold px-2.5 md:px-3 py-1 md:py-1.5 rounded-lg">
               PROMOTION
             </div>
           </div>
         </div>
 
         {/* 더보기 버튼 */}
-        <div className="flex justify-center">
-          <button className="group bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-blue-200 hover:border-blue-300 rounded-2xl px-8 py-6 transition-all hover:shadow-lg">
+        <div className="flex justify-center px-4">
+          <button className="w-full md:w-auto group bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-blue-200 hover:border-blue-300 rounded-xl md:rounded-2xl px-6 md:px-8 py-4 md:py-6 transition-all hover:shadow-lg">
             <div className="flex flex-col items-center gap-2">
-              <div className="text-base text-gray-700">
+              <div className="text-sm md:text-base text-gray-700 text-center">
                 더 많은{' '}
                 <span className="font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                   부동산 뉴스
@@ -763,9 +764,9 @@ function JobsTab() {
                 보러가기
               </div>
               <div className="flex items-center gap-1 text-cyan-600 group-hover:translate-x-1 transition-transform">
-                <ArrowRight className="w-5 h-5" />
-                <ArrowRight className="w-5 h-5 -ml-3" />
-                <ArrowRight className="w-5 h-5 -ml-3" />
+                <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+                <ArrowRight className="w-4 h-4 md:w-5 md:h-5 -ml-2 md:-ml-3" />
+                <ArrowRight className="w-4 h-4 md:w-5 md:h-5 -ml-2 md:-ml-3" />
               </div>
             </div>
           </button>
@@ -800,29 +801,29 @@ function NewsTab() {
   ];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-4xl mx-auto px-4 py-6 md:py-12">
       {/* 헤더 */}
-      <div className="text-center mb-12">
-        <h1 className="text-3xl md:text-4xl font-normal text-gray-900 mb-3">
+      <div className="text-center mb-8 md:mb-12">
+        <h1 className="text-2xl md:text-3xl lg:text-4xl font-normal text-gray-900 mb-2 md:mb-3 px-4">
           발빠르게 전달하는 <span className="font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">부동산 뉴스</span>
         </h1>
-        <p className="text-lg md:text-xl text-gray-600">
+        <p className="text-sm md:text-lg lg:text-xl text-gray-600 px-4">
           부동산 동향을 요점만 정리해서 알려드려요
         </p>
       </div>
 
       {/* 뉴스 리스트 */}
-      <div className="space-y-3 mb-8">
+      <div className="space-y-2 md:space-y-3 mb-6 md:mb-8">
         {newsItems.map((item, index) => (
           <div
             key={index}
-            className="bg-white rounded-2xl px-6 py-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer group"
+            className="bg-white rounded-xl md:rounded-2xl px-4 md:px-6 py-4 md:py-5 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all cursor-pointer group"
           >
-            <div className="flex items-start justify-between gap-4">
-              <h3 className="flex-1 text-base md:text-lg font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors leading-relaxed">
+            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-2 md:gap-4">
+              <h3 className="flex-1 text-sm md:text-base lg:text-lg font-semibold text-gray-900 group-hover:text-cyan-600 transition-colors leading-relaxed">
                 {item.title}
               </h3>
-              <span className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
+              <span className="text-xs md:text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
                 {item.date}
               </span>
             </div>
@@ -831,10 +832,10 @@ function NewsTab() {
       </div>
 
       {/* 더보기 버튼 */}
-      <div className="flex justify-center">
-        <button className="group bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-blue-200 hover:border-blue-300 rounded-2xl px-8 py-6 transition-all hover:shadow-lg">
+      <div className="flex justify-center px-4">
+        <button className="w-full md:w-auto group bg-gradient-to-r from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 border-2 border-blue-200 hover:border-blue-300 rounded-xl md:rounded-2xl px-6 md:px-8 py-4 md:py-6 transition-all hover:shadow-lg">
           <div className="flex flex-col items-center gap-2">
-            <div className="text-base text-gray-700">
+            <div className="text-sm md:text-base text-gray-700 text-center">
               더 많은{' '}
               <span className="font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                 부동산 뉴스
@@ -843,9 +844,9 @@ function NewsTab() {
               보러가기
             </div>
             <div className="flex items-center gap-1 text-cyan-600 group-hover:translate-x-1 transition-transform">
-              <ArrowRight className="w-5 h-5" />
-              <ArrowRight className="w-5 h-5 -ml-3" />
-              <ArrowRight className="w-5 h-5 -ml-3" />
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5 -ml-2 md:-ml-3" />
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5 -ml-2 md:-ml-3" />
             </div>
           </div>
         </button>
@@ -857,39 +858,39 @@ function NewsTab() {
 // AI 영상 탭
 function VideosTab() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-100 mb-4">
-          <Video className="w-4 h-4 text-cyan-600" />
-          <span className="text-sm text-gray-700 font-medium">AI 영상</span>
+    <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+      <div className="mb-6 md:mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-50 rounded-full border border-blue-100 mb-3 md:mb-4">
+          <Video className="w-3 h-3 md:w-4 md:h-4 text-cyan-600" />
+          <span className="text-xs md:text-sm text-gray-700 font-medium">AI 영상</span>
         </div>
-        <h1 className="text-4xl font-black text-gray-900 mb-2">숏폼 영상</h1>
-        <p className="text-gray-600">60초로 보는 부동산 핵심 정보</p>
+        <h1 className="text-2xl md:text-4xl font-black text-gray-900 mb-1 md:mb-2">숏폼 영상</h1>
+        <p className="text-sm md:text-base text-gray-600">60초로 보는 부동산 핵심 정보</p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-4">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
           <div key={i} className="cursor-pointer group">
-            <div className="aspect-[9/16] bg-gradient-to-br from-blue-200 to-cyan-200 rounded-2xl overflow-hidden relative border border-gray-200 hover:border-cyan-400 hover:shadow-xl transition-all">
+            <div className="aspect-[9/16] bg-gradient-to-br from-blue-200 to-cyan-200 rounded-xl md:rounded-2xl overflow-hidden relative border border-gray-200 hover:border-cyan-400 hover:shadow-xl transition-all">
               <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/5 transition-all">
-                <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
-                  <Play className="w-8 h-8 text-cyan-600 ml-1" />
+                <div className="w-12 h-12 md:w-16 md:h-16 bg-white/90 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg">
+                  <Play className="w-6 h-6 md:w-8 md:h-8 text-cyan-600 ml-1" />
                 </div>
               </div>
               <div className="absolute top-2 right-2">
-                <div className="bg-cyan-500 rounded-lg px-2 py-1 flex items-center gap-1 shadow-md">
-                  <Zap className="w-3 h-3 text-white" />
+                <div className="bg-cyan-500 rounded-lg px-1.5 md:px-2 py-0.5 md:py-1 flex items-center gap-1 shadow-md">
+                  <Zap className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                   <span className="text-xs text-white font-bold">AI</span>
                 </div>
               </div>
               <div className="absolute bottom-2 left-2 right-2">
-                <div className="bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1">
+                <div className="bg-black/70 backdrop-blur-sm rounded-lg px-1.5 md:px-2 py-0.5 md:py-1">
                   <p className="text-xs text-white font-semibold">1:24</p>
                 </div>
               </div>
             </div>
             <div className="mt-2">
-              <p className="text-sm font-semibold text-gray-900 line-clamp-2">
+              <p className="text-xs md:text-sm font-semibold text-gray-900 line-clamp-2">
                 2025년 부동산 세금 절약 꿀팁
               </p>
               <p className="text-xs text-gray-500 mt-1">조회 12K · 1일 전</p>
@@ -904,28 +905,28 @@ function VideosTab() {
 // 커뮤니티 탭
 function CommunityTab() {
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="mb-8">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full border border-blue-100 mb-4">
-          <Users className="w-4 h-4 text-teal-600" />
-          <span className="text-sm text-gray-700 font-medium">커뮤니티</span>
+    <div className="max-w-5xl mx-auto px-4 py-6 md:py-8">
+      <div className="mb-6 md:mb-8">
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 bg-blue-50 rounded-full border border-blue-100 mb-3 md:mb-4">
+          <Users className="w-3 h-3 md:w-4 md:h-4 text-teal-600" />
+          <span className="text-xs md:text-sm text-gray-700 font-medium">커뮤니티</span>
         </div>
-        <h1 className="text-4xl font-black text-gray-900 mb-2">동료와 소통</h1>
-        <p className="text-gray-600">부동산 전문가들의 네트워킹 공간</p>
+        <h1 className="text-2xl md:text-4xl font-black text-gray-900 mb-1 md:mb-2">동료와 소통</h1>
+        <p className="text-sm md:text-base text-gray-600">부동산 전문가들의 네트워킹 공간</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
         {[
           { title: "중개사 놀이터", desc: "자유로운 소통 공간", members: "1,234명", badge: "인기", color: "cyan" },
           { title: "실무 질문방", desc: "계약서, 민원 등 실무 질의응답", members: "856명", badge: "활발", color: "blue" },
           { title: "분양 정보 공유", desc: "분양 소식 실시간 공유", members: "645명", badge: "신규", color: "teal" },
           { title: "지역별 모임", desc: "지역 중개사 네트워킹", members: "423명", badge: "", color: "green" },
         ].map((room, i) => (
-          <div key={i} className="bg-white rounded-2xl p-6 border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all cursor-pointer group">
-            <div className="flex items-start justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-900 group-hover:text-teal-700 transition-colors">{room.title}</h3>
+          <div key={i} className="bg-white rounded-xl md:rounded-2xl p-4 md:p-6 border border-gray-200 hover:border-teal-300 hover:shadow-lg transition-all cursor-pointer group">
+            <div className="flex items-start justify-between mb-3 md:mb-4">
+              <h3 className="text-lg md:text-xl font-bold text-gray-900 group-hover:text-teal-700 transition-colors">{room.title}</h3>
               {room.badge && (
-                <span className={`text-xs font-bold px-3 py-1 rounded-lg ${
+                <span className={`text-xs font-bold px-2 md:px-3 py-1 rounded-lg ${
                   room.color === "cyan" ? "bg-cyan-100 text-cyan-700" :
                   room.color === "blue" ? "bg-blue-100 text-blue-700" :
                   room.color === "teal" ? "bg-teal-100 text-teal-700" :
@@ -935,13 +936,13 @@ function CommunityTab() {
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-600 mb-4">{room.desc}</p>
+            <p className="text-xs md:text-sm text-gray-600 mb-3 md:mb-4">{room.desc}</p>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-500 flex items-center gap-2">
-                <Users className="w-4 h-4" />
+              <span className="text-xs md:text-sm text-gray-500 flex items-center gap-2">
+                <Users className="w-3 h-3 md:w-4 md:h-4" />
                 {room.members}
               </span>
-              <ArrowRight className="w-5 h-5 text-teal-500 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-teal-500 group-hover:translate-x-1 transition-transform" />
             </div>
           </div>
         ))}
