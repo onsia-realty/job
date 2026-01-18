@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git clone:*)",
+      "WebSearch",
+      "Bash(node --version:*)",
+      "Bash(claude mcp list)",
+      "Bash(dir:*)",
+      "Bash(pnpm install)",
+      "Bash(pnpm dev)",
+      "mcp__playwright__playwright_navigate",
+      "mcp__playwright__playwright_screenshot"
+    ]
+  }
+}

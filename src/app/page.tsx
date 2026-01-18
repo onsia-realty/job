@@ -5,16 +5,19 @@ import Link from 'next/link';
 import {
   Building2, HardHat, Newspaper,
   ArrowRight, ChevronLeft, ChevronRight,
-  Sparkles
+  Sparkles, TrendingUp
 } from 'lucide-react';
 
-// 부동산 뉴스 데이터
-const newsItems = [
-  { id: 1, title: '강남 재건축 평당 1억 첫 돌파…서울 집값 상승 이끌었다', date: '2026.01.18', category: '시장동향' },
-  { id: 2, title: '"대단지 아파트 원한다면 1분기 노려라"…2만 가구 쏟아진다', date: '2026.01.17', category: '분양정보' },
-  { id: 3, title: '서울 토지거래 허가 증가 추세... "위축 심리 일부 회복"', date: '2026.01.16', category: '정책' },
-  { id: 4, title: '2026년 분양시장 전망: 수도권 중심 회복세 기대', date: '2026.01.15', category: '전망' },
-];
+// 뉴스 타입 정의
+interface NewsItem {
+  id: number;
+  title: string;
+  date: string;
+  category: string;
+  link: string;
+  source: string;
+  thumbnail: string;
+}
 
 // 광고 배너 데이터
 const adBanners = [
@@ -65,6 +68,7 @@ const announcements = [
 
 export default function LandingPage() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
 
   // 자동 슬라이드
   useEffect(() => {
@@ -72,6 +76,20 @@ export default function LandingPage() {
       setCurrentSlide((prev) => (prev + 1) % announcements.length);
     }, 5000);
     return () => clearInterval(timer);
+  }, []);
+
+  // RSS 뉴스 가져오기
+  useEffect(() => {
+    async function fetchNews() {
+      try {
+        const res = await fetch('/api/news');
+        const data = await res.json();
+        setNewsItems(data.news);
+      } catch (error) {
+        console.error('뉴스 로딩 실패:', error);
+      }
+    }
+    fetchNews();
   }, []);
 
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % announcements.length);
@@ -167,50 +185,36 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* 우측: 빠른 접근 카드 */}
-            <div className="bg-[#1C1D1F] rounded-2xl p-6 min-h-[280px]">
-              <h3 className="text-lg font-medium text-gray-300 mb-4">빠른 시작</h3>
-              <div className="space-y-3">
-                <Link
-                  href="/agent"
-                  className="flex items-center gap-4 p-4 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
-                >
-                  <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
-                    <Building2 className="w-5 h-5 text-blue-400" />
+            {/* 우측: 광고 배너 */}
+            <div className="bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 min-h-[280px] relative overflow-hidden">
+              <div className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-400">AD</div>
+              <div className="relative z-10 h-full flex flex-col justify-between">
+                <div>
+                  <p className="text-cyan-400 text-sm font-medium mb-2">PREMIUM</p>
+                  <h3 className="text-xl font-bold mb-2">프리미엄 채용공고</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">
+                    상위 노출로 최고의 인재를<br />
+                    빠르게 만나보세요
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <Sparkles className="w-4 h-4 text-yellow-400" />
+                    <span>7일간 상위 노출</span>
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium">공인중개사</p>
-                    <p className="text-sm text-gray-500">중개사무소 구인구직</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-300">
+                    <TrendingUp className="w-4 h-4 text-green-400" />
+                    <span>조회수 3배 증가</span>
                   </div>
-                  <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
-                </Link>
-                <Link
-                  href="/sales"
-                  className="flex items-center gap-4 p-4 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
-                >
-                  <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
-                    <HardHat className="w-5 h-5 text-purple-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">분양상담사</p>
-                    <p className="text-sm text-gray-500">분양현장 구인구직</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
-                </Link>
-                <Link
-                  href="/auth/signin"
-                  className="flex items-center gap-4 p-4 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
-                >
-                  <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
-                    <Sparkles className="w-5 h-5 text-green-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">AI 매칭 받기</p>
-                    <p className="text-sm text-gray-500">프로필 등록하고 추천받기</p>
-                  </div>
-                  <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-white transition-colors" />
-                </Link>
+                  <Link
+                    href="/premium"
+                    className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl text-center font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
+                  >
+                    광고 문의하기
+                  </Link>
+                </div>
               </div>
+              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
             </div>
           </div>
         </section>
@@ -221,23 +225,13 @@ export default function LandingPage() {
             {/* 영상 (2/3) */}
             <div className="md:col-span-2 relative rounded-lg overflow-hidden h-[400px]">
               <video
-                src="https://vizeo.zigbang.com/custom/gateway_left_video_ad.mp4"
-                poster="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=800&h=600&fit=crop"
+                src="/intro.mp4"
                 autoPlay
                 muted
                 loop
                 playsInline
                 className="w-full h-full object-cover"
               />
-              {/* 음소거/재생 컨트롤 */}
-              <div className="absolute bottom-4 right-4 flex gap-2">
-                <button className="w-8 h-8 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
-                  <div className="w-3 h-3 border-l-2 border-r-2 border-white" />
-                </button>
-                <button className="w-8 h-8 bg-black/50 rounded-full flex items-center justify-center hover:bg-black/70 transition-colors">
-                  <div className="w-0 h-0 border-t-[6px] border-t-transparent border-l-[10px] border-l-white border-b-[6px] border-b-transparent ml-0.5" />
-                </button>
-              </div>
             </div>
 
             {/* 카테고리 카드 (1/3) */}
@@ -290,22 +284,37 @@ export default function LandingPage() {
                 <Newspaper className="w-5 h-5 text-blue-400" />
                 <h3 className="text-lg font-medium">부동산 뉴스</h3>
               </div>
-              <div className="space-y-4">
-                {newsItems.map((news) => (
-                  <Link
-                    key={news.id}
-                    href={`/news/${news.id}`}
-                    className="block p-4 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <span className="inline-block text-xs text-blue-400 mb-1">{news.category}</span>
-                        <h4 className="font-medium text-white line-clamp-1">{news.title}</h4>
+              <div className="space-y-3">
+                {newsItems.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">뉴스를 불러오는 중...</div>
+                ) : (
+                  newsItems.map((news) => (
+                    <a
+                      key={news.id}
+                      href={news.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex gap-4 p-3 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
+                    >
+                      {/* 썸네일 */}
+                      <div className="w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700">
+                        <img
+                          src={news.thumbnail}
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop';
+                          }}
+                        />
                       </div>
-                      <span className="text-xs text-gray-500 whitespace-nowrap">{news.date}</span>
-                    </div>
-                  </Link>
-                ))}
+                      {/* 콘텐츠 */}
+                      <div className="flex-1 min-w-0 flex flex-col justify-center">
+                        <span className="inline-block text-xs text-blue-400 mb-1 w-fit">{news.category}</span>
+                        <h4 className="font-medium text-white line-clamp-2 text-sm leading-tight">{news.title}</h4>
+                      </div>
+                    </a>
+                  ))
+                )}
               </div>
             </div>
 
