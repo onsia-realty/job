@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Search, ChevronDown, ChevronLeft, ChevronRight, ArrowRight,
   Users, Eye, MapPin, Home, Map, Heart, Megaphone, PenSquare,
-  ArrowUp, ExternalLink, Phone, Calendar
+  ArrowUp, ExternalLink, Phone, Calendar, Loader2
 } from 'lucide-react';
 import JobCard from '@/components/sales/JobCard';
 import JobFilter from '@/components/sales/JobFilter';
@@ -15,6 +15,7 @@ import PremiumGrid from '@/components/sales/PremiumGrid';
 import MobileNav from '@/components/shared/MobileNav';
 import type { SalesJobListing, SalesJobFilter } from '@/types';
 import { REGIONS } from '@/types';
+import { fetchJobs } from '@/lib/supabase';
 
 // 더 많은 임시 구인 데이터
 const sampleJobs: SalesJobListing[] = [
@@ -382,6 +383,27 @@ export default function SalesMainPage() {
   const [currentStatIndex, setCurrentStatIndex] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [filters, setFilters] = useState<SalesJobFilter>(initialFilters);
+  const [dbJobs, setDbJobs] = useState<SalesJobListing[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // DB에서 공고 불러오기
+  useEffect(() => {
+    async function loadJobs() {
+      setIsLoading(true);
+      try {
+        const jobs = await fetchJobs('sales');
+        setDbJobs(jobs);
+      } catch (error) {
+        console.error('Failed to load jobs:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadJobs();
+  }, []);
+
+  // DB 데이터 + 샘플 데이터 합치기 (DB 데이터 우선)
+  const allJobs = [...dbJobs, ...sampleJobs];
 
   // 통계
   const stats = {
@@ -433,8 +455,8 @@ export default function SalesMainPage() {
     });
   };
 
-  // 필터링된 전체 데이터
-  const filteredJobs = applyFilters(sampleJobs);
+  // 필터링된 전체 데이터 (DB + 샘플)
+  const filteredJobs = applyFilters(allJobs);
 
   // 필터링된 데이터 (티어별)
   const uniqueJobs = filteredJobs.filter((job) => job.tier === 'unique');
@@ -671,15 +693,23 @@ export default function SalesMainPage() {
         <JobFilter
           filters={filters}
           onFilterChange={setFilters}
-          totalCount={sampleJobs.length}
+          totalCount={allJobs.length}
           filteredCount={filteredJobs.length}
         />
 
         <div className="flex gap-6">
           {/* 메인 콘텐츠 */}
           <div className="flex-1 min-w-0">
+            {/* 로딩 표시 */}
+            {isLoading && (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 text-purple-600 animate-spin" />
+                <span className="ml-2 text-gray-600">공고를 불러오는 중...</span>
+              </div>
+            )}
+
             {/* 유니크 섹션 */}
-            {uniqueJobs.length > 0 && (
+            {!isLoading && uniqueJobs.length > 0 && (
               <section className="mb-6 md:mb-8">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2">
@@ -819,7 +849,7 @@ export default function SalesMainPage() {
             )}
 
             {/* 검색 결과 없음 */}
-            {filteredJobs.length === 0 && (
+            {!isLoading && filteredJobs.length === 0 && (
               <div className="text-center py-16">
                 <div className="text-gray-400 mb-4">
                   <Search className="w-16 h-16 mx-auto" />
