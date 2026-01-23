@@ -55,111 +55,6 @@ async function getPexelsImage(category: string): Promise<string | null> {
   }
 }
 
-// URL 정규화
-function normalizeUrl(url: string, baseUrl?: string): string {
-  if (!url) return '';
-
-  if (url.startsWith('//')) {
-    return 'https:' + url;
-  }
-
-  if (url.startsWith('/') && baseUrl) {
-    const base = new URL(baseUrl);
-    return `${base.protocol}//${base.host}${url}`;
-  }
-
-  return url;
-}
-
-// Google News 리다이렉트에서 실제 URL 추출
-async function getActualUrl(googleNewsUrl: string): Promise<string> {
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(googleNewsUrl, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      },
-      redirect: 'follow',
-    });
-
-    clearTimeout(timeoutId);
-
-    if (response.url && !response.url.includes('news.google.com')) {
-      return response.url;
-    }
-
-    const html = await response.text();
-
-    const dataAuMatch = html.match(/data-n-au="([^"]+)"/);
-    if (dataAuMatch && dataAuMatch[1]) {
-      return dataAuMatch[1];
-    }
-
-    const hrefMatch = html.match(/href="(https?:\/\/(?!news\.google)[^"]+)"/);
-    if (hrefMatch && hrefMatch[1]) {
-      return hrefMatch[1];
-    }
-
-    return googleNewsUrl;
-  } catch (error) {
-    return googleNewsUrl;
-  }
-}
-
-// og:image 추출 함수
-async function extractOgImage(url: string): Promise<string | null> {
-  try {
-    let actualUrl = url;
-    if (url.includes('news.google.com')) {
-      actualUrl = await getActualUrl(url);
-    }
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(actualUrl, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html',
-      },
-      redirect: 'follow',
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) return null;
-
-    const html = await response.text();
-    const finalUrl = response.url;
-
-    // og:image 추출
-    const ogPatterns = [
-      /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i,
-      /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i,
-    ];
-
-    for (const pattern of ogPatterns) {
-      const match = html.match(pattern);
-      if (match && match[1] && !match[1].includes('googleusercontent.com')) {
-        return normalizeUrl(match[1], finalUrl);
-      }
-    }
-
-    // twitter:image 폴백
-    const twitterMatch = html.match(/<meta[^>]*name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i);
-    if (twitterMatch && twitterMatch[1] && !twitterMatch[1].includes('googleusercontent.com')) {
-      return normalizeUrl(twitterMatch[1], finalUrl);
-    }
-
-    return null;
-  } catch (error) {
-    return null;
-  }
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -167,7 +62,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '5'), 50);
 
     const response = await fetch(RSS_URL, {
-      next: { revalidate: 600 },
+      next: { revalidate: 10800 }, // 3시간 캐시
     });
 
     if (!response.ok) {
@@ -211,23 +106,12 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 썸네일 추출 (병렬 처리)
+    // 썸네일 설정 (Pexels API + 기본 이미지)
     const thumbnailPromises = newsData.map(async (news: any) => {
-      // 1순위: og:image 스크래핑
-      const ogImage = await extractOgImage(news.link);
-      if (ogImage) {
-        news.thumbnail = ogImage;
-        return news;
-      }
-
-      // 2순위: Pexels API
       const pexelsImage = await getPexelsImage(news.category);
       if (pexelsImage) {
         news.thumbnail = pexelsImage;
-        return news;
       }
-
-      // 3순위: 기본 이미지 (이미 설정됨)
       return news;
     });
 

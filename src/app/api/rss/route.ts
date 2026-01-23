@@ -9,7 +9,7 @@ export async function GET() {
   try {
     // Google News RSS 가져오기
     const response = await fetch(RSS_URL, {
-      next: { revalidate: 600 }, // 10분 캐시
+      next: { revalidate: 10800 }, // 3시간 캐시
     });
 
     if (!response.ok) {
@@ -93,7 +93,7 @@ export async function GET() {
     return new NextResponse(rssFeed, {
       headers: {
         'Content-Type': 'application/rss+xml; charset=utf-8',
-        'Cache-Control': 'public, max-age=600, s-maxage=600',
+        'Cache-Control': 'public, max-age=10800, s-maxage=10800',
         'X-Content-Type-Options': 'nosniff',
       },
     });

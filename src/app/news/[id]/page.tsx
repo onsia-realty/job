@@ -8,7 +8,7 @@ async function getNewsItem(id: string) {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const res = await fetch(`${baseUrl}/api/news?limit=50`, {
-      next: { revalidate: 600 },
+      next: { revalidate: 10800 }, // 3시간 캐시
     });
     const data = await res.json();
     return data.news.find((news: any) => news.id === parseInt(id)) || null;
