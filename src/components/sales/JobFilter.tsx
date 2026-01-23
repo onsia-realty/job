@@ -36,13 +36,13 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
   // 필터 토글 함수
   const toggleFilter = <K extends keyof SalesJobFilter>(
     key: K,
-    value: SalesJobFilter[K][number]
+    value: SalesJobFilter[K] extends (infer U)[] ? U : never
   ) => {
-    const currentValues = filters[key] as SalesJobFilter[K];
-    const newValues = currentValues.includes(value)
+    const currentValues = filters[key] as string[];
+    const newValues = currentValues.includes(value as string)
       ? currentValues.filter((v) => v !== value)
-      : [...currentValues, value];
-    onFilterChange({ ...filters, [key]: newValues });
+      : [...currentValues, value as string];
+    onFilterChange({ ...filters, [key]: newValues } as SalesJobFilter);
   };
 
   // 필터 초기화

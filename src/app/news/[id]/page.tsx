@@ -17,6 +17,8 @@ async function getNewsItem(id: string) {
   }
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://onsia.city';
+
 // 동적 메타데이터 생성 (SEO)
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
@@ -28,22 +30,62 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
   }
 
+  const canonicalUrl = `${SITE_URL}/news/${id}`;
+  const description = `${news.category} | ${news.date} | ${news.source || '부동산 뉴스'} - 온시아 JOB에서 제공하는 최신 부동산 뉴스. 분양정보, 시장동향, 정책 변화를 확인하세요.`;
+
   return {
-    title: `${news.title} - 온시아 JOB 부동산 뉴스`,
-    description: `${news.category} | ${news.date} | ${news.source || '부동산 뉴스'} - 온시아 JOB에서 제공하는 부동산 뉴스`,
-    keywords: ['부동산', '뉴스', news.category, '온시아', 'JOB', '구인구직'],
+    title: `${news.title} | 온시아 JOB 부동산 뉴스`,
+    description,
+    keywords: ['부동산', '뉴스', news.category, '온시아', 'JOB', '구인구직', '분양정보', '시장동향', '부동산 전문가'],
+    authors: [{ name: '온시아 JOB', url: SITE_URL }],
+    creator: '온시아 JOB',
+    publisher: '온시아 JOB',
     openGraph: {
       title: news.title,
-      description: `${news.category} | ${news.date}`,
-      images: [news.thumbnail],
+      description,
+      url: canonicalUrl,
+      siteName: '온시아 JOB',
+      images: [
+        {
+          url: news.thumbnail,
+          width: 1200,
+          height: 630,
+          alt: news.title,
+        },
+      ],
       type: 'article',
       publishedTime: news.date,
+      locale: 'ko_KR',
+      authors: ['온시아 JOB'],
     },
     twitter: {
       card: 'summary_large_image',
       title: news.title,
-      description: `${news.category} | ${news.date}`,
+      description,
       images: [news.thumbnail],
+      creator: '@onsia_job',
+    },
+    alternates: {
+      canonical: canonicalUrl,
+      types: {
+        'application/rss+xml': `${SITE_URL}/api/rss`,
+      },
+    },
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+    other: {
+      'article:section': news.category,
+      'article:published_time': news.date,
+      'google-news-keywords': `부동산,${news.category},온시아,JOB`,
     },
   };
 }
@@ -175,33 +217,100 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             원문 기사 보기
           </a>
 
-          {/* 관련 태그 */}
+          {/* 관련 태그 (SEO 키워드) */}
           <div className="mt-8 pt-6 border-t border-gray-800">
             <p className="text-sm text-gray-500 mb-3">관련 키워드</p>
             <div className="flex flex-wrap gap-2">
-              {['부동산', news.category, '뉴스', '온시아', 'JOB'].map((tag) => (
-                <span
+              {['부동산', news.category, '뉴스', '분양정보', '시장동향', '공인중개사', '분양상담사'].map((tag) => (
+                <Link
                   key={tag}
-                  className="px-3 py-1 bg-[#252628] rounded-full text-sm text-gray-400"
+                  href="/news"
+                  className="px-3 py-1 bg-[#252628] rounded-full text-sm text-gray-400 hover:bg-[#353638] hover:text-white transition-colors"
                 >
                   #{tag}
-                </span>
+                </Link>
               ))}
             </div>
           </div>
 
-          {/* 사이트 홍보 */}
+          {/* 내부 백링크 섹션 */}
+          <nav className="mt-8 bg-[#1C1D1F] rounded-xl p-6" aria-label="관련 서비스">
+            <h3 className="text-lg font-bold mb-4 text-white">온시아 JOB 서비스</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Link
+                href="/sales"
+                className="flex items-center gap-3 p-3 bg-[#252628] rounded-lg hover:bg-[#353638] transition-colors group"
+              >
+                <div className="w-10 h-10 bg-blue-500/20 rounded-lg flex items-center justify-center">
+                  <Building2 className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-white group-hover:text-blue-400 transition-colors">분양대행사</p>
+                  <p className="text-xs text-gray-500">채용 정보 확인</p>
+                </div>
+              </Link>
+              <Link
+                href="/agent"
+                className="flex items-center gap-3 p-3 bg-[#252628] rounded-lg hover:bg-[#353638] transition-colors group"
+              >
+                <div className="w-10 h-10 bg-green-500/20 rounded-lg flex items-center justify-center">
+                  <Home className="w-5 h-5 text-green-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-white group-hover:text-green-400 transition-colors">중개사무소</p>
+                  <p className="text-xs text-gray-500">구인 정보 확인</p>
+                </div>
+              </Link>
+              <Link
+                href="/sales/jobs"
+                className="flex items-center gap-3 p-3 bg-[#252628] rounded-lg hover:bg-[#353638] transition-colors group"
+              >
+                <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">
+                  <Tag className="w-5 h-5 text-purple-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-white group-hover:text-purple-400 transition-colors">분양상담사 채용</p>
+                  <p className="text-xs text-gray-500">최신 채용 공고</p>
+                </div>
+              </Link>
+              <Link
+                href="/agent/jobs"
+                className="flex items-center gap-3 p-3 bg-[#252628] rounded-lg hover:bg-[#353638] transition-colors group"
+              >
+                <div className="w-10 h-10 bg-orange-500/20 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-orange-400" />
+                </div>
+                <div>
+                  <p className="font-medium text-white group-hover:text-orange-400 transition-colors">공인중개사 채용</p>
+                  <p className="text-xs text-gray-500">중개사무소 구인</p>
+                </div>
+              </Link>
+            </div>
+          </nav>
+
+          {/* 사이트 홍보 + RSS 구독 */}
           <div className="mt-8 bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-xl p-6">
             <h3 className="text-lg font-bold mb-2">온시아 JOB</h3>
             <p className="text-gray-400 text-sm mb-4">
-              부동산 전문가를 위한 AI 기반 구인구직 플랫폼
+              부동산 전문가를 위한 AI 기반 구인구직 플랫폼. 최신 부동산 뉴스와 채용 정보를 한곳에서 확인하세요.
             </p>
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-cyan-400 hover:text-cyan-300 text-sm"
-            >
-              지금 시작하기 →
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/20 text-cyan-400 rounded-lg hover:bg-cyan-500/30 transition-colors text-sm"
+              >
+                지금 시작하기 →
+              </Link>
+              <a
+                href="/api/rss"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors text-sm"
+              >
+                <ExternalLink className="w-4 h-4" />
+                RSS 구독
+              </a>
+            </div>
           </div>
         </main>
       </div>

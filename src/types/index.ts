@@ -38,6 +38,21 @@ export interface SalesJobListing {
 // 공인중개사 구인공고 타입
 export type AgentJobType = 'apartment' | 'villa' | 'store' | 'oneroom' | 'office';
 export type AgentJobTier = 'premium' | 'normal';
+export type AgentSalaryType = 'monthly' | 'commission' | 'mixed';
+export type AgentExperience = 'none' | '6month' | '1year' | '2year' | '3year' | '5year';
+
+// 복리후생 타입
+export type AgentBenefit =
+  | 'insurance' // 4대보험
+  | 'incentive' // 인센티브
+  | 'parking' // 주차지원
+  | 'meal' // 식대지원
+  | 'education' // 교육지원
+  | 'flexible' // 유연근무
+  | 'vacation' // 연차
+  | 'transport' // 교통비
+  | 'bonus' // 명절보너스
+  | 'laptop'; // 업무장비
 
 export interface AgentJobListing {
   id: string;
@@ -47,17 +62,74 @@ export interface AgentJobListing {
   tier: AgentJobTier;
   badges: ('new' | 'hot' | 'urgent')[];
   salary: {
-    type: 'monthly' | 'commission' | 'mixed';
+    type: AgentSalaryType;
     amount?: string;
+    min?: number; // 최소 급여 (만원)
+    max?: number; // 최대 급여 (만원)
   };
   experience: string;
+  experienceLevel?: AgentExperience;
   company: string;
+  companyLogo?: string; // 회사 로고
   region: string;
   address?: string;
+  detailAddress?: string; // 상세 주소
   thumbnail?: string;
   views: number;
+  applicants?: number; // 지원자 수
   createdAt: string;
+  deadline?: string; // 마감일 (YYYY-MM-DD)
+  isAlwaysRecruiting?: boolean; // 상시채용
+  benefits?: AgentBenefit[]; // 복리후생
+  workHours?: string; // 근무시간
+  workDays?: string; // 근무요일
+  contactName?: string; // 담당자명
+  contactPhone?: string; // 연락처
+  isBookmarked?: boolean; // 스크랩 여부
 }
+
+// 공인중개사 필터 인터페이스
+export interface AgentJobFilter {
+  regions: string[];
+  types: AgentJobType[];
+  salaryTypes: AgentSalaryType[];
+  experiences: AgentExperience[];
+  tiers: AgentJobTier[];
+  benefits: AgentBenefit[];
+  salaryMin?: number;
+  salaryMax?: number;
+}
+
+// 복리후생 라벨
+export const AGENT_BENEFIT_LABELS: Record<AgentBenefit, string> = {
+  insurance: '4대보험',
+  incentive: '인센티브',
+  parking: '주차지원',
+  meal: '식대지원',
+  education: '교육지원',
+  flexible: '유연근무',
+  vacation: '연차보장',
+  transport: '교통비',
+  bonus: '명절보너스',
+  laptop: '업무장비',
+};
+
+// 경력 라벨 (공인중개사)
+export const AGENT_EXPERIENCE_LABELS: Record<AgentExperience, string> = {
+  none: '경력무관',
+  '6month': '6개월 이상',
+  '1year': '1년 이상',
+  '2year': '2년 이상',
+  '3year': '3년 이상',
+  '5year': '5년 이상',
+};
+
+// 급여 타입 라벨 (공인중개사)
+export const AGENT_SALARY_TYPE_LABELS: Record<AgentSalaryType, string> = {
+  monthly: '월급',
+  commission: '수수료',
+  mixed: '기본급+수수료',
+};
 
 // 사용자 프로필 타입 (매칭 시스템용)
 export interface UserProfile {

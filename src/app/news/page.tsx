@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Newspaper, ChevronLeft, ChevronRight, Home } from 'lucide-react';
+import { Newspaper, ChevronLeft, ChevronRight, Home, Rss } from 'lucide-react';
 
 interface NewsItem {
   id: number;
@@ -76,9 +76,21 @@ export default function NewsPage() {
                 <h1 className="text-xl font-bold">부동산 뉴스</h1>
               </div>
             </div>
-            <span className="text-sm text-gray-500">
-              총 {newsItems.length}개의 뉴스
-            </span>
+            <div className="flex items-center gap-3">
+              <a
+                href="/api/rss"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 text-orange-400 rounded-full text-sm hover:bg-orange-500/30 transition-colors"
+                title="RSS 피드 구독"
+              >
+                <Rss className="w-4 h-4" />
+                <span className="hidden sm:inline">RSS</span>
+              </a>
+              <span className="text-sm text-gray-500">
+                총 {newsItems.length}개의 뉴스
+              </span>
+            </div>
           </div>
         </div>
       </header>
