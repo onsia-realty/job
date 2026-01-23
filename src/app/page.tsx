@@ -126,7 +126,7 @@ export default function LandingPage() {
                 <span className="text-sm">검색</span>
               </button>
               <Link
-                href="/auth/signin"
+                href="/auth/signup"
                 className="bg-[#FEE500] text-black text-sm font-medium px-4 py-2 rounded-md hover:bg-[#FDD800] transition-colors"
               >
                 로그인

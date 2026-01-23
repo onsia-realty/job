@@ -103,7 +103,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
           {/* 로그인 버튼 */}
           <div className="flex items-center gap-2">
             <Link
-              href="/auth/signin"
+              href="/auth/signup"
               className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
                 variant === 'landing' || variant === 'sales'
                   ? 'bg-white/20 text-white hover:bg-white/30'

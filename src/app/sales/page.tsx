@@ -542,7 +542,7 @@ export default function SalesMainPage() {
             {/* 상단 메뉴 */}
             <div className="hidden md:flex items-center gap-4 text-xs text-gray-500">
               <Link href="/" className="hover:text-purple-600">홈</Link>
-              <Link href="/auth/signin" className="hover:text-purple-600">로그인</Link>
+              <Link href="/auth/signup" className="hover:text-purple-600">로그인</Link>
               <Link href="/auth/signup" className="hover:text-purple-600">회원가입</Link>
               <Link href="#" className="hover:text-purple-600">이벤트</Link>
               <Link href="#" className="hover:text-purple-600">공지사항</Link>
