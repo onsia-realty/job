@@ -41,10 +41,15 @@ export default function SignupForm({ userType }: SignupFormProps) {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     mode: 'onChange',
+    defaultValues: {
+      phone: '',
+      verificationCode: '',
+    },
   });
 
   const phone = watch('phone');
@@ -122,12 +127,13 @@ export default function SignupForm({ userType }: SignupFormProps) {
         <div className="relative">
           <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-gray-400" />
           <input
-            {...register('phone')}
             type="tel"
             placeholder="010-0000-0000"
             maxLength={13}
+            value={phone || ''}
             onChange={(e) => {
-              e.target.value = formatPhone(e.target.value);
+              const formatted = formatPhone(e.target.value);
+              setValue('phone', formatted, { shouldValidate: true });
             }}
             className="w-full pl-11 pr-4 py-3.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
           />
