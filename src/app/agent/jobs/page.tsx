@@ -4,72 +4,185 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Search,
+  MapPin,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   X,
-  MapPin,
+  Building2,
+  Building,
+  Home,
+  Store,
+  Landmark,
+  Warehouse,
+  Gavel,
   SlidersHorizontal,
-  Filter,
   LayoutGrid,
   List,
   ArrowUpDown,
-  Briefcase,
-  Building2,
   Clock,
-  TrendingUp,
+  Eye,
+  Users,
+  Crown,
+  Flame,
+  Zap,
+  CheckCircle2,
+  Heart,
+  BadgeCheck,
+  Bookmark,
+  Filter,
 } from 'lucide-react';
 import Header from '@/components/shared/Header';
 import MobileNav from '@/components/shared/MobileNav';
-import AgentJobCard from '@/components/agent/JobCard';
-import type { AgentJobListing, AgentJobType, AgentJobTier, AgentSalaryType, AgentExperience, AgentBenefit } from '@/types';
-import { REGIONS, AGENT_EXPERIENCE_LABELS, AGENT_SALARY_TYPE_LABELS, AGENT_BENEFIT_LABELS } from '@/types';
+import type { AgentJobListing, AgentJobType, AgentJobTier, AgentSalaryType, AgentExperience } from '@/types';
+import { REGIONS } from '@/types';
 
-// 확장된 샘플 데이터
+// 부동산 카테고리 (2-tier 시스템: 주거용/상업용)
+type PropertyCategoryType = 'residential' | 'commercial';
+
+const CATEGORY_CONFIG: Record<PropertyCategoryType, {
+  label: string;
+  icon: typeof Home;
+  color: string;
+  bgColor: string;
+  textColor: string;
+  types: Array<{ id: string; name: string; icon: typeof Home; color: string; bgColor: string; textColor: string; borderColor: string }>;
+}> = {
+  residential: {
+    label: '주거용',
+    icon: Home,
+    color: 'from-blue-500 to-blue-600',
+    bgColor: 'bg-blue-50',
+    textColor: 'text-blue-600',
+    types: [
+      { id: 'apartment', name: '아파트', icon: Building2, color: 'from-blue-500 to-blue-600', bgColor: 'bg-blue-50', textColor: 'text-blue-600', borderColor: 'border-blue-200' },
+      { id: 'officetel', name: '오피스텔', icon: Building, color: 'from-sky-500 to-sky-600', bgColor: 'bg-sky-50', textColor: 'text-sky-600', borderColor: 'border-sky-200' },
+      { id: 'villa', name: '빌라/다세대', icon: Home, color: 'from-indigo-500 to-indigo-600', bgColor: 'bg-indigo-50', textColor: 'text-indigo-600', borderColor: 'border-indigo-200' },
+    ],
+  },
+  commercial: {
+    label: '상업용',
+    icon: Store,
+    color: 'from-amber-500 to-orange-500',
+    bgColor: 'bg-amber-50',
+    textColor: 'text-amber-600',
+    types: [
+      { id: 'store', name: '상가', icon: Store, color: 'from-amber-500 to-amber-600', bgColor: 'bg-amber-50', textColor: 'text-amber-600', borderColor: 'border-amber-200' },
+      { id: 'office', name: '사무실', icon: Landmark, color: 'from-orange-500 to-orange-600', bgColor: 'bg-orange-50', textColor: 'text-orange-600', borderColor: 'border-orange-200' },
+      { id: 'building', name: '빌딩매매', icon: Warehouse, color: 'from-yellow-500 to-yellow-600', bgColor: 'bg-yellow-50', textColor: 'text-yellow-700', borderColor: 'border-yellow-200' },
+      { id: 'auction', name: '경매', icon: Gavel, color: 'from-red-500 to-red-600', bgColor: 'bg-red-50', textColor: 'text-red-600', borderColor: 'border-red-200' },
+    ],
+  },
+};
+
+// 모든 카테고리 평면화 (기존 호환성)
+const ALL_PROPERTY_TYPES = [
+  ...CATEGORY_CONFIG.residential.types,
+  ...CATEGORY_CONFIG.commercial.types,
+];
+
+// 샘플 데이터
 const allJobs: AgentJobListing[] = [
   {
     id: '1',
-    title: '강남역 프리미엄 중개사무소 정규직 채용',
-    description: '강남 대형 아파트 전문 중개사무소에서 경력 중개사를 모집합니다',
+    title: '강남 대형 아파트 전문 중개사 모집',
+    description: '래미안, 자이, 힐스테이트 등 브랜드 아파트 전문',
     type: 'apartment',
     tier: 'premium',
     badges: ['hot', 'urgent'],
-    salary: { type: 'mixed', amount: '250~350만', min: 250, max: 350 },
-    experience: '1년 이상',
-    experienceLevel: '1year',
-    company: '강남센트럴공인중개사사무소',
+    salary: { type: 'mixed', amount: '300~450만', min: 300, max: 450 },
+    experience: '2년 이상',
+    experienceLevel: '2year',
+    company: '강남프라임공인중개사',
     region: '서울',
-    address: '강남역 5번출구 도보 3분',
-    views: 2523,
-    applicants: 45,
-    createdAt: '2026.01.20',
-    deadline: '2026-01-25',
+    address: '강남구 테헤란로',
+    views: 3842,
+    applicants: 67,
+    createdAt: '2026.01.28',
+    deadline: '2026-02-05',
     benefits: ['insurance', 'incentive', 'parking', 'meal', 'bonus'],
   },
   {
     id: '2',
-    title: '분당 정자동 상가/오피스 전문 중개사 모집',
-    description: '분당 테크노밸리 상권 전문, 안정적인 고정 수입 보장',
-    type: 'store',
+    title: '판교 IT밸리 오피스텔 전문 경력직',
+    description: '판교 테크노밸리 오피스텔 임대/매매 전문',
+    type: 'officetel',
     tier: 'premium',
     badges: ['new'],
-    salary: { type: 'commission', amount: '협의 (수수료 70%)' },
-    experience: '2년 이상',
-    experienceLevel: '2year',
-    company: '분당스마트공인중개사',
+    salary: { type: 'commission', amount: '수수료 75%' },
+    experience: '1년 이상',
+    experienceLevel: '1year',
+    company: '판교밸리부동산',
     region: '경기',
-    address: '정자역 인근',
-    views: 1892,
-    applicants: 28,
-    createdAt: '2026.01.19',
-    deadline: '2026-02-15',
-    benefits: ['insurance', 'parking', 'education', 'flexible'],
+    address: '성남시 분당구 판교역로',
+    views: 2156,
+    applicants: 34,
+    createdAt: '2026.01.30',
+    deadline: '2026-02-20',
+    benefits: ['parking', 'flexible', 'laptop'],
   },
   {
     id: '3',
-    title: '신림동 원룸/빌라 전문 신입/경력 채용',
-    description: '친절한 교육 시스템, 초보자도 환영합니다',
-    type: 'oneroom',
+    title: '홍대 상권 상가 전문가 급구',
+    description: '홍대/합정 상가, 프랜차이즈 입점 전문',
+    type: 'store',
+    tier: 'premium',
+    badges: ['urgent', 'hot'],
+    salary: { type: 'mixed', amount: '250만+α', min: 250 },
+    experience: '3년 이상',
+    experienceLevel: '3year',
+    company: '홍대스타부동산',
+    region: '서울',
+    address: '마포구 양화로',
+    views: 1987,
+    applicants: 23,
+    createdAt: '2026.01.29',
+    deadline: '2026-02-03',
+    benefits: ['insurance', 'incentive', 'meal'],
+  },
+  {
+    id: '4',
+    title: '여의도 프라임 오피스 임대 전문',
+    description: 'IFC, 파크원 등 프라임 오피스 빌딩 전문',
+    type: 'office',
+    tier: 'premium',
+    badges: ['hot'],
+    salary: { type: 'monthly', amount: '350~500만', min: 350, max: 500 },
+    experience: '5년 이상',
+    experienceLevel: '5year',
+    company: '여의도타워공인',
+    region: '서울',
+    address: '영등포구 여의대로',
+    views: 4521,
+    applicants: 89,
+    createdAt: '2026.01.27',
+    deadline: '2026-02-10',
+    benefits: ['insurance', 'incentive', 'parking', 'meal', 'bonus', 'vacation'],
+  },
+  {
+    id: '5',
+    title: '강남 꼬마빌딩 매매 전문 에이전트',
+    description: '50억 이하 꼬마빌딩 매매 전문, 고수익',
+    type: 'building',
+    tier: 'premium',
+    badges: ['new'],
+    salary: { type: 'commission', amount: '건당 협의' },
+    experience: '3년 이상',
+    experienceLevel: '3year',
+    company: '강남빌딩전문중개',
+    region: '서울',
+    address: '강남구 논현로',
+    views: 2876,
+    applicants: 41,
+    createdAt: '2026.01.31',
+    deadline: '2026-02-28',
+    benefits: ['flexible', 'incentive'],
+  },
+  {
+    id: '6',
+    title: '신림동 빌라/다세대 전문 신입환영',
+    description: '관악구 빌라 전문, 초보자 교육 시스템 완비',
+    type: 'villa',
     tier: 'normal',
     badges: ['new'],
     salary: { type: 'mixed', amount: '200만+α', min: 200 },
@@ -77,195 +190,142 @@ const allJobs: AgentJobListing[] = [
     experienceLevel: 'none',
     company: '신림프라임부동산',
     region: '서울',
-    views: 954,
-    applicants: 12,
-    createdAt: '2026.01.19',
+    views: 1234,
+    applicants: 18,
+    createdAt: '2026.01.30',
     isAlwaysRecruiting: true,
     benefits: ['insurance', 'education', 'transport'],
   },
   {
-    id: '4',
-    title: '인천 송도 오피스빌딩 전문 경력직',
-    description: '송도국제도시 대형 오피스빌딩 임대관리 전문',
-    type: 'office',
-    tier: 'premium',
-    badges: ['hot'],
-    salary: { type: 'monthly', amount: '280~350만', min: 280, max: 350 },
-    experience: '1년 이상',
-    experienceLevel: '1year',
-    company: '송도글로벌공인중개사',
-    region: '인천',
-    views: 1432,
-    applicants: 31,
-    createdAt: '2026.01.18',
-    deadline: '2026-01-28',
-    benefits: ['insurance', 'incentive', 'meal', 'parking', 'laptop'],
-  },
-  {
-    id: '5',
-    title: '잠실 재건축 아파트 전문 고경력 채용',
-    description: '잠실 RITZ 재건축 단지 전문, 고수익 보장',
+    id: '7',
+    title: '분당 아파트 전문 경력 중개사',
+    description: '분당 신도시 대단지 아파트 전문',
     type: 'apartment',
-    tier: 'premium',
-    badges: ['hot'],
-    salary: { type: 'mixed', amount: '300~500만', min: 300, max: 500 },
-    experience: '3년 이상',
-    experienceLevel: '3year',
-    company: '잠실프레스티지부동산',
-    region: '서울',
-    address: '잠실역 인근',
-    views: 3541,
-    applicants: 67,
-    createdAt: '2026.01.18',
-    deadline: '2026-01-23',
-    benefits: ['insurance', 'incentive', 'parking', 'meal', 'bonus', 'vacation'],
-  },
-  {
-    id: '6',
-    title: '홍대입구 빌라/다가구 전문 중개사',
-    description: '마포구 인기 상권, 높은 회전율',
-    type: 'villa',
     tier: 'normal',
     badges: [],
-    salary: { type: 'mixed', amount: '220만+α', min: 220 },
-    experience: '6개월 이상',
-    experienceLevel: '6month',
-    company: '홍대부동산',
-    region: '서울',
-    views: 876,
-    applicants: 15,
-    createdAt: '2026.01.17',
-    deadline: '2026-02-10',
-    benefits: ['insurance', 'transport'],
-  },
-  {
-    id: '7',
-    title: '해운대 브랜드아파트 전문 중개사',
-    description: '해운대 마린시티 고급 아파트 전문',
-    type: 'apartment',
-    tier: 'normal',
-    badges: ['new'],
-    salary: { type: 'mixed', amount: '230~300만', min: 230, max: 300 },
+    salary: { type: 'mixed', amount: '250~320만', min: 250, max: 320 },
     experience: '1년 이상',
     experienceLevel: '1year',
-    company: '해운대마린공인',
-    region: '부산',
-    views: 723,
-    applicants: 19,
-    createdAt: '2026.01.17',
-    deadline: '2026-02-05',
-    benefits: ['insurance', 'incentive', 'parking'],
+    company: '분당센트럴공인',
+    region: '경기',
+    views: 987,
+    applicants: 21,
+    createdAt: '2026.01.28',
+    deadline: '2026-02-15',
+    benefits: ['insurance', 'parking'],
   },
   {
     id: '8',
-    title: '판교 테크노밸리 오피스 전문 급구',
-    description: 'IT기업 밀집지역, 높은 수수료율',
-    type: 'office',
-    tier: 'premium',
-    badges: ['urgent', 'hot'],
-    salary: { type: 'commission', amount: '수수료 80%' },
-    experience: '2년 이상',
-    experienceLevel: '2year',
-    company: '판교밸리공인중개사',
-    region: '경기',
-    address: '판교역 도보 5분',
-    views: 2156,
-    applicants: 42,
-    createdAt: '2026.01.16',
-    deadline: '2026-01-22',
-    benefits: ['parking', 'flexible', 'laptop', 'education'],
-  },
-  {
-    id: '9',
-    title: '수원 영통 원룸 전문 중개사',
-    description: '영통 대학가 원룸 전문 사무소',
-    type: 'oneroom',
+    title: '송도 오피스텔 임대 관리 전문',
+    description: '송도국제도시 오피스텔 임대 관리',
+    type: 'officetel',
     tier: 'normal',
     badges: [],
-    salary: { type: 'mixed', amount: '180만+α', min: 180 },
-    experience: '경력무관',
-    experienceLevel: 'none',
-    company: '영통원룸공인',
-    region: '경기',
-    views: 489,
-    applicants: 8,
-    createdAt: '2026.01.16',
-    isAlwaysRecruiting: true,
-    benefits: ['insurance'],
-  },
-  {
-    id: '10',
-    title: '광주 상무지구 상가 전문',
-    description: '상무지구 핵심상권 상가 전문',
-    type: 'store',
-    tier: 'normal',
-    badges: [],
-    salary: { type: 'commission', amount: '협의' },
-    experience: '1년 이상',
-    experienceLevel: '1year',
-    company: '광주상무공인',
-    region: '광주',
-    views: 312,
-    applicants: 5,
-    createdAt: '2026.01.15',
-    deadline: '2026-02-28',
-    benefits: ['parking', 'flexible'],
-  },
-  {
-    id: '11',
-    title: '대전 둔산동 아파트 전문 중개사',
-    description: '둔산동 대단지 아파트 전문',
-    type: 'apartment',
-    tier: 'normal',
-    badges: ['new'],
-    salary: { type: 'monthly', amount: '250만' },
+    salary: { type: 'monthly', amount: '280만' },
     experience: '6개월 이상',
     experienceLevel: '6month',
-    company: '대전둔산공인',
-    region: '대전',
-    views: 567,
-    applicants: 11,
-    createdAt: '2026.01.15',
+    company: '송도글로벌부동산',
+    region: '인천',
+    views: 654,
+    applicants: 12,
+    createdAt: '2026.01.27',
     deadline: '2026-02-20',
     benefits: ['insurance', 'meal'],
   },
   {
-    id: '12',
-    title: '서초동 빌라/다세대 전문',
-    description: '서초구 빌라 전문, 안정적인 물량',
-    type: 'villa',
+    id: '9',
+    title: '강동구 상가 임대 전문 중개사',
+    description: '천호/길동 상권 상가 전문',
+    type: 'store',
     tier: 'normal',
     badges: [],
-    salary: { type: 'mixed', amount: '240만+α', min: 240 },
+    salary: { type: 'mixed', amount: '220만+α', min: 220 },
     experience: '1년 이상',
     experienceLevel: '1year',
-    company: '서초빌라공인',
+    company: '강동상가전문',
     region: '서울',
-    views: 678,
-    applicants: 14,
-    createdAt: '2026.01.14',
+    views: 432,
+    applicants: 8,
+    createdAt: '2026.01.26',
+    deadline: '2026-02-25',
+    benefits: ['insurance', 'transport'],
+  },
+  {
+    id: '13',
+    title: '서울 법원경매 전문 컨설턴트 모집',
+    description: '경매/공매 전문, NPL 투자 컨설팅',
+    type: 'auction',
+    tier: 'premium',
+    badges: ['hot'],
+    salary: { type: 'commission', amount: '수수료 80%' },
+    experience: '2년 이상',
+    experienceLevel: '2year',
+    company: '서울경매전문',
+    region: '서울',
+    views: 1567,
+    applicants: 29,
+    createdAt: '2026.01.29',
     deadline: '2026-02-15',
-    benefits: ['insurance', 'parking', 'transport'],
+    benefits: ['flexible', 'incentive', 'education'],
+  },
+  {
+    id: '10',
+    title: '잠실 재건축 아파트 전문 고경력',
+    description: '잠실 주공5단지 재건축 전문, 고수익',
+    type: 'apartment',
+    tier: 'premium',
+    badges: ['hot'],
+    salary: { type: 'mixed', amount: '400~600만', min: 400, max: 600 },
+    experience: '5년 이상',
+    experienceLevel: '5year',
+    company: '잠실프레스티지공인',
+    region: '서울',
+    views: 5234,
+    applicants: 112,
+    createdAt: '2026.01.25',
+    deadline: '2026-02-08',
+    benefits: ['insurance', 'incentive', 'parking', 'meal', 'bonus', 'vacation'],
+  },
+  {
+    id: '11',
+    title: '해운대 오피스텔 전문 중개사',
+    description: '해운대 마린시티 오피스텔 전문',
+    type: 'officetel',
+    tier: 'normal',
+    badges: ['new'],
+    salary: { type: 'mixed', amount: '230~280만', min: 230, max: 280 },
+    experience: '1년 이상',
+    experienceLevel: '1year',
+    company: '해운대마린공인',
+    region: '부산',
+    views: 876,
+    applicants: 15,
+    createdAt: '2026.01.29',
+    deadline: '2026-02-18',
+    benefits: ['insurance', 'parking'],
+  },
+  {
+    id: '12',
+    title: '대전 둔산동 사무실 임대 전문',
+    description: '둔산동 오피스 빌딩 임대 전문',
+    type: 'office',
+    tier: 'normal',
+    badges: [],
+    salary: { type: 'monthly', amount: '250만' },
+    experience: '6개월 이상',
+    experienceLevel: '6month',
+    company: '대전오피스공인',
+    region: '대전',
+    views: 345,
+    applicants: 6,
+    createdAt: '2026.01.24',
+    deadline: '2026-02-28',
+    benefits: ['insurance'],
   },
 ];
 
-const TYPE_OPTIONS: { value: AgentJobType | 'all'; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'apartment', label: '아파트' },
-  { value: 'villa', label: '빌라' },
-  { value: 'store', label: '상가' },
-  { value: 'oneroom', label: '원룸' },
-  { value: 'office', label: '오피스' },
-];
-
-const TIER_OPTIONS: { value: AgentJobTier | 'all'; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'premium', label: 'PREMIUM' },
-  { value: 'normal', label: '일반' },
-];
-
-const EXPERIENCE_OPTIONS: { value: AgentExperience | 'all'; label: string }[] = [
-  { value: 'all', label: '전체' },
+const EXPERIENCE_OPTIONS = [
+  { value: 'all', label: '경력 전체' },
   { value: 'none', label: '경력무관' },
   { value: '6month', label: '6개월 이상' },
   { value: '1year', label: '1년 이상' },
@@ -274,10 +334,10 @@ const EXPERIENCE_OPTIONS: { value: AgentExperience | 'all'; label: string }[] = 
   { value: '5year', label: '5년 이상' },
 ];
 
-const SALARY_OPTIONS: { value: AgentSalaryType | 'all'; label: string }[] = [
-  { value: 'all', label: '전체' },
-  { value: 'monthly', label: '월급' },
-  { value: 'commission', label: '수수료' },
+const SALARY_OPTIONS = [
+  { value: 'all', label: '급여 전체' },
+  { value: 'monthly', label: '월급제' },
+  { value: 'commission', label: '수수료제' },
   { value: 'mixed', label: '기본급+수수료' },
 ];
 
@@ -289,69 +349,102 @@ const SORT_OPTIONS = [
   { value: 'salary', label: '급여순' },
 ];
 
-const ITEMS_PER_PAGE = 12;
+// D-Day 계산
+function getDDay(deadline?: string): { text: string; color: string; urgent: boolean } {
+  if (!deadline) return { text: '상시', color: 'bg-slate-100 text-slate-500', urgent: false };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const deadlineDate = new Date(deadline);
+  deadlineDate.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return { text: '마감', color: 'bg-slate-200 text-slate-400', urgent: false };
+  if (diffDays === 0) return { text: 'D-DAY', color: 'bg-red-500 text-white', urgent: true };
+  if (diffDays <= 3) return { text: `D-${diffDays}`, color: 'bg-red-500 text-white', urgent: true };
+  if (diffDays <= 7) return { text: `D-${diffDays}`, color: 'bg-orange-500 text-white', urgent: true };
+  return { text: `D-${diffDays}`, color: 'bg-slate-100 text-slate-600', urgent: false };
+}
+
+// 카테고리 찾기
+function getCategory(type: string) {
+  const found = ALL_PROPERTY_TYPES.find(c => c.id === type);
+  return found || ALL_PROPERTY_TYPES[0];
+}
+
+// 대분류 정보 가져오기
+function getMainCategoryConfig(type: string): typeof CATEGORY_CONFIG.residential | null {
+  if (CATEGORY_CONFIG.residential.types.find(t => t.id === type)) {
+    return CATEGORY_CONFIG.residential;
+  }
+  if (CATEGORY_CONFIG.commercial.types.find(t => t.id === type)) {
+    return CATEGORY_CONFIG.commercial;
+  }
+  return null;
+}
+
+const ITEMS_PER_PAGE = 10;
 
 export default function AgentJobsPage() {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRegion, setSelectedRegion] = useState<string>('전체');
-  const [selectedType, setSelectedType] = useState<AgentJobType | 'all'>('all');
-  const [selectedTier, setSelectedTier] = useState<AgentJobTier | 'all'>('all');
-  const [selectedExperience, setSelectedExperience] = useState<AgentExperience | 'all'>('all');
-  const [selectedSalary, setSelectedSalary] = useState<AgentSalaryType | 'all'>('all');
+  const [selectedRegion, setSelectedRegion] = useState('전체');
+  const [selectedMainCategory, setSelectedMainCategory] = useState<PropertyCategoryType>('residential');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedExperience, setSelectedExperience] = useState('all');
+  const [selectedSalary, setSelectedSalary] = useState('all');
+  const [selectedTier, setSelectedTier] = useState<'all' | 'premium'>('all');
   const [sortBy, setSortBy] = useState('latest');
-  const [viewMode, setViewMode] = useState<'card' | 'list'>('card');
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'card' | 'list'>('list');
+  const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
+
+  const currentConfig = CATEGORY_CONFIG[selectedMainCategory];
 
   // 필터링 및 정렬
   const filteredAndSortedJobs = useMemo(() => {
+    // 현재 대분류에 속하는 타입들
+    const validTypes = currentConfig.types.map(t => t.id);
+
     let result = allJobs.filter((job) => {
-      // 검색어 필터
+      // 대분류 필터 (주거용/상업용)
+      if (!validTypes.includes(job.type)) return false;
+
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         if (
           !job.title.toLowerCase().includes(query) &&
-          !job.description.toLowerCase().includes(query) &&
           !job.company.toLowerCase().includes(query) &&
           !job.region.toLowerCase().includes(query)
         ) {
           return false;
         }
       }
-
       if (selectedRegion !== '전체' && job.region !== selectedRegion) return false;
-      if (selectedType !== 'all' && job.type !== selectedType) return false;
-      if (selectedTier !== 'all' && job.tier !== selectedTier) return false;
+      if (selectedCategory && job.type !== selectedCategory) return false;
       if (selectedExperience !== 'all' && job.experienceLevel !== selectedExperience) return false;
       if (selectedSalary !== 'all' && job.salary.type !== selectedSalary) return false;
-
+      if (selectedTier === 'premium' && job.tier !== 'premium') return false;
       return true;
     });
 
-    // 정렬
     result.sort((a, b) => {
       switch (sortBy) {
-        case 'views':
-          return b.views - a.views;
-        case 'applicants':
-          return (b.applicants || 0) - (a.applicants || 0);
+        case 'views': return b.views - a.views;
+        case 'applicants': return (b.applicants || 0) - (a.applicants || 0);
         case 'deadline':
           if (!a.deadline && !b.deadline) return 0;
           if (!a.deadline) return 1;
           if (!b.deadline) return -1;
           return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-        case 'salary':
-          return (b.salary.min || 0) - (a.salary.min || 0);
-        case 'latest':
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        case 'salary': return (b.salary.min || 0) - (a.salary.min || 0);
+        default: return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       }
     });
 
     return result;
-  }, [searchQuery, selectedRegion, selectedType, selectedTier, selectedExperience, selectedSalary, sortBy]);
+  }, [searchQuery, selectedRegion, selectedCategory, selectedExperience, selectedSalary, selectedTier, sortBy, currentConfig]);
 
-  // 페이지네이션
   const totalPages = Math.ceil(filteredAndSortedJobs.length / ITEMS_PER_PAGE);
   const paginatedJobs = filteredAndSortedJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -361,354 +454,591 @@ export default function AgentJobsPage() {
   const clearFilters = () => {
     setSearchQuery('');
     setSelectedRegion('전체');
-    setSelectedType('all');
-    setSelectedTier('all');
+    setSelectedCategory(null);
     setSelectedExperience('all');
     setSelectedSalary('all');
+    setSelectedTier('all');
     setCurrentPage(1);
   };
 
-  const hasActiveFilters =
-    searchQuery ||
-    selectedRegion !== '전체' ||
-    selectedType !== 'all' ||
-    selectedTier !== 'all' ||
-    selectedExperience !== 'all' ||
-    selectedSalary !== 'all';
-
   const activeFilterCount = [
     selectedRegion !== '전체',
-    selectedType !== 'all',
-    selectedTier !== 'all',
+    selectedCategory !== null,
     selectedExperience !== 'all',
     selectedSalary !== 'all',
+    selectedTier !== 'all',
   ].filter(Boolean).length;
 
+  const toggleBookmark = (jobId: string) => {
+    setBookmarkedJobs(prev =>
+      prev.includes(jobId)
+        ? prev.filter(id => id !== jobId)
+        : [...prev, jobId]
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
+    <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
       <Header variant="agent" />
 
-      {/* 검색 영역 */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 pb-6 pt-4">
+      {/* 검색 헤더 */}
+      <div className="bg-gradient-to-r from-slate-800 to-slate-900 pt-4 pb-6">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-2">
+          <div className="flex flex-col md:flex-row gap-3">
+            {/* 검색바 */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
                 placeholder="회사명, 지역, 키워드로 검색"
-                className="w-full bg-white text-gray-700 placeholder-gray-400 pl-12 pr-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-300 shadow-sm"
+                className="w-full bg-white text-slate-700 placeholder-slate-400 pl-12 pr-4 py-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
+
+            {/* 지역 선택 */}
+            <div className="relative md:w-40">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <select
+                value={selectedRegion}
+                onChange={(e) => { setSelectedRegion(e.target.value); setCurrentPage(1); }}
+                className="w-full bg-white text-slate-700 pl-10 pr-4 py-3.5 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              >
+                <option value="전체">전체 지역</option>
+                {REGIONS.map(region => (
+                  <option key={region} value={region}>{region}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 모바일 필터 버튼 */}
             <button
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className={`px-4 py-3 rounded-xl flex items-center gap-2 transition-colors font-medium ${
-                hasActiveFilters
-                  ? 'bg-white text-blue-600'
-                  : 'bg-blue-500 text-white hover:bg-blue-400'
+              onClick={() => setShowMobileFilter(!showMobileFilter)}
+              className={`md:hidden flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl font-medium transition-colors ${
+                activeFilterCount > 0
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white text-slate-700'
               }`}
             >
               <SlidersHorizontal className="w-5 h-5" />
-              <span className="hidden md:inline">필터</span>
+              필터
               {activeFilterCount > 0 && (
-                <span className="bg-blue-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="w-5 h-5 bg-white text-emerald-600 rounded-full text-xs flex items-center justify-center font-bold">
                   {activeFilterCount}
                 </span>
               )}
             </button>
           </div>
+
+          {/* 카테고리 선택 (주거용 / 상업용) */}
+          <div className="flex gap-3 mt-4">
+            {(Object.entries(CATEGORY_CONFIG) as [PropertyCategoryType, typeof CATEGORY_CONFIG.residential][]).map(([key, config]) => {
+              const Icon = config.icon;
+              const isActive = selectedMainCategory === key;
+              const subTypeNames = config.types.map(t => t.name).join(', ');
+              return (
+                <button
+                  key={key}
+                  onClick={() => { setSelectedMainCategory(key); setSelectedCategory(null); setCurrentPage(1); }}
+                  className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+                    isActive
+                      ? 'bg-white text-slate-800 shadow-lg'
+                      : 'bg-white/10 text-white/90 hover:bg-white/20'
+                  }`}
+                >
+                  <Icon className={`w-5 h-5 ${isActive ? config.textColor : ''}`} />
+                  <div className="text-left">
+                    <span className="font-semibold">{config.label}</span>
+                    <p className={`text-xs ${isActive ? 'text-slate-500' : 'text-white/70'}`}>
+                      ({subTypeNames})
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* 필터 패널 */}
-      {isFilterOpen && (
-        <div className="bg-white border-b border-gray-200 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 py-5">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <div>
-                <label className="text-xs font-medium text-gray-500 mb-1.5 block">지역</label>
-                <select
-                  value={selectedRegion}
-                  onChange={(e) => { setSelectedRegion(e.target.value); setCurrentPage(1); }}
-                  className="w-full appearance-none bg-gray-100 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="전체">전체</option>
-                  {REGIONS.map((region) => (
-                    <option key={region} value={region}>{region}</option>
-                  ))}
-                </select>
+      {/* 데스크톱 필터 & 메인 콘텐츠 */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex gap-6">
+          {/* 사이드바 필터 (데스크톱) */}
+          <aside className="hidden md:block w-64 flex-shrink-0">
+            <div className="bg-white rounded-2xl border border-slate-200 p-5 sticky top-4">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="font-bold text-slate-800 flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-emerald-600" />
+                  상세 필터
+                </h3>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-xs text-slate-500 hover:text-red-500 flex items-center gap-1"
+                  >
+                    <X className="w-3 h-3" /> 초기화
+                  </button>
+                )}
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-gray-500 mb-1.5 block">업무유형</label>
-                <select
-                  value={selectedType}
-                  onChange={(e) => { setSelectedType(e.target.value as AgentJobType | 'all'); setCurrentPage(1); }}
-                  className="w-full appearance-none bg-gray-100 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {TYPE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+              <div className="space-y-5">
+                {/* 공고 등급 */}
+                <div>
+                  <label className="text-sm font-medium text-slate-600 mb-2 block">공고 등급</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedTier('all')}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedTier === 'all'
+                          ? 'bg-slate-800 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      전체
+                    </button>
+                    <button
+                      onClick={() => setSelectedTier('premium')}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                        selectedTier === 'premium'
+                          ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      <Crown className="w-4 h-4" /> PREMIUM
+                    </button>
+                  </div>
+                </div>
+
+                {/* 경력 */}
+                <div>
+                  <label className="text-sm font-medium text-slate-600 mb-2 block">경력</label>
+                  <select
+                    value={selectedExperience}
+                    onChange={(e) => { setSelectedExperience(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {EXPERIENCE_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 급여형태 */}
+                <div>
+                  <label className="text-sm font-medium text-slate-600 mb-2 block">급여형태</label>
+                  <select
+                    value={selectedSalary}
+                    onChange={(e) => { setSelectedSalary(e.target.value); setCurrentPage(1); }}
+                    className="w-full bg-slate-50 border border-slate-200 text-slate-700 px-3 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {SALARY_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          </aside>
+
+          {/* 메인 콘텐츠 */}
+          <main className="flex-1 min-w-0">
+            {/* 상단 정보바 */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+              <div className="flex items-center gap-3">
+                <h1 className="text-xl font-bold text-slate-800">채용공고</h1>
+                <span className="text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full font-medium">
+                  {filteredAndSortedJobs.length}건
+                </span>
               </div>
 
-              <div>
-                <label className="text-xs font-medium text-gray-500 mb-1.5 block">경력</label>
-                <select
-                  value={selectedExperience}
-                  onChange={(e) => { setSelectedExperience(e.target.value as AgentExperience | 'all'); setCurrentPage(1); }}
-                  className="w-full appearance-none bg-gray-100 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {EXPERIENCE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
+              <div className="flex items-center gap-3">
+                {/* 정렬 */}
+                <div className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-white border border-slate-200 text-sm text-slate-700 pl-3 pr-8 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    {SORT_OPTIONS.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                  <ArrowUpDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                </div>
 
-              <div>
-                <label className="text-xs font-medium text-gray-500 mb-1.5 block">급여형태</label>
-                <select
-                  value={selectedSalary}
-                  onChange={(e) => { setSelectedSalary(e.target.value as AgentSalaryType | 'all'); setCurrentPage(1); }}
-                  className="w-full appearance-none bg-gray-100 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {SALARY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
+                {/* 뷰 모드 */}
+                <div className="flex bg-slate-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'list' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500'
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('card')}
+                    className={`p-2 rounded-md transition-colors ${
+                      viewMode === 'card' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500'
+                    }`}
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
+            </div>
 
-              <div>
-                <label className="text-xs font-medium text-gray-500 mb-1.5 block">공고등급</label>
-                <select
-                  value={selectedTier}
-                  onChange={(e) => { setSelectedTier(e.target.value as AgentJobTier | 'all'); setCurrentPage(1); }}
-                  className="w-full appearance-none bg-gray-100 px-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {TIER_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
+            {/* 공고 목록 */}
+            {paginatedJobs.length > 0 ? (
+              <>
+                {viewMode === 'list' ? (
+                  <div className="space-y-3">
+                    {paginatedJobs.map((job) => {
+                      const category = getCategory(job.type);
+                      const dday = getDDay(job.deadline);
+                      const Icon = category.icon;
+                      const isBookmarked = bookmarkedJobs.includes(job.id);
 
-              <div className="flex items-end">
+                      return (
+                        <div
+                          key={job.id}
+                          className="group bg-white rounded-xl border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all overflow-hidden"
+                        >
+                          <div className="flex">
+                            {/* 왼쪽 컬러바 */}
+                            <div className={`w-1 bg-gradient-to-b ${category.color}`}></div>
+
+                            <div className="flex-1 p-5">
+                              <div className="flex items-start gap-4">
+                                {/* 카테고리 아이콘 */}
+                                <div className={`w-14 h-14 rounded-xl ${category.bgColor} flex items-center justify-center flex-shrink-0`}>
+                                  <Icon className={`w-7 h-7 ${category.textColor}`} />
+                                </div>
+
+                                {/* 정보 */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                                    <span className={`text-xs font-bold px-2 py-0.5 rounded ${dday.color}`}>
+                                      {dday.text}
+                                    </span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full ${category.bgColor} ${category.textColor}`}>
+                                      {category.name}
+                                    </span>
+                                    {job.tier === 'premium' && (
+                                      <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 flex items-center gap-0.5">
+                                        <Crown className="w-3 h-3" /> PREMIUM
+                                      </span>
+                                    )}
+                                    {job.badges.includes('hot') && (
+                                      <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-600 flex items-center gap-0.5">
+                                        <Flame className="w-3 h-3" /> HOT
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <span className="text-sm text-slate-500">{job.company}</span>
+                                    {job.tier === 'premium' && (
+                                      <BadgeCheck className="w-4 h-4 text-emerald-500" />
+                                    )}
+                                  </div>
+
+                                  <Link
+                                    href={`/agent/jobs/${job.id}`}
+                                    className="block"
+                                  >
+                                    <h3 className="font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors line-clamp-1 text-lg">
+                                      {job.title}
+                                    </h3>
+                                  </Link>
+
+                                  <div className="flex items-center gap-4 mt-2 text-sm text-slate-500">
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="w-4 h-4" />
+                                      {job.region} {job.address && `· ${job.address}`}
+                                    </span>
+                                    <span>{job.experience}</span>
+                                  </div>
+                                </div>
+
+                                {/* 오른쪽 */}
+                                <div className="flex flex-col items-end gap-3 flex-shrink-0">
+                                  <button
+                                    onClick={() => toggleBookmark(job.id)}
+                                    className={`p-2 rounded-lg transition-colors ${
+                                      isBookmarked
+                                        ? 'bg-emerald-100 text-emerald-600'
+                                        : 'bg-slate-100 text-slate-400 hover:text-emerald-600'
+                                    }`}
+                                  >
+                                    <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+                                  </button>
+
+                                  <div className="text-right">
+                                    <p className="text-lg font-bold text-emerald-600">{job.salary.amount}</p>
+                                    <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                                      <span className="flex items-center gap-0.5">
+                                        <Eye className="w-3.5 h-3.5" /> {job.views.toLocaleString()}
+                                      </span>
+                                      <span className="flex items-center gap-0.5">
+                                        <Users className="w-3.5 h-3.5" /> {job.applicants}명
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <Link
+                                    href={`/agent/jobs/${job.id}`}
+                                    className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-emerald-700 transition-colors"
+                                  >
+                                    상세보기
+                                  </Link>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {paginatedJobs.map((job) => {
+                      const category = getCategory(job.type);
+                      const dday = getDDay(job.deadline);
+                      const Icon = category.icon;
+                      const isBookmarked = bookmarkedJobs.includes(job.id);
+
+                      return (
+                        <div
+                          key={job.id}
+                          className={`group bg-white rounded-xl border-2 ${
+                            job.tier === 'premium' ? 'border-amber-200' : 'border-slate-200'
+                          } hover:shadow-xl transition-all p-5 relative overflow-hidden`}
+                        >
+                          {job.tier === 'premium' && (
+                            <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-amber-50 to-transparent rounded-bl-full"></div>
+                          )}
+
+                          <div className="relative">
+                            <div className="flex items-start justify-between mb-3">
+                              <div className={`w-11 h-11 rounded-xl ${category.bgColor} flex items-center justify-center`}>
+                                <Icon className={`w-6 h-6 ${category.textColor}`} />
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-xs font-bold px-2 py-1 rounded ${dday.color}`}>
+                                  {dday.text}
+                                </span>
+                                <button
+                                  onClick={() => toggleBookmark(job.id)}
+                                  className={`p-1.5 rounded-lg transition-colors ${
+                                    isBookmarked
+                                      ? 'text-emerald-600'
+                                      : 'text-slate-300 hover:text-emerald-600'
+                                  }`}
+                                >
+                                  <Bookmark className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="text-sm text-slate-500">{job.company}</span>
+                              {job.tier === 'premium' && (
+                                <BadgeCheck className="w-4 h-4 text-amber-500" />
+                              )}
+                            </div>
+
+                            <Link href={`/agent/jobs/${job.id}`}>
+                              <h3 className="font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors mb-3 line-clamp-2">
+                                {job.title}
+                              </h3>
+                            </Link>
+
+                            <div className="flex flex-wrap gap-1.5 text-xs mb-3">
+                              <span className={`px-2 py-1 rounded ${category.bgColor} ${category.textColor}`}>
+                                {category.name}
+                              </span>
+                              <span className="px-2 py-1 rounded bg-slate-100 text-slate-600">{job.region}</span>
+                              <span className="px-2 py-1 rounded bg-slate-100 text-slate-600">{job.experience}</span>
+                            </div>
+
+                            <div className="pt-3 border-t border-slate-100">
+                              <p className="text-emerald-600 font-bold mb-2">{job.salary.amount}</p>
+                              <div className="flex items-center justify-between text-xs text-slate-400">
+                                <div className="flex items-center gap-2">
+                                  <span className="flex items-center gap-0.5">
+                                    <Eye className="w-3.5 h-3.5" /> {job.views.toLocaleString()}
+                                  </span>
+                                  <span className="flex items-center gap-0.5">
+                                    <Users className="w-3.5 h-3.5" /> {job.applicants}
+                                  </span>
+                                </div>
+                                <span>{job.createdAt}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* 페이지네이션 */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-10">
+                    <button
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter(page => {
+                          if (totalPages <= 7) return true;
+                          if (page === 1 || page === totalPages) return true;
+                          if (Math.abs(page - currentPage) <= 1) return true;
+                          return false;
+                        })
+                        .map((page, index, arr) => {
+                          const prevPage = arr[index - 1];
+                          const showEllipsis = prevPage && page - prevPage > 1;
+                          return (
+                            <span key={page} className="flex items-center">
+                              {showEllipsis && <span className="px-2 text-slate-400">...</span>}
+                              <button
+                                onClick={() => setCurrentPage(page)}
+                                className={`w-10 h-10 rounded-lg font-medium transition-colors ${
+                                  currentPage === page
+                                    ? 'bg-emerald-600 text-white'
+                                    : 'bg-white border border-slate-200 hover:bg-slate-50 text-slate-700'
+                                }`}
+                              >
+                                {page}
+                              </button>
+                            </span>
+                          );
+                        })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-2 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+
+                <div className="text-center mt-4 text-sm text-slate-500">
+                  {currentPage} / {totalPages} 페이지 · 총 {filteredAndSortedJobs.length}개 공고
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-20">
+                <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="w-10 h-10 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-medium text-slate-800 mb-2">검색 결과가 없습니다</h3>
+                <p className="text-slate-500 mb-6">다른 조건으로 검색해보세요</p>
                 <button
                   onClick={clearFilters}
-                  className="w-full flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-700 px-3 py-2.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="inline-flex items-center gap-2 bg-emerald-600 text-white font-medium px-6 py-3 rounded-xl hover:bg-emerald-700 transition-colors"
                 >
                   <X className="w-4 h-4" />
-                  초기화
+                  필터 초기화
                 </button>
               </div>
+            )}
+          </main>
+        </div>
+      </div>
+
+      {/* 모바일 필터 모달 */}
+      {showMobileFilter && (
+        <div className="fixed inset-0 z-50 md:hidden">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowMobileFilter(false)}></div>
+          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl p-6 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-bold text-slate-800">상세 필터</h3>
+              <button onClick={() => setShowMobileFilter(false)} className="p-2 hover:bg-slate-100 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-medium text-slate-600 mb-2 block">공고 등급</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setSelectedTier('all')}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors ${
+                      selectedTier === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    전체
+                  </button>
+                  <button
+                    onClick={() => setSelectedTier('premium')}
+                    className={`flex-1 py-3 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-1 ${
+                      selectedTier === 'premium'
+                        ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    <Crown className="w-4 h-4" /> PREMIUM
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-600 mb-2 block">경력</label>
+                <select
+                  value={selectedExperience}
+                  onChange={(e) => setSelectedExperience(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-700 px-4 py-3 rounded-xl text-sm"
+                >
+                  {EXPERIENCE_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-slate-600 mb-2 block">급여형태</label>
+                <select
+                  value={selectedSalary}
+                  onChange={(e) => setSelectedSalary(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 text-slate-700 px-4 py-3 rounded-xl text-sm"
+                >
+                  {SALARY_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-8">
+              <button
+                onClick={clearFilters}
+                className="flex-1 py-3.5 bg-slate-100 text-slate-700 rounded-xl font-medium"
+              >
+                초기화
+              </button>
+              <button
+                onClick={() => setShowMobileFilter(false)}
+                className="flex-1 py-3.5 bg-emerald-600 text-white rounded-xl font-medium"
+              >
+                적용하기
+              </button>
             </div>
           </div>
         </div>
       )}
-
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        {/* 상단 정보바 */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Briefcase className="w-5 h-5 text-blue-600" />
-              <h1 className="text-xl font-bold text-gray-900">공인중개사 채용공고</h1>
-            </div>
-            <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-              총 {filteredAndSortedJobs.length}건
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {/* 정렬 */}
-            <div className="relative">
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="appearance-none bg-white border border-gray-200 text-sm text-gray-700 pl-4 pr-10 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            </div>
-
-            {/* 뷰 모드 토글 */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode('card')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'card' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors ${
-                  viewMode === 'list' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <List className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 활성 필터 태그 */}
-        {hasActiveFilters && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full">
-                <Search className="w-3 h-3" />
-                &quot;{searchQuery}&quot;
-                <button onClick={() => setSearchQuery('')} className="hover:bg-blue-200 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {selectedRegion !== '전체' && (
-              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full">
-                <MapPin className="w-3 h-3" />
-                {selectedRegion}
-                <button onClick={() => setSelectedRegion('전체')} className="hover:bg-blue-200 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {selectedType !== 'all' && (
-              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full">
-                {TYPE_OPTIONS.find((o) => o.value === selectedType)?.label}
-                <button onClick={() => setSelectedType('all')} className="hover:bg-blue-200 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {selectedExperience !== 'all' && (
-              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full">
-                {EXPERIENCE_OPTIONS.find((o) => o.value === selectedExperience)?.label}
-                <button onClick={() => setSelectedExperience('all')} className="hover:bg-blue-200 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {selectedSalary !== 'all' && (
-              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full">
-                {SALARY_OPTIONS.find((o) => o.value === selectedSalary)?.label}
-                <button onClick={() => setSelectedSalary('all')} className="hover:bg-blue-200 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-            {selectedTier !== 'all' && (
-              <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 text-sm px-3 py-1.5 rounded-full">
-                {TIER_OPTIONS.find((o) => o.value === selectedTier)?.label}
-                <button onClick={() => setSelectedTier('all')} className="hover:bg-blue-200 rounded-full p-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* 채용 공고 목록 */}
-        {paginatedJobs.length > 0 ? (
-          <>
-            {viewMode === 'card' ? (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {paginatedJobs.map((job) => (
-                  <AgentJobCard key={job.id} job={job} variant="card" />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {paginatedJobs.map((job) => (
-                  <AgentJobCard key={job.id} job={job} variant="list" />
-                ))}
-              </div>
-            )}
-
-            {/* 페이지네이션 */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-center gap-2 mt-10">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                <div className="flex items-center gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((page) => {
-                      if (totalPages <= 7) return true;
-                      if (page === 1 || page === totalPages) return true;
-                      if (Math.abs(page - currentPage) <= 1) return true;
-                      return false;
-                    })
-                    .map((page, index, arr) => {
-                      const prevPage = arr[index - 1];
-                      const showEllipsis = prevPage && page - prevPage > 1;
-
-                      return (
-                        <span key={page} className="flex items-center">
-                          {showEllipsis && (
-                            <span className="px-2 text-gray-400">...</span>
-                          )}
-                          <button
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-10 h-10 rounded-lg font-medium transition-colors ${
-                              currentPage === page
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-white border border-gray-200 hover:bg-gray-50 text-gray-700'
-                            }`}
-                          >
-                            {page}
-                          </button>
-                        </span>
-                      );
-                    })}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            )}
-
-            {/* 페이지 정보 */}
-            <div className="text-center mt-4 text-sm text-gray-500">
-              {currentPage} / {totalPages} 페이지 · 총 {filteredAndSortedJobs.length}개 공고
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Filter className="w-10 h-10 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">
-              검색 결과가 없습니다
-            </h3>
-            <p className="text-gray-500 mb-6">
-              다른 검색어나 필터 조건을 시도해보세요
-            </p>
-            <button
-              onClick={clearFilters}
-              className="inline-flex items-center gap-2 bg-blue-600 text-white font-medium px-6 py-3 rounded-xl hover:bg-blue-700 transition-colors"
-            >
-              <X className="w-4 h-4" />
-              필터 초기화
-            </button>
-          </div>
-        )}
-      </main>
 
       <MobileNav variant="agent" />
     </div>

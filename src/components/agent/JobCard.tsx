@@ -27,19 +27,33 @@ interface JobCardProps {
 }
 
 const TYPE_LABELS: Record<AgentJobType, string> = {
+  // 주거용
   apartment: '아파트',
-  villa: '빌라',
+  officetel: '오피스텔',
+  villa: '빌라/다세대',
+  // 상업용
   store: '상가',
+  office: '사무실',
+  building: '빌딩매매',
+  auction: '경매',
+  // 레거시
+  commercial: '상업시설',
   oneroom: '원룸',
-  office: '오피스',
 };
 
 const TYPE_COLORS: Record<AgentJobType, string> = {
+  // 주거용 - 블루 계열
   apartment: 'bg-blue-100 text-blue-700',
-  villa: 'bg-green-100 text-green-700',
-  store: 'bg-purple-100 text-purple-700',
-  oneroom: 'bg-orange-100 text-orange-700',
-  office: 'bg-cyan-100 text-cyan-700',
+  officetel: 'bg-sky-100 text-sky-700',
+  villa: 'bg-indigo-100 text-indigo-700',
+  // 상업용 - 오렌지/앰버 계열
+  store: 'bg-amber-100 text-amber-700',
+  office: 'bg-orange-100 text-orange-700',
+  building: 'bg-yellow-100 text-yellow-700',
+  auction: 'bg-red-100 text-red-700',
+  // 레거시
+  commercial: 'bg-amber-100 text-amber-700',
+  oneroom: 'bg-teal-100 text-teal-700',
 };
 
 const TIER_STYLES: Record<AgentJobTier, { container: string; badge: string; glow: string }> = {

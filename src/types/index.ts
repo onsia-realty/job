@@ -35,8 +35,23 @@ export interface SalesJobListing {
   createdAt: string;
 }
 
-// 공인중개사 구인공고 타입
-export type AgentJobType = 'apartment' | 'villa' | 'store' | 'oneroom' | 'office';
+// 공인중개사 구인공고 타입 (부동산 카테고리 확장)
+export type AgentJobType =
+  // 주거용
+  | 'apartment'   // 아파트
+  | 'officetel'   // 오피스텔
+  | 'villa'       // 빌라/다세대
+  // 상업용
+  | 'store'       // 상가
+  | 'office'      // 사무실
+  | 'building'    // 빌딩매매
+  | 'auction'     // 경매
+  // 레거시
+  | 'commercial'  // 상업시설 (레거시)
+  | 'oneroom';    // 원룸 (레거시)
+
+// 부동산 대분류
+export type PropertyCategory = 'residential' | 'commercial';
 export type AgentJobTier = 'premium' | 'normal';
 export type AgentSalaryType = 'monthly' | 'commission' | 'mixed';
 export type AgentExperience = 'none' | '6month' | '1year' | '2year' | '3year' | '5year';
@@ -188,11 +203,30 @@ export const SALES_JOB_TYPE_LABELS: Record<SalesJobType, string> = {
 
 // 공인중개사 업무 유형 라벨
 export const AGENT_JOB_TYPE_LABELS: Record<AgentJobType, string> = {
+  // 주거용
   apartment: '아파트',
-  villa: '빌라',
+  officetel: '오피스텔',
+  villa: '빌라/다세대',
+  // 상업용
   store: '상가',
+  office: '사무실',
+  building: '빌딩매매',
+  auction: '경매',
+  // 레거시
+  commercial: '상업시설',
   oneroom: '원룸',
-  office: '오피스',
+};
+
+// 대분류 라벨
+export const PROPERTY_CATEGORY_LABELS: Record<PropertyCategory, string> = {
+  residential: '주거용',
+  commercial: '상업용',
+};
+
+// 대분류별 세부 카테고리 매핑
+export const PROPERTY_CATEGORY_TYPES: Record<PropertyCategory, AgentJobType[]> = {
+  residential: ['apartment', 'officetel', 'villa'],
+  commercial: ['store', 'office', 'building', 'auction'],
 };
 
 // 분양상담사 티어 색상 (분양라인 스타일)
@@ -243,4 +277,142 @@ export interface SalesJobFilter {
   experiences: ExperienceLevel[];
   companyTypes: CompanyType[];
   tiers: SalesJobTier[];
+}
+
+// ========== 지원 시스템 타입 ==========
+
+// 지원 상태
+export type ApplicationStatus = 'pending' | 'viewed' | 'contacted' | 'rejected' | 'hired';
+
+// 간편 지원 인터페이스
+export interface QuickApplication {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  company: string;
+  name: string;
+  phone: string;
+  email?: string;
+  message?: string;
+  status: ApplicationStatus;
+  appliedAt: string;
+  viewedAt?: string;
+}
+
+// 지원 상태 라벨
+export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
+  pending: '검토중',
+  viewed: '열람완료',
+  contacted: '연락완료',
+  rejected: '불합격',
+  hired: '채용확정',
+};
+
+// 지원 상태 색상
+export const APPLICATION_STATUS_COLORS: Record<ApplicationStatus, string> = {
+  pending: 'bg-yellow-100 text-yellow-700',
+  viewed: 'bg-blue-100 text-blue-700',
+  contacted: 'bg-green-100 text-green-700',
+  rejected: 'bg-gray-100 text-gray-500',
+  hired: 'bg-emerald-100 text-emerald-700',
+};
+
+// ========== 이력서 타입 ==========
+
+// 이력서 인터페이스
+export interface AgentResume {
+  id: string;
+  userId?: string;
+  // 기본 정보
+  name: string;
+  phone: string;
+  email: string;
+  birthYear?: number;
+  gender?: 'male' | 'female';
+  photo?: string;
+  // 자격증 정보
+  licenseNumber?: string; // 공인중개사 자격번호
+  licenseDate?: string; // 자격 취득일
+  // 경력 정보
+  totalExperience: AgentExperience;
+  careers: AgentCareer[];
+  // 희망 조건
+  preferredRegions: string[];
+  preferredTypes: AgentJobType[];
+  preferredSalary: {
+    type: AgentSalaryType;
+    min?: number;
+    max?: number;
+  };
+  availableDate?: string; // 입사 가능일
+  // 자기소개
+  introduction?: string;
+  strengths?: string[];
+  // 메타 정보
+  createdAt: string;
+  updatedAt: string;
+  isPublic: boolean; // 이력서 공개 여부
+}
+
+// 경력 항목
+export interface AgentCareer {
+  id: string;
+  company: string;
+  position?: string;
+  type: AgentJobType;
+  region: string;
+  startDate: string;
+  endDate?: string; // 미입력시 현재 재직중
+  isCurrent: boolean;
+  description?: string;
+}
+
+// ========== 북마크 타입 ==========
+
+export interface Bookmark {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  company: string;
+  region: string;
+  salary: string;
+  deadline?: string;
+  bookmarkedAt: string;
+}
+
+// ========== 사용자 인증 타입 ==========
+
+export type AuthProvider = 'email' | 'kakao' | 'naver' | 'google';
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  profileImage?: string;
+  provider: AuthProvider;
+  role: UserRole;
+  userType: UserType;
+  createdAt: string;
+  lastLoginAt: string;
+}
+
+// 로그인 폼
+export interface LoginForm {
+  email: string;
+  password: string;
+}
+
+// 회원가입 폼
+export interface SignUpForm {
+  email: string;
+  password: string;
+  passwordConfirm: string;
+  name: string;
+  phone: string;
+  role: UserRole;
+  userType: UserType;
+  agreeTerms: boolean;
+  agreePrivacy: boolean;
+  agreeMarketing?: boolean;
 }
