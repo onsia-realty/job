@@ -542,8 +542,8 @@ export default function SalesMainPage() {
             {/* 상단 메뉴 */}
             <div className="hidden md:flex items-center gap-4 text-xs text-gray-500">
               <Link href="/" className="hover:text-purple-600">홈</Link>
-              <Link href="/auth/signup" className="hover:text-purple-600">로그인</Link>
-              <Link href="/auth/signup" className="hover:text-purple-600">회원가입</Link>
+              <Link href="/sales/auth/login" className="hover:text-purple-600">로그인</Link>
+              <Link href="/sales/auth/login" className="hover:text-purple-600">회원가입</Link>
               <Link href="#" className="hover:text-purple-600">이벤트</Link>
               <Link href="#" className="hover:text-purple-600">공지사항</Link>
               <Link href="#" className="hover:text-purple-600">고객센터</Link>
@@ -901,7 +901,7 @@ export default function SalesMainPage() {
                 로그인후 이용하실 수 있습니다. 맞춤현장 정보를 설정하시어 회원님께서 찾으시는 현장 구인 정보를 빠르게 전달 받아보세요!
               </p>
               <Link
-                href="/auth/signin"
+                href="/sales/auth/login"
                 className="block text-center bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
               >
                 맞춤현장 설정하기
