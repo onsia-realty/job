@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 500">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="building1" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0.6" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="400" height="500" fill="url(#bg1)"/>
+
+  <!-- City skyline -->
+  <rect x="20" y="180" width="60" height="320" fill="url(#building1)" rx="2"/>
+  <rect x="90" y="220" width="50" height="280" fill="url(#building1)" rx="2"/>
+  <rect x="150" y="150" width="70" height="350" fill="url(#building1)" rx="2"/>
+  <rect x="230" y="200" width="55" height="300" fill="url(#building1)" rx="2"/>
+  <rect x="295" y="170" width="65" height="330" fill="url(#building1)" rx="2"/>
+  <rect x="370" y="240" width="40" height="260" fill="url(#building1)" rx="2"/>
+
+  <!-- Windows -->
+  <g fill="#60a5fa" opacity="0.7">
+    <!-- Building 1 windows -->
+    <rect x="28" y="200" width="8" height="12"/>
+    <rect x="42" y="200" width="8" height="12"/>
+    <rect x="56" y="200" width="8" height="12"/>
+    <rect x="28" y="230" width="8" height="12"/>
+    <rect x="42" y="230" width="8" height="12"/>
+    <rect x="56" y="230" width="8" height="12"/>
+    <rect x="28" y="260" width="8" height="12"/>
+    <rect x="42" y="260" width="8" height="12"/>
+    <rect x="56" y="260" width="8" height="12"/>
+
+    <!-- Building 3 windows (main tower) -->
+    <rect x="160" y="170" width="10" height="15"/>
+    <rect x="178" y="170" width="10" height="15"/>
+    <rect x="196" y="170" width="10" height="15"/>
+    <rect x="160" y="200" width="10" height="15"/>
+    <rect x="178" y="200" width="10" height="15"/>
+    <rect x="196" y="200" width="10" height="15"/>
+    <rect x="160" y="230" width="10" height="15"/>
+    <rect x="178" y="230" width="10" height="15"/>
+    <rect x="196" y="230" width="10" height="15"/>
+    <rect x="160" y="260" width="10" height="15"/>
+    <rect x="178" y="260" width="10" height="15"/>
+    <rect x="196" y="260" width="10" height="15"/>
+  </g>
+
+  <!-- Decorative elements -->
+  <circle cx="350" cy="80" r="40" fill="#fbbf24" opacity="0.3"/>
+  <text x="200" y="100" text-anchor="middle" fill="#94a3b8" font-family="Arial" font-size="14">PREMIUM APARTMENT</text>
+</svg>

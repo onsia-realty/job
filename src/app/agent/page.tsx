@@ -72,10 +72,11 @@ const premiumAds = [
     company: '㈜에이피부동산중개법인',
     badge: '부동산 지원 TOP100',
     deadline: '내일마감',
-    bgImage: '/images/ad-bg-1.jpg',
-    logo: '/images/company-logo-1.png',
+    bgImage: '/images/ad-bg-1.svg',
+    logo: '/images/company-logo-1.svg',
     link: '/agent/jobs/1',
     tier: 'power',
+    category: 'residential',
   },
   {
     id: 'ad2',
@@ -83,10 +84,11 @@ const premiumAds = [
     company: '(주)프로그레시브인베스트먼트',
     badge: '오늘 뜬',
     deadline: '~03.01(일)',
-    bgImage: '/images/ad-bg-2.jpg',
-    logo: '/images/company-logo-2.png',
+    bgImage: '/images/ad-bg-2.svg',
+    logo: '/images/company-logo-2.svg',
     link: '/agent/jobs/2',
     tier: 'vip',
+    category: 'commercial',
   },
   {
     id: 'ad3',
@@ -94,10 +96,11 @@ const premiumAds = [
     company: '아이에스동서㈜',
     badge: '건설·건축 지원 TOP100',
     deadline: 'D-3',
-    bgImage: '/images/ad-bg-3.jpg',
-    logo: '/images/company-logo-3.png',
+    bgImage: '/images/ad-bg-3.svg',
+    logo: '/images/company-logo-3.svg',
     link: '/agent/jobs/3',
     tier: 'power',
+    category: 'commercial',
   },
   {
     id: 'ad4',
@@ -105,10 +108,11 @@ const premiumAds = [
     company: '(주)바이앤셀파트너스',
     badge: '마케팅·홍보 급상승',
     deadline: '~02.28(토)',
-    bgImage: '/images/ad-bg-4.jpg',
-    logo: '/images/company-logo-4.png',
+    bgImage: '/images/ad-bg-4.svg',
+    logo: '/images/company-logo-4.svg',
     link: '/agent/jobs/4',
     tier: 'vip',
+    category: 'commercial',
   },
 ];
 
@@ -457,13 +461,19 @@ export default function AgentMainPage() {
               href={ad.link}
               className="group relative bg-slate-200 rounded-xl overflow-hidden aspect-[4/5] hover:shadow-xl transition-all"
             >
-              {/* 배경 이미지 (플레이스홀더) */}
-              <div className="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900">
+              {/* 배경 이미지 */}
+              <div className="absolute inset-0">
+                <Image
+                  src={ad.bgImage}
+                  alt={ad.title}
+                  fill
+                  className="object-cover"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
               </div>
 
               {/* 배지 */}
-              <div className="absolute top-3 left-3">
+              <div className="absolute top-3 left-3 z-10">
                 <span className={`text-xs font-bold px-2 py-1 rounded ${
                   ad.tier === 'power'
                     ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
@@ -473,15 +483,21 @@ export default function AgentMainPage() {
                 </span>
               </div>
 
-              {/* 회사 로고 (플레이스홀더) */}
-              <div className="absolute top-3 right-3">
-                <div className="w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-slate-400" />
+              {/* 회사 로고 */}
+              <div className="absolute top-3 right-3 z-10">
+                <div className="w-10 h-10 bg-white rounded-lg shadow-lg overflow-hidden">
+                  <Image
+                    src={ad.logo}
+                    alt={ad.company}
+                    width={40}
+                    height={40}
+                    className="object-cover"
+                  />
                 </div>
               </div>
 
               {/* 하단 정보 */}
-              <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+              <div className="absolute bottom-0 left-0 right-0 p-3 text-white z-10">
                 <h3 className="font-bold text-sm md:text-base line-clamp-2 mb-1 group-hover:text-emerald-300 transition-colors">
                   {ad.title}
                 </h3>

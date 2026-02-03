@@ -10,19 +10,14 @@ import {
   Eye,
   EyeOff,
   AlertCircle,
+  Loader2,
 } from 'lucide-react';
+import { signInWithProvider, signInWithEmail } from '@/lib/auth';
 
 // 카카오 로고 컴포넌트
 const KakaoLogo = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 3c-5.52 0-10 3.58-10 8 0 2.83 1.9 5.31 4.75 6.72l-.92 3.38c-.08.28.28.5.52.33l4.08-2.73c.52.07 1.05.1 1.57.1 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
-  </svg>
-);
-
-// 네이버 로고 컴포넌트
-const NaverLogo = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-    <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845z"/>
   </svg>
 );
 
@@ -43,6 +38,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,57 +51,44 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    // Mock 로그인 (실제로는 API 호출)
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // 임시 사용자 정보 저장
-    const mockUser = {
-      id: `user_${Date.now()}`,
-      email,
-      name: email.split('@')[0],
-      provider: 'email',
-      role: 'seeker',
-      userType: 'agent',
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-    };
-    localStorage.setItem('agent_user', JSON.stringify(mockUser));
-
-    setIsLoading(false);
-    router.push('/agent/mypage');
+    try {
+      await signInWithEmail(email, password);
+      router.push('/agent/mypage');
+    } catch (err: any) {
+      if (err.message.includes('Invalid login credentials')) {
+        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+      } else if (err.message.includes('Email not confirmed')) {
+        setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
+      } else {
+        setError(err.message || '로그인 중 오류가 발생했습니다.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleSocialLogin = async (provider: 'kakao' | 'naver' | 'google') => {
-    setIsLoading(true);
+  const handleSocialLogin = async (provider: 'kakao' | 'google') => {
+    setError('');
+    setLoadingProvider(provider);
 
-    // Mock 소셜 로그인
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    const mockUser = {
-      id: `user_${Date.now()}`,
-      email: `${provider}_user@example.com`,
-      name: `${provider} 사용자`,
-      provider,
-      role: 'seeker',
-      userType: 'agent',
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-    };
-    localStorage.setItem('agent_user', JSON.stringify(mockUser));
-
-    setIsLoading(false);
-    router.push('/agent/mypage');
+    try {
+      await signInWithProvider(provider);
+      // OAuth는 리다이렉트되므로 여기서 별도 처리 불필요
+    } catch (err: any) {
+      setError(err.message || '소셜 로그인 중 오류가 발생했습니다.');
+      setLoadingProvider(null);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* 헤더 */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4">
           <div className="flex items-center h-14">
             <Link
               href="/agent"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
@@ -116,49 +99,95 @@ export default function LoginPage() {
       <main className="max-w-md mx-auto px-4 py-8">
         {/* 로고 및 타이틀 */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">온시아 Job</h1>
-          <p className="text-gray-500">공인중개사를 위한 구인구직 플랫폼</p>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl mb-4 shadow-lg shadow-emerald-500/25">
+            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 mb-1">온시아 Job</h1>
+          <p className="text-slate-500">공인중개사를 위한 구인구직 플랫폼</p>
         </div>
 
         {/* 에러 메시지 */}
         {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-2 text-red-700">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-700">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <p className="text-sm">{error}</p>
           </div>
         )}
 
-        {/* 로그인 폼 */}
+        {/* 소셜 로그인 (메인) */}
+        <div className="space-y-3 mb-8">
+          <button
+            onClick={() => handleSocialLogin('kakao')}
+            disabled={!!loadingProvider}
+            className="w-full py-4 bg-[#FEE500] text-[#191919] rounded-xl font-semibold flex items-center justify-center gap-3 hover:bg-[#FADA0A] disabled:opacity-50 transition-all shadow-sm hover:shadow-md"
+          >
+            {loadingProvider === 'kakao' ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <KakaoLogo />
+            )}
+            카카오로 시작하기
+          </button>
+
+          <button
+            onClick={() => handleSocialLogin('google')}
+            disabled={!!loadingProvider}
+            className="w-full py-4 bg-white text-slate-700 border border-slate-200 rounded-xl font-semibold flex items-center justify-center gap-3 hover:bg-slate-50 disabled:opacity-50 transition-all shadow-sm hover:shadow-md"
+          >
+            {loadingProvider === 'google' ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <GoogleLogo />
+            )}
+            구글로 시작하기
+          </button>
+        </div>
+
+        {/* 구분선 */}
+        <div className="relative my-8">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-gradient-to-b from-slate-50 to-slate-100 text-slate-400">
+              또는 이메일로 로그인
+            </span>
+          </div>
+        </div>
+
+        {/* 이메일 로그인 폼 */}
         <form onSubmit={handleSubmit} className="space-y-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">이메일</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="이메일을 입력하세요"
-                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">비밀번호</label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="비밀번호를 입력하세요"
-                className="w-full pl-12 pr-12 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
@@ -166,11 +195,19 @@ export default function LoginPage() {
           </div>
 
           <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input type="checkbox" className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-              <span className="text-gray-600">로그인 상태 유지</span>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span className="text-slate-600 group-hover:text-slate-800 transition-colors">
+                로그인 상태 유지
+              </span>
             </label>
-            <Link href="/agent/auth/forgot-password" className="text-blue-600 hover:text-blue-700">
+            <Link
+              href="/agent/auth/forgot-password"
+              className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
+            >
               비밀번호 찾기
             </Link>
           </div>
@@ -178,59 +215,40 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2"
           >
-            {isLoading ? '로그인 중...' : '로그인'}
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                로그인 중...
+              </>
+            ) : (
+              '로그인'
+            )}
           </button>
         </form>
 
-        {/* 구분선 */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-gray-50 text-gray-500">또는</span>
-          </div>
-        </div>
-
-        {/* 소셜 로그인 */}
-        <div className="space-y-3">
-          <button
-            onClick={() => handleSocialLogin('kakao')}
-            disabled={isLoading}
-            className="w-full py-3.5 bg-[#FEE500] text-[#191919] rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-[#FADA0A] disabled:opacity-50 transition-colors"
-          >
-            <KakaoLogo />
-            카카오로 시작하기
-          </button>
-
-          <button
-            onClick={() => handleSocialLogin('naver')}
-            disabled={isLoading}
-            className="w-full py-3.5 bg-[#03C75A] text-white rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-[#02B150] disabled:opacity-50 transition-colors"
-          >
-            <NaverLogo />
-            네이버로 시작하기
-          </button>
-
-          <button
-            onClick={() => handleSocialLogin('google')}
-            disabled={isLoading}
-            className="w-full py-3.5 bg-white text-gray-700 border border-gray-200 rounded-xl font-medium flex items-center justify-center gap-2 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-          >
-            <GoogleLogo />
-            구글로 시작하기
-          </button>
-        </div>
-
         {/* 회원가입 링크 */}
-        <p className="text-center text-sm text-gray-500 mt-8">
+        <p className="text-center text-sm text-slate-500">
           아직 회원이 아니신가요?{' '}
-          <Link href="/agent/auth/signup" className="text-blue-600 font-medium hover:text-blue-700">
+          <Link
+            href="/agent/auth/signup"
+            className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
+          >
             회원가입
           </Link>
         </p>
+
+        {/* 안내 문구 */}
+        <div className="mt-8 p-4 bg-slate-100 rounded-xl">
+          <p className="text-xs text-slate-500 text-center leading-relaxed">
+            소셜 로그인 시 서비스 이용약관 및 개인정보 처리방침에 동의하게 됩니다.
+            <br />
+            <Link href="/terms" className="text-emerald-600 hover:underline">이용약관</Link>
+            {' · '}
+            <Link href="/privacy" className="text-emerald-600 hover:underline">개인정보 처리방침</Link>
+          </p>
+        </div>
       </main>
     </div>
   );
