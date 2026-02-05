@@ -257,7 +257,7 @@ export default function NewAgentJobPage() {
 
       // 4. 공고 데이터 저장
       const insertPayload = {
-        user_id: authUser?.id || null,
+        user_id: null, // 인증 연동 전까지 null 허용
         title: formData.title,
         description: formData.description,
         html_content: fullHtmlContent,
