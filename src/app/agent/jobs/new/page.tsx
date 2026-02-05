@@ -66,7 +66,8 @@ const IMAGE_SLOTS = [
 
 const TIERS: { value: AgentJobTier; label: string; price: number; color: string }[] = [
   { value: 'normal', label: '일반 (무료)', price: 0, color: 'bg-gray-500' },
-  { value: 'premium', label: '프리미엄', price: 50000, color: 'bg-cyan-500' },
+  { value: 'premium', label: '프리미엄', price: 50000, color: 'bg-blue-500' },
+  { value: 'vip', label: 'VIP', price: 100000, color: 'bg-gradient-to-r from-amber-500 to-yellow-500' },
 ];
 
 const WORK_DAYS_OPTIONS = [
@@ -122,6 +123,7 @@ export default function NewAgentJobPage() {
     address: '',
     detail_address: '',
     phone: '',
+    office_phone: '',
     contact_name: '',
     deadline: '',
     is_always_recruiting: false,
@@ -147,6 +149,20 @@ export default function NewAgentJobPage() {
       value = `${value.slice(0, 3)}-${value.slice(3)}`;
     }
     setFormData(prev => ({ ...prev, phone: value }));
+  };
+
+  // 회사 전화번호 포맷팅 핸들러 (02-XXXX-XXXX / 031-XXX-XXXX)
+  const handleOfficePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9]/g, '');
+    if (value.length > 12) value = value.slice(0, 12);
+    if (value.startsWith('02')) {
+      if (value.length > 6) value = `${value.slice(0,2)}-${value.slice(2,6)}-${value.slice(6)}`;
+      else if (value.length > 2) value = `${value.slice(0,2)}-${value.slice(2)}`;
+    } else {
+      if (value.length > 7) value = `${value.slice(0,3)}-${value.slice(3,7)}-${value.slice(7)}`;
+      else if (value.length > 3) value = `${value.slice(0,3)}-${value.slice(3)}`;
+    }
+    setFormData(prev => ({ ...prev, office_phone: value }));
   };
 
   // 급여 금액 핸들러
@@ -276,6 +292,7 @@ export default function NewAgentJobPage() {
         address: formData.address ? `${formData.address}${formData.detail_address ? ` ${formData.detail_address}` : ''}` : null,
         thumbnail: thumbnailUrl,
         phone: formData.phone || null,
+        office_phone: formData.office_phone || null,
         contact_name: formData.contact_name || null,
         deadline: formData.is_always_recruiting ? null : (formData.deadline || null),
         is_active: true,
@@ -368,7 +385,7 @@ export default function NewAgentJobPage() {
 
           {/* 공고 등급 선택 */}
           <FormSection icon={DollarSign} title="공고 등급 선택">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {TIERS.map((tier) => (
                 <button
                   key={tier.value}
@@ -389,8 +406,14 @@ export default function NewAgentJobPage() {
               ))}
             </div>
             {selectedTier && selectedTier.price > 0 && (
-              <p className="mt-4 text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
-                프리미엄 공고는 상위 노출 및 강조 표시가 제공됩니다.
+              <p className={`mt-4 text-sm p-3 rounded-lg ${
+                formData.tier === 'vip'
+                  ? 'text-amber-700 bg-amber-50'
+                  : 'text-blue-600 bg-blue-50'
+              }`}>
+                {formData.tier === 'vip'
+                  ? 'VIP 공고는 최상단 노출, 큰 썸네일, 골드 테두리가 제공됩니다.'
+                  : '프리미엄 공고는 상위 노출 및 강조 표시가 제공됩니다.'}
               </p>
             )}
           </FormSection>
@@ -720,8 +743,10 @@ export default function NewAgentJobPage() {
             <ContactSection
               contactName={formData.contact_name}
               phone={formData.phone}
+              officePhone={formData.office_phone}
               onContactNameChange={handleChange}
               onPhoneChange={handlePhoneChange}
+              onOfficePhoneChange={handleOfficePhoneChange}
             />
           </FormSection>
 

@@ -114,6 +114,7 @@ export default function NewJobPage() {
     region: '서울',
     address: '',
     phone: '',
+    office_phone: '',
     contact_name: '',
     deadline: '',
     html_content: '',
@@ -135,6 +136,20 @@ export default function NewJobPage() {
       value = `${value.slice(0, 3)}-${value.slice(3)}`;
     }
     setFormData(prev => ({ ...prev, phone: value }));
+  };
+
+  // 회사 전화번호 포맷팅 핸들러 (02-XXXX-XXXX / 031-XXX-XXXX)
+  const handleOfficePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/[^0-9]/g, '');
+    if (value.length > 12) value = value.slice(0, 12);
+    if (value.startsWith('02')) {
+      if (value.length > 6) value = `${value.slice(0,2)}-${value.slice(2,6)}-${value.slice(6)}`;
+      else if (value.length > 2) value = `${value.slice(0,2)}-${value.slice(2)}`;
+    } else {
+      if (value.length > 7) value = `${value.slice(0,3)}-${value.slice(3,7)}-${value.slice(7)}`;
+      else if (value.length > 3) value = `${value.slice(0,3)}-${value.slice(3)}`;
+    }
+    setFormData(prev => ({ ...prev, office_phone: value }));
   };
 
   // 수수료 금액 핸들러
@@ -227,6 +242,7 @@ export default function NewJobPage() {
           address: formData.address || null,
           thumbnail: thumbnailUrl,
           phone: formData.phone || null,
+          office_phone: formData.office_phone || null,
           contact_name: formData.contact_name || null,
           deadline: formData.deadline || null,
           is_active: true,
@@ -607,8 +623,10 @@ export default function NewJobPage() {
             <ContactSection
               contactName={formData.contact_name}
               phone={formData.phone}
+              officePhone={formData.office_phone}
               onContactNameChange={handleChange}
               onPhoneChange={handlePhoneChange}
+              onOfficePhoneChange={handleOfficePhoneChange}
               accentColor="purple"
             />
           </FormSection>

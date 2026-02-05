@@ -51,7 +51,7 @@ export type AgentJobType =
 
 // 부동산 대분류
 export type PropertyCategory = 'residential' | 'commercial';
-export type AgentJobTier = 'premium' | 'normal';
+export type AgentJobTier = 'vip' | 'premium' | 'normal';
 export type AgentSalaryType = 'monthly' | 'commission' | 'mixed';
 export type AgentExperience = 'none' | '6month' | '1year' | '2year' | '3year' | '5year';
 
@@ -98,7 +98,8 @@ export interface AgentJobListing {
   workHours?: string; // 근무시간
   workDays?: string; // 근무요일
   contactName?: string; // 담당자명
-  contactPhone?: string; // 연락처
+  contactPhone?: string; // 연락처 (휴대폰)
+  officePhone?: string; // 회사 전화 (지역번호)
   isBookmarked?: boolean; // 스크랩 여부
   agentImages?: { logo?: string; signboard?: string; interior?: string }; // 부동산 이미지
   htmlContent?: string; // HTML 형식 상세 내용 (알바몬/잡코리아 스타일)

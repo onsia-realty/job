@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -11,8 +11,10 @@ import {
 } from 'lucide-react';
 import MobileNav from '@/components/shared/MobileNav';
 import JobCard from '@/components/sales/JobCard';
-import KakaoMap from '@/components/shared/KakaoMap';
+import dynamic from 'next/dynamic';
 import type { SalesJobListing } from '@/types';
+
+const VWorldMap = dynamic(() => import('@/components/shared/VWorldMap'), { ssr: false });
 
 // 임시 상세 데이터
 const jobDetail = {
@@ -148,6 +150,15 @@ const relatedJobs: SalesJobListing[] = [
   },
 ];
 
+// 전화번호 마스킹 (가운데 4자리)
+function maskPhone(phone: string): string {
+  const digits = phone.replace(/[^\d]/g, '');
+  if (digits.length === 11) return `${digits.slice(0,3)}-****-${digits.slice(7)}`;
+  if (digits.length === 10) return `${digits.slice(0,3)}-****-${digits.slice(6)}`;
+  if (digits.length === 9) return `${digits.slice(0,2)}-****-${digits.slice(5)}`;
+  return phone.replace(/(\d{2,4})([\d-]{3,5})(\d{4})$/, '$1-****-$3');
+}
+
 const TIER_COLORS = {
   unique: { bg: 'bg-purple-600', text: 'text-purple-600', light: 'bg-purple-50' },
   superior: { bg: 'bg-blue-600', text: 'text-blue-600', light: 'bg-blue-50' },
@@ -170,6 +181,15 @@ export default function JobDetailPage() {
   const params = useParams();
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
+  const [mapCoord, setMapCoord] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!jobDetail.address) return;
+    fetch(`/api/geocode?address=${encodeURIComponent(jobDetail.address)}`)
+      .then(r => r.json())
+      .then(data => { if (data.lat && data.lng) setMapCoord({ lat: data.lat, lng: data.lng }); })
+      .catch(() => {});
+  }, []);
 
   const colors = TIER_COLORS[jobDetail.tier];
 
@@ -454,10 +474,12 @@ export default function JobDetailPage() {
                 </div>
               </div>
 
-              {/* 카카오맵 */}
-              <div id="company-map" className="mt-4">
-                <KakaoMap address={jobDetail.address} companyName={jobDetail.company} height="280px" />
-              </div>
+              {/* VWorld 지도 */}
+              {mapCoord && (
+                <div id="company-map" className="mt-4">
+                  <VWorldMap lat={mapCoord.lat} lng={mapCoord.lng} label={jobDetail.company} height="280px" />
+                </div>
+              )}
             </section>
 
             {/* ===== 추천공고 ===== */}
@@ -519,13 +541,12 @@ export default function JobDetailPage() {
                     >
                       <Star className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
                     </button>
-                    <a
-                      href={`tel:${jobDetail.phone}`}
+                    <button
                       className="flex-1 py-3 bg-purple-600 text-white rounded-xl font-bold text-base hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
                     >
                       <Phone className="w-5 h-5" />
-                      전화 지원
-                    </a>
+                      {maskPhone(jobDetail.phone)}
+                    </button>
                   </div>
                   <button className="w-full py-3 border border-purple-600 text-purple-600 rounded-xl font-medium hover:bg-purple-50 transition-colors flex items-center justify-center gap-2">
                     <MessageCircle className="w-5 h-5" />
@@ -577,13 +598,12 @@ export default function JobDetailPage() {
           >
             <Star className={`w-5 h-5 ${isBookmarked ? 'fill-current' : ''}`} />
           </button>
-          <a
-            href={`tel:${jobDetail.phone}`}
+          <button
             className="flex-1 flex items-center justify-center gap-2 bg-purple-600 text-white py-3 rounded-xl font-bold text-lg"
           >
             <Phone className="w-5 h-5" />
-            전화 지원하기
-          </a>
+            {maskPhone(jobDetail.phone)}
+          </button>
         </div>
       </div>
 

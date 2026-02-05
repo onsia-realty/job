@@ -15,7 +15,18 @@ import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, Q
 import { AGENT_JOB_TYPE_LABELS, AGENT_EXPERIENCE_LABELS } from '@/types';
 import { supabase } from '@/lib/supabase';
 import AgentJobCard from '@/components/agent/JobCard';
-import KakaoMap from '@/components/shared/KakaoMap';
+import dynamic from 'next/dynamic';
+
+const VWorldMap = dynamic(() => import('@/components/shared/VWorldMap'), { ssr: false });
+
+// 전화번호 마스킹 (가운데 4자리)
+function maskPhone(phone: string): string {
+  const digits = phone.replace(/[^\d]/g, '');
+  if (digits.length === 11) return `${digits.slice(0,3)}-****-${digits.slice(7)}`;
+  if (digits.length === 10) return `${digits.slice(0,3)}-****-${digits.slice(6)}`;
+  if (digits.length === 9) return `${digits.slice(0,2)}-****-${digits.slice(5)}`;
+  return phone.replace(/(\d{2,4})([\d-]{3,5})(\d{4})$/, '$1-****-$3');
+}
 
 // D-Day 계산
 function getDDay(deadline?: string, isAlwaysRecruiting?: boolean): { text: string; color: string; urgent: boolean } {
@@ -117,6 +128,7 @@ export default function JobDetailPage() {
   const [applyStep, setApplyStep] = useState<'form' | 'confirm' | 'success'>('form');
   const [applyForm, setApplyForm] = useState<ApplyFormData>({ name: '', phone: '', email: '', message: '', agreePrivacy: false });
   const [formErrors, setFormErrors] = useState<ApplyFormErrors>({});
+  const [mapCoord, setMapCoord] = useState<{ lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -140,6 +152,7 @@ export default function JobDetailPage() {
           workDays: data.html_content?.match(/근무요일: (.+)/)?.[1] || undefined,
           contactName: data.contact_name || undefined,
           contactPhone: data.phone || undefined,
+          officePhone: data.office_phone || undefined,
           htmlContent: data.html_content || undefined,
           agentImages: (() => {
             const match = data.html_content?.match(/<!-- AGENT_IMAGES:(.*?) -->/);
@@ -157,6 +170,15 @@ export default function JobDetailPage() {
     };
     fetchJob();
   }, [params.id]);
+
+  // 주소 → 좌표 변환
+  useEffect(() => {
+    if (!job?.address) return;
+    fetch(`/api/geocode?address=${encodeURIComponent(job.address)}`)
+      .then(r => r.json())
+      .then(data => { if (data.lat && data.lng) setMapCoord({ lat: data.lat, lng: data.lng }); })
+      .catch(() => {});
+  }, [job?.address]);
 
   const scrollToSection = (sectionId: string) => {
     setActiveTab(sectionId);
@@ -264,6 +286,11 @@ export default function JobDetailPage() {
               <p className="text-gray-600 text-base mb-1 font-medium">{job.company}</p>
               {/* 배지 */}
               <div className="flex flex-wrap items-center gap-2 mb-2">
+                {job.tier === 'vip' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white text-xs font-bold rounded-full">
+                    <Star className="w-3.5 h-3.5 fill-current" />VIP
+                  </span>
+                )}
                 {job.tier === 'premium' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white text-xs font-bold rounded-full">
                     <Award className="w-3.5 h-3.5" />PREMIUM
@@ -575,7 +602,7 @@ export default function JobDetailPage() {
               </div>
 
               {/* 담당자 정보 */}
-              {(job.contactName || job.contactPhone) && (
+              {(job.contactName || job.contactPhone || job.officePhone) && (
                 <div className="mt-4 border border-gray-200 rounded-xl p-5">
                   <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                     <Phone className="w-4 h-4 text-blue-600" />
@@ -588,20 +615,26 @@ export default function JobDetailPage() {
                         <span className="text-sm font-medium text-gray-900">{job.contactName}</span>
                       </div>
                     )}
+                    {job.officePhone && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">회사전화</span>
+                        <a href={`tel:${job.officePhone}`} className="text-sm font-medium text-blue-600 hover:underline">{job.officePhone}</a>
+                      </div>
+                    )}
                     {job.contactPhone && (
                       <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">연락처</span>
-                        <a href={`tel:${job.contactPhone}`} className="text-sm font-medium text-blue-600 hover:underline">{job.contactPhone}</a>
+                        <span className="text-sm text-gray-500">휴대폰</span>
+                        <span className="text-sm font-medium text-gray-900">{maskPhone(job.contactPhone)}</span>
                       </div>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* 카카오맵 */}
-              {job.address && (
+              {/* VWorld 지도 */}
+              {job.address && mapCoord && (
                 <div id="company-map" className="mt-4">
-                  <KakaoMap address={job.address} companyName={job.company} height="280px" />
+                  <VWorldMap lat={mapCoord.lat} lng={mapCoord.lng} label={job.company} height="280px" />
                 </div>
               )}
             </section>

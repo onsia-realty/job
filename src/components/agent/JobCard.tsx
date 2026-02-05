@@ -55,6 +55,11 @@ const TYPE_COLORS: Record<AgentJobType, string> = {
 };
 
 const TIER_STYLES: Record<AgentJobTier, { container: string; badge: string; glow: string }> = {
+  vip: {
+    container: 'border-2 border-amber-400 bg-gradient-to-br from-amber-50 via-yellow-50 to-white',
+    badge: 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white',
+    glow: 'shadow-amber-200',
+  },
   premium: {
     container: 'border-2 border-blue-500 bg-gradient-to-br from-blue-50 to-white',
     badge: 'bg-gradient-to-r from-blue-600 to-blue-500 text-white',
@@ -138,6 +143,11 @@ export default function AgentJobCard({ job, variant = 'card', onBookmark }: JobC
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${dday.color}`}>
                   {dday.text}
                 </span>
+                {job.tier === 'vip' && (
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${styles.badge}`}>
+                    VIP
+                  </span>
+                )}
                 {job.tier === 'premium' && (
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${styles.badge}`}>
                     PREMIUM
@@ -181,9 +191,9 @@ export default function AgentJobCard({ job, variant = 'card', onBookmark }: JobC
 
             {/* 회사명 */}
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                {job.companyLogo ? (
-                  <img src={job.companyLogo} alt="" className="w-6 h-6 object-contain" />
+              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {(job.companyLogo || job.thumbnail) ? (
+                  <img src={job.companyLogo || job.thumbnail} alt="" className="w-8 h-8 object-cover" />
                 ) : (
                   <Building2 className="w-4 h-4 text-gray-400" />
                 )}
@@ -275,10 +285,10 @@ export default function AgentJobCard({ job, variant = 'card', onBookmark }: JobC
         className={`rounded-xl overflow-hidden transition-all duration-200 hover:shadow-md hover:bg-gray-50 ${styles.container}`}
       >
         <div className="p-4 flex gap-4">
-          {/* 회사 로고 */}
-          <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            {job.companyLogo ? (
-              <img src={job.companyLogo} alt="" className="w-12 h-12 object-contain" />
+          {/* 회사 로고/썸네일 */}
+          <div className="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+            {(job.companyLogo || job.thumbnail) ? (
+              <img src={job.companyLogo || job.thumbnail} alt="" className="w-16 h-16 object-cover" />
             ) : (
               <Building2 className="w-8 h-8 text-gray-400" />
             )}
@@ -288,6 +298,11 @@ export default function AgentJobCard({ job, variant = 'card', onBookmark }: JobC
           <div className="flex-1 min-w-0">
             {/* 상단 - 배지 + D-Day */}
             <div className="flex items-center gap-2 mb-1">
+              {job.tier === 'vip' && (
+                <span className={`text-xs font-bold px-2 py-0.5 rounded ${styles.badge}`}>
+                  VIP
+                </span>
+              )}
               {job.tier === 'premium' && (
                 <span className={`text-xs font-bold px-2 py-0.5 rounded ${styles.badge}`}>
                   PREMIUM
