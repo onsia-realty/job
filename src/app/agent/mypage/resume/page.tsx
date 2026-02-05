@@ -24,9 +24,11 @@ import {
   FileText,
   GraduationCap,
   Banknote,
+  Lock,
 } from 'lucide-react';
 import type { AgentResume, AgentCareer, AgentJobType, AgentSalaryType, AgentExperience } from '@/types';
 import { REGIONS, AGENT_JOB_TYPE_LABELS, AGENT_SALARY_TYPE_LABELS, AGENT_EXPERIENCE_LABELS } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 const EMPTY_RESUME: AgentResume = {
   id: '',
@@ -53,6 +55,7 @@ const EMPTY_CAREER: AgentCareer = {
 };
 
 export default function ResumePage() {
+  const { user } = useAuth();
   const [resume, setResume] = useState<AgentResume | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<AgentResume>(EMPTY_RESUME);
@@ -60,14 +63,34 @@ export default function ResumePage() {
   const [newCareer, setNewCareer] = useState<AgentCareer>(EMPTY_CAREER);
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  // 로그인한 사용자 정보에서 이메일/연락처 가져오기
+  const userEmail = user?.email || '';
+  const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || '';
+  const userPhone = user?.user_metadata?.phone || '';
+
   useEffect(() => {
     const savedResume = localStorage.getItem('agent_resume');
     if (savedResume) {
       const parsed = JSON.parse(savedResume);
-      setResume(parsed);
-      setEditData(parsed);
+      // 저장된 이력서에 로그인 사용자 정보 업데이트
+      const updatedResume = {
+        ...parsed,
+        email: userEmail || parsed.email,
+        name: parsed.name || userName,
+        phone: userPhone || parsed.phone,
+      };
+      setResume(updatedResume);
+      setEditData(updatedResume);
+    } else {
+      // 새 이력서 작성 시 사용자 정보 자동 채우기
+      setEditData({
+        ...EMPTY_RESUME,
+        email: userEmail,
+        name: userName,
+        phone: userPhone,
+      });
     }
-  }, []);
+  }, [userEmail, userName, userPhone]);
 
   const handleSave = () => {
     const now = new Date().toISOString();
@@ -182,25 +205,42 @@ export default function ResumePage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     연락처 <span className="text-red-500">*</span>
+                    {userPhone && (
+                      <span className="ml-2 text-xs text-gray-400 inline-flex items-center gap-0.5">
+                        <Lock className="w-3 h-3" />
+                        회원정보
+                      </span>
+                    )}
                   </label>
                   <input
                     type="tel"
                     value={editData.phone}
-                    onChange={(e) => setEditData({ ...editData, phone: formatPhoneNumber(e.target.value) })}
+                    onChange={(e) => !userPhone && setEditData({ ...editData, phone: formatPhoneNumber(e.target.value) })}
                     placeholder="010-0000-0000"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    readOnly={!!userPhone}
+                    className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      userPhone ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''
+                    }`}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     이메일 <span className="text-red-500">*</span>
+                    {userEmail && (
+                      <span className="ml-2 text-xs text-gray-400 inline-flex items-center gap-0.5">
+                        <Lock className="w-3 h-3" />
+                        회원정보
+                      </span>
+                    )}
                   </label>
                   <input
                     type="email"
                     value={editData.email}
-                    onChange={(e) => setEditData({ ...editData, email: e.target.value })}
+                    readOnly={!!userEmail}
                     placeholder="example@email.com"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none ${
+                      userEmail ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : 'focus:ring-2 focus:ring-blue-500'
+                    }`}
                   />
                 </div>
               </div>

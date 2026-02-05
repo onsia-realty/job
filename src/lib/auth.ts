@@ -39,7 +39,22 @@ export async function signInWithEmail(email: string, password: string) {
 }
 
 // 이메일 회원가입
-export async function signUpWithEmail(email: string, password: string, metadata?: { name?: string; phone?: string; userType?: string }) {
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  metadata?: {
+    name?: string;
+    nickname?: string;
+    phone?: string;
+    userType?: string;
+    role?: string;
+    // 중개사무소 정보 (기업회원용)
+    brokerRegNo?: string;
+    brokerOfficeName?: string;
+    brokerAddress?: string;
+    brokerRegDate?: string;
+  }
+) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,

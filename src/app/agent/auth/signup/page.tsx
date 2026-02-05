@@ -14,16 +14,32 @@ import {
   AlertCircle,
   Check,
   ChevronDown,
+  Loader2,
+  Building2,
+  Search,
+  MapPin,
+  Calendar,
+  CheckCircle2,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
+import { signUpWithEmail } from '@/lib/auth';
+import type { BrokerOfficeInfo } from '@/app/api/broker/route';
 
 interface SignUpFormData {
   email: string;
   password: string;
   passwordConfirm: string;
   name: string;
+  nickname: string;
   phone: string;
   role: UserRole;
+  // 중개사무소 정보 (구직자용)
+  brokerRegNo: string;
+  brokerOfficeName: string;
+  brokerAddress: string;
+  brokerRegDate: string;
+  brokerStatus: string;
+  // 약관
   agreeTerms: boolean;
   agreePrivacy: boolean;
   agreeMarketing: boolean;
@@ -34,8 +50,14 @@ const INITIAL_FORM: SignUpFormData = {
   password: '',
   passwordConfirm: '',
   name: '',
+  nickname: '',
   phone: '',
   role: 'seeker',
+  brokerRegNo: '',
+  brokerOfficeName: '',
+  brokerAddress: '',
+  brokerRegDate: '',
+  brokerStatus: '',
   agreeTerms: false,
   agreePrivacy: false,
   agreeMarketing: false,
@@ -49,12 +71,63 @@ export default function SignUpPage() {
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpFormData, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'success'>('form');
+  const [isFetchingBroker, setIsFetchingBroker] = useState(false);
+  const [brokerVerified, setBrokerVerified] = useState(false);
+
+  // 중개사무소 정보 조회
+  const fetchBrokerInfo = async () => {
+    if (!form.brokerRegNo) {
+      setErrors({ ...errors, brokerRegNo: '개설등록번호를 입력해주세요' });
+      return;
+    }
+
+    setIsFetchingBroker(true);
+    setErrors({ ...errors, brokerRegNo: undefined });
+    setBrokerVerified(false);
+
+    try {
+      const response = await fetch(`/api/broker?regNo=${encodeURIComponent(form.brokerRegNo)}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        setErrors({ ...errors, brokerRegNo: result.error || '조회에 실패했습니다' });
+        return;
+      }
+
+      const data: BrokerOfficeInfo = result.data;
+      setForm({
+        ...form,
+        brokerOfficeName: data.medOfficeNm,
+        brokerAddress: data.lctnRoadNmAddr || data.lctnLotnoAddr,
+        brokerRegDate: data.estblRegDe,
+        brokerStatus: data.sttusSeNm || '영업중',
+      });
+      setBrokerVerified(true);
+    } catch (error) {
+      console.error('Broker fetch error:', error);
+      setErrors({ ...errors, brokerRegNo: '조회 중 오류가 발생했습니다' });
+    } finally {
+      setIsFetchingBroker(false);
+    }
+  };
 
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/[^\d]/g, '');
     if (numbers.length <= 3) return numbers;
     if (numbers.length <= 7) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
+  };
+
+  // 개설등록번호 포맷 (제11710-2022-00250호 → 11710-2022-00250)
+  const formatBrokerRegNo = (value: string) => {
+    // "제", "호" 제거하고 숫자와 하이픈만 추출
+    const cleaned = value.replace(/[제호\s]/g, '');
+    const numbers = cleaned.replace(/[^\d]/g, '');
+
+    // 14자리 숫자인 경우 자동 포맷 (XXXXX-YYYY-NNNNN)
+    if (numbers.length <= 5) return numbers;
+    if (numbers.length <= 9) return `${numbers.slice(0, 5)}-${numbers.slice(5)}`;
+    return `${numbers.slice(0, 5)}-${numbers.slice(5, 9)}-${numbers.slice(9, 14)}`;
   };
 
   const validateForm = (): boolean => {
@@ -84,6 +157,14 @@ export default function SignUpPage() {
       newErrors.name = '이름을 입력해주세요';
     }
 
+    if (!form.nickname) {
+      newErrors.nickname = '닉네임을 입력해주세요';
+    } else if (form.nickname.length < 2 || form.nickname.length > 12) {
+      newErrors.nickname = '닉네임은 2~12자로 입력해주세요';
+    } else if (!/^[가-힣a-zA-Z0-9_]+$/.test(form.nickname)) {
+      newErrors.nickname = '한글, 영문, 숫자, 밑줄(_)만 사용 가능합니다';
+    }
+
     if (!form.phone) {
       newErrors.phone = '연락처를 입력해주세요';
     } else if (!/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(form.phone.replace(/-/g, ''))) {
@@ -108,26 +189,34 @@ export default function SignUpPage() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    setErrors({});
 
-    // Mock 회원가입 (실제로는 API 호출)
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      await signUpWithEmail(form.email, form.password, {
+        name: form.name,
+        nickname: form.nickname,
+        phone: form.phone,
+        role: form.role,
+        userType: 'agent',
+        // 중개사무소 정보 (기업회원이고 인증된 경우)
+        ...(form.role === 'employer' && brokerVerified && {
+          brokerRegNo: form.brokerRegNo,
+          brokerOfficeName: form.brokerOfficeName,
+          brokerAddress: form.brokerAddress,
+          brokerRegDate: form.brokerRegDate,
+        }),
+      });
 
-    // 사용자 정보 저장
-    const newUser = {
-      id: `user_${Date.now()}`,
-      email: form.email,
-      name: form.name,
-      phone: form.phone,
-      provider: 'email',
-      role: form.role,
-      userType: 'agent',
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString(),
-    };
-    localStorage.setItem('agent_user', JSON.stringify(newUser));
-
-    setIsLoading(false);
-    setStep('success');
+      setStep('success');
+    } catch (err: any) {
+      if (err.message?.includes('already registered')) {
+        setErrors({ email: '이미 가입된 이메일입니다' });
+      } else {
+        setErrors({ email: err.message || '회원가입 중 오류가 발생했습니다' });
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAgreeAll = () => {
@@ -250,7 +339,7 @@ export default function SignUpPage() {
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="email"
-                value={form.email}
+                value={form.email || ''}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="이메일을 입력하세요"
                 className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -274,7 +363,7 @@ export default function SignUpPage() {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type={showPassword ? 'text' : 'password'}
-                value={form.password}
+                value={form.password || ''}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="영문, 숫자 포함 8자 이상"
                 className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -305,7 +394,7 @@ export default function SignUpPage() {
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type={showPasswordConfirm ? 'text' : 'password'}
-                value={form.passwordConfirm}
+                value={form.passwordConfirm || ''}
                 onChange={(e) => setForm({ ...form, passwordConfirm: e.target.value })}
                 placeholder="비밀번호를 다시 입력하세요"
                 className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -336,7 +425,7 @@ export default function SignUpPage() {
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
-                value={form.name}
+                value={form.name || ''}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="이름을 입력하세요"
                 className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -354,13 +443,39 @@ export default function SignUpPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
+              닉네임 <span className="text-red-500">*</span>
+              <span className="text-gray-400 font-normal ml-2">커뮤니티 활동명</span>
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">@</span>
+              <input
+                type="text"
+                value={form.nickname || ''}
+                onChange={(e) => setForm({ ...form, nickname: e.target.value })}
+                placeholder="닉네임 (2~12자)"
+                maxLength={12}
+                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  errors.nickname ? 'border-red-300' : 'border-gray-200'
+                }`}
+              />
+            </div>
+            {errors.nickname && (
+              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                <AlertCircle className="w-4 h-4" />
+                {errors.nickname}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
               연락처 <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="tel"
-                value={form.phone}
+                value={form.phone || ''}
                 onChange={(e) => setForm({ ...form, phone: formatPhoneNumber(e.target.value) })}
                 placeholder="010-0000-0000"
                 className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
@@ -375,6 +490,114 @@ export default function SignUpPage() {
               </p>
             )}
           </div>
+
+          {/* 중개사무소 정보 (기업회원만) */}
+          {form.role === 'employer' && (
+            <div className="pt-4">
+              <div className="p-4 bg-blue-50 rounded-xl space-y-4">
+                <div className="flex items-center gap-2 text-blue-700">
+                  <Building2 className="w-5 h-5" />
+                  <span className="font-semibold">중개사무소 정보</span>
+                  <span className="text-xs text-blue-500 ml-auto">선택사항</span>
+                </div>
+
+                {/* 개설등록번호 입력 및 조회 */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    개설등록번호
+                  </label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={form.brokerRegNo || ''}
+                        onChange={(e) => {
+                          setForm({ ...form, brokerRegNo: formatBrokerRegNo(e.target.value) });
+                          setBrokerVerified(false);
+                        }}
+                        placeholder="예: 11710-2022-00250"
+                        maxLength={16}
+                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          errors.brokerRegNo ? 'border-red-300' : 'border-gray-200'
+                        }`}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={fetchBrokerInfo}
+                      disabled={isFetchingBroker || !form.brokerRegNo}
+                      className="px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                    >
+                      {isFetchingBroker ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Search className="w-4 h-4" />
+                      )}
+                      조회
+                    </button>
+                  </div>
+                  {errors.brokerRegNo && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-4 h-4" />
+                      {errors.brokerRegNo}
+                    </p>
+                  )}
+                </div>
+
+                {/* 조회된 정보 표시 */}
+                {brokerVerified && (
+                  <div className="p-4 bg-white rounded-xl border border-green-200 space-y-3">
+                    <div className="flex items-center gap-2 text-green-600 mb-2">
+                      <CheckCircle2 className="w-5 h-5" />
+                      <span className="font-medium">확인된 중개사무소</span>
+                    </div>
+
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-start gap-2">
+                        <Building2 className="w-4 h-4 text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="text-gray-500">중개사무소명</p>
+                          <p className="font-medium text-gray-900">{form.brokerOfficeName}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-4 h-4 text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="text-gray-500">소재지</p>
+                          <p className="font-medium text-gray-900">{form.brokerAddress}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <Calendar className="w-4 h-4 text-gray-400 mt-0.5" />
+                        <div>
+                          <p className="text-gray-500">개설등록일</p>
+                          <p className="font-medium text-gray-900">{form.brokerRegDate}</p>
+                        </div>
+                      </div>
+
+                      {form.brokerStatus && (
+                        <div className="pt-2">
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                            form.brokerStatus === '영업중'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {form.brokerStatus}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-gray-500">
+                  * 개설등록번호를 입력하면 공공데이터를 통해 중개사무소 정보가 자동으로 조회됩니다.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* 약관 동의 */}
           <div className="pt-4">
@@ -443,9 +666,16 @@ export default function SignUpPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors mt-6"
+            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors mt-6 flex items-center justify-center gap-2"
           >
-            {isLoading ? '가입 중...' : '가입하기'}
+            {isLoading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                가입 중...
+              </>
+            ) : (
+              '가입하기'
+            )}
           </button>
         </form>
 
