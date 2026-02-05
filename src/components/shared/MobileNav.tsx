@@ -34,7 +34,7 @@ export default function MobileNav({ variant }: MobileNavProps) {
       icon: Users,
     },
     {
-      href: '/mypage',
+      href: `${baseUrl}/mypage`,
       label: 'MY',
       icon: User,
     },

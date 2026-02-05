@@ -73,6 +73,10 @@ export default function SignUpPage() {
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [isFetchingBroker, setIsFetchingBroker] = useState(false);
   const [brokerVerified, setBrokerVerified] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailChecked, setEmailChecked] = useState(false);
+  const [emailAvailable, setEmailAvailable] = useState(false);
+  const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false);
 
   // 중개사무소 정보 조회
   const fetchBrokerInfo = async () => {
@@ -111,6 +115,46 @@ export default function SignUpPage() {
     }
   };
 
+  // 이메일 중복 확인
+  const checkEmailDuplicate = async () => {
+    if (!form.email) {
+      setErrors({ ...errors, email: '이메일을 입력해주세요' });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setErrors({ ...errors, email: '올바른 이메일 형식이 아닙니다' });
+      return;
+    }
+
+    setIsCheckingEmail(true);
+    setErrors({ ...errors, email: undefined });
+    setEmailChecked(false);
+    setEmailAvailable(false);
+
+    try {
+      const response = await fetch(`/api/check-email?email=${encodeURIComponent(form.email)}`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        setErrors({ ...errors, email: result.error || '확인에 실패했습니다' });
+        return;
+      }
+
+      setEmailChecked(true);
+      if (result.exists) {
+        setEmailAvailable(false);
+        setErrors({ ...errors, email: '이미 가입된 이메일입니다' });
+      } else {
+        setEmailAvailable(true);
+      }
+    } catch (error) {
+      console.error('Email check error:', error);
+      setErrors({ ...errors, email: '확인 중 오류가 발생했습니다' });
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  };
+
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/[^\d]/g, '');
     if (numbers.length <= 3) return numbers;
@@ -137,6 +181,8 @@ export default function SignUpPage() {
       newErrors.email = '이메일을 입력해주세요';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = '올바른 이메일 형식이 아닙니다';
+    } else if (!emailChecked || !emailAvailable) {
+      newErrors.email = '이메일 중복확인을 해주세요';
     }
 
     if (!form.password) {
@@ -192,7 +238,7 @@ export default function SignUpPage() {
     setErrors({});
 
     try {
-      await signUpWithEmail(form.email, form.password, {
+      const result = await signUpWithEmail(form.email, form.password, {
         name: form.name,
         nickname: form.nickname,
         phone: form.phone,
@@ -207,6 +253,8 @@ export default function SignUpPage() {
         }),
       });
 
+      // 이메일 인증 필요 여부 체크 (session이 null이면 인증 필요)
+      setNeedsEmailConfirm(!result.session);
       setStep('success');
     } catch (err: any) {
       if (err.message?.includes('already registered')) {
@@ -234,28 +282,58 @@ export default function SignUpPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-2xl p-8 text-center shadow-lg">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Check className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">가입이 완료되었습니다!</h1>
-          <p className="text-gray-600 mb-8">
-            온시아 Job의 회원이 되신 것을 환영합니다.<br />
-            이제 다양한 채용 공고를 확인해보세요.
-          </p>
-          <div className="space-y-3">
-            <Link
-              href="/agent/jobs"
-              className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
-            >
-              채용공고 둘러보기
-            </Link>
-            <Link
-              href="/agent/mypage/resume"
-              className="block w-full py-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-            >
-              이력서 등록하기
-            </Link>
-          </div>
+          {needsEmailConfirm ? (
+            <>
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Mail className="w-10 h-10 text-blue-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">이메일 인증이 필요합니다</h1>
+              <p className="text-gray-600 mb-2">
+                <span className="font-medium text-blue-600">{form.email}</span>
+              </p>
+              <p className="text-gray-500 text-sm mb-8">
+                위 이메일로 인증 링크를 보내드렸습니다.<br />
+                이메일을 확인하고 링크를 클릭하면 가입이 완료됩니다.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
+                <p className="text-sm text-amber-800">
+                  <span className="font-medium">메일이 오지 않나요?</span><br />
+                  스팸 메일함을 확인해주세요. 그래도 없으면 로그인 페이지에서 재발송할 수 있습니다.
+                </p>
+              </div>
+              <Link
+                href="/agent/auth/login"
+                className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+              >
+                로그인 페이지로 이동
+              </Link>
+            </>
+          ) : (
+            <>
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Check className="w-10 h-10 text-green-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">가입이 완료되었습니다!</h1>
+              <p className="text-gray-600 mb-8">
+                온시아 Job의 회원이 되신 것을 환영합니다.<br />
+                이제 다양한 채용 공고를 확인해보세요.
+              </p>
+              <div className="space-y-3">
+                <Link
+                  href="/agent/jobs"
+                  className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                >
+                  채용공고 둘러보기
+                </Link>
+                <Link
+                  href="/agent/mypage/resume"
+                  className="block w-full py-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                >
+                  이력서 등록하기
+                </Link>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -335,22 +413,47 @@ export default function SignUpPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               이메일 <span className="text-red-500">*</span>
             </label>
-            <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                value={form.email || ''}
-                onChange={(e) => setForm({ ...form, email: e.target.value })}
-                placeholder="이메일을 입력하세요"
-                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.email ? 'border-red-300' : 'border-gray-200'
-                }`}
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={form.email || ''}
+                  onChange={(e) => {
+                    setForm({ ...form, email: e.target.value });
+                    setEmailChecked(false);
+                    setEmailAvailable(false);
+                  }}
+                  placeholder="이메일을 입력하세요"
+                  className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.email ? 'border-red-300' : emailChecked && emailAvailable ? 'border-green-400' : 'border-gray-200'
+                  }`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={checkEmailDuplicate}
+                disabled={isCheckingEmail || !form.email}
+                className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
+              >
+                {isCheckingEmail ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : emailChecked && emailAvailable ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                ) : null}
+                중복확인
+              </button>
             </div>
             {errors.email && (
               <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
                 <AlertCircle className="w-4 h-4" />
                 {errors.email}
+              </p>
+            )}
+            {emailChecked && emailAvailable && (
+              <p className="text-green-600 text-sm mt-1 flex items-center gap-1">
+                <CheckCircle2 className="w-4 h-4" />
+                사용 가능한 이메일입니다
               </p>
             )}
           </div>
@@ -444,7 +547,7 @@ export default function SignUpPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               닉네임 <span className="text-red-500">*</span>
-              <span className="text-gray-400 font-normal ml-2">커뮤니티 활동명</span>
+              <span className="text-gray-400 font-normal ml-2">공인중개사 상호명</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">@</span>
@@ -595,6 +698,11 @@ export default function SignUpPage() {
                 <p className="text-xs text-gray-500">
                   * 개설등록번호를 입력하면 공공데이터를 통해 중개사무소 정보가 자동으로 조회됩니다.
                 </p>
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                  <p className="text-xs text-amber-700">
+                    💡 지금 등록하지 않아도 가입 가능합니다. 구인글 작성 시 중개사무소 또는 사업자등록번호 인증이 필요하며, 마이페이지에서 나중에 등록할 수 있습니다.
+                  </p>
+                </div>
               </div>
             </div>
           )}

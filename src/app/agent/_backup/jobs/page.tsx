@@ -69,7 +69,7 @@ const allJobs: AgentJobListing[] = [
     id: '3',
     title: '신림동 원룸/빌라 전문 신입/경력 채용',
     description: '친절한 교육 시스템, 초보자도 환영합니다',
-    type: 'oneroom',
+    type: 'villa',
     tier: 'normal',
     badges: ['new'],
     salary: { type: 'mixed', amount: '200만+α', min: 200 },
@@ -179,7 +179,7 @@ const allJobs: AgentJobListing[] = [
     id: '9',
     title: '수원 영통 원룸 전문 중개사',
     description: '영통 대학가 원룸 전문 사무소',
-    type: 'oneroom',
+    type: 'villa',
     tier: 'normal',
     badges: [],
     salary: { type: 'mixed', amount: '180만+α', min: 180 },
@@ -254,7 +254,7 @@ const TYPE_OPTIONS: { value: AgentJobType | 'all'; label: string }[] = [
   { value: 'apartment', label: '아파트' },
   { value: 'villa', label: '빌라' },
   { value: 'store', label: '상가' },
-  { value: 'oneroom', label: '원룸' },
+  { value: 'villa', label: '원룸' },
   { value: 'office', label: '오피스' },
 ];
 

@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 import { User, LogIn, Building2, HardHat } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
   variant?: 'landing' | 'agent' | 'sales';
 }
 
 export default function Header({ variant = 'landing' }: HeaderProps) {
+  const { user, isLoading } = useAuth();
   const getVariantStyles = () => {
     switch (variant) {
       case 'agent':
@@ -100,19 +102,35 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
             )}
           </nav>
 
-          {/* 로그인 버튼 */}
+          {/* 로그인/마이페이지 버튼 */}
           <div className="flex items-center gap-2">
-            <Link
-              href={variant === 'sales' ? '/sales/auth/login' : '/agent/auth/login'}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
-                variant === 'landing' || variant === 'sales'
-                  ? 'bg-white/20 text-white hover:bg-white/30'
-                  : 'bg-blue-600 text-white hover:bg-blue-700'
-              }`}
-            >
-              <LogIn className="w-4 h-4" />
-              <span className="hidden sm:inline">로그인</span>
-            </Link>
+            {!isLoading && user ? (
+              <Link
+                href={variant === 'sales' ? '/sales/mypage' : '/agent/mypage'}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                  variant === 'landing' || variant === 'sales'
+                    ? 'bg-white/20 text-white hover:bg-white/30'
+                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                }`}
+              >
+                <User className="w-4 h-4" />
+                <span className="hidden sm:inline">
+                  {user.user_metadata?.name || user.email?.split('@')[0] || '마이페이지'}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href={variant === 'sales' ? '/sales/auth/login' : '/agent/auth/login'}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                  variant === 'landing' || variant === 'sales'
+                    ? 'bg-white/20 text-white hover:bg-white/30'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                <LogIn className="w-4 h-4" />
+                <span className="hidden sm:inline">로그인</span>
+              </Link>
+            )}
           </div>
         </div>
       </div>

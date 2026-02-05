@@ -25,6 +25,7 @@ import {
   GraduationCap,
   Banknote,
   Lock,
+  Camera,
 } from 'lucide-react';
 import type { AgentResume, AgentCareer, AgentJobType, AgentSalaryType, AgentExperience } from '@/types';
 import { REGIONS, AGENT_JOB_TYPE_LABELS, AGENT_SALARY_TYPE_LABELS, AGENT_EXPERIENCE_LABELS } from '@/types';
@@ -42,7 +43,7 @@ const EMPTY_RESUME: AgentResume = {
   preferredSalary: { type: 'mixed' },
   createdAt: '',
   updatedAt: '',
-  isPublic: false,
+  isPublic: true,
 };
 
 const EMPTY_CAREER: AgentCareer = {
@@ -62,6 +63,21 @@ export default function ResumePage() {
   const [showCareerForm, setShowCareerForm] = useState(false);
   const [newCareer, setNewCareer] = useState<AgentCareer>(EMPTY_CAREER);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  // 프로필 사진 업로드 핸들러
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const result = reader.result as string;
+        setPhotoPreview(result);
+        setEditData({ ...editData, photo: result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   // 로그인한 사용자 정보에서 이메일/연락처 가져오기
   const userEmail = user?.email || '';
@@ -81,6 +97,7 @@ export default function ResumePage() {
       };
       setResume(updatedResume);
       setEditData(updatedResume);
+      if (updatedResume.photo) setPhotoPreview(updatedResume.photo);
     } else {
       // 새 이력서 작성 시 사용자 정보 자동 채우기
       setEditData({
@@ -97,6 +114,7 @@ export default function ResumePage() {
     const updatedResume: AgentResume = {
       ...editData,
       id: editData.id || `resume_${Date.now()}`,
+      isPublic: true,
       createdAt: editData.createdAt || now,
       updatedAt: now,
     };
@@ -189,17 +207,50 @@ export default function ResumePage() {
               기본 정보
             </h2>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  이름 <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={editData.name}
-                  onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                  placeholder="이름을 입력하세요"
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="flex items-start gap-4">
+                {/* 프로필 사진 */}
+                <div className="flex-shrink-0">
+                  <label className="cursor-pointer group">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="hidden"
+                    />
+                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-gray-300 group-hover:border-blue-400 transition-colors bg-gray-50">
+                      {photoPreview || editData.photo ? (
+                        <img
+                          src={photoPreview || editData.photo}
+                          alt="프로필"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                          <Camera className="w-6 h-6 mb-1" />
+                          <span className="text-[10px]">사진 등록</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                        {(photoPreview || editData.photo) && (
+                          <Camera className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                        )}
+                      </div>
+                    </div>
+                  </label>
+                </div>
+                {/* 이름 */}
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    이름 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={editData.name}
+                    onChange={(e) => setEditData({ ...editData, name: e.target.value })}
+                    placeholder="이름을 입력하세요"
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -288,10 +339,13 @@ export default function ResumePage() {
 
           {/* 자격증 정보 */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Award className="w-5 h-5 text-blue-600" />
-              공인중개사 자격증
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Award className="w-5 h-5 text-blue-600" />
+                공인중개사 자격증
+              </h2>
+              <span className="text-xs text-gray-400">선택사항</span>
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">자격번호</label>
@@ -304,13 +358,28 @@ export default function ResumePage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">취득일</label>
-                <input
-                  type="date"
-                  value={editData.licenseDate || ''}
-                  onChange={(e) => setEditData({ ...editData, licenseDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">취득연도</label>
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <input
+                      type="number"
+                      value={editData.licenseDate || ''}
+                      onChange={(e) => setEditData({ ...editData, licenseDate: e.target.value })}
+                      placeholder="예: 2023"
+                      min={1990}
+                      max={new Date().getFullYear()}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  {editData.licenseDate && Number(editData.licenseDate) >= 1990 && (
+                    <div className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-xl text-sm font-medium text-blue-700 whitespace-nowrap">
+                      제{Number(editData.licenseDate) - 1989}회
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  합격 연도를 입력하면 회차가 자동 계산됩니다 (1회: 1990년 ~ 36회: 2025년)
+                </p>
               </div>
             </div>
           </div>
@@ -359,7 +428,7 @@ export default function ResumePage() {
               <div className="p-4 bg-gray-50 rounded-xl mb-4">
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">회사명</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">회사명 (공인중개사 상호)</label>
                     <input
                       type="text"
                       value={newCareer.company}
@@ -581,16 +650,6 @@ export default function ResumePage() {
                 </div>
               </div>
 
-              {/* 입사 가능일 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">입사 가능일</label>
-                <input
-                  type="date"
-                  value={editData.availableDate || ''}
-                  onChange={(e) => setEditData({ ...editData, availableDate: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
             </div>
           </div>
 
@@ -609,28 +668,6 @@ export default function ResumePage() {
             />
           </div>
 
-          {/* 이력서 공개 설정 */}
-          <div className="bg-white rounded-2xl p-6 border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">이력서 공개</h2>
-                <p className="text-sm text-gray-500 mt-1">공개 시 기업에서 이력서를 열람할 수 있습니다</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditData({ ...editData, isPublic: !editData.isPublic })}
-                className={`relative w-14 h-7 rounded-full transition-colors ${
-                  editData.isPublic ? 'bg-blue-600' : 'bg-gray-300'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                    editData.isPublic ? 'right-1' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
         </main>
       </div>
     );
@@ -665,8 +702,12 @@ export default function ResumePage() {
         {/* 기본 정보 */}
         <div className="bg-white rounded-2xl p-6 border border-gray-200">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-              <User className="w-10 h-10 text-blue-600" />
+            <div className="w-20 h-20 rounded-full overflow-hidden flex-shrink-0 bg-blue-100 flex items-center justify-center">
+              {resume.photo ? (
+                <img src={resume.photo} alt="프로필" className="w-full h-full object-cover" />
+              ) : (
+                <User className="w-10 h-10 text-blue-600" />
+              )}
             </div>
             <div className="flex-1">
               <h1 className="text-2xl font-bold text-gray-900">{resume.name}</h1>
@@ -680,16 +721,9 @@ export default function ResumePage() {
                   {resume.email}
                 </span>
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                  resume.isPublic ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-                }`}>
-                  {resume.isPublic ? '공개' : '비공개'}
-                </span>
-                <span className="text-xs text-gray-400">
-                  마지막 수정: {new Date(resume.updatedAt).toLocaleDateString('ko-KR')}
-                </span>
-              </div>
+              <span className="text-xs text-gray-400 mt-2 inline-block">
+                마지막 수정: {new Date(resume.updatedAt).toLocaleDateString('ko-KR')}
+              </span>
             </div>
           </div>
         </div>
@@ -708,7 +742,14 @@ export default function ResumePage() {
               <div>
                 <p className="font-medium text-gray-900">자격번호: {resume.licenseNumber}</p>
                 {resume.licenseDate && (
-                  <p className="text-sm text-gray-500">취득일: {resume.licenseDate}</p>
+                  <p className="text-sm text-gray-500">
+                    {resume.licenseDate}년 합격
+                    {Number(resume.licenseDate) >= 1990 && (
+                      <span className="ml-1.5 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                        제{Number(resume.licenseDate) - 1989}회
+                      </span>
+                    )}
+                  </p>
                 )}
               </div>
             </div>
@@ -784,24 +825,16 @@ export default function ResumePage() {
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Banknote className="w-5 h-5 text-gray-400" />
-                <span className="text-gray-600">
-                  {AGENT_SALARY_TYPE_LABELS[resume.preferredSalary.type]}
-                  {resume.preferredSalary.min && resume.preferredSalary.max && (
-                    <span className="ml-1 text-blue-600 font-medium">
-                      ({resume.preferredSalary.min}~{resume.preferredSalary.max}만원)
-                    </span>
-                  )}
-                </span>
-              </div>
-              {resume.availableDate && (
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-gray-400" />
-                  <span className="text-gray-600">입사 가능: {resume.availableDate}</span>
-                </div>
-              )}
+            <div className="flex items-center gap-2">
+              <Banknote className="w-5 h-5 text-gray-400" />
+              <span className="text-gray-600">
+                {AGENT_SALARY_TYPE_LABELS[resume.preferredSalary.type]}
+                {resume.preferredSalary.min && resume.preferredSalary.max && (
+                  <span className="ml-1 text-blue-600 font-medium">
+                    ({resume.preferredSalary.min}~{resume.preferredSalary.max}만원)
+                  </span>
+                )}
+              </span>
             </div>
           </div>
         </div>

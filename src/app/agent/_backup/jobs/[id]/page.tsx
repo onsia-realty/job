@@ -196,7 +196,7 @@ const RELATED_JOBS: AgentJobListing[] = [
     id: '4',
     title: '강동구 원룸/투룸 전문 중개사',
     description: '',
-    type: 'oneroom',
+    type: 'villa',
     tier: 'premium',
     badges: ['new', 'hot'],
     salary: { type: 'mixed', amount: '월 200만원 + α' },

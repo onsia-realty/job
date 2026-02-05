@@ -106,6 +106,35 @@ export async function getSession() {
   return session;
 }
 
+// 사용자 메타데이터 업데이트 (인증 정보 저장용)
+export async function updateUserMetadata(metadata: Record<string, any>) {
+  const { data, error } = await supabase.auth.updateUser({
+    data: metadata,
+  });
+
+  if (error) {
+    console.error('Update metadata error:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// 이메일 인증 재발송
+export async function resendConfirmationEmail(email: string) {
+  const { data, error } = await supabase.auth.resend({
+    type: 'signup',
+    email,
+  });
+
+  if (error) {
+    console.error('Resend confirmation error:', error);
+    throw error;
+  }
+
+  return data;
+}
+
 // Auth 상태 변경 리스너
 export function onAuthStateChange(callback: (event: string, session: any) => void) {
   return supabase.auth.onAuthStateChange(callback);

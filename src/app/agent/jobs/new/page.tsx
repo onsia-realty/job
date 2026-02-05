@@ -1,21 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
-  ArrowLeft, Building2, Briefcase,
-  DollarSign, Phone, FileText, Image as ImageIcon,
-  ShieldAlert, Loader2,
+  ArrowLeft, Upload, X, Building2, Briefcase,
+  DollarSign, Clock, Phone, FileText, Image as ImageIcon,
+  ShieldAlert, Loader2, CheckCircle2,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
-import { uploadImage } from '@/lib/upload';
+import { uploadImage, uploadMultipleImages } from '@/lib/upload';
 import { useAuth } from '@/contexts/AuthContext';
 import FormSection from '@/components/shared/FormSection';
 import ThumbnailUpload from '@/components/shared/ThumbnailUpload';
 import ContactSection from '@/components/shared/ContactSection';
 import AddressSearch from '@/components/shared/AddressSearch';
+import type { AgentJobType, AgentSalaryType, AgentExperience, AgentJobTier } from '@/types';
 
 const RichTextEditor = dynamic(() => import('@/components/editor/RichTextEditor'), {
   ssr: false,
@@ -32,61 +33,70 @@ const REGIONS = [
   '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'
 ];
 
-const JOB_TYPES = [
+const JOB_TYPES: { value: AgentJobType; label: string }[] = [
   { value: 'apartment', label: '아파트' },
   { value: 'officetel', label: '오피스텔' },
+  { value: 'villa', label: '빌라/다세대' },
   { value: 'store', label: '상가' },
-  { value: 'industrial', label: '지식산업센터' },
+  { value: 'office', label: '사무실' },
+  { value: 'building', label: '빌딩매매' },
+  { value: 'auction', label: '경매' },
 ];
 
-const POSITIONS = [
-  { value: 'headTeam', label: '본부장' },
-  { value: 'teamLead', label: '팀장' },
-  { value: 'member', label: '팀원' },
+const SALARY_TYPES: { value: AgentSalaryType; label: string }[] = [
+  { value: 'monthly', label: '월급' },
+  { value: 'commission', label: '비율제' },
+  { value: 'mixed', label: '월급 + 비율제' },
 ];
 
-const SALARY_TYPES = [
-  { value: 'per_contract', label: '건당' },
-  { value: 'percentage', label: '% 비율제' },
-];
-
-const EXPERIENCES = [
+const EXPERIENCES: { value: AgentExperience; label: string }[] = [
   { value: 'none', label: '경력무관' },
-  { value: '1month', label: '1개월 이상' },
-  { value: '3month', label: '3개월 이상' },
   { value: '6month', label: '6개월 이상' },
-  { value: '12month', label: '12개월 이상' },
+  { value: '1year', label: '1년 이상' },
+  { value: '2year', label: '2년 이상' },
+  { value: '3year', label: '3년 이상' },
+  { value: '5year', label: '5년 이상' },
 ];
 
-const COMPANY_TYPES = [
-  { value: 'developer', label: '시행사' },
-  { value: 'builder', label: '시공사' },
-  { value: 'agency', label: '분양대행사' },
-  { value: 'trust', label: '신탁사' },
-];
+const IMAGE_SLOTS = [
+  { key: 'logo', label: '부동산 로고', placeholder: '로고 이미지를 업로드하세요' },
+  { key: 'signboard', label: '옥외 간판', placeholder: '옥외 간판 사진을 업로드하세요' },
+  { key: 'interior', label: '내부 이미지', placeholder: '사무소 내부 사진을 업로드하세요' },
+] as const;
 
-const BENEFITS_OPTIONS = [
-  '숙소제공', '숙소비', '일비', '교통비', '식대', '차량지원', '4대보험'
-];
-
-const TIERS = [
+const TIERS: { value: AgentJobTier; label: string; price: number; color: string }[] = [
   { value: 'normal', label: '일반 (무료)', price: 0, color: 'bg-gray-500' },
   { value: 'premium', label: '프리미엄', price: 50000, color: 'bg-cyan-500' },
-  { value: 'superior', label: '슈페리어', price: 100000, color: 'bg-blue-600' },
-  { value: 'unique', label: '유니크', price: 200000, color: 'bg-purple-600' },
+];
+
+const WORK_DAYS_OPTIONS = [
+  '월~금', '월~토', '주5일', '주6일', '협의',
+];
+
+const TIME_OPTIONS = [
+  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30',
+  '13:00', '13:30', '14:00', '14:30', '15:00', '15:30',
+  '16:00', '16:30', '17:00', '17:30', '18:00', '18:30',
+  '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
 ];
 
 // 마감일 제한: 오늘 ~ 오늘+10일
 const today = new Date().toISOString().split('T')[0];
 const maxDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-export default function NewJobPage() {
+export default function NewAgentJobPage() {
   const router = useRouter();
   const { user: authUser, isLoading: authLoading } = useAuth();
+  const imageInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+
+  // 부동산 이미지 3장 (로고, 옥외 간판, 내부)
+  const [imageFiles, setImageFiles] = useState<Record<string, File | null>>({ logo: null, signboard: null, interior: null });
+  const [imagePreviews, setImagePreviews] = useState<Record<string, string | null>>({ logo: null, signboard: null, interior: null });
 
   // 인증 상태 확인
   const meta = authUser?.user_metadata;
@@ -102,20 +112,22 @@ export default function NewJobPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    type: 'apartment',
-    tier: 'normal',
-    position: 'member',
-    salary_type: 'per_contract',
+    type: 'apartment' as AgentJobType,
+    tier: 'normal' as AgentJobTier,
+    salary_type: 'monthly' as AgentSalaryType,
     salary_amount: '',
-    benefits: [] as string[],
-    experience: 'none',
+    experience: 'none' as AgentExperience,
     company: '',
-    company_type: 'agency',
     region: '서울',
     address: '',
+    detail_address: '',
     phone: '',
     contact_name: '',
     deadline: '',
+    is_always_recruiting: false,
+    work_start: '09:00',
+    work_end: '18:00',
+    work_days: '',
     html_content: '',
   });
 
@@ -137,7 +149,7 @@ export default function NewJobPage() {
     setFormData(prev => ({ ...prev, phone: value }));
   };
 
-  // 수수료 금액 핸들러
+  // 급여 금액 핸들러
   const handleSalaryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/[^0-9]/g, '');
     setFormData(prev => ({ ...prev, salary_amount: value }));
@@ -148,7 +160,7 @@ export default function NewJobPage() {
     setFormData(prev => ({ ...prev, html_content: html }));
   }, []);
 
-  // 배너 제목/부제목 ↔ 공고제목/한줄설명 동기화
+  // 배너 제목/부제목 ↔ 공고제목/한줄요약 동기화
   const handleBannerTitleChange = useCallback((title: string, subtitle: string) => {
     setFormData(prev => ({
       ...prev,
@@ -162,13 +174,30 @@ export default function NewJobPage() {
     return uploadImage(file, 'editor-images');
   }, []);
 
-  // 혜택 토글
-  const toggleBenefit = (benefit: string) => {
+  // 부동산 이미지 업로드 핸들러
+  const handleImageChange = (key: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFiles(prev => ({ ...prev, [key]: file }));
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => ({ ...prev, [key]: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = (key: string) => {
+    setImageFiles(prev => ({ ...prev, [key]: null }));
+    setImagePreviews(prev => ({ ...prev, [key]: null }));
+  };
+
+  // 상시채용 토글
+  const toggleAlwaysRecruiting = () => {
     setFormData(prev => ({
       ...prev,
-      benefits: prev.benefits.includes(benefit)
-        ? prev.benefits.filter(b => b !== benefit)
-        : [...prev.benefits, benefit]
+      is_always_recruiting: !prev.is_always_recruiting,
+      deadline: !prev.is_always_recruiting ? '' : prev.deadline,
     }));
   };
 
@@ -205,45 +234,69 @@ export default function NewJobPage() {
         }
       }
 
-      // 2. 공고 데이터 저장
+      // 2. 부동산 이미지 3장 업로드
+      const imageUrls = await uploadMultipleImages(imageFiles, 'agent-images');
+
+      // 3. 추가 정보를 html_content에 포함
+      const workHours = formData.work_start && formData.work_end
+        ? `${formData.work_start} ~ ${formData.work_end}`
+        : '';
+
+      const extraInfo = [
+        formData.detail_address && `상세주소: ${formData.detail_address}`,
+        workHours && `근무시간: ${workHours}`,
+        formData.work_days && `근무요일: ${formData.work_days}`,
+        formData.is_always_recruiting && '상시채용',
+      ].filter(Boolean).join('\n');
+
+      const imageData = Object.keys(imageUrls).length > 0
+        ? `<!-- AGENT_IMAGES:${JSON.stringify(imageUrls)} -->`
+        : '';
+
+      const fullHtmlContent = [formData.html_content, extraInfo, imageData].filter(Boolean).join('\n\n') || null;
+
+      // 4. 공고 데이터 저장
+      const insertPayload = {
+        user_id: authUser?.id || null,
+        title: formData.title,
+        description: formData.description,
+        html_content: fullHtmlContent,
+        category: 'agent',
+        type: formData.type,
+        tier: formData.tier,
+        badges: [],
+        position: 'member',
+        salary_type: formData.salary_type,
+        salary_amount: formData.salary_amount ? `${formData.salary_amount}만원` : null,
+        benefits: [],
+        experience: formData.experience,
+        company: formData.company,
+        company_type: null,
+        region: formData.region,
+        address: formData.address ? `${formData.address}${formData.detail_address ? ` ${formData.detail_address}` : ''}` : null,
+        thumbnail: thumbnailUrl,
+        phone: formData.phone || null,
+        contact_name: formData.contact_name || null,
+        deadline: formData.is_always_recruiting ? null : (formData.deadline || null),
+        is_active: true,
+        is_approved: true,
+      };
+
       const { error } = await supabase
         .from('jobs')
-        .insert({
-          title: formData.title,
-          description: formData.description,
-          html_content: formData.html_content || null,
-          category: 'sales',
-          type: formData.type,
-          tier: formData.tier,
-          badges: [],
-          position: formData.position,
-          salary_type: formData.salary_type,
-          salary_amount: formData.salary_amount ? `${formData.salary_amount}만원` : null,
-          benefits: formData.benefits,
-          experience: formData.experience,
-          company: formData.company,
-          company_type: formData.company_type,
-          region: formData.region,
-          address: formData.address || null,
-          thumbnail: thumbnailUrl,
-          phone: formData.phone || null,
-          contact_name: formData.contact_name || null,
-          deadline: formData.deadline || null,
-          is_active: true,
-          is_approved: true,
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
       if (error) {
-        console.error('Insert error:', error);
-        alert('공고 등록에 실패했습니다: ' + error.message);
+        console.error('Insert error:', JSON.stringify(error, null, 2));
+        alert('공고 등록에 실패했습니다: ' + (error.message || error.code || JSON.stringify(error)));
         setIsSubmitting(false);
         return;
       }
 
       alert('공고가 등록되었습니다!');
-      router.push('/sales');
+      router.push('/agent/jobs');
 
     } catch (err) {
       console.error('Submit error:', err);
@@ -258,7 +311,7 @@ export default function NewJobPage() {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
@@ -284,7 +337,7 @@ export default function NewJobPage() {
             <div className="space-y-3">
               <Link
                 href="/agent/mypage/verification"
-                className="block w-full py-3.5 bg-purple-600 text-white rounded-xl font-bold text-center hover:bg-purple-700 transition-colors"
+                className="block w-full py-3.5 bg-blue-600 text-white rounded-xl font-bold text-center hover:bg-blue-700 transition-colors"
               >
                 인증하러 가기
               </Link>
@@ -303,19 +356,19 @@ export default function NewJobPage() {
       {/* 헤더 */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-          <Link href="/sales" className="p-2 hover:bg-gray-100 rounded-lg">
+          <Link href="/agent/jobs" className="p-2 hover:bg-gray-100 rounded-lg">
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </Link>
-          <h1 className="text-lg font-bold text-gray-900">분양상담사 공고 등록</h1>
+          <h1 className="text-lg font-bold text-gray-900">공인중개사 구인글 등록</h1>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          {/* 광고 티어 선택 */}
-          <FormSection icon={DollarSign} title="광고 상품 선택" iconColor="text-purple-600">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {/* 공고 등급 선택 */}
+          <FormSection icon={DollarSign} title="공고 등급 선택">
+            <div className="grid grid-cols-2 gap-3">
               {TIERS.map((tier) => (
                 <button
                   key={tier.value}
@@ -323,7 +376,7 @@ export default function NewJobPage() {
                   onClick={() => setFormData(prev => ({ ...prev, tier: tier.value }))}
                   className={`p-4 rounded-xl border-2 transition-all ${
                     formData.tier === tier.value
-                      ? 'border-purple-500 bg-purple-50'
+                      ? 'border-blue-500 bg-blue-50'
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
@@ -336,14 +389,14 @@ export default function NewJobPage() {
               ))}
             </div>
             {selectedTier && selectedTier.price > 0 && (
-              <p className="mt-4 text-sm text-purple-600 bg-purple-50 p-3 rounded-lg">
-                {selectedTier.label} 상품은 상위 노출 및 강조 표시가 제공됩니다.
+              <p className="mt-4 text-sm text-blue-600 bg-blue-50 p-3 rounded-lg">
+                프리미엄 공고는 상위 노출 및 강조 표시가 제공됩니다.
               </p>
             )}
           </FormSection>
 
           {/* 기본 정보 + WYSIWYG 에디터 */}
-          <FormSection icon={FileText} title="기본 정보" iconColor="text-purple-600">
+          <FormSection icon={FileText} title="기본 정보">
             <div className="space-y-4">
               {/* 제목 */}
               <div>
@@ -356,15 +409,15 @@ export default function NewJobPage() {
                   value={formData.title}
                   onChange={handleChange}
                   required
-                  placeholder="예: 힐스테이트 분양상담사 급구"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  placeholder="예: 강남역 부동산 경력 중개사 모집"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
-              {/* 한줄 설명 */}
+              {/* 한줄 요약 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  한줄 설명 <span className="text-red-500">*</span>
+                  한줄 요약 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -372,8 +425,8 @@ export default function NewJobPage() {
                   value={formData.description}
                   onChange={handleChange}
                   required
-                  placeholder="예: 최고 수수료 조건! 숙소+일비 지원"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  placeholder="예: 경력 중개사 우대, 월급+인센티브 지원"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 />
               </div>
 
@@ -387,8 +440,8 @@ export default function NewJobPage() {
                   onChange={handleEditorChange}
                   onImageUpload={handleEditorImageUpload}
                   onBannerTitleChange={handleBannerTitleChange}
-                  placeholder="모집 조건, 현장 소개, 근무 환경 등을 자세히 작성해주세요. 이미지, 표 삽입 가능합니다."
-                  templateCategory="sales"
+                  placeholder="모집 조건, 업무 내용, 근무 환경 등을 자세히 작성해주세요. 이미지, 표 삽입 가능합니다."
+                  templateCategory="agent"
                   defaultTitle={formData.title}
                   defaultSubtitle={formData.description}
                 />
@@ -398,48 +451,30 @@ export default function NewJobPage() {
           </FormSection>
 
           {/* 썸네일 이미지 */}
-          <FormSection icon={ImageIcon} title="썸네일 이미지" iconColor="text-purple-600">
+          <FormSection icon={ImageIcon} title="썸네일 이미지">
             <ThumbnailUpload
               preview={thumbnailPreview}
               onFileChange={handleThumbnailChange}
               onRemove={removeThumbnail}
-              accentColor="purple"
             />
           </FormSection>
 
           {/* 모집 조건 */}
-          <FormSection icon={Briefcase} title="모집 조건" iconColor="text-purple-600">
+          <FormSection icon={Briefcase} title="모집 조건">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 현장 유형 */}
+              {/* 매물유형 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  현장 유형 <span className="text-red-500">*</span>
+                  매물유형 <span className="text-red-500">*</span>
                 </label>
                 <select
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 >
                   {JOB_TYPES.map((type) => (
                     <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 모집 직급 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  모집 직급 <span className="text-red-500">*</span>
-                </label>
-                <select
-                  name="position"
-                  value={formData.position}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
-                >
-                  {POSITIONS.map((pos) => (
-                    <option key={pos.value} value={pos.value}>{pos.label}</option>
                   ))}
                 </select>
               </div>
@@ -453,7 +488,7 @@ export default function NewJobPage() {
                   name="salary_type"
                   value={formData.salary_type}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 >
                   {SALARY_TYPES.map((type) => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -461,10 +496,10 @@ export default function NewJobPage() {
                 </select>
               </div>
 
-              {/* 수수료 금액 */}
+              {/* 급여 금액 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  수수료
+                  급여 금액
                 </label>
                 <div className="relative">
                   <input
@@ -472,10 +507,12 @@ export default function NewJobPage() {
                     name="salary_amount"
                     value={formData.salary_amount}
                     onChange={handleSalaryChange}
-                    placeholder="예: 1200"
-                    className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-16 focus:outline-none focus:border-purple-500"
+                    placeholder={formData.salary_type === 'monthly' ? '예: 250' : formData.salary_type === 'commission' ? '예: 50' : '예: 200+α'}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-3 pr-16 focus:outline-none focus:border-blue-500"
                   />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">만원</span>
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500">
+                    {formData.salary_type === 'commission' ? '%' : '만원'}
+                  </span>
                 </div>
               </div>
 
@@ -488,7 +525,7 @@ export default function NewJobPage() {
                   name="experience"
                   value={formData.experience}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 >
                   {EXPERIENCES.map((exp) => (
                     <option key={exp.value} value={exp.value}>{exp.label}</option>
@@ -496,55 +533,150 @@ export default function NewJobPage() {
                 </select>
               </div>
 
-              {/* 마감일 */}
-              <div>
+              {/* 마감일 + 상시채용 */}
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   모집 마감일
                 </label>
-                <input
-                  type="date"
-                  name="deadline"
-                  value={formData.deadline}
-                  onChange={handleChange}
-                  min={today}
-                  max={maxDeadline}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
-                />
+                <div className="flex items-center gap-3">
+                  <input
+                    type="date"
+                    name="deadline"
+                    value={formData.deadline}
+                    onChange={handleChange}
+                    min={today}
+                    max={maxDeadline}
+                    disabled={formData.is_always_recruiting}
+                    className={`flex-1 border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500 ${
+                      formData.is_always_recruiting ? 'bg-gray-100 text-gray-400' : ''
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={toggleAlwaysRecruiting}
+                    className={`flex items-center gap-2 px-4 py-3 rounded-lg border-2 transition-all whitespace-nowrap ${
+                      formData.is_always_recruiting
+                        ? 'border-blue-500 bg-blue-50 text-blue-700'
+                        : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                    }`}
+                  >
+                    <CheckCircle2 className={`w-4 h-4 ${formData.is_always_recruiting ? 'text-blue-600' : 'text-gray-400'}`} />
+                    상시채용
+                  </button>
+                </div>
                 <p className="text-xs text-gray-400 mt-1">등록일로부터 최대 10일까지 설정 가능</p>
               </div>
             </div>
 
-            {/* 복리후생 */}
-            <div className="mt-4">
+            {/* 부동산 이미지 업로드 */}
+            <div className="mt-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                복리후생
+                부동산 이미지
               </label>
-              <div className="flex flex-wrap gap-2">
-                {BENEFITS_OPTIONS.map((benefit) => (
-                  <button
-                    key={benefit}
-                    type="button"
-                    onClick={() => toggleBenefit(benefit)}
-                    className={`px-4 py-2 rounded-full text-sm transition-colors ${
-                      formData.benefits.includes(benefit)
-                        ? 'bg-purple-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {benefit}
-                  </button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {IMAGE_SLOTS.map((slot) => (
+                  <div key={slot.key}>
+                    <p className="text-xs text-gray-500 mb-1.5 font-medium">{slot.label}</p>
+                    <input
+                      ref={(el) => { imageInputRefs.current[slot.key] = el; }}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleImageChange(slot.key, e)}
+                      className="hidden"
+                    />
+                    {imagePreviews[slot.key] ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreviews[slot.key]!}
+                          alt={slot.label}
+                          className="w-full h-32 object-cover rounded-lg border border-gray-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(slot.key)}
+                          className="absolute top-1.5 right-1.5 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => imageInputRefs.current[slot.key]?.click()}
+                        className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center hover:border-blue-400 transition-colors cursor-pointer bg-white"
+                      >
+                        <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                        <p className="text-xs text-gray-500">{slot.placeholder}</p>
+                      </button>
+                    )}
+                  </div>
                 ))}
+              </div>
+              <p className="text-xs text-gray-400 mt-2">PNG, JPG, GIF (최대 2MB)</p>
+            </div>
+          </FormSection>
+
+          {/* 근무 조건 */}
+          <FormSection icon={Clock} title="근무 조건">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  근무시간
+                </label>
+                <div className="flex items-center gap-2">
+                  <select
+                    name="work_start"
+                    value={formData.work_start}
+                    onChange={handleChange}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:border-blue-500"
+                  >
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-500 font-medium">~</span>
+                  <select
+                    name="work_end"
+                    value={formData.work_end}
+                    onChange={handleChange}
+                    className="flex-1 border border-gray-300 rounded-lg px-3 py-3 focus:outline-none focus:border-blue-500"
+                  >
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  근무요일
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {WORK_DAYS_OPTIONS.map((day) => (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, work_days: day }))}
+                      className={`px-4 py-2 rounded-lg text-sm transition-colors ${
+                        formData.work_days === day
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </FormSection>
 
-          {/* 회사/현장 정보 */}
-          <FormSection icon={Building2} title="회사/현장 정보" iconColor="text-purple-600">
+          {/* 회사/사무소 정보 */}
+          <FormSection icon={Building2} title="회사/사무소 정보">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* 현장명 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  현장명 <span className="text-red-500">*</span>
+                  회사/사무소명 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -552,29 +684,10 @@ export default function NewJobPage() {
                   value={formData.company}
                   onChange={handleChange}
                   required
-                  placeholder="예: 힐스테이트 광교"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  placeholder="예: 강남부동산중개사무소"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 />
               </div>
-
-              {/* 업체 유형 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  업체 유형
-                </label>
-                <select
-                  name="company_type"
-                  value={formData.company_type}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
-                >
-                  {COMPANY_TYPES.map((type) => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 지역 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   지역 <span className="text-red-500">*</span>
@@ -583,33 +696,32 @@ export default function NewJobPage() {
                   name="region"
                   value={formData.region}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-purple-500"
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 >
                   {REGIONS.map((region) => (
                     <option key={region} value={region}>{region}</option>
                   ))}
                 </select>
               </div>
-
-              {/* 주소 검색 */}
               <div className="md:col-span-2">
                 <AddressSearch
                   address={formData.address}
+                  detailAddress={formData.detail_address}
                   onAddressChange={(addr) => setFormData(prev => ({ ...prev, address: addr }))}
-                  accentColor="purple"
+                  onDetailAddressChange={(detail) => setFormData(prev => ({ ...prev, detail_address: detail }))}
+                  accentColor="blue"
                 />
               </div>
             </div>
           </FormSection>
 
-          {/* 연락처 */}
-          <FormSection icon={Phone} title="연락처" iconColor="text-purple-600">
+          {/* 담당자 정보 */}
+          <FormSection icon={Phone} title="담당자 정보">
             <ContactSection
               contactName={formData.contact_name}
               phone={formData.phone}
               onContactNameChange={handleChange}
               onPhoneChange={handlePhoneChange}
-              accentColor="purple"
             />
           </FormSection>
 
@@ -642,7 +754,7 @@ export default function NewJobPage() {
           {/* 제출 버튼 */}
           <div className="flex gap-3">
             <Link
-              href="/sales"
+              href="/agent/jobs"
               className="flex-1 py-4 text-center bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
             >
               취소
@@ -650,9 +762,9 @@ export default function NewJobPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-4 bg-purple-600 text-white rounded-xl font-medium hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '등록 중...' : '공고 등록하기'}
+              {isSubmitting ? '등록 중...' : '구인글 등록하기'}
             </button>
           </div>
 

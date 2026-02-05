@@ -12,7 +12,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { signInWithProvider, signInWithEmail } from '@/lib/auth';
+import { signInWithProvider, signInWithEmail, resendConfirmationEmail } from '@/lib/auth';
 
 // 카카오 로고 컴포넌트
 const KakaoLogo = () => (
@@ -39,6 +39,9 @@ export default function LoginPage() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,13 +60,34 @@ export default function LoginPage() {
     } catch (err: any) {
       if (err.message.includes('Invalid login credentials')) {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+        setNeedsEmailConfirmation(false);
       } else if (err.message.includes('Email not confirmed')) {
-        setError('이메일 인증이 필요합니다. 이메일을 확인해주세요.');
+        setError('이메일 인증이 필요합니다. 아래 버튼을 눌러 인증 메일을 재발송하세요.');
+        setNeedsEmailConfirmation(true);
       } else {
         setError(err.message || '로그인 중 오류가 발생했습니다.');
+        setNeedsEmailConfirmation(false);
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    if (!email) {
+      setError('이메일을 입력해주세요.');
+      return;
+    }
+    setResendingEmail(true);
+    setResendSuccess(false);
+    try {
+      await resendConfirmationEmail(email);
+      setResendSuccess(true);
+      setError('');
+    } catch (err: any) {
+      setError(err.message || '인증 메일 재발송 중 오류가 발생했습니다.');
+    } finally {
+      setResendingEmail(false);
     }
   };
 
@@ -110,9 +134,35 @@ export default function LoginPage() {
 
         {/* 에러 메시지 */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 text-red-700">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <p className="text-sm">{error}</p>
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-start gap-3 text-red-700">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+              <p className="text-sm">{error}</p>
+            </div>
+            {needsEmailConfirmation && (
+              <button
+                onClick={handleResendConfirmation}
+                disabled={resendingEmail}
+                className="mt-3 w-full py-2.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              >
+                {resendingEmail ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    발송 중...
+                  </>
+                ) : (
+                  '인증 메일 재발송'
+                )}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 인증 메일 재발송 성공 */}
+        {resendSuccess && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3 text-green-700">
+            <Mail className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <p className="text-sm">인증 메일이 재발송되었습니다. 이메일을 확인해주세요.</p>
           </div>
         )}
 

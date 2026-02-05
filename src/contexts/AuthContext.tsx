@@ -59,6 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await authSignOut();
       setUser(null);
       setSession(null);
+      // localStorage 정리
+      localStorage.removeItem('agent_user');
     } catch (error) {
       console.error('Sign out error:', error);
     }

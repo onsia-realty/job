@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -31,9 +31,11 @@ import {
   BadgeCheck,
   Bookmark,
   Filter,
+  PenSquare,
 } from 'lucide-react';
 import Header from '@/components/shared/Header';
 import MobileNav from '@/components/shared/MobileNav';
+import { supabase } from '@/lib/supabase';
 import type { AgentJobListing, AgentJobType, AgentJobTier, AgentSalaryType, AgentExperience } from '@/types';
 import { REGIONS } from '@/types';
 
@@ -81,8 +83,8 @@ const ALL_PROPERTY_TYPES = [
   ...CATEGORY_CONFIG.commercial.types,
 ];
 
-// 샘플 데이터
-const allJobs: AgentJobListing[] = [
+// 샘플 데이터 (DB 데이터와 병합됨)
+const sampleJobs: AgentJobListing[] = [
   {
     id: '1',
     title: '강남 대형 아파트 전문 중개사 모집',
@@ -398,6 +400,62 @@ export default function AgentJobsPage() {
   const [showMobileFilter, setShowMobileFilter] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
+  const [allJobs, setAllJobs] = useState<AgentJobListing[]>(sampleJobs);
+
+  // Supabase에서 agent 공고 가져와서 샘플 데이터와 병합
+  useEffect(() => {
+    async function fetchAgentJobs() {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('category', 'agent')
+        .order('created_at', { ascending: false });
+
+      console.log('[agent/jobs] fetch result:', { data, error, count: data?.length });
+
+      if (error) {
+        console.error('Fetch agent jobs error:', error);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        const dbJobs: AgentJobListing[] = data.map((job: any) => ({
+          id: job.id,
+          title: job.title,
+          description: job.description || '',
+          type: job.type as AgentJobType,
+          tier: (job.tier || 'normal') as AgentJobTier,
+          badges: job.badges || [],
+          salary: {
+            type: (job.salary_type || 'monthly') as AgentSalaryType,
+            amount: job.salary_amount || undefined,
+          },
+          experience: job.experience || '경력무관',
+          experienceLevel: (job.experience || 'none') as AgentExperience,
+          company: job.company || '',
+          region: job.region || '',
+          address: job.address || undefined,
+          thumbnail: job.thumbnail || undefined,
+          views: job.views || 0,
+          applicants: 0,
+          createdAt: new Date(job.created_at).toLocaleDateString('ko-KR', {
+            year: 'numeric', month: '2-digit', day: '2-digit',
+          }).replace(/\. /g, '.').replace(/\.$/, ''),
+          deadline: job.deadline || undefined,
+          benefits: job.benefits || [],
+          contactName: job.contact_name || undefined,
+          contactPhone: job.phone || undefined,
+        }));
+
+        // DB 데이터를 앞에, 샘플 데이터를 뒤에 (ID 중복 방지)
+        const dbIds = new Set(dbJobs.map(j => j.id));
+        const merged = [...dbJobs, ...sampleJobs.filter(j => !dbIds.has(j.id))];
+        setAllJobs(merged);
+      }
+    }
+
+    fetchAgentJobs();
+  }, []);
 
   const currentConfig = CATEGORY_CONFIG[selectedMainCategory];
 
@@ -443,7 +501,7 @@ export default function AgentJobsPage() {
     });
 
     return result;
-  }, [searchQuery, selectedRegion, selectedCategory, selectedExperience, selectedSalary, selectedTier, sortBy, currentConfig]);
+  }, [allJobs, searchQuery, selectedRegion, selectedCategory, selectedExperience, selectedSalary, selectedTier, sortBy, currentConfig]);
 
   const totalPages = Math.ceil(filteredAndSortedJobs.length / ITEMS_PER_PAGE);
   const paginatedJobs = filteredAndSortedJobs.slice(
@@ -1039,6 +1097,15 @@ export default function AgentJobsPage() {
           </div>
         </div>
       )}
+
+      {/* 구인글 작성 FAB */}
+      <Link
+        href="/agent/jobs/new"
+        className="fixed bottom-24 md:bottom-8 right-4 md:right-8 z-40 flex items-center gap-2 bg-emerald-600 text-white pl-4 pr-5 py-3.5 rounded-full shadow-lg hover:bg-emerald-700 transition-all hover:shadow-xl active:scale-95"
+      >
+        <PenSquare className="w-5 h-5" />
+        <span className="font-semibold text-sm">구인글 작성</span>
+      </Link>
 
       <MobileNav variant="agent" />
     </div>

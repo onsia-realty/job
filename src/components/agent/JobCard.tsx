@@ -38,7 +38,6 @@ const TYPE_LABELS: Record<AgentJobType, string> = {
   auction: '경매',
   // 레거시
   commercial: '상업시설',
-  oneroom: '원룸',
 };
 
 const TYPE_COLORS: Record<AgentJobType, string> = {
@@ -53,7 +52,6 @@ const TYPE_COLORS: Record<AgentJobType, string> = {
   auction: 'bg-red-100 text-red-700',
   // 레거시
   commercial: 'bg-amber-100 text-amber-700',
-  oneroom: 'bg-teal-100 text-teal-700',
 };
 
 const TIER_STYLES: Record<AgentJobTier, { container: string; badge: string; glow: string }> = {

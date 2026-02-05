@@ -77,7 +77,7 @@ const sampleJobs: AgentJobListing[] = [
     id: '3',
     title: '신림동 원룸/빌라 전문 신입/경력 채용',
     description: '친절한 교육 시스템, 초보자도 환영합니다',
-    type: 'oneroom',
+    type: 'villa',
     tier: 'normal',
     badges: ['new'],
     salary: { type: 'mixed', amount: '200만+α', min: 200 },

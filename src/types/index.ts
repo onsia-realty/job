@@ -47,8 +47,7 @@ export type AgentJobType =
   | 'building'    // 빌딩매매
   | 'auction'     // 경매
   // 레거시
-  | 'commercial'  // 상업시설 (레거시)
-  | 'oneroom';    // 원룸 (레거시)
+  | 'commercial';  // 상업시설 (레거시)
 
 // 부동산 대분류
 export type PropertyCategory = 'residential' | 'commercial';
@@ -101,6 +100,8 @@ export interface AgentJobListing {
   contactName?: string; // 담당자명
   contactPhone?: string; // 연락처
   isBookmarked?: boolean; // 스크랩 여부
+  agentImages?: { logo?: string; signboard?: string; interior?: string }; // 부동산 이미지
+  htmlContent?: string; // HTML 형식 상세 내용 (알바몬/잡코리아 스타일)
 }
 
 // 공인중개사 필터 인터페이스
@@ -142,8 +143,8 @@ export const AGENT_EXPERIENCE_LABELS: Record<AgentExperience, string> = {
 // 급여 타입 라벨 (공인중개사)
 export const AGENT_SALARY_TYPE_LABELS: Record<AgentSalaryType, string> = {
   monthly: '월급',
-  commission: '수수료',
-  mixed: '기본급+수수료',
+  commission: '비율제',
+  mixed: '월급 + 비율제',
 };
 
 // 사용자 프로필 타입 (매칭 시스템용)
@@ -163,8 +164,27 @@ export interface UserProfile {
   company?: string;
   companyType?: string;
   businessNumber?: string;
+  businessVerified?: boolean;
+  brokerVerified?: boolean;
   createdAt: string;
 }
+
+// 기업회원 인증 상태 타입
+export type VerificationStatus = 'unverified' | 'broker_verified' | 'business_verified';
+
+// 인증 상태 라벨
+export const VERIFICATION_STATUS_LABELS: Record<VerificationStatus, string> = {
+  unverified: '미인증',
+  broker_verified: '중개사무소 인증',
+  business_verified: '사업자 인증',
+};
+
+// 인증 상태 색상
+export const VERIFICATION_STATUS_COLORS: Record<VerificationStatus, string> = {
+  unverified: 'bg-gray-100 text-gray-500',
+  broker_verified: 'bg-green-100 text-green-700',
+  business_verified: 'bg-blue-100 text-blue-700',
+};
 
 // 뉴스 타입
 export interface NewsItem {
@@ -214,7 +234,6 @@ export const AGENT_JOB_TYPE_LABELS: Record<AgentJobType, string> = {
   auction: '경매',
   // 레거시
   commercial: '상업시설',
-  oneroom: '원룸',
 };
 
 // 대분류 라벨
