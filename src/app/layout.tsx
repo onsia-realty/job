@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
+import SecurityShield from "@/components/security/SecurityShield";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -121,6 +122,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
         <Providers>
+          <SecurityShield />
           {children}
         </Providers>
       </body>

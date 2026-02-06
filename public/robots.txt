@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Disallow: /_next/static/
+Disallow: /api/
+Disallow: /admin/
+Disallow: /agent/auth/
+Disallow: /sales/auth/
+
+# AI 크롤러 차단
+User-agent: GPTBot
+Disallow: /
+
+User-agent: ChatGPT-User
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: anthropic-ai
+Disallow: /
+
+User-agent: Claude-Web
+Disallow: /
+
+Sitemap: https://booin.co.kr/sitemap.xml
