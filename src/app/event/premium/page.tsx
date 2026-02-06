@@ -193,11 +193,11 @@ export default function PremiumLandingPage() {
               </ul>
             </div>
 
-            {/* 온시아 */}
+            {/* 부동산인 */}
             <div className="p-8 bg-gradient-to-br from-amber-500/10 to-blue-500/10 border border-amber-500/30 rounded-2xl">
               <div className="flex items-center gap-3 mb-6">
                 <CheckCircle2 className="w-8 h-8 text-amber-400" />
-                <h3 className="text-xl font-bold text-amber-400">온시아 Job</h3>
+                <h3 className="text-xl font-bold text-amber-400">부동산인</h3>
               </div>
               <ul className="space-y-4">
                 {[
@@ -336,7 +336,7 @@ export default function PremiumLandingPage() {
                   <span className="text-red-400 font-bold text-xl line-through">500~1,000만원</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-400">온시아 Job</span>
+                  <span className="text-gray-400">부동산인</span>
                   <span className="text-green-400 font-bold text-xl">50~100만원</span>
                 </div>
                 <div className="mt-4 p-3 bg-green-500/10 rounded-lg">
@@ -429,7 +429,7 @@ export default function PremiumLandingPage() {
               <p className="text-gray-400 text-lg mb-8">
                 대한민국에서 가장 비싼 물건을 파는 사람이<br />
                 왜 알바 취급을 받아야 하나요?<br />
-                온시아에서는 전문가로서 정당한 대우를 받으세요.
+                부동산인에서는 전문가로서 정당한 대우를 받으세요.
               </p>
 
               <ul className="space-y-4 mb-8">
@@ -518,7 +518,7 @@ export default function PremiumLandingPage() {
               </h2>
               <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
                 더 이상 잡탕 사이트에서 소외받지 마세요.<br />
-                온시아 Job에서 전문가로서 대우받으세요.
+                부동산인에서 전문가로서 대우받으세요.
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -548,7 +548,7 @@ export default function PremiumLandingPage() {
       {/* 푸터 */}
       <footer className="py-8 border-t border-white/10 bg-[#050d1a]">
         <div className="max-w-6xl mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>© 2025 온시아 Job. 부동산 전문가를 위한 AI 매칭 플랫폼.</p>
+          <p>© 2025 부동산인. 부동산 전문가를 위한 AI 매칭 플랫폼.</p>
         </div>
       </footer>
     </div>

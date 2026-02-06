@@ -526,11 +526,11 @@ export default function JobDetailPage() {
                   <div className="px-6 py-5 space-y-4">
                     <div className="flex gap-4 items-center">
                       <span className="text-gray-500 text-sm min-w-[60px]">접수방법</span>
-                      <span className="text-blue-600 font-medium">온시아 즉시지원</span>
+                      <span className="text-blue-600 font-medium">부동산인 즉시지원</span>
                     </div>
                     <div className="flex gap-4 items-center">
                       <span className="text-gray-500 text-sm min-w-[60px]">지원양식</span>
-                      <span className="text-gray-900">온시아 이력서</span>
+                      <span className="text-gray-900">부동산인 이력서</span>
                     </div>
                   </div>
                 </div>

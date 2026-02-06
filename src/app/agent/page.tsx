@@ -352,7 +352,7 @@ export default function AgentMainPage() {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
-            온시아 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Job</span>
+            부동산<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">인</span>
           </h1>
           <p className="text-slate-300 mb-6">주거용부터 상업용까지, 부동산 전 분야 채용 정보</p>
 

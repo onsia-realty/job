@@ -43,7 +43,7 @@ const announcements = [
   {
     id: 1,
     badge: '공지',
-    title: '온시아 JOB 정식 오픈!',
+    title: '부동산인 정식 오픈!',
     description: '부동산 전문가를 위한 AI 기반 구인구직 플랫폼이 오픈했습니다.',
     color: 'from-purple-500 to-blue-500',
     link: null,
@@ -106,8 +106,8 @@ export default function LandingPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               <Link href="/" className="text-xl font-bold">
-                <span className="text-white">onsia</span>
-                <span className="text-gray-400 font-normal ml-1">job</span>
+                <span className="text-white">부동산</span>
+                <span className="text-cyan-400 font-bold">인</span>
               </Link>
               <nav className="hidden md:flex items-center gap-6">
                 <Link href="/agent" className="text-gray-300 hover:text-white transition-colors">
@@ -411,7 +411,7 @@ export default function LandingPage() {
                 함께 성장하는 부동산 전문가 커뮤니티
               </h3>
               <p className="text-gray-400">
-                온시아 커뮤니티에서 정보를 공유하고 네트워킹하세요
+                부동산인 커뮤니티에서 정보를 공유하고 네트워킹하세요
               </p>
             </div>
             <div className="absolute right-8 top-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl" />
@@ -423,7 +423,7 @@ export default function LandingPage() {
       <footer className="border-t border-white/10 py-8">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-500 text-sm">© Onsia Corp.</p>
+            <p className="text-gray-500 text-sm">© BOOIN Corp.</p>
             <div className="flex items-center gap-6 text-sm text-gray-500">
               <Link href="/terms" className="hover:text-white transition-colors">이용약관</Link>
               <Link href="/privacy" className="hover:text-white transition-colors font-medium text-gray-300">개인정보 처리방침</Link>

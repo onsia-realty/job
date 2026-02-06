@@ -1,4 +1,4 @@
-// 온시아 Job Matching 타입 정의
+// 부동산인 BOOIN Job Matching 타입 정의
 
 // 공통 타입
 export type UserType = 'agent' | 'sales';

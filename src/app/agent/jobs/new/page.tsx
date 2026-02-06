@@ -759,7 +759,7 @@ export default function NewAgentJobPage() {
             <ul className="space-y-2 text-xs text-amber-900/80 leading-relaxed pl-7">
               <li className="flex items-start gap-1.5">
                 <span className="text-amber-500 font-bold mt-px">·</span>
-                <span>등록하는 이미지 및 영상물에 대한 <strong className="text-amber-900">저작권·초상권 확인 책임</strong>은 등록자에게 있으며, 온시아는 이에 대한 어떠한 책임도 지지 않습니다.</span>
+                <span>등록하는 이미지 및 영상물에 대한 <strong className="text-amber-900">저작권·초상권 확인 책임</strong>은 등록자에게 있으며, 부동산인은 이에 대한 어떠한 책임도 지지 않습니다.</span>
               </li>
               <li className="flex items-start gap-1.5">
                 <span className="text-amber-500 font-bold mt-px">·</span>

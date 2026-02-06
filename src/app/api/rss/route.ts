@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { XMLParser } from 'fast-xml-parser';
 
 const RSS_URL = 'https://news.google.com/rss/search?q=%EB%B6%80%EB%8F%99%EC%82%B0&hl=ko&gl=KR&ceid=KR:ko';
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://onsia.city';
-const SITE_NAME = '온시아 JOB - 부동산 뉴스';
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://booin.co.kr';
+const SITE_NAME = '부동산인 - 부동산 뉴스';
 
 export async function GET() {
   try {
@@ -52,11 +52,11 @@ export async function GET() {
       <title><![CDATA[${title}]]></title>
       <link>${SITE_URL}/news/${newsId}</link>
       <guid isPermaLink="true">${SITE_URL}/news/${newsId}</guid>
-      <description><![CDATA[${category} - 온시아 JOB에서 제공하는 부동산 뉴스. ${title}]]></description>
+      <description><![CDATA[${category} - 부동산인에서 제공하는 부동산 뉴스. ${title}]]></description>
       <pubDate>${pubDate.toUTCString()}</pubDate>
       <category>${category}</category>
       <source url="${SITE_URL}">${SITE_NAME}</source>
-      <dc:creator>온시아 JOB</dc:creator>
+      <dc:creator>부동산인</dc:creator>
     </item>`;
     }).join('');
 
@@ -79,9 +79,9 @@ export async function GET() {
       <title>${SITE_NAME}</title>
       <link>${SITE_URL}</link>
     </image>
-    <webMaster>contact@onsia.city (온시아 JOB)</webMaster>
-    <managingEditor>editor@onsia.city (온시아 JOB)</managingEditor>
-    <copyright>Copyright ${new Date().getFullYear()} 온시아 JOB. All rights reserved.</copyright>
+    <webMaster>contact@booin.co.kr (부동산인)</webMaster>
+    <managingEditor>editor@booin.co.kr (부동산인)</managingEditor>
+    <copyright>Copyright ${new Date().getFullYear()} 부동산인. All rights reserved.</copyright>
     <category>부동산</category>
     <category>뉴스</category>
     <category>구인구직</category>

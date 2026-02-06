@@ -315,7 +315,7 @@ export default function SignUpPage() {
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">가입이 완료되었습니다!</h1>
               <p className="text-gray-600 mb-8">
-                온시아 Job의 회원이 되신 것을 환영합니다.<br />
+                부동산인의 회원이 되신 것을 환영합니다.<br />
                 이제 다양한 채용 공고를 확인해보세요.
               </p>
               <div className="space-y-3">

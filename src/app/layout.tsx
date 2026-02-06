@@ -13,13 +13,13 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://onsia.city";
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://booin.co.kr";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "온시아 JOB - 부동산 전문가 구인구직",
-    template: "%s | 온시아 JOB",
+    default: "부동산인 BOOIN - 부동산 전문가 구인구직",
+    template: "%s | 부동산인",
   },
   description: "공인중개사, 분양상담사를 위한 AI 기반 구인구직 플랫폼. 최신 부동산 뉴스와 채용 정보를 제공합니다.",
   keywords: [
@@ -31,12 +31,12 @@ export const metadata: Metadata = {
     "중개사무소",
     "부동산 채용",
     "부동산 뉴스",
-    "온시아",
-    "JOB",
+    "부동산인",
+    "BOOIN",
   ],
-  authors: [{ name: "온시아 JOB", url: SITE_URL }],
-  creator: "온시아 JOB",
-  publisher: "온시아 JOB",
+  authors: [{ name: "부동산인", url: SITE_URL }],
+  creator: "부동산인",
+  publisher: "부동산인",
   formatDetection: {
     email: false,
     address: false,
@@ -46,24 +46,24 @@ export const metadata: Metadata = {
     type: "website",
     locale: "ko_KR",
     url: SITE_URL,
-    siteName: "온시아 JOB",
-    title: "온시아 JOB - 부동산 전문가 구인구직",
+    siteName: "부동산인",
+    title: "부동산인 BOOIN - 부동산 전문가 구인구직",
     description: "공인중개사, 분양상담사를 위한 AI 기반 구인구직 플랫폼",
     images: [
       {
         url: `${SITE_URL}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "온시아 JOB - 부동산 전문가 구인구직",
+        alt: "부동산인 BOOIN - 부동산 전문가 구인구직",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "온시아 JOB - 부동산 전문가 구인구직",
+    title: "부동산인 BOOIN - 부동산 전문가 구인구직",
     description: "공인중개사, 분양상담사를 위한 AI 기반 구인구직 플랫폼",
     images: [`${SITE_URL}/og-image.png`],
-    creator: "@onsia_job",
+    creator: "@booin_kr",
   },
   robots: {
     index: true,
@@ -102,7 +102,7 @@ export default function RootLayout({
         <link
           rel="alternate"
           type="application/rss+xml"
-          title="온시아 JOB - 부동산 뉴스 RSS"
+          title="부동산인 - 부동산 뉴스 RSS"
           href="/api/rss"
         />
         {/* Canonical */}

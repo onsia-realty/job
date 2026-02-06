@@ -45,7 +45,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
           {/* 로고 */}
           <Link href="/" className="flex items-center gap-2">
             <div className={`text-xl md:text-2xl font-bold ${styles.logo}`}>
-              온시아 JOB
+              부동산<span className="text-cyan-400">인</span>
             </div>
             {variant !== 'landing' && (
               <span className={`text-xs px-2 py-1 rounded-full ${styles.badge}`}>

@@ -354,14 +354,14 @@ const newsItems = [
 // 공지사항 데이터
 const notices = [
   { id: '1', title: '외부 호스팅 서비스 장애로 인한 일시적 이용 제한 안내', date: '01.14' },
-  { id: '2', title: '온시아 JOB 3.1 업데이트', date: '12.23' },
+  { id: '2', title: '부동산인 3.1 업데이트', date: '12.23' },
   { id: '3', title: '연말연시 고객센터 휴무 안내', date: '12.20' },
 ];
 
 // 이벤트 데이터
 const events = [
-  { id: '1', title: '[온시아 JOB 업데이트] 행운 복권 이벤트', date: '01.07' },
-  { id: '2', title: '온시아 JOB 출시 기념 룰렛 이벤트!!', date: '05.14' },
+  { id: '1', title: '[부동산인 업데이트] 행운 복권 이벤트', date: '01.07' },
+  { id: '2', title: '부동산인 출시 기념 룰렛 이벤트!!', date: '05.14' },
 ];
 
 // 초기 필터 상태
@@ -560,10 +560,10 @@ export default function SalesMainPage() {
             {/* 로고 */}
             <Link href="/sales" className="flex items-center gap-1 md:gap-2 flex-shrink-0">
               <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm md:text-lg">JOB</span>
+                <span className="text-white font-bold text-sm md:text-lg">B</span>
               </div>
               <div className="hidden md:block">
-                <span className="text-lg font-bold text-gray-900">온시아</span>
+                <span className="text-lg font-bold text-gray-900">부동산<span className="text-purple-600">인</span></span>
                 <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full ml-2">분양상담사</span>
               </div>
             </Link>
@@ -874,7 +874,7 @@ export default function SalesMainPage() {
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
                 <Eye className="w-4 h-4 text-purple-600" />
-                온시아 JOB 통계
+                부동산인 통계
               </h3>
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
@@ -890,7 +890,7 @@ export default function SalesMainPage() {
                   <span className="text-sm text-gray-600">실시간 방문자</span>
                   <span className="font-bold text-purple-600">{stats.todayVisitors.toLocaleString()}명</span>
                 </div>
-                <p className="text-xs text-gray-400">오늘 온시아 JOB 방문자의 실시간 집계입니다</p>
+                <p className="text-xs text-gray-400">오늘 부동산인 방문자의 실시간 집계입니다</p>
               </div>
             </div>
 
@@ -989,9 +989,9 @@ export default function SalesMainPage() {
             <Link href="#" className="hover:text-purple-600">광고&제휴문의</Link>
           </div>
           <div className="text-xs text-gray-500 space-y-1">
-            <p>회사명 : (주)온시아ㅣ대표 : 홍길동ㅣ주소 : 서울시 강남구 테헤란로 123ㅣ대표번호 : 1660-0464</p>
+            <p>회사명 : (주)부동산인ㅣ대표 : 홍길동ㅣ주소 : 서울시 강남구 테헤란로 123ㅣ대표번호 : 1660-0464</p>
             <p>사업자등록번호 : 123-45-67890ㅣ통신판매업 신고번호 : 제2024-서울강남-1234호</p>
-            <p className="mt-2">© (주)온시아 All rights reserved.</p>
+            <p className="mt-2">© (주)부동산인 All rights reserved.</p>
           </div>
         </div>
       </footer>

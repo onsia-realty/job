@@ -26,25 +26,25 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   if (!news) {
     return {
-      title: '뉴스를 찾을 수 없습니다 - 온시아 JOB',
+      title: '뉴스를 찾을 수 없습니다 - 부동산인',
     };
   }
 
   const canonicalUrl = `${SITE_URL}/news/${id}`;
-  const description = `${news.category} | ${news.date} | ${news.source || '부동산 뉴스'} - 온시아 JOB에서 제공하는 최신 부동산 뉴스. 분양정보, 시장동향, 정책 변화를 확인하세요.`;
+  const description = `${news.category} | ${news.date} | ${news.source || '부동산 뉴스'} - 부동산인에서 제공하는 최신 부동산 뉴스. 분양정보, 시장동향, 정책 변화를 확인하세요.`;
 
   return {
-    title: `${news.title} | 온시아 JOB 부동산 뉴스`,
+    title: `${news.title} | 부동산인 부동산 뉴스`,
     description,
-    keywords: ['부동산', '뉴스', news.category, '온시아', 'JOB', '구인구직', '분양정보', '시장동향', '부동산 전문가'],
-    authors: [{ name: '온시아 JOB', url: SITE_URL }],
-    creator: '온시아 JOB',
-    publisher: '온시아 JOB',
+    keywords: ['부동산', '뉴스', news.category, '부동산인', 'BOOIN', '구인구직', '분양정보', '시장동향', '부동산 전문가'],
+    authors: [{ name: '부동산인', url: SITE_URL }],
+    creator: '부동산인',
+    publisher: '부동산인',
     openGraph: {
       title: news.title,
       description,
       url: canonicalUrl,
-      siteName: '온시아 JOB',
+      siteName: '부동산인',
       images: [
         {
           url: news.thumbnail,
@@ -56,14 +56,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       type: 'article',
       publishedTime: news.date,
       locale: 'ko_KR',
-      authors: ['온시아 JOB'],
+      authors: ['부동산인'],
     },
     twitter: {
       card: 'summary_large_image',
       title: news.title,
       description,
       images: [news.thumbnail],
-      creator: '@onsia_job',
+      creator: '@booin_kr',
     },
     alternates: {
       canonical: canonicalUrl,
@@ -85,7 +85,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     other: {
       'article:section': news.category,
       'article:published_time': news.date,
-      'google-news-keywords': `부동산,${news.category},온시아,JOB`,
+      'google-news-keywords': `부동산,${news.category},부동산인,BOOIN`,
     },
   };
 }
@@ -127,11 +127,11 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
     datePublished: news.date,
     author: {
       '@type': 'Organization',
-      name: news.source || '온시아 JOB',
+      name: news.source || '부동산인',
     },
     publisher: {
       '@type': 'Organization',
-      name: '온시아 JOB',
+      name: '부동산인',
       logo: {
         '@type': 'ImageObject',
         url: 'https://onsia.city/logo.png',
@@ -235,7 +235,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
 
           {/* 내부 백링크 섹션 */}
           <nav className="mt-8 bg-[#1C1D1F] rounded-xl p-6" aria-label="관련 서비스">
-            <h3 className="text-lg font-bold mb-4 text-white">온시아 JOB 서비스</h3>
+            <h3 className="text-lg font-bold mb-4 text-white">부동산인 서비스</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Link
                 href="/sales"
@@ -290,7 +290,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
 
           {/* 사이트 홍보 + RSS 구독 */}
           <div className="mt-8 bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-xl p-6">
-            <h3 className="text-lg font-bold mb-2">온시아 JOB</h3>
+            <h3 className="text-lg font-bold mb-2">부동산인</h3>
             <p className="text-gray-400 text-sm mb-4">
               부동산 전문가를 위한 AI 기반 구인구직 플랫폼. 최신 부동산 뉴스와 채용 정보를 한곳에서 확인하세요.
             </p>
