@@ -368,11 +368,42 @@ export interface AgentResume {
   // 자기소개
   introduction?: string;
   strengths?: string[];
+  // DNA 분석 결과
+  dnaType?: AgentDNAType;
+  dnaScores?: {
+    risk: number;
+    social: number;
+    logic: number;
+    resilience: number;
+  };
+  dnaAnswerDetails?: {
+    category: string;
+    categoryKey: string;
+    question: string;
+    selectedText: string;
+    selectedLabel: string;
+  }[];
   // 메타 정보
   createdAt: string;
   updatedAt: string;
   isPublic: boolean; // 이력서 공개 여부
 }
+
+// DNA 유형
+export type AgentDNAType = 'RS' | 'RL' | 'SL' | 'LA' | 'RF';
+
+export const DNA_TYPE_INFO: Record<AgentDNAType, {
+  name: string;
+  emoji: string;
+  color: string;
+  description: string;
+}> = {
+  RS: { name: '야수형 영업왕', emoji: '🦁', color: 'from-orange-500 to-red-500', description: '숨만 쉬어도 영업을 하는 천재적 재능!' },
+  RL: { name: '승부사형 전략가', emoji: '🎯', color: 'from-blue-600 to-indigo-600', description: '차가운 머리와 뜨거운 심장을 가진 전략가' },
+  SL: { name: '카운셀러형 전문가', emoji: '🤝', color: 'from-emerald-500 to-teal-500', description: '고객의 마음을 읽고 신뢰를 파는 전문가' },
+  LA: { name: '스마트 관리형', emoji: '📊', color: 'from-violet-500 to-purple-500', description: '빈틈없는 일 처리, 뒤에서 받쳐주는 핵심 인재' },
+  RF: { name: '자유영혼형 크리에이터', emoji: '🚀', color: 'from-pink-500 to-rose-500', description: '어디에도 얽매이지 않고 성과를 내는 디지털 노마드' },
+};
 
 // 경력 항목
 export interface AgentCareer {

@@ -11,9 +11,10 @@ import {
   Timer, X, User, Mail, MessageSquare, Check, Star,
   GraduationCap, TrendingUp, Navigation,
 } from 'lucide-react';
-import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, QuickApplication } from '@/types';
+import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, QuickApplication, AgentResume } from '@/types';
 import { AGENT_JOB_TYPE_LABELS, AGENT_EXPERIENCE_LABELS } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { supabase, fetchMyResume, applyWithResume } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import AgentJobCard from '@/components/agent/JobCard';
 import dynamic from 'next/dynamic';
 
@@ -120,6 +121,7 @@ interface ApplyFormErrors { name?: string; phone?: string; email?: string; agree
 export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [job, setJob] = useState<AgentJobListing | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -129,6 +131,12 @@ export default function JobDetailPage() {
   const [applyForm, setApplyForm] = useState<ApplyFormData>({ name: '', phone: '', email: '', message: '', agreePrivacy: false });
   const [formErrors, setFormErrors] = useState<ApplyFormErrors>({});
   const [mapCoord, setMapCoord] = useState<{ lat: number; lng: number } | null>(null);
+  // 이력서 지원 관련 상태
+  const [myResume, setMyResume] = useState<AgentResume | null>(null);
+  const [applyMode, setApplyMode] = useState<'resume' | 'quick'>('resume');
+  const [isApplying, setIsApplying] = useState(false);
+  const [applyMessage, setApplyMessage] = useState('');
+  const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -180,6 +188,31 @@ export default function JobDetailPage() {
       .catch(() => {});
   }, [job?.address]);
 
+  // 내 이력서 불러오기 & 기존 지원 여부 확인
+  useEffect(() => {
+    async function loadResumeAndCheckApplication() {
+      if (!user?.id || !params.id) return;
+
+      // 이력서 로드
+      const resume = await fetchMyResume(user.id);
+      setMyResume(resume);
+      setApplyMode(resume ? 'resume' : 'quick');
+
+      // 기존 지원 여부 확인
+      const { data } = await supabase
+        .from('applications')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('job_id', params.id)
+        .single();
+
+      if (data) {
+        setHasAlreadyApplied(true);
+      }
+    }
+    loadResumeAndCheckApplication();
+  }, [user?.id, params.id]);
+
   const scrollToSection = (sectionId: string) => {
     setActiveTab(sectionId);
     const el = document.getElementById(sectionId);
@@ -218,6 +251,27 @@ export default function JobDetailPage() {
   };
 
   const handleApplySubmit = () => { if (!validateForm()) return; setApplyStep('confirm'); };
+
+  // 이력서로 지원하기
+  const handleResumeApply = async () => {
+    if (!job || !user?.id || !myResume?.id) return;
+
+    setIsApplying(true);
+    try {
+      const success = await applyWithResume(job.id, user.id, myResume.id, applyMessage);
+      if (success) {
+        setApplyStep('success');
+        setHasAlreadyApplied(true);
+      } else {
+        alert('이미 지원한 공고입니다.');
+      }
+    } catch (err) {
+      console.error('Apply error:', err);
+      alert('지원 중 오류가 발생했습니다.');
+    } finally {
+      setIsApplying(false);
+    }
+  };
 
   const handleApplyConfirm = () => {
     if (!job) return;
@@ -740,80 +794,24 @@ export default function JobDetailPage() {
           <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between rounded-t-2xl">
               <h3 className="text-lg font-bold text-gray-900">
-                {applyStep === 'form' && '간편 지원하기'}
-                {applyStep === 'confirm' && '지원 정보 확인'}
-                {applyStep === 'success' && '지원 완료'}
+                {applyStep === 'success' ? '지원 완료' : '지원하기'}
               </h3>
               <button onClick={closeApplyModal} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-6">
-              {applyStep !== 'success' && (
-                <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                  <p className="text-sm text-gray-500">{job.company}</p>
-                  <p className="font-medium text-gray-900 line-clamp-1">{job.title}</p>
+              {/* 이미 지원한 경우 */}
+              {hasAlreadyApplied && applyStep !== 'success' ? (
+                <div className="text-center py-6">
+                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Check className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h4 className="text-lg font-bold text-gray-900 mb-2">이미 지원한 공고입니다</h4>
+                  <p className="text-gray-600 mb-6">지원 내역은 마이페이지에서 확인하실 수 있습니다.</p>
+                  <Link href="/agent/mypage/applications" className="block w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 text-center">
+                    지원 내역 보기
+                  </Link>
                 </div>
-              )}
-
-              {applyStep === 'form' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">이름 <span className="text-red-500">*</span></label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input type="text" value={applyForm.name} onChange={(e) => setApplyForm({...applyForm, name: e.target.value})} placeholder="이름을 입력하세요" className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.name ? 'border-red-300' : 'border-gray-200'}`} />
-                    </div>
-                    {formErrors.name && <p className="text-red-500 text-sm mt-1">{formErrors.name}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">연락처 <span className="text-red-500">*</span></label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input type="tel" value={applyForm.phone} onChange={(e) => setApplyForm({...applyForm, phone: fmtPhone(e.target.value)})} placeholder="010-0000-0000" className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.phone ? 'border-red-300' : 'border-gray-200'}`} />
-                    </div>
-                    {formErrors.phone && <p className="text-red-500 text-sm mt-1">{formErrors.phone}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">이메일 <span className="text-gray-400">(선택)</span></label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      <input type="email" value={applyForm.email} onChange={(e) => setApplyForm({...applyForm, email: e.target.value})} placeholder="example@email.com" className={`w-full pl-10 pr-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${formErrors.email ? 'border-red-300' : 'border-gray-200'}`} />
-                    </div>
-                    {formErrors.email && <p className="text-red-500 text-sm mt-1">{formErrors.email}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">지원 메시지 <span className="text-gray-400">(선택)</span></label>
-                    <div className="relative">
-                      <MessageSquare className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                      <textarea value={applyForm.message} onChange={(e) => setApplyForm({...applyForm, message: e.target.value})} placeholder="간단한 자기소개나 지원동기를 입력하세요" rows={3} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-                    </div>
-                  </div>
-                  <div className={`p-4 rounded-xl ${formErrors.agreePrivacy ? 'bg-red-50' : 'bg-gray-50'}`}>
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input type="checkbox" checked={applyForm.agreePrivacy} onChange={(e) => setApplyForm({...applyForm, agreePrivacy: e.target.checked})} className="mt-0.5 w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
-                      <span className="text-sm text-gray-600"><span className="text-red-500">[필수]</span> 개인정보 수집 및 이용에 동의합니다. 입력하신 정보는 채용 진행을 위해 해당 기업에 전달됩니다.</span>
-                    </label>
-                  </div>
-                  <button onClick={handleApplySubmit} className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">다음</button>
-                </div>
-              )}
-
-              {applyStep === 'confirm' && (
-                <div className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between py-3 border-b border-gray-100"><span className="text-gray-500">이름</span><span className="font-medium text-gray-900">{applyForm.name}</span></div>
-                    <div className="flex justify-between py-3 border-b border-gray-100"><span className="text-gray-500">연락처</span><span className="font-medium text-gray-900">{applyForm.phone}</span></div>
-                    {applyForm.email && <div className="flex justify-between py-3 border-b border-gray-100"><span className="text-gray-500">이메일</span><span className="font-medium text-gray-900">{applyForm.email}</span></div>}
-                    {applyForm.message && <div className="py-3 border-b border-gray-100"><span className="text-gray-500 block mb-1">지원 메시지</span><p className="text-gray-900">{applyForm.message}</p></div>}
-                  </div>
-                  <div className="bg-blue-50 rounded-xl p-4"><p className="text-sm text-blue-700">위 정보로 지원하시겠습니까? 지원 후에는 &apos;마이페이지 &gt; 지원내역&apos;에서 확인하실 수 있습니다.</p></div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setApplyStep('form')} className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200">이전</button>
-                    <button onClick={handleApplyConfirm} className="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700">지원하기</button>
-                  </div>
-                </div>
-              )}
-
-              {applyStep === 'success' && (
+              ) : applyStep === 'success' ? (
                 <div className="text-center py-6">
                   <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><Check className="w-10 h-10 text-green-600" /></div>
                   <h4 className="text-xl font-bold text-gray-900 mb-2">지원이 완료되었습니다!</h4>
@@ -823,6 +821,133 @@ export default function JobDetailPage() {
                     <button onClick={closeApplyModal} className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200">닫기</button>
                   </div>
                 </div>
+              ) : (
+                <>
+                  {/* 공고 정보 */}
+                  <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                    <p className="text-sm text-gray-500">{job.company}</p>
+                    <p className="font-medium text-gray-900 line-clamp-1">{job.title}</p>
+                  </div>
+
+                  {/* 로그인 + 이력서 있는 경우: 이력서 지원 */}
+                  {user && myResume ? (
+                    <div className="space-y-4">
+                      {/* 이력서 미리보기 */}
+                      <div className="border-2 border-blue-500 rounded-xl p-4 bg-blue-50/50">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                            {myResume.photo ? (
+                              <img src={myResume.photo} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <User className="w-6 h-6 text-blue-600" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-bold text-gray-900">{myResume.name}</p>
+                            <p className="text-sm text-gray-500">{myResume.phone}</p>
+                          </div>
+                          <Link href="/agent/mypage/resume" className="ml-auto text-blue-600 text-sm font-medium hover:underline">
+                            수정
+                          </Link>
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {myResume.totalExperience && myResume.totalExperience !== 'none' && (
+                            <span className="px-2 py-1 bg-white rounded-full text-gray-600 border border-gray-200">
+                              {AGENT_EXPERIENCE_LABELS[myResume.totalExperience]}
+                            </span>
+                          )}
+                          {myResume.preferredRegions.slice(0, 2).map(region => (
+                            <span key={region} className="px-2 py-1 bg-white rounded-full text-gray-600 border border-gray-200">
+                              {region}
+                            </span>
+                          ))}
+                          {myResume.licenseNumber && (
+                            <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full">
+                              자격증 보유
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* 지원 메시지 */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          지원 메시지 <span className="text-gray-400">(선택)</span>
+                        </label>
+                        <textarea
+                          value={applyMessage}
+                          onChange={(e) => setApplyMessage(e.target.value)}
+                          placeholder="간단한 자기소개나 지원동기를 입력하세요"
+                          rows={3}
+                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                        />
+                      </div>
+
+                      {/* 지원 버튼 */}
+                      <button
+                        onClick={handleResumeApply}
+                        disabled={isApplying}
+                        className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isApplying ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            지원 중...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="w-5 h-5" />
+                            이력서로 지원하기
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  ) : !user ? (
+                    /* 비로그인: 로그인 유도 */
+                    <div className="text-center py-4">
+                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <User className="w-8 h-8 text-gray-400" />
+                      </div>
+                      <h4 className="text-lg font-bold text-gray-900 mb-2">로그인이 필요합니다</h4>
+                      <p className="text-gray-600 mb-6 text-sm">
+                        이력서를 등록하고 간편하게 지원하세요.<br />
+                        지원 현황도 한눈에 확인할 수 있습니다.
+                      </p>
+                      <div className="space-y-3">
+                        <Link
+                          href={`/agent/auth/login?redirect=/agent/jobs/${job.id}`}
+                          className="block w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 text-center"
+                        >
+                          로그인하기
+                        </Link>
+                        <Link
+                          href={`/agent/auth/signup?redirect=/agent/jobs/${job.id}`}
+                          className="block w-full py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 text-center"
+                        >
+                          회원가입
+                        </Link>
+                      </div>
+                    </div>
+                  ) : (
+                    /* 로그인 O, 이력서 X: 이력서 등록 유도 */
+                    <div className="text-center py-4">
+                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <FileText className="w-8 h-8 text-blue-600" />
+                      </div>
+                      <h4 className="text-lg font-bold text-gray-900 mb-2">이력서를 등록해주세요</h4>
+                      <p className="text-gray-600 mb-6 text-sm">
+                        이력서를 한 번 등록하면<br />
+                        클릭 한 번으로 간편하게 지원할 수 있습니다.
+                      </p>
+                      <Link
+                        href="/agent/mypage/resume"
+                        className="block w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 text-center"
+                      >
+                        이력서 등록하기
+                      </Link>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

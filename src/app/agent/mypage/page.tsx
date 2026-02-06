@@ -22,6 +22,8 @@ import {
   BadgeCheck,
   AlertTriangle,
   PenSquare,
+  LayoutDashboard,
+  Users,
 } from 'lucide-react';
 import type { QuickApplication, Bookmark as BookmarkType, VerificationStatus } from '@/types';
 import { VERIFICATION_STATUS_LABELS, VERIFICATION_STATUS_COLORS } from '@/types';
@@ -268,21 +270,36 @@ export default function MyPage() {
           </div>
         )}
 
-        {/* 기업회원 구인글 작성 바로가기 */}
+        {/* 기업회원 메뉴 */}
         {isEmployer && user && verificationStatus !== 'unverified' && (
-          <Link
-            href="/agent/jobs/new"
-            className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl p-5 mb-6 hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg group"
-          >
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-              <PenSquare className="w-6 h-6" />
-            </div>
-            <div className="flex-1">
-              <p className="font-bold text-lg">구인글 작성</p>
-              <p className="text-sm text-white/80">새로운 구인 공고를 등록하세요</p>
-            </div>
-            <ChevronRight className="w-6 h-6 text-white/70 group-hover:translate-x-1 transition-transform" />
-          </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Link
+              href="/agent/employer"
+              className="flex items-center gap-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-5 hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg group"
+            >
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <LayoutDashboard className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-lg">기업 대시보드</p>
+                <p className="text-sm text-white/80">공고 및 지원자 관리</p>
+              </div>
+              <ChevronRight className="w-6 h-6 text-white/70 group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link
+              href="/agent/jobs/new"
+              className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl p-5 hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg group"
+            >
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                <PenSquare className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-lg">구인글 작성</p>
+                <p className="text-sm text-white/80">새로운 구인 공고를 등록하세요</p>
+              </div>
+              <ChevronRight className="w-6 h-6 text-white/70 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
         )}
 
         {/* 활동 통계 */}

@@ -26,10 +26,14 @@ import {
   Banknote,
   Lock,
   Camera,
+  Sparkles,
+  Brain,
+  ArrowRight,
 } from 'lucide-react';
-import type { AgentResume, AgentCareer, AgentJobType, AgentSalaryType, AgentExperience } from '@/types';
-import { REGIONS, AGENT_JOB_TYPE_LABELS, AGENT_SALARY_TYPE_LABELS, AGENT_EXPERIENCE_LABELS } from '@/types';
+import type { AgentResume, AgentCareer, AgentJobType, AgentSalaryType, AgentExperience, AgentDNAType } from '@/types';
+import { REGIONS, AGENT_JOB_TYPE_LABELS, AGENT_SALARY_TYPE_LABELS, AGENT_EXPERIENCE_LABELS, DNA_TYPE_INFO } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchMyResume, saveResume } from '@/lib/supabase';
 
 const EMPTY_RESUME: AgentResume = {
   id: '',
@@ -55,6 +59,119 @@ const EMPTY_CAREER: AgentCareer = {
   isCurrent: false,
 };
 
+// 답변 상세 정보 타입
+interface AnswerDetail {
+  category: string;
+  categoryKey: string;
+  question: string;
+  selectedText: string;
+  selectedLabel: string;
+}
+
+// AI 자기소개 생성 함수 (실제 답변 기반)
+function generateAIIntroduction(data: AgentResume, answerDetails?: AnswerDetail[]): string {
+  const dnaType = data.dnaType;
+  if (!dnaType || !DNA_TYPE_INFO[dnaType]) return '';
+
+  const dnaInfo = DNA_TYPE_INFO[dnaType];
+  const name = data.name || '지원자';
+  const experience = AGENT_EXPERIENCE_LABELS[data.totalExperience] || '신입';
+
+  // 답변 상세 정보가 있으면 이를 기반으로 생성
+  if (answerDetails && answerDetails.length > 0) {
+    const lines: string[] = [];
+
+    // 인사말
+    lines.push(`안녕하세요, ${name}입니다.`);
+    lines.push('');
+
+    // 급여/리스크 관련 답변에서 업무 태도 추출
+    const riskAnswer = answerDetails.find(a => a.categoryKey === 'risk');
+    if (riskAnswer) {
+      if (riskAnswer.selectedLabel.includes('야수') || riskAnswer.selectedLabel.includes('도전')) {
+        lines.push('저는 도전을 두려워하지 않습니다. 성과에 따른 보상을 믿기에, 높은 목표도 기꺼이 도전합니다.');
+      } else if (riskAnswer.selectedLabel.includes('밸런스') || riskAnswer.selectedLabel.includes('분석')) {
+        lines.push('안정과 도전 사이에서 균형을 찾습니다. 계산된 리스크는 감수하되, 무모한 모험은 피합니다.');
+      } else {
+        lines.push('꾸준함과 성실함을 바탕으로 안정적인 성과를 만들어갑니다.');
+      }
+    }
+
+    // 업무 환경/스타일 답변에서 일하는 방식 추출
+    const workAnswer = answerDetails.find(a => a.categoryKey === 'work');
+    if (workAnswer) {
+      if (workAnswer.selectedLabel.includes('행동') || workAnswer.selectedLabel.includes('현장')) {
+        lines.push('현장에서 직접 발로 뛰며 배우는 것을 좋아합니다. 고객을 직접 만나고, 매물을 눈으로 확인하는 것이 기본이라 생각합니다.');
+      } else if (workAnswer.selectedLabel.includes('분석') || workAnswer.selectedLabel.includes('데이터')) {
+        lines.push('철저한 데이터 분석을 바탕으로 일합니다. 시세 동향, 권리 분석, 시장 흐름을 파악한 후 움직입니다.');
+      }
+    }
+
+    // 설득 스타일에서 영업 방식 추출
+    const persuasionAnswer = answerDetails.find(a => a.categoryKey === 'persuasion');
+    if (persuasionAnswer) {
+      if (persuasionAnswer.selectedLabel.includes('감성') || persuasionAnswer.selectedLabel.includes('공감')) {
+        lines.push('고객의 마음을 읽는 것이 영업의 시작이라 믿습니다. 숫자보다 감정을, 조건보다 꿈을 이야기합니다.');
+      } else if (persuasionAnswer.selectedLabel.includes('팩트') || persuasionAnswer.selectedLabel.includes('데이터')) {
+        lines.push('객관적인 데이터와 팩트로 설득합니다. 감정보다 논리로, 고객이 합리적인 결정을 내릴 수 있도록 돕습니다.');
+      } else if (persuasionAnswer.selectedLabel.includes('압박') || persuasionAnswer.selectedLabel.includes('클로징')) {
+        lines.push('때로는 과감한 클로징이 필요합니다. 좋은 기회를 놓치지 않도록, 결단의 순간을 만들어 드립니다.');
+      }
+    }
+
+    // 회복탄력성에서 마인드 추출
+    const resilienceAnswer = answerDetails.find(a => a.categoryKey === 'resilience');
+    if (resilienceAnswer) {
+      if (resilienceAnswer.selectedLabel.includes('오기') || resilienceAnswer.selectedLabel.includes('승부욕')) {
+        lines.push('거절은 저를 멈추게 하지 않습니다. 오히려 더 좋은 조건을 찾아 다시 찾아가는 원동력이 됩니다.');
+      } else if (resilienceAnswer.selectedLabel.includes('쿨') || resilienceAnswer.selectedLabel.includes('담담')) {
+        lines.push('일희일비하지 않습니다. 안 되면 다음 기회를 찾고, 되면 다음 목표를 세웁니다.');
+      }
+    }
+
+    // 성취 동기에서 목표 추출
+    const achievementAnswer = answerDetails.find(a => a.categoryKey === 'achievement');
+    if (achievementAnswer) {
+      if (achievementAnswer.selectedLabel.includes('명예') || achievementAnswer.selectedLabel.includes('인정')) {
+        lines.push('고객과 동료에게 인정받는 전문가가 되고 싶습니다. "역시 믿을 수 있다"는 말이 가장 큰 보람입니다.');
+      } else if (achievementAnswer.selectedLabel.includes('실리') || achievementAnswer.selectedLabel.includes('수익')) {
+        lines.push('솔직히 말해, 성과로 증명하고 싶습니다. 통장에 찍히는 숫자가 제 실력의 척도입니다.');
+      } else if (achievementAnswer.selectedLabel.includes('문제해결')) {
+        lines.push('복잡한 거래를 깔끔하게 해결했을 때 가장 보람을 느낍니다. 문제 해결이 곧 저의 가치입니다.');
+      }
+    }
+
+    // 미래 목표
+    const futureAnswer = answerDetails.find(a => a.categoryKey === 'future');
+    if (futureAnswer) {
+      lines.push('');
+      if (futureAnswer.selectedLabel.includes('창업') || futureAnswer.selectedLabel.includes('대표')) {
+        lines.push('궁극적으로 제 이름을 건 중개사무소를 운영하는 것이 목표입니다.');
+      } else if (futureAnswer.selectedLabel.includes('전문가') || futureAnswer.selectedLabel.includes('컨설턴트')) {
+        lines.push('부동산 분야의 전문가로 인정받는 것이 목표입니다.');
+      } else if (futureAnswer.selectedLabel.includes('투자') || futureAnswer.selectedLabel.includes('건물주')) {
+        lines.push('부동산을 통해 경제적 자유를 이루는 것이 목표입니다.');
+      }
+    }
+
+    // 마무리
+    lines.push('');
+    lines.push(`${dnaInfo.name}으로서, 제 강점을 살려 성과로 보여드리겠습니다.`);
+
+    return lines.filter(Boolean).join('\n');
+  }
+
+  // 답변 상세가 없으면 DNA 유형 기반 기본 템플릿
+  return [
+    `안녕하세요, ${experience} ${name}입니다.`,
+    '',
+    `저는 "${dnaInfo.name}" 유형입니다.`,
+    dnaInfo.description,
+    '',
+    '부동산 전문가로서 성과로 증명하겠습니다.',
+  ].join('\n');
+}
+
 export default function ResumePage() {
   const { user } = useAuth();
   const [resume, setResume] = useState<AgentResume | null>(null);
@@ -64,6 +181,11 @@ export default function ResumePage() {
   const [newCareer, setNewCareer] = useState<AgentCareer>(EMPTY_CAREER);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [dnaResult, setDnaResult] = useState<{ type: AgentDNAType; scores: any; answerDetails?: AnswerDetail[] } | null>(null);
+  const [introMode, setIntroMode] = useState<'manual' | 'ai'>('manual');
 
   // 프로필 사진 업로드 핸들러
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,43 +206,125 @@ export default function ResumePage() {
   const userName = user?.user_metadata?.name || user?.user_metadata?.full_name || '';
   const userPhone = user?.user_metadata?.phone || '';
 
+  // DNA 결과 로드
   useEffect(() => {
-    const savedResume = localStorage.getItem('agent_resume');
-    if (savedResume) {
-      const parsed = JSON.parse(savedResume);
-      // 저장된 이력서에 로그인 사용자 정보 업데이트
-      const updatedResume = {
-        ...parsed,
-        email: userEmail || parsed.email,
-        name: parsed.name || userName,
-        phone: userPhone || parsed.phone,
-      };
-      setResume(updatedResume);
-      setEditData(updatedResume);
-      if (updatedResume.photo) setPhotoPreview(updatedResume.photo);
-    } else {
-      // 새 이력서 작성 시 사용자 정보 자동 채우기
-      setEditData({
-        ...EMPTY_RESUME,
-        email: userEmail,
-        name: userName,
-        phone: userPhone,
-      });
+    const savedDna = localStorage.getItem('agent_dna_result');
+    if (savedDna) {
+      try {
+        const parsed = JSON.parse(savedDna);
+        setDnaResult({
+          type: parsed.type,
+          scores: parsed.scores,
+          answerDetails: parsed.answerDetails // 답변 상세 정보 포함
+        });
+      } catch (e) {
+        console.error('Failed to parse DNA result:', e);
+      }
     }
-  }, [userEmail, userName, userPhone]);
+  }, []);
 
-  const handleSave = () => {
-    const now = new Date().toISOString();
-    const updatedResume: AgentResume = {
-      ...editData,
-      id: editData.id || `resume_${Date.now()}`,
-      isPublic: true,
-      createdAt: editData.createdAt || now,
-      updatedAt: now,
-    };
-    localStorage.setItem('agent_resume', JSON.stringify(updatedResume));
-    setResume(updatedResume);
-    setIsEditing(false);
+  // Supabase에서 이력서 불러오기
+  useEffect(() => {
+    async function loadResume() {
+      if (!user?.id) {
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const savedResume = await fetchMyResume(user.id);
+
+        // localStorage에서 DNA 결과 가져오기
+        let dnaData: { type?: AgentDNAType; scores?: any; answerDetails?: AnswerDetail[] } = {};
+        const savedDna = localStorage.getItem('agent_dna_result');
+        if (savedDna) {
+          try {
+            const parsed = JSON.parse(savedDna);
+            dnaData = {
+              type: parsed.type,
+              scores: parsed.scores,
+              answerDetails: parsed.answerDetails
+            };
+          } catch (e) {}
+        }
+
+        if (savedResume) {
+          // DB에서 가져온 이력서에 로그인 사용자 정보 병합
+          const updatedResume = {
+            ...savedResume,
+            email: userEmail || savedResume.email,
+            name: savedResume.name || userName,
+            phone: userPhone || savedResume.phone,
+            // DNA 결과 병합 (localStorage 우선)
+            dnaType: dnaData.type || savedResume.dnaType,
+            dnaScores: dnaData.scores || savedResume.dnaScores,
+            dnaAnswerDetails: dnaData.answerDetails || savedResume.dnaAnswerDetails,
+          };
+          setResume(updatedResume);
+          setEditData(updatedResume);
+          // dnaResult 상태도 업데이트
+          if (dnaData.type || savedResume.dnaType) {
+            setDnaResult({
+              type: (dnaData.type || savedResume.dnaType) as AgentDNAType,
+              scores: dnaData.scores || savedResume.dnaScores,
+              answerDetails: dnaData.answerDetails || savedResume.dnaAnswerDetails,
+            });
+          }
+          if (updatedResume.photo) setPhotoPreview(updatedResume.photo);
+        } else {
+          // 새 이력서 작성 시 사용자 정보 자동 채우기
+          setEditData({
+            ...EMPTY_RESUME,
+            email: userEmail,
+            name: userName,
+            phone: userPhone,
+            dnaType: dnaData.type,
+            dnaScores: dnaData.scores,
+            dnaAnswerDetails: dnaData.answerDetails,
+          });
+          // dnaResult 상태도 업데이트
+          if (dnaData.type) {
+            setDnaResult({
+              type: dnaData.type,
+              scores: dnaData.scores,
+              answerDetails: dnaData.answerDetails,
+            });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load resume:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadResume();
+  }, [user?.id, userEmail, userName, userPhone]);
+
+  const handleSave = async () => {
+    if (!user?.id) {
+      setSaveError('로그인이 필요합니다');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const savedResume = await saveResume(editData, user.id);
+      if (savedResume) {
+        setResume(savedResume);
+        setIsEditing(false);
+      } else {
+        setSaveError('이력서 저장에 실패했습니다');
+      }
+    } catch (err) {
+      console.error('Save error:', err);
+      setSaveError('이력서 저장 중 오류가 발생했습니다');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddCareer = () => {
@@ -166,6 +370,39 @@ export default function ResumePage() {
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
   };
 
+  // 로딩 중
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">이력서 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 로그인 필요
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <User className="w-10 h-10 text-gray-400" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">로그인이 필요합니다</h2>
+          <p className="text-gray-500 mb-6">이력서를 등록하려면 먼저 로그인해주세요</p>
+          <Link
+            href="/agent/auth/login"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
+          >
+            로그인하기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // 이력서 작성 폼
   if (isEditing || !resume) {
     return (
@@ -189,17 +426,74 @@ export default function ResumePage() {
               <h1 className="font-bold text-gray-900">이력서 {resume ? '수정' : '등록'}</h1>
               <button
                 onClick={handleSave}
-                disabled={!editData.name || !editData.phone || !editData.email}
+                disabled={!editData.name || !editData.phone || !editData.email || isSaving}
                 className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
               >
                 <Save className="w-4 h-4" />
-                저장
+                {isSaving ? '저장 중...' : '저장'}
               </button>
             </div>
           </div>
         </header>
 
         <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
+          {/* 저장 에러 메시지 */}
+          {saveError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <p className="text-red-700 text-sm">{saveError}</p>
+              <button
+                onClick={() => setSaveError(null)}
+                className="ml-auto text-red-400 hover:text-red-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* DNA 분석 섹션 */}
+          {editData.dnaType && DNA_TYPE_INFO[editData.dnaType] ? (
+            <div className={`bg-gradient-to-r ${DNA_TYPE_INFO[editData.dnaType].color} rounded-2xl p-6 text-white`}>
+              <div className="flex items-center gap-4">
+                <div className="text-4xl">{DNA_TYPE_INFO[editData.dnaType].emoji}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm opacity-80">AI 분석 완료</span>
+                  </div>
+                  <h3 className="text-xl font-bold">{DNA_TYPE_INFO[editData.dnaType].name}</h3>
+                  <p className="text-sm opacity-90">{DNA_TYPE_INFO[editData.dnaType].description}</p>
+                </div>
+                <Link
+                  href="/agent/mypage/resume/dna"
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-medium transition-colors"
+                >
+                  다시 분석
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <Link
+              href="/agent/mypage/resume/dna"
+              className="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl p-6 text-white hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 transition-all group"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
+                  <Brain className="w-7 h-7" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-4 h-4 text-yellow-300" />
+                    <span className="text-sm opacity-80">AI 매칭을 위한 필수 단계</span>
+                  </div>
+                  <h3 className="text-xl font-bold">부동산 DNA 분석하기</h3>
+                  <p className="text-sm opacity-90">10개 질문으로 나에게 맞는 직무를 찾아보세요</p>
+                </div>
+                <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+          )}
+
           {/* 기본 정보 */}
           <div className="bg-white rounded-2xl p-6 border border-gray-200">
             <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -659,13 +953,110 @@ export default function ResumePage() {
               <FileText className="w-5 h-5 text-blue-600" />
               자기소개
             </h2>
-            <textarea
-              value={editData.introduction || ''}
-              onChange={(e) => setEditData({ ...editData, introduction: e.target.value })}
-              placeholder="간단한 자기소개를 작성해주세요"
-              rows={5}
-              className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-            />
+
+            {/* 작성 방식 선택 */}
+            <div className="flex gap-2 mb-4">
+              <button
+                type="button"
+                onClick={() => setIntroMode('manual')}
+                className={`flex-1 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                  introMode === 'manual'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <Edit2 className="w-4 h-4" />
+                직접 작성
+              </button>
+              <button
+                type="button"
+                onClick={() => setIntroMode('ai')}
+                className={`flex-1 py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                  introMode === 'ai'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                <Sparkles className="w-4 h-4" />
+                AI 자동 작성
+              </button>
+            </div>
+
+            {introMode === 'manual' ? (
+              <textarea
+                value={editData.introduction || ''}
+                onChange={(e) => setEditData({ ...editData, introduction: e.target.value })}
+                placeholder="간단한 자기소개를 작성해주세요"
+                rows={5}
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            ) : (
+              <div className="space-y-4">
+                {editData.dnaType && DNA_TYPE_INFO[editData.dnaType] ? (
+                  <>
+                    {/* AI 생성 미리보기 */}
+                    <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl border border-purple-100">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${DNA_TYPE_INFO[editData.dnaType].color} flex items-center justify-center text-white text-sm`}>
+                          {DNA_TYPE_INFO[editData.dnaType].emoji}
+                        </div>
+                        <span className="text-sm font-medium text-purple-700">
+                          {DNA_TYPE_INFO[editData.dnaType].name} 기반 AI 자기소개
+                        </span>
+                      </div>
+                      <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">
+                        {editData.introduction || generateAIIntroduction(editData, dnaResult?.answerDetails || editData.dnaAnswerDetails)}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const generated = generateAIIntroduction(editData, dnaResult?.answerDetails || editData.dnaAnswerDetails);
+                          setEditData({ ...editData, introduction: generated });
+                        }}
+                        className="flex-1 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-medium hover:from-purple-700 hover:to-pink-700 transition-all flex items-center justify-center gap-2"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        AI 자기소개 생성
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const generated = generateAIIntroduction(editData, dnaResult?.answerDetails || editData.dnaAnswerDetails);
+                          setEditData({ ...editData, introduction: generated });
+                          setIntroMode('manual');
+                        }}
+                        className="px-4 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                        title="생성 후 직접 수정"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 text-center">
+                      생성된 자기소개는 수정 가능합니다
+                    </p>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Brain className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-600 mb-2">DNA 분석이 필요합니다</p>
+                    <p className="text-sm text-gray-500 mb-4">
+                      AI 자기소개 생성을 위해 먼저 DNA 분석을 완료해주세요
+                    </p>
+                    <Link
+                      href="/agent/mypage/resume/dna"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-medium hover:from-blue-700 hover:to-purple-700 transition-all"
+                    >
+                      <Brain className="w-4 h-4" />
+                      DNA 분석하러 가기
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
         </main>
