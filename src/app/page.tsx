@@ -116,6 +116,9 @@ export default function LandingPage() {
                 <Link href="/sales" className="text-gray-300 hover:text-white transition-colors">
                   분양상담사
                 </Link>
+                <Link href="/event/premium" className="text-gray-300 hover:text-white transition-colors">
+                  플랫폼 소개
+                </Link>
                 <Link href="/news" className="text-gray-300 hover:text-white transition-colors">
                   뉴스
                 </Link>
@@ -145,10 +148,10 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-6 items-center">
             {/* 좌측: 공지 슬라이더 */}
             <div className="relative">
-              {announcements[currentSlide].link ? (
+              {announcements[currentSlide].link !== null ? (
                 <Link
-                  href={announcements[currentSlide].link}
-                  className={`block bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 min-h-[280px] flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}
+                  href={announcements[currentSlide].link as string}
+                  className={`block bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 min-h-[280px] flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer relative`}
                 >
                   <div>
                     <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
