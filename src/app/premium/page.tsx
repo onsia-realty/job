@@ -31,28 +31,25 @@ const PRICING_DATA = {
     color: 'blue',
     plans: [
       {
-        tier: 'vip',
-        name: 'VIP',
-        badge: '최상위 노출',
-        color: 'amber',
-        gradientFrom: 'from-amber-500',
-        gradientTo: 'to-yellow-500',
-        borderColor: 'border-amber-400',
-        bgColor: 'bg-amber-50',
+        tier: 'normal',
+        name: '일반',
+        badge: '무료로 시작',
+        color: 'emerald',
+        gradientFrom: 'from-emerald-600',
+        gradientTo: 'to-teal-500',
+        borderColor: 'border-emerald-500/30',
+        bgColor: 'bg-emerald-50',
         prices: [
-          { duration: '7일', price: 99000, perDay: 14143, discount: null },
-          { duration: '14일', price: 179000, perDay: 12786, discount: 10 },
-          { duration: '30일', price: 299000, perDay: 9967, discount: 20 },
+          { duration: '7일', price: 0, perDay: 0, discount: null },
+          { duration: '14일', price: 0, perDay: 0, discount: null },
+          { duration: '30일', price: 0, perDay: 0, discount: null },
         ],
         features: [
-          '검색 결과 최상단 노출',
-          '대형 썸네일 이미지',
-          'VIP 골드 배지',
-          '조회수 5배 증가 효과',
-          '지원자 우선 알림',
-          '상세페이지 하이라이트',
+          '기본 리스트 노출',
+          '텍스트 형식 공고',
+          '기본 지원 접수',
         ],
-        recommended: true,
+        recommended: false,
       },
       {
         tier: 'premium',
@@ -78,25 +75,28 @@ const PRICING_DATA = {
         recommended: false,
       },
       {
-        tier: 'normal',
-        name: '일반',
-        badge: '기본 등록',
-        color: 'slate',
-        gradientFrom: 'from-slate-500',
-        gradientTo: 'to-slate-400',
-        borderColor: 'border-slate-300',
-        bgColor: 'bg-slate-50',
+        tier: 'vip',
+        name: 'VIP',
+        badge: '최상위 노출',
+        color: 'amber',
+        gradientFrom: 'from-amber-500',
+        gradientTo: 'to-yellow-500',
+        borderColor: 'border-amber-400',
+        bgColor: 'bg-amber-50',
         prices: [
-          { duration: '7일', price: 0, perDay: 0, discount: null },
-          { duration: '14일', price: 0, perDay: 0, discount: null },
-          { duration: '30일', price: 0, perDay: 0, discount: null },
+          { duration: '7일', price: 99000, perDay: 14143, discount: null },
+          { duration: '14일', price: 179000, perDay: 12786, discount: 10 },
+          { duration: '30일', price: 299000, perDay: 9967, discount: 20 },
         ],
         features: [
-          '기본 리스트 노출',
-          '텍스트 형식 공고',
-          '기본 지원 접수',
+          '검색 결과 최상단 노출',
+          '대형 썸네일 이미지',
+          'VIP 골드 배지',
+          '조회수 5배 증가 효과',
+          '지원자 우선 알림',
+          '상세페이지 하이라이트',
         ],
-        recommended: false,
+        recommended: true,
       },
     ],
   },
@@ -106,50 +106,23 @@ const PRICING_DATA = {
     color: 'purple',
     plans: [
       {
-        tier: 'unique',
-        name: '유니크',
-        badge: '단독 최상위',
-        color: 'purple',
-        gradientFrom: 'from-purple-600',
-        gradientTo: 'to-pink-500',
-        borderColor: 'border-purple-400',
-        bgColor: 'bg-purple-50',
+        tier: 'normal',
+        name: '일반',
+        badge: '무료로 시작',
+        color: 'emerald',
+        gradientFrom: 'from-emerald-600',
+        gradientTo: 'to-teal-500',
+        borderColor: 'border-emerald-500/30',
+        bgColor: 'bg-emerald-50',
         prices: [
-          { duration: '7일', price: 149000, perDay: 21286, discount: null },
-          { duration: '14일', price: 269000, perDay: 19214, discount: 10 },
-          { duration: '30일', price: 449000, perDay: 14967, discount: 20 },
+          { duration: '7일', price: 0, perDay: 0, discount: null },
+          { duration: '14일', price: 0, perDay: 0, discount: null },
+          { duration: '30일', price: 0, perDay: 0, discount: null },
         ],
         features: [
-          '현장별 단독 최상위 노출',
-          '대형 배너 이미지',
-          '유니크 퍼플 배지',
-          '조회수 7배 증가 효과',
-          '지원자 실시간 알림',
-          '현장 상세정보 하이라이트',
-          '분양팀 직접 연결',
-        ],
-        recommended: true,
-      },
-      {
-        tier: 'superior',
-        name: '수페리어',
-        badge: '프리미엄 노출',
-        color: 'blue',
-        gradientFrom: 'from-blue-600',
-        gradientTo: 'to-indigo-500',
-        borderColor: 'border-blue-400',
-        bgColor: 'bg-blue-50',
-        prices: [
-          { duration: '7일', price: 79000, perDay: 11286, discount: null },
-          { duration: '14일', price: 139000, perDay: 9929, discount: 10 },
-          { duration: '30일', price: 229000, perDay: 7633, discount: 20 },
-        ],
-        features: [
-          '유니크 다음 상위 노출',
-          '수페리어 블루 배지',
-          '조회수 4배 증가 효과',
-          '현장 로고 강조',
-          '지원자 우선 알림',
+          '기본 리스트 노출',
+          '텍스트 형식 공고',
+          '기본 지원 접수',
         ],
         recommended: false,
       },
@@ -176,25 +149,52 @@ const PRICING_DATA = {
         recommended: false,
       },
       {
-        tier: 'normal',
-        name: '일반',
-        badge: '기본 등록',
-        color: 'slate',
-        gradientFrom: 'from-slate-500',
-        gradientTo: 'to-slate-400',
-        borderColor: 'border-slate-300',
-        bgColor: 'bg-slate-50',
+        tier: 'superior',
+        name: '수페리어',
+        badge: '프리미엄 노출',
+        color: 'blue',
+        gradientFrom: 'from-blue-600',
+        gradientTo: 'to-indigo-500',
+        borderColor: 'border-blue-400',
+        bgColor: 'bg-blue-50',
         prices: [
-          { duration: '7일', price: 0, perDay: 0, discount: null },
-          { duration: '14일', price: 0, perDay: 0, discount: null },
-          { duration: '30일', price: 0, perDay: 0, discount: null },
+          { duration: '7일', price: 79000, perDay: 11286, discount: null },
+          { duration: '14일', price: 139000, perDay: 9929, discount: 10 },
+          { duration: '30일', price: 229000, perDay: 7633, discount: 20 },
         ],
         features: [
-          '기본 리스트 노출',
-          '텍스트 형식 공고',
-          '기본 지원 접수',
+          '유니크 다음 상위 노출',
+          '수페리어 블루 배지',
+          '조회수 4배 증가 효과',
+          '현장 로고 강조',
+          '지원자 우선 알림',
         ],
         recommended: false,
+      },
+      {
+        tier: 'unique',
+        name: '유니크',
+        badge: '단독 최상위',
+        color: 'purple',
+        gradientFrom: 'from-purple-600',
+        gradientTo: 'to-pink-500',
+        borderColor: 'border-purple-400',
+        bgColor: 'bg-purple-50',
+        prices: [
+          { duration: '7일', price: 149000, perDay: 21286, discount: null },
+          { duration: '14일', price: 269000, perDay: 19214, discount: 10 },
+          { duration: '30일', price: 449000, perDay: 14967, discount: 20 },
+        ],
+        features: [
+          '현장별 단독 최상위 노출',
+          '대형 배너 이미지',
+          '유니크 퍼플 배지',
+          '조회수 7배 증가 효과',
+          '지원자 실시간 알림',
+          '현장 상세정보 하이라이트',
+          '분양팀 직접 연결',
+        ],
+        recommended: true,
       },
     ],
   },
@@ -321,9 +321,11 @@ export default function PremiumPricingPage() {
             return (
               <div
                 key={plan.tier}
-                className={`relative rounded-2xl overflow-hidden transition-all hover:scale-[1.02] ${
+                className={`relative rounded-2xl overflow-hidden transition-all hover:scale-[1.02] flex flex-col ${
                   isRecommended
                     ? `border-2 ${plan.borderColor} shadow-xl shadow-${plan.color}-500/20`
+                    : plan.tier === 'normal'
+                    ? 'border border-emerald-500/20 hover:border-emerald-500/40'
                     : 'border border-slate-700'
                 }`}
               >
@@ -335,13 +337,15 @@ export default function PremiumPricingPage() {
                   </div>
                 )}
 
-                <div className={`p-6 ${isRecommended ? 'pt-10' : ''} bg-slate-800/50`}>
+                <div className={`p-6 ${isRecommended ? 'pt-10' : ''} bg-slate-800/50 flex-1 flex flex-col`}>
                   {/* 티어 배지 */}
                   <div className="flex items-center justify-between mb-4">
                     <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${plan.gradientFrom} ${plan.gradientTo}`}>
                       {plan.tier === 'vip' || plan.tier === 'unique' ? (
                         <Star className="w-3 h-3 fill-current" />
-                      ) : plan.tier === 'normal' ? null : (
+                      ) : plan.tier === 'normal' ? (
+                        <Zap className="w-3 h-3" />
+                      ) : (
                         <Crown className="w-3 h-3" />
                       )}
                       {plan.name}
@@ -352,29 +356,31 @@ export default function PremiumPricingPage() {
                   {/* 가격 */}
                   <div className="mb-6">
                     <div className="flex items-end gap-1 mb-1">
-                      <span className="text-3xl font-bold">{formatPrice(priceInfo.price)}</span>
+                      <span className={`text-3xl font-bold ${plan.tier === 'normal' ? 'text-emerald-400' : ''}`}>
+                        {formatPrice(priceInfo.price)}
+                      </span>
                       {priceInfo.price > 0 && (
                         <span className="text-sm text-gray-500 mb-1">/ {['7일', '14일', '30일'][selectedDuration]}</span>
                       )}
                     </div>
-                    {priceInfo.price > 0 && (
+                    {priceInfo.price > 0 ? (
                       <p className="text-xs text-gray-500">
                         일 {formatPrice(priceInfo.perDay)}
                         {priceInfo.discount && (
                           <span className="ml-2 text-green-400">{priceInfo.discount}% 할인</span>
                         )}
                       </p>
+                    ) : (
+                      <p className="text-xs text-emerald-500/70">부담 없이 바로 시작하세요</p>
                     )}
                   </div>
 
                   {/* 기능 목록 */}
-                  <ul className="space-y-3 mb-6">
+                  <ul className="space-y-3 mb-6 flex-1">
                     {plan.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start gap-2 text-sm">
-                        <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 ${
-                          plan.tier === 'normal' ? 'text-gray-500' : `text-${plan.color}-400`
-                        }`} />
-                        <span className={plan.tier === 'normal' ? 'text-gray-500' : 'text-gray-300'}>
+                        <Check className={`w-4 h-4 mt-0.5 flex-shrink-0 text-${plan.color}-400`} />
+                        <span className="text-gray-300">
                           {feature}
                         </span>
                       </li>
@@ -385,7 +391,7 @@ export default function PremiumPricingPage() {
                   <button
                     className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
                       plan.tier === 'normal'
-                        ? 'bg-slate-700 text-gray-400 hover:bg-slate-600'
+                        ? 'border border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/10'
                         : `bg-gradient-to-r ${plan.gradientFrom} ${plan.gradientTo} hover:opacity-90`
                     }`}
                   >

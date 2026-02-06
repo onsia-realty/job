@@ -3,19 +3,31 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Search, ChevronDown, ChevronLeft, ChevronRight, ArrowRight,
-  Users, Eye, MapPin, Home, Map, Heart, Megaphone, PenSquare,
-  ArrowUp, ExternalLink, Phone, Calendar, Loader2
+  Search, ChevronDown, ChevronLeft, ChevronRight, Star,
+  MapPin, Home, Map, Heart, Megaphone, PenSquare,
+  ArrowUp, Loader2, Eye, Building2
 } from 'lucide-react';
 import JobCard from '@/components/sales/JobCard';
-import JobFilter from '@/components/sales/JobFilter';
 import VipSlider from '@/components/sales/VipSlider';
 import MobileStatsBar from '@/components/sales/MobileStatsBar';
 import PremiumGrid from '@/components/sales/PremiumGrid';
 import MobileNav from '@/components/shared/MobileNav';
-import type { SalesJobListing, SalesJobFilter } from '@/types';
+import type { SalesJobListing } from '@/types';
 import { REGIONS } from '@/types';
 import { fetchJobs } from '@/lib/supabase';
+
+const TYPE_LABELS: Record<string, string> = {
+  apartment: '아파트', officetel: '오피스텔', store: '상가', industrial: '지산',
+};
+const POSITION_LABELS: Record<string, string> = {
+  headTeam: '본부/팀장', teamLead: '팀장/팀원', member: '팀원',
+};
+const SALARY_LABELS: Record<string, string> = {
+  commission: '계약 수수료', base_incentive: '기본급+인센', daily: '일급',
+};
+const BADGE_LABELS: Record<string, string> = {
+  new: '신규', hot: 'HOT', jackpot: '대박', popular: '인기',
+};
 
 // 더 많은 임시 구인 데이터
 const sampleJobs: SalesJobListing[] = [
@@ -343,37 +355,6 @@ const adItems = [
   { id: '5', title: '힐스테이트 지금이 타이밍입니다', desc: '조건변경 수수료인상' },
 ];
 
-// 뉴스 데이터
-const newsItems = [
-  { id: '1', title: '갈월동 52-6 일원, 40층·885세대 주거단지 들어선다', date: '2026.01.14', url: '#' },
-  { id: '2', title: '강남 재건축 \'평당 1억\' 첫 돌파…서울 집값 상승 이끌었다', date: '2026.01.14', url: '#' },
-  { id: '3', title: '"대단지 아파트 원한다면 1분기 노려라"…2만 가구 쏟아진다', date: '2026.01.13', url: '#' },
-  { id: '4', title: '서울, 허가받은 \'토지거래\' 증가 추세... "위축 심리 일부 회복"', date: '2026.01.12', url: '#' },
-];
-
-// 공지사항 데이터
-const notices = [
-  { id: '1', title: '외부 호스팅 서비스 장애로 인한 일시적 이용 제한 안내', date: '01.14' },
-  { id: '2', title: '부동산인 3.1 업데이트', date: '12.23' },
-  { id: '3', title: '연말연시 고객센터 휴무 안내', date: '12.20' },
-];
-
-// 이벤트 데이터
-const events = [
-  { id: '1', title: '[부동산인 업데이트] 행운 복권 이벤트', date: '01.07' },
-  { id: '2', title: '부동산인 출시 기념 룰렛 이벤트!!', date: '05.14' },
-];
-
-// 초기 필터 상태
-const initialFilters: SalesJobFilter = {
-  regions: [],
-  types: [],
-  salaryTypes: [],
-  positions: [],
-  experiences: [],
-  companyTypes: [],
-  tiers: [],
-};
 
 export default function SalesMainPage() {
   const [selectedRegion, setSelectedRegion] = useState<string>('지역');
@@ -382,7 +363,6 @@ export default function SalesMainPage() {
   const [currentAdIndex, setCurrentAdIndex] = useState(0);
   const [currentStatIndex, setCurrentStatIndex] = useState(0);
   const [showScrollTop, setShowScrollTop] = useState(false);
-  const [filters, setFilters] = useState<SalesJobFilter>(initialFilters);
   const [dbJobs, setDbJobs] = useState<SalesJobListing[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -414,56 +394,21 @@ export default function SalesMainPage() {
     totalJobs: 310068,
   };
 
-  // 필터 적용 함수
-  const applyFilters = (jobs: SalesJobListing[]) => {
-    return jobs.filter((job) => {
-      // 지역 필터
-      if (filters.regions.length > 0 && !filters.regions.includes(job.region)) {
-        return false;
-      }
-      // 현장유형 필터
-      if (filters.types.length > 0 && !filters.types.includes(job.type)) {
-        return false;
-      }
-      // 급여형태 필터
-      if (filters.salaryTypes.length > 0 && !filters.salaryTypes.includes(job.salary.type)) {
-        return false;
-      }
-      // 직급 필터
-      if (filters.positions.length > 0 && !filters.positions.includes(job.position)) {
-        return false;
-      }
-      // 경력 필터
-      if (filters.experiences.length > 0 && !filters.experiences.includes(job.experience)) {
-        return false;
-      }
-      // 업체유형 필터
-      if (filters.companyTypes.length > 0 && job.companyType && !filters.companyTypes.includes(job.companyType)) {
-        return false;
-      }
-      // 티어 필터
-      if (filters.tiers.length > 0 && !filters.tiers.includes(job.tier)) {
-        return false;
-      }
-      // 검색어 필터
-      if (searchQuery && !job.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !job.company.toLowerCase().includes(searchQuery.toLowerCase()) &&
-          !job.description.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false;
-      }
-      return true;
-    });
-  };
+  // 검색어 필터링
+  const filteredJobs = allJobs.filter((job) => {
+    if (searchQuery && !job.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !job.company.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !job.description.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    return true;
+  });
 
-  // 필터링된 전체 데이터 (DB + 샘플)
-  const filteredJobs = applyFilters(allJobs);
-
-  // 필터링된 데이터 (티어별)
+  // 티어별 데이터
   const uniqueJobs = filteredJobs.filter((job) => job.tier === 'unique');
   const superiorJobs = filteredJobs.filter((job) => job.tier === 'superior');
   const premiumJobs = filteredJobs.filter((job) => job.tier === 'premium');
   const normalJobs = filteredJobs.filter((job) => job.tier === 'normal');
-  const bestJobs = filteredJobs.filter((job) => job.views > 2000).slice(0, 3);
 
   // AD 롤링 효과
   useEffect(() => {
@@ -671,35 +616,11 @@ export default function SalesMainPage() {
         <VipSlider jobs={vipJobs} />
       </div>
 
-      {/* AD 롤링 배너 (PC) */}
-      <div className="hidden md:block bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4 overflow-x-auto hide-scrollbar">
-            {adItems.map((ad) => (
-              <div
-                key={ad.id}
-                className="flex-shrink-0 flex items-center gap-2 bg-white rounded-lg px-4 py-2 border border-gray-200 hover:border-purple-500 cursor-pointer transition-colors"
-              >
-                <span className="text-xs bg-red-500 text-white px-2 py-0.5 rounded font-medium">AD</span>
-                <span className="text-sm text-gray-700 whitespace-nowrap">{ad.title}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
       <main className="max-w-7xl mx-auto px-4 py-4 md:py-6">
-        {/* 필터 컴포넌트 */}
-        <JobFilter
-          filters={filters}
-          onFilterChange={setFilters}
-          totalCount={allJobs.length}
-          filteredCount={filteredJobs.length}
-        />
-
-        <div className="flex gap-6">
+        <div>
           {/* 메인 콘텐츠 */}
-          <div className="flex-1 min-w-0">
+          <div>
             {/* 로딩 표시 */}
             {isLoading && (
               <div className="flex items-center justify-center py-12">
@@ -720,13 +641,25 @@ export default function SalesMainPage() {
                     + 전체보기
                   </Link>
                 </div>
-                {/* 모바일: 2열 그리드 / PC: 리스트 */}
+                {/* 모바일: 2열 그리드 / PC: 2열 카드 그리드 (분양라인 스타일) */}
                 <div className="md:hidden">
                   <PremiumGrid jobs={uniqueJobs} tier="unique" />
                 </div>
-                <div className="hidden md:block space-y-3">
+                <div className="hidden md:grid md:grid-cols-4 gap-3">
                   {uniqueJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
+                    <JobCard key={job.id} job={job} variant="compact" />
+                  ))}
+                  {uniqueJobs.length % 4 !== 0 && Array.from({ length: 4 - (uniqueJobs.length % 4) }).map((_, i) => (
+                    <Link key={`unique-empty-${i}`} href="/event/premium" className="group">
+                      <div className="bg-gradient-to-br from-purple-50/50 to-blue-50/50 rounded-lg border-2 border-dashed border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[200px] cursor-pointer h-full">
+                        <div className="w-14 h-14 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors flex items-center justify-center mb-3">
+                          <Star className="w-7 h-7 text-purple-300 group-hover:text-purple-500 transition-colors" />
+                        </div>
+                        <p className="text-sm font-bold text-purple-500 group-hover:text-purple-600 mb-1">유니크 광고</p>
+                        <p className="text-xs text-purple-400">이 자리에 공고를 노출하세요</p>
+                        <p className="text-[10px] text-purple-300 mt-1">클릭하여 자세히 보기 →</p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
                 {/* 유니크 광고 배너 */}
@@ -734,8 +667,8 @@ export default function SalesMainPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <span className="text-[10px] md:text-xs bg-white/20 px-2 py-0.5 rounded">유니크</span>
-                      <p className="mt-1 md:mt-2 text-xs md:text-sm">효율적인 분양현장 구인 광고</p>
-                      <p className="font-bold text-sm md:text-base">지금이 최적의 타이밍입니다!</p>
+                      <p className="mt-1 md:mt-2 text-xs md:text-sm">슬라이드 광고 최고의 위치</p>
+                      <p className="font-bold text-sm md:text-base">노출효과</p>
                     </div>
                     <Link href="#" className="bg-white text-purple-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-purple-50 transition-colors whitespace-nowrap">
                       상품안내
@@ -745,27 +678,57 @@ export default function SalesMainPage() {
               </section>
             )}
 
-            {/* 베스트 현장 */}
-            {bestJobs.length > 0 && (
-              <section className="mb-6 md:mb-8">
-                <div className="flex items-center justify-between mb-3 md:mb-4">
-                  <div>
-                    <h2 className="font-bold text-gray-900 text-sm md:text-base">베스트 현장</h2>
-                    <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1 hidden md:block">
-                      ※ 해당 영역은 최근 10일간의 조회수, 현장 공유, 문자·전화 문의 등 다양한 지표를 종합하여 자동으로 노출됩니다.
-                    </p>
-                  </div>
-                  <Link href="#" className="text-gray-500 text-xs md:text-sm flex items-center gap-1 hover:text-purple-600">
-                    + 전체보기
+            {/* 광고대행사 전문 노출 */}
+            <section className="mb-6 md:mb-8">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div>
+                  <h2 className="font-bold text-gray-900 text-sm md:text-base flex items-center gap-2">
+                    <Megaphone className="w-4 h-4 text-orange-500" />
+                    광고대행사 전문 노출
+                  </h2>
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1 hidden md:block">
+                    분양상담사에게 직접 광고하세요! LMS · 유튜브 · SNS 마케팅 전문 업체
+                  </p>
+                </div>
+                <Link href="#" className="text-gray-500 text-xs md:text-sm flex items-center gap-1 hover:text-orange-600">
+                  + 전체보기
+                </Link>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {/* 예시 광고대행사 4개 */}
+                {[
+                  { id: 'ad1', name: '분양마케팅PRO', desc: 'LMS 대량발송 · 분양DB 타겟팅', tag: 'LMS', color: 'bg-blue-500', icon: '📱' },
+                  { id: 'ad2', name: '부동산유튜브랩', desc: '유튜브 숏폼 · 현장 홍보영상 제작', tag: 'YouTube', color: 'bg-red-500', icon: '🎬' },
+                  { id: 'ad3', name: '분양SNS파트너', desc: '인스타 · 블로그 · 카페 바이럴', tag: 'SNS', color: 'bg-pink-500', icon: '📢' },
+                  { id: 'ad4', name: '현장광고다이렉트', desc: '현수막 · 전단지 · 현장 브랜딩', tag: '오프라인', color: 'bg-green-500', icon: '🏢' },
+                ].map((ad) => (
+                  <Link key={ad.id} href="#" className="group">
+                    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md hover:border-orange-300 transition-all h-full">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-xs px-2 py-0.5 rounded text-white font-medium ${ad.color}`}>{ad.tag}</span>
+                        <span className="text-lg">{ad.icon}</span>
+                      </div>
+                      <h4 className="font-bold text-sm text-gray-900 mb-1 group-hover:text-orange-600 transition-colors">{ad.name}</h4>
+                      <p className="text-xs text-gray-500 line-clamp-2">{ad.desc}</p>
+                      <div className="mt-3 text-xs text-orange-500 font-medium">광고 문의 →</div>
+                    </div>
                   </Link>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-4">
-                  {bestJobs.map((job) => (
-                    <JobCard key={job.id} job={job} variant="compact" />
-                  ))}
-                </div>
-              </section>
-            )}
+                ))}
+                {/* 빈칸 4개 */}
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Link key={`ad-empty-${i}`} href="/event/premium" className="group">
+                    <div className="bg-gradient-to-br from-orange-50/50 to-yellow-50/50 rounded-lg border-2 border-dashed border-orange-200 hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[140px] cursor-pointer h-full">
+                      <div className="w-12 h-12 rounded-full bg-orange-100 group-hover:bg-orange-200 transition-colors flex items-center justify-center mb-2">
+                        <Megaphone className="w-6 h-6 text-orange-300 group-hover:text-orange-500 transition-colors" />
+                      </div>
+                      <p className="text-sm font-bold text-orange-500 group-hover:text-orange-600 mb-1">광고대행사 노출</p>
+                      <p className="text-xs text-orange-400">이 자리에 광고를 노출하세요</p>
+                      <p className="text-[10px] text-orange-300 mt-1">클릭하여 자세히 보기 →</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
 
             {/* 슈페리어 섹션 */}
             {superiorJobs.length > 0 && (
@@ -779,13 +742,26 @@ export default function SalesMainPage() {
                     + 전체보기
                   </Link>
                 </div>
-                {/* 모바일: 2열 그리드 / PC: 리스트 */}
+                {/* 모바일: 2열 그리드 / PC: 2열 카드 그리드 (분양라인 스타일) */}
                 <div className="md:hidden">
                   <PremiumGrid jobs={superiorJobs} tier="superior" />
                 </div>
-                <div className="hidden md:block space-y-3">
+                <div className="hidden md:grid md:grid-cols-5 gap-3">
                   {superiorJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
+                    <JobCard key={job.id} job={job} variant="compact" />
+                  ))}
+                  {/* 5x3=15칸 채우기 */}
+                  {Array.from({ length: Math.max(0, 15 - superiorJobs.length) }).map((_, i) => (
+                    <Link key={`superior-empty-${i}`} href="/event/premium" className="group">
+                      <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 rounded-lg border-2 border-dashed border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[180px] cursor-pointer h-full">
+                        <div className="w-12 h-12 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center mb-2">
+                          <Star className="w-6 h-6 text-blue-300 group-hover:text-blue-500 transition-colors" />
+                        </div>
+                        <p className="text-xs font-bold text-blue-500 group-hover:text-blue-600 mb-1">슈페리어 광고</p>
+                        <p className="text-[10px] text-blue-400">이 자리에 공고를 노출하세요</p>
+                        <p className="text-[10px] text-blue-300 mt-1">클릭하여 자세히 보기 →</p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
                 {/* 슈페리어 광고 배너 */}
@@ -804,7 +780,7 @@ export default function SalesMainPage() {
               </section>
             )}
 
-            {/* 프리미엄 섹션 */}
+            {/* 프리미엄 섹션 - 텍스트 기반 (썸네일 없음) */}
             {premiumJobs.length > 0 && (
               <section className="mb-6 md:mb-8">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
@@ -816,34 +792,137 @@ export default function SalesMainPage() {
                     + 전체보기
                   </Link>
                 </div>
-                {/* 모바일: 2열 그리드 / PC: 리스트 */}
-                <div className="md:hidden">
-                  <PremiumGrid jobs={premiumJobs} tier="premium" />
-                </div>
-                <div className="hidden md:block space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {premiumJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
+                    <Link key={job.id} href={`/sales/jobs/${job.id}`}>
+                      <div className="bg-white rounded-lg border border-gray-200 border-l-4 border-l-cyan-500 hover:shadow-md hover:border-cyan-300 transition-all p-4 group h-full flex flex-col">
+                        {/* 상단: 회사 로고 + 기본정보 */}
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-50 to-cyan-100 flex items-center justify-center flex-shrink-0 border border-cyan-200">
+                            <span className="text-cyan-700 font-bold text-sm">{job.company.charAt(0)}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-50 text-cyan-600 font-medium">{TYPE_LABELS[job.type] || job.type}</span>
+                              <span className="text-[10px] text-gray-400 flex items-center gap-0.5">
+                                <MapPin className="w-2.5 h-2.5" />
+                                {job.region}
+                              </span>
+                              {job.badges.length > 0 && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-red-500 text-white font-bold">
+                                  {BADGE_LABELS[job.badges[0]] || job.badges[0]}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-gray-400 truncate block">{job.company}</span>
+                          </div>
+                        </div>
+                        {/* 제목 + 설명 */}
+                        <h4 className="font-bold text-[13px] text-gray-900 line-clamp-2 group-hover:text-cyan-600 transition-colors leading-snug mb-1">
+                          {job.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 line-clamp-1 mb-auto">{job.description}</p>
+                        {/* 하단: 조건 + 조회수 */}
+                        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-100">
+                          <div className="flex flex-wrap gap-1.5">
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-cyan-50 text-cyan-700 font-medium">{POSITION_LABELS[job.position] || job.position}</span>
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-600">{SALARY_LABELS[job.salary.type] || job.salary.type}</span>
+                          </div>
+                          <div className="flex items-center gap-0.5 text-[10px] text-gray-400">
+                            <Eye className="w-3 h-3" />
+                            {job.views.toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                  {/* 빈 슬롯 채우기 */}
+                  {premiumJobs.length % 3 !== 0 && Array.from({ length: 3 - (premiumJobs.length % 3) }).map((_, i) => (
+                    <Link key={`premium-empty-${i}`} href="/event/premium" className="group">
+                      <div className="bg-gradient-to-br from-cyan-50/30 to-teal-50/30 rounded-lg border-2 border-dashed border-cyan-200 hover:border-cyan-400 hover:bg-cyan-50/50 transition-all p-4 flex flex-col items-center justify-center min-h-[140px] cursor-pointer h-full">
+                        <Star className="w-6 h-6 text-cyan-300 group-hover:text-cyan-500 transition-colors mb-2" />
+                        <p className="text-xs font-bold text-cyan-500 group-hover:text-cyan-600">프리미엄 광고</p>
+                        <p className="text-[10px] text-cyan-400 mt-0.5">이 자리에 공고를 노출하세요</p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </section>
             )}
 
-            {/* 일반 섹션 */}
+            {/* 일반 섹션 - 상가114 스타일 테이블 */}
             {normalJobs.length > 0 && (
               <section className="mb-6 md:mb-8">
                 <div className="flex items-center justify-between mb-3 md:mb-4">
                   <div className="flex items-center gap-2">
-                    <span className="bg-gray-500 text-white text-xs md:text-sm font-bold px-2 md:px-3 py-1 rounded">일반</span>
+                    <span className="bg-gray-400 text-white text-xs md:text-sm font-bold px-2 md:px-3 py-1 rounded">일반</span>
                     <span className="text-xs text-gray-500">({normalJobs.length})</span>
                   </div>
                   <Link href="/sales/jobs?tier=normal" className="text-gray-500 text-xs md:text-sm flex items-center gap-1 hover:text-gray-600">
                     + 전체보기
                   </Link>
                 </div>
-                <div className="space-y-2 md:space-y-3">
+
+                {/* PC: 테이블 형태 (상가114 스타일) */}
+                <div className="hidden md:block bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 w-[35%]">현장명</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 w-[20%]">소재지</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 w-[25%]">업무내용</th>
+                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-gray-600 w-[12%]">응시요건</th>
+                        <th className="px-4 py-2.5 text-center text-xs font-semibold text-gray-600 w-[8%]">등록일</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {normalJobs.map((job, index) => (
+                        <tr key={job.id} className={`hover:bg-gray-50 transition-colors group ${index > 0 ? 'border-t border-gray-100' : ''}`}>
+                          <td className="px-4 py-3">
+                            <Link href={`/sales/jobs/${job.id}`} className="text-sm text-gray-800 hover:text-purple-600 font-medium transition-colors line-clamp-1">
+                              {job.title}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {job.region} · {job.company}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500 line-clamp-1">
+                            {POSITION_LABELS[job.position] || job.position} · {SALARY_LABELS[job.salary.type] || job.salary.type}{job.salary.amount ? ` ${job.salary.amount}` : ''}{job.benefits.length > 0 ? ` · ${job.benefits.join(' ')}` : ''}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">
+                            {TYPE_LABELS[job.type] || job.type} · {job.experience === 'none' ? '경력무관' : job.experience === '1month' ? '1개월이상' : job.experience === '3month' ? '3개월이상' : job.experience === '6month' ? '6개월이상' : job.experience === '12month' ? '1년이상' : job.experience}
+                          </td>
+                          <td className="px-4 py-3 text-[11px] text-gray-400 text-center whitespace-nowrap">
+                            {job.createdAt}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* 모바일: 카드형 리스트 */}
+                <div className="md:hidden space-y-2">
                   {normalJobs.map((job) => (
-                    <JobCard key={job.id} job={job} />
+                    <Link key={job.id} href={`/sales/jobs/${job.id}`}>
+                      <div className="bg-white rounded-lg border border-gray-200 p-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-500">{TYPE_LABELS[job.type] || job.type}</span>
+                          <span className="text-[10px] text-gray-400">{job.region}</span>
+                          <span className="text-[10px] text-gray-300 ml-auto">{job.createdAt}</span>
+                        </div>
+                        <h4 className="text-sm text-gray-800 font-medium truncate">{job.title}</h4>
+                        <p className="text-xs text-gray-500 mt-1">{POSITION_LABELS[job.position] || job.position} · {SALARY_LABELS[job.salary.type] || job.salary.type}</p>
+                      </div>
+                    </Link>
                   ))}
+                </div>
+
+                {/* 업그레이드 유도 */}
+                <div className="mt-3 text-center">
+                  <Link href="/event/premium" className="text-xs text-gray-400 hover:text-cyan-600 transition-colors">
+                    더 많은 노출이 필요하신가요? <span className="text-cyan-500 font-medium">프리미엄으로 업그레이드 →</span>
+                  </Link>
                 </div>
               </section>
             )}
@@ -856,124 +935,12 @@ export default function SalesMainPage() {
                 </div>
                 <h3 className="text-lg font-medium text-gray-700 mb-2">검색 결과가 없습니다</h3>
                 <p className="text-gray-500 text-sm">
-                  필터 조건을 변경하거나 검색어를 수정해 보세요.
+                  검색어를 수정해 보세요.
                 </p>
-                <button
-                  onClick={() => setFilters(initialFilters)}
-                  className="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm hover:bg-purple-700 transition-colors"
-                >
-                  필터 초기화
-                </button>
               </div>
             )}
           </div>
 
-          {/* 사이드바 */}
-          <div className="hidden lg:block w-80 flex-shrink-0 space-y-6">
-            {/* 통계 */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-purple-600" />
-                부동산인 통계
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">신규현장</span>
-                  <span className="font-bold text-purple-600">{stats.todayNewJobs}개</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">전체 현장</span>
-                  <span className="font-medium text-gray-900">{stats.totalJobs.toLocaleString()} 개</span>
-                </div>
-                <hr className="border-gray-100" />
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">실시간 방문자</span>
-                  <span className="font-bold text-purple-600">{stats.todayVisitors.toLocaleString()}명</span>
-                </div>
-                <p className="text-xs text-gray-400">오늘 부동산인 방문자의 실시간 집계입니다</p>
-              </div>
-            </div>
-
-            {/* 맞춤현장 설정 */}
-            <div className="bg-gradient-to-r from-purple-100 to-blue-100 rounded-lg p-4">
-              <h3 className="font-bold text-gray-900 mb-2">맞춤현장</h3>
-              <p className="text-sm text-gray-600 mb-3">
-                로그인후 이용하실 수 있습니다. 맞춤현장 정보를 설정하시어 회원님께서 찾으시는 현장 구인 정보를 빠르게 전달 받아보세요!
-              </p>
-              <Link
-                href="/sales/auth/login"
-                className="block text-center bg-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
-              >
-                맞춤현장 설정하기
-              </Link>
-            </div>
-
-            {/* 뉴스 */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-bold text-gray-900">분양라인 뉴스</h3>
-                <Link href="#" className="text-xs text-gray-500 hover:text-purple-600">뉴스 전체보기</Link>
-              </div>
-              <p className="text-xs text-gray-500 mb-3">최신 보도자료와 부동산 관련 뉴스를 확인해보세요!</p>
-              <div className="space-y-3">
-                {newsItems.map((news) => (
-                  <Link key={news.id} href={news.url} className="block group">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm text-gray-700 line-clamp-2 group-hover:text-purple-600 transition-colors">
-                        {news.title}
-                      </p>
-                      <span className="text-xs text-gray-400 whitespace-nowrap">{news.date}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </div>
-
-            {/* 공지사항/이벤트 */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <div className="grid grid-cols-2 gap-4">
-                {/* 공지사항 */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-bold text-gray-900 text-sm">공지사항</h4>
-                    <Link href="#" className="text-xs text-gray-500 hover:text-purple-600">전체보기</Link>
-                  </div>
-                  <div className="space-y-2">
-                    {notices.map((notice) => (
-                      <Link key={notice.id} href="#" className="block text-xs text-gray-600 hover:text-purple-600 truncate">
-                        {notice.title}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-                {/* 이벤트 */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-bold text-gray-900 text-sm">이벤트</h4>
-                    <Link href="#" className="text-xs text-gray-500 hover:text-purple-600">전체보기</Link>
-                  </div>
-                  <div className="space-y-2">
-                    {events.map((event) => (
-                      <Link key={event.id} href="#" className="block text-xs text-gray-600 hover:text-purple-600 truncate">
-                        {event.title}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 고객센터 */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
-              <h4 className="font-bold text-gray-900 mb-2">고객센터</h4>
-              <p className="text-2xl font-bold text-purple-600 mb-2">1660-0464</p>
-              <div className="text-xs text-gray-500 space-y-1">
-                <p><span className="font-medium">운영시간</span> 월~금 09:00~18:00 주말,공휴일 휴무</p>
-                <p><span className="font-medium">FAX</span> 031-791-1868</p>
-                <p><span className="font-medium">E-mail</span> help@onsia.city</p>
-              </div>
-            </div>
-          </div>
         </div>
       </main>
 
@@ -1000,9 +967,10 @@ export default function SalesMainPage() {
       <div className="fixed right-4 bottom-24 md:bottom-8 flex flex-col gap-2 z-50">
         <Link
           href="/sales/jobs/new"
-          className="w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-purple-700 transition-colors"
+          className="flex items-center gap-2 bg-purple-600 text-white px-5 py-3 rounded-full shadow-lg hover:bg-purple-700 transition-colors hover:shadow-xl"
         >
           <PenSquare className="w-5 h-5" />
+          <span className="font-medium text-sm whitespace-nowrap">공고글 쓰기</span>
         </Link>
         {showScrollTop && (
           <button
