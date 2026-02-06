@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
 import SecurityShield from "@/components/security/SecurityShield";
+import Honeypot from "@/components/security/Honeypot";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -123,6 +124,7 @@ export default function RootLayout({
       >
         <Providers>
           <SecurityShield />
+          <Honeypot />
           {children}
         </Providers>
       </body>
