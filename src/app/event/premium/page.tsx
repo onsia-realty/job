@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowRight,
   CheckCircle2,
@@ -44,65 +45,103 @@ export default function PremiumLandingPage() {
         <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
 
-        <div className={`relative z-10 max-w-5xl mx-auto px-4 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          {/* 뱃지 */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-full mb-8">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-amber-300 text-sm font-medium">대한민국 최초 부동산 전문 AI 매칭 플랫폼</span>
-          </div>
+        <div className={`relative z-10 max-w-7xl mx-auto px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* 왼쪽: 텍스트 콘텐츠 */}
+            <div className="text-center lg:text-left">
+              {/* 뱃지 */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-full mb-8">
+                <Sparkles className="w-4 h-4 text-amber-400" />
+                <span className="text-amber-300 text-sm font-medium">대한민국 최초 부동산 전문 AI 매칭 플랫폼</span>
+              </div>
 
-          {/* 메인 헤드라인 */}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-black mb-6 leading-tight">
-            <span className="text-white">알바가 아닙니다.</span>
-            <br />
-            <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
-              전문가입니다.
-            </span>
-          </h1>
+              {/* 메인 헤드라인 */}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
+                <span className="text-white">알바가 아닙니다.</span>
+                <br />
+                <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
+                  전문가입니다.
+                </span>
+              </h1>
 
-          {/* 서브 헤드라인 */}
-          <p className="text-xl md:text-2xl text-gray-300 mb-4 max-w-3xl mx-auto leading-relaxed">
-            35년간 <span className="text-amber-400 font-semibold">50만 명</span>의 공인중개사가 배출되었지만,
-            <br className="hidden md:block" />
-            그들을 위한 <span className="text-white font-semibold">'진짜'</span> 구인구직 플랫폼은 없었습니다.
-          </p>
+              {/* 서브 헤드라인 */}
+              <p className="text-lg md:text-xl text-gray-300 mb-4 leading-relaxed">
+                35년간 <span className="text-amber-400 font-semibold">50만 명</span>의 공인중개사가 배출되었지만,
+                <br className="hidden md:block" />
+                그들을 위한 <span className="text-white font-semibold">'진짜'</span> 구인구직 플랫폼은 없었습니다.
+              </p>
 
-          <p className="text-lg text-gray-400 mb-10">
-            대한민국에서 가장 비싼 자산을 다루는 전문가,<br />
-            이제 그에 걸맞은 대우를 받으세요.
-          </p>
+              <p className="text-base text-gray-400 mb-8">
+                대한민국에서 가장 비싼 자산을 다루는 전문가,<br />
+                이제 그에 걸맞은 대우를 받으세요.
+              </p>
 
-          {/* CTA 버튼 */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/agent/auth/register"
-              className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold text-lg rounded-xl hover:from-amber-400 hover:to-yellow-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105"
-            >
-              지금 시작하기
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-            <Link
-              href="#problem"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl hover:bg-white/20 transition-all"
-            >
-              더 알아보기
-              <ChevronDown className="w-5 h-5" />
-            </Link>
-          </div>
+              {/* CTA 버튼 */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <Link
+                  href="/agent/auth/register"
+                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold text-lg rounded-xl hover:from-amber-400 hover:to-yellow-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105"
+                >
+                  지금 시작하기
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
+                <Link
+                  href="#problem"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl hover:bg-white/20 transition-all"
+                >
+                  더 알아보기
+                  <ChevronDown className="w-5 h-5" />
+                </Link>
+              </div>
 
-          {/* 신뢰 지표 */}
-          <div className="flex flex-wrap justify-center gap-8 mt-16 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <BadgeCheck className="w-5 h-5 text-green-400" />
-              <span>보험/다단계 0%</span>
+              {/* 신뢰 지표 */}
+              <div className="flex flex-wrap justify-center lg:justify-start gap-6 mt-10 text-sm text-gray-400">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="w-5 h-5 text-green-400" />
+                  <span>보험/다단계 0%</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Brain className="w-5 h-5 text-blue-400" />
+                  <span>AI 매칭 기술</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-amber-400" />
+                  <span>부동산 전문가 Only</span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Brain className="w-5 h-5 text-blue-400" />
-              <span>AI 매칭 기술</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Shield className="w-5 h-5 text-amber-400" />
-              <span>부동산 전문가 Only</span>
+
+            {/* 오른쪽: Hero 이미지 */}
+            <div className="relative hidden lg:block">
+              {/* 이미지 배경 효과 */}
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-blue-500/20 rounded-3xl blur-3xl" />
+
+              {/* 메인 이미지 */}
+              <div className="relative">
+                <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl shadow-amber-500/10">
+                  <Image
+                    src="/images/onsia_realty_Professional_Korean_woman_real_estate_consultant_dd65c326-faa8-4e9f-a4bf-78d8ea09fc56_0.png"
+                    alt="부동산 전문가"
+                    width={600}
+                    height={700}
+                    className="object-cover w-full h-auto"
+                    priority
+                  />
+                  {/* 이미지 오버레이 그라데이션 */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/80 via-transparent to-transparent" />
+                </div>
+
+                {/* 플로팅 뱃지들 */}
+                <div className="absolute -left-4 top-1/4 px-4 py-2 bg-green-500/90 text-white text-sm font-bold rounded-lg shadow-lg animate-pulse">
+                  ✓ 검증된 전문가
+                </div>
+                <div className="absolute -right-4 top-1/2 px-4 py-2 bg-amber-500/90 text-black text-sm font-bold rounded-lg shadow-lg">
+                  🎯 AI 매칭 98%
+                </div>
+                <div className="absolute -left-2 bottom-1/4 px-4 py-2 bg-blue-500/90 text-white text-sm font-bold rounded-lg shadow-lg">
+                  💼 연봉 협상 지원
+                </div>
+              </div>
             </div>
           </div>
         </div>

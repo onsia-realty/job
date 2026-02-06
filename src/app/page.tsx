@@ -46,6 +46,7 @@ const announcements = [
     title: '온시아 JOB 정식 오픈!',
     description: '부동산 전문가를 위한 AI 기반 구인구직 플랫폼이 오픈했습니다.',
     color: 'from-purple-500 to-blue-500',
+    link: null,
   },
   {
     id: 2,
@@ -53,6 +54,7 @@ const announcements = [
     title: '프리미엄 광고 50% 할인',
     description: '오픈 기념 프리미엄 현장 광고 할인 이벤트를 진행합니다.',
     color: 'from-orange-500 to-pink-500',
+    link: '/event/premium',
   },
   {
     id: 3,
@@ -60,6 +62,7 @@ const announcements = [
     title: 'AI 매칭 시스템 업그레이드',
     description: '더욱 정확한 구인구직 매칭을 위한 AI 시스템이 개선되었습니다.',
     color: 'from-cyan-500 to-green-500',
+    link: null,
   },
 ];
 
@@ -142,18 +145,77 @@ export default function LandingPage() {
           <div className="grid md:grid-cols-2 gap-6 items-center">
             {/* 좌측: 공지 슬라이더 */}
             <div className="relative">
-              <div className={`bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 min-h-[280px] flex flex-col justify-between`}>
-                <div>
-                  <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
-                    {announcements[currentSlide].badge}
-                  </span>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-3">
-                    {announcements[currentSlide].title}
-                  </h2>
-                  <p className="text-white/80">
-                    {announcements[currentSlide].description}
-                  </p>
-                </div>
+              {announcements[currentSlide].link ? (
+                <Link
+                  href={announcements[currentSlide].link}
+                  className={`block bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 min-h-[280px] flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer`}
+                >
+                  <div>
+                    <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
+                      {announcements[currentSlide].badge}
+                    </span>
+                    <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                      {announcements[currentSlide].title}
+                    </h2>
+                    <p className="text-white/80">
+                      {announcements[currentSlide].description}
+                    </p>
+                  </div>
+                  {/* 슬라이더 컨트롤 */}
+                  <div className="flex items-center gap-4 mt-6">
+                    <div className="flex gap-2">
+                      {announcements.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setCurrentSlide(idx);
+                          }}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            idx === currentSlide ? 'bg-white w-6' : 'bg-white/40'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex gap-1 ml-auto">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          prevSlide();
+                        }}
+                        className="p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          nextSlide();
+                        }}
+                        className="p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  {/* 클릭 유도 아이콘 */}
+                  <div className="absolute top-4 right-4 bg-white/20 rounded-full p-2">
+                    <ArrowRight className="w-4 h-4" />
+                  </div>
+                </Link>
+              ) : (
+                <div className={`bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 min-h-[280px] flex flex-col justify-between`}>
+                  <div>
+                    <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
+                      {announcements[currentSlide].badge}
+                    </span>
+                    <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                      {announcements[currentSlide].title}
+                    </h2>
+                    <p className="text-white/80">
+                      {announcements[currentSlide].description}
+                    </p>
+                  </div>
                 {/* 슬라이더 컨트롤 */}
                 <div className="flex items-center gap-4 mt-6">
                   <div className="flex gap-2">
@@ -183,6 +245,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
 
             {/* 우측: 광고 배너 */}
