@@ -786,41 +786,135 @@ export default function AgentJobsPage() {
         {totalJobCount > 0 ? (
           <div className="space-y-8">
 
-            {/* ★ VIP 공고 섹션 (4칸 x 2열 = 최대 8개) */}
-            {vipJobs.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-                  <h2 className="text-lg font-bold text-slate-800">VIP 공고</h2>
-                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
-                    {vipJobs.length}건
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {vipJobs.slice(0, 8).map((job) => {
-                    const category = getCategory(job.type);
-                    const dday = getDDay(job.deadline, job.isAlwaysRecruiting);
-                    const isBookmarked = bookmarkedJobs.includes(job.id);
+            {/* ★ VIP 공고 섹션 (4칸 x 2열 = 8개 고정) */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                <h2 className="text-lg font-bold text-slate-800">VIP 공고</h2>
+                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                  {vipJobs.length}건
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {/* 실제 VIP 공고 */}
+                {vipJobs.slice(0, 8).map((job) => {
+                  const dday = getDDay(job.deadline, job.isAlwaysRecruiting);
+                  const isBookmarked = bookmarkedJobs.includes(job.id);
 
-                    return (
-                      <div
-                        key={job.id}
-                        className="group bg-white rounded-xl border-2 border-amber-300 hover:border-amber-400 hover:shadow-xl transition-all overflow-hidden"
-                        style={{ boxShadow: '0 0 12px rgba(245, 158, 11, 0.08)' }}
-                      >
-                        {/* 썸네일 */}
-                        <div className="relative h-32 bg-gradient-to-br from-amber-50 to-yellow-50 overflow-hidden">
-                          {job.thumbnail ? (
-                            <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Building2 className="w-10 h-10 text-amber-200" />
-                            </div>
-                          )}
-                          {/* 배지 오버레이 */}
-                          <div className="absolute top-2 left-2 flex items-center gap-1">
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white flex items-center gap-0.5">
-                              <Star className="w-2.5 h-2.5 fill-current" /> VIP
+                  return (
+                    <div
+                      key={job.id}
+                      className="group bg-white rounded-xl border-2 border-amber-300 hover:border-amber-400 hover:shadow-xl transition-all overflow-hidden"
+                      style={{ boxShadow: '0 0 12px rgba(245, 158, 11, 0.08)' }}
+                    >
+                      {/* 썸네일 */}
+                      <div className="relative h-32 bg-gradient-to-br from-amber-50 to-yellow-50 overflow-hidden">
+                        {job.thumbnail ? (
+                          <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Building2 className="w-10 h-10 text-amber-200" />
+                          </div>
+                        )}
+                        {/* 배지 오버레이 */}
+                        <div className="absolute top-2 left-2 flex items-center gap-1">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white flex items-center gap-0.5">
+                            <Star className="w-2.5 h-2.5 fill-current" /> VIP
+                          </span>
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${dday.color}`}>
+                            {dday.text}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => toggleBookmark(job.id)}
+                          className={`absolute top-2 right-2 p-1 rounded-full backdrop-blur-sm transition-colors ${
+                            isBookmarked ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-400 hover:text-emerald-600'
+                          }`}
+                        >
+                          <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
+                        </button>
+                      </div>
+
+                      {/* 카드 내용 */}
+                      <div className="p-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <div className="w-5 h-5 bg-amber-50 rounded flex items-center justify-center flex-shrink-0 overflow-hidden border border-amber-200">
+                            {(job.companyLogo || job.thumbnail) ? (
+                              <img src={job.companyLogo || job.thumbnail} alt="" className="w-5 h-5 object-cover" />
+                            ) : (
+                              <Building2 className="w-3 h-3 text-amber-400" />
+                            )}
+                          </div>
+                          <span className="text-xs text-slate-500 truncate">{job.company}</span>
+                        </div>
+
+                        <Link href={`/agent/jobs/${job.id}`} className="block">
+                          <h3 className="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition-colors mb-1.5 line-clamp-2 leading-tight">
+                            {job.title}
+                          </h3>
+                        </Link>
+
+                        <div className="flex items-center gap-1 text-xs text-slate-400 mb-1.5">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate">{job.region}</span>
+                        </div>
+
+                        <p className="text-sm font-bold text-amber-600">{job.salary.amount}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* VIP 빈 슬롯 - 광고 가능 플레이스홀더 */}
+                {Array.from({ length: Math.max(0, 8 - vipJobs.length) }).map((_, idx) => (
+                  <Link
+                    key={`vip-empty-${idx}`}
+                    href="/event/premium"
+                    className="group bg-gradient-to-br from-amber-50/50 to-yellow-50/50 rounded-xl border-2 border-dashed border-amber-200 hover:border-amber-400 hover:bg-amber-50 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[200px] cursor-pointer"
+                  >
+                    <div className="relative h-32 w-full flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-amber-100 group-hover:bg-amber-200 transition-colors flex items-center justify-center">
+                        <Star className="w-8 h-8 text-amber-300 group-hover:text-amber-500 transition-colors" />
+                      </div>
+                    </div>
+                    <div className="p-3 text-center">
+                      <p className="text-sm font-bold text-amber-500 group-hover:text-amber-600 mb-1">VIP 광고</p>
+                      <p className="text-xs text-amber-400">이 자리에 공고를 노출하세요</p>
+                      <p className="text-[10px] text-amber-300 mt-1">클릭하여 자세히 보기 →</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+
+            {/* ⭐ 프리미엄 공고 섹션 (5칸 x 3열 = 15개 고정) */}
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Crown className="w-5 h-5 text-blue-500" />
+                <h2 className="text-lg font-bold text-slate-800">프리미엄 공고</h2>
+                <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                  {premiumJobs.length}건
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                {/* 실제 프리미엄 공고 */}
+                {premiumJobs.slice(0, 15).map((job) => {
+                  const dday = getDDay(job.deadline, job.isAlwaysRecruiting);
+                  const isBookmarked = bookmarkedJobs.includes(job.id);
+
+                  return (
+                    <div
+                      key={job.id}
+                      className="group bg-white rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all p-3 relative overflow-hidden"
+                    >
+                      <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full"></div>
+
+                      <div className="relative">
+                        {/* 배지 줄 */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center gap-0.5">
+                              <Crown className="w-2.5 h-2.5" /> P
                             </span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${dday.color}`}>
                               {dday.text}
@@ -828,123 +922,60 @@ export default function AgentJobsPage() {
                           </div>
                           <button
                             onClick={() => toggleBookmark(job.id)}
-                            className={`absolute top-2 right-2 p-1 rounded-full backdrop-blur-sm transition-colors ${
-                              isBookmarked ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-400 hover:text-emerald-600'
+                            className={`p-1 rounded transition-colors ${
+                              isBookmarked ? 'text-emerald-600' : 'text-slate-300 hover:text-emerald-600'
                             }`}
                           >
                             <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
                           </button>
                         </div>
 
-                        {/* 카드 내용 */}
-                        <div className="p-3">
-                          <div className="flex items-center gap-1.5 mb-1">
-                            <div className="w-5 h-5 bg-amber-50 rounded flex items-center justify-center flex-shrink-0 overflow-hidden border border-amber-200">
-                              {(job.companyLogo || job.thumbnail) ? (
-                                <img src={job.companyLogo || job.thumbnail} alt="" className="w-5 h-5 object-cover" />
-                              ) : (
-                                <Building2 className="w-3 h-3 text-amber-400" />
-                              )}
-                            </div>
-                            <span className="text-xs text-slate-500 truncate">{job.company}</span>
+                        {/* 회사 로고 + 회사명 */}
+                        <div className="flex items-center gap-1.5 mb-1.5">
+                          <div className="w-7 h-7 bg-blue-50 rounded flex items-center justify-center flex-shrink-0 overflow-hidden border border-blue-100">
+                            {(job.companyLogo || job.thumbnail) ? (
+                              <img src={job.companyLogo || job.thumbnail} alt="" className="w-7 h-7 object-cover" />
+                            ) : (
+                              <Building2 className="w-3.5 h-3.5 text-blue-400" />
+                            )}
                           </div>
-
-                          <Link href={`/agent/jobs/${job.id}`} className="block">
-                            <h3 className="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition-colors mb-1.5 line-clamp-2 leading-tight">
-                              {job.title}
-                            </h3>
-                          </Link>
-
-                          <div className="flex items-center gap-1 text-xs text-slate-400 mb-1.5">
-                            <MapPin className="w-3 h-3" />
-                            <span className="truncate">{job.region}</span>
-                          </div>
-
-                          <p className="text-sm font-bold text-amber-600">{job.salary.amount}</p>
+                          <span className="text-xs text-slate-500 truncate">{job.company}</span>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
 
-            {/* ⭐ 프리미엄 공고 섹션 (5칸 x 3열 = 최대 15개) */}
-            {premiumJobs.length > 0 && (
-              <section>
-                <div className="flex items-center gap-2 mb-4">
-                  <Crown className="w-5 h-5 text-blue-500" />
-                  <h2 className="text-lg font-bold text-slate-800">프리미엄 공고</h2>
-                  <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
-                    {premiumJobs.length}건
-                  </span>
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                  {premiumJobs.slice(0, 15).map((job) => {
-                    const category = getCategory(job.type);
-                    const dday = getDDay(job.deadline, job.isAlwaysRecruiting);
-                    const isBookmarked = bookmarkedJobs.includes(job.id);
+                        {/* 제목 */}
+                        <Link href={`/agent/jobs/${job.id}`}>
+                          <h3 className="font-semibold text-slate-800 text-xs group-hover:text-blue-600 transition-colors mb-2 line-clamp-2 leading-snug">
+                            {job.title}
+                          </h3>
+                        </Link>
 
-                    return (
-                      <div
-                        key={job.id}
-                        className="group bg-white rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all p-3 relative overflow-hidden"
-                      >
-                        <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full"></div>
-
-                        <div className="relative">
-                          {/* 배지 줄 */}
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center gap-1 flex-wrap">
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center gap-0.5">
-                                <Crown className="w-2.5 h-2.5" /> P
-                              </span>
-                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${dday.color}`}>
-                                {dday.text}
-                              </span>
-                            </div>
-                            <button
-                              onClick={() => toggleBookmark(job.id)}
-                              className={`p-1 rounded transition-colors ${
-                                isBookmarked ? 'text-emerald-600' : 'text-slate-300 hover:text-emerald-600'
-                              }`}
-                            >
-                              <Bookmark className={`w-3.5 h-3.5 ${isBookmarked ? 'fill-current' : ''}`} />
-                            </button>
-                          </div>
-
-                          {/* 회사 로고 + 회사명 */}
-                          <div className="flex items-center gap-1.5 mb-1.5">
-                            <div className="w-7 h-7 bg-blue-50 rounded flex items-center justify-center flex-shrink-0 overflow-hidden border border-blue-100">
-                              {(job.companyLogo || job.thumbnail) ? (
-                                <img src={job.companyLogo || job.thumbnail} alt="" className="w-7 h-7 object-cover" />
-                              ) : (
-                                <Building2 className="w-3.5 h-3.5 text-blue-400" />
-                              )}
-                            </div>
-                            <span className="text-xs text-slate-500 truncate">{job.company}</span>
-                          </div>
-
-                          {/* 제목 */}
-                          <Link href={`/agent/jobs/${job.id}`}>
-                            <h3 className="font-semibold text-slate-800 text-xs group-hover:text-blue-600 transition-colors mb-2 line-clamp-2 leading-snug">
-                              {job.title}
-                            </h3>
-                          </Link>
-
-                          {/* 지역 + 급여 */}
-                          <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-1.5">
-                            <MapPin className="w-3 h-3" />
-                            <span className="truncate">{job.region}</span>
-                          </div>
-                          <p className="text-xs font-bold text-blue-600">{job.salary.amount}</p>
+                        {/* 지역 + 급여 */}
+                        <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-1.5">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate">{job.region}</span>
                         </div>
+                        <p className="text-xs font-bold text-blue-600">{job.salary.amount}</p>
                       </div>
-                    );
-                  })}
-                </div>
-              </section>
-            )}
+                    </div>
+                  );
+                })}
+
+                {/* 프리미엄 빈 슬롯 - 광고 가능 플레이스홀더 */}
+                {Array.from({ length: Math.max(0, 15 - premiumJobs.length) }).map((_, idx) => (
+                  <Link
+                    key={`premium-empty-${idx}`}
+                    href="/event/premium"
+                    className="group bg-gradient-to-br from-blue-50/30 to-indigo-50/30 rounded-lg border-2 border-dashed border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all p-3 flex flex-col items-center justify-center min-h-[140px] cursor-pointer"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center mb-2">
+                      <Crown className="w-5 h-5 text-blue-300 group-hover:text-blue-500 transition-colors" />
+                    </div>
+                    <p className="text-xs font-bold text-blue-400 group-hover:text-blue-600 mb-0.5">프리미엄 광고</p>
+                    <p className="text-[10px] text-blue-300 text-center">공고를 노출하세요</p>
+                  </Link>
+                ))}
+              </div>
+            </section>
 
             {/* 일반 공고 섹션 (텍스트 리스트) */}
             {normalJobs.length > 0 && (
