@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, LogIn, Building2, HardHat } from 'lucide-react';
+import { User, LogIn, Building2, HardHat, Crown } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
@@ -84,6 +84,10 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                 </Link>
                 <Link href="/agent/talents" className="text-gray-500 hover:text-blue-600">
                   인재정보
+                </Link>
+                <Link href="/agent/premium" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                  <Crown className="w-3.5 h-3.5" />
+                  상품안내
                 </Link>
               </>
             )}

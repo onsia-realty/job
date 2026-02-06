@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, User, Search } from 'lucide-react';
+import { Home, Briefcase, Users, User, Search, Crown } from 'lucide-react';
 
 interface MobileNavProps {
   variant: 'agent' | 'sales';
@@ -12,33 +12,21 @@ export default function MobileNav({ variant }: MobileNavProps) {
   const pathname = usePathname();
   const baseUrl = variant === 'agent' ? '/agent' : '/sales';
 
-  const navItems = [
-    {
-      href: baseUrl,
-      label: '홈',
-      icon: Home,
-    },
-    {
-      href: `${baseUrl}/jobs`,
-      label: variant === 'agent' ? '구인' : '현장',
-      icon: Briefcase,
-    },
-    {
-      href: `${baseUrl}/search`,
-      label: '검색',
-      icon: Search,
-    },
-    {
-      href: `${baseUrl}/talents`,
-      label: '인재',
-      icon: Users,
-    },
-    {
-      href: `${baseUrl}/mypage`,
-      label: 'MY',
-      icon: User,
-    },
-  ];
+  const navItems = variant === 'agent'
+    ? [
+        { href: baseUrl, label: '홈', icon: Home },
+        { href: `${baseUrl}/jobs`, label: '구인', icon: Briefcase },
+        { href: `${baseUrl}/talents`, label: '인재', icon: Users },
+        { href: `${baseUrl}/premium`, label: '상품', icon: Crown },
+        { href: `${baseUrl}/mypage`, label: 'MY', icon: User },
+      ]
+    : [
+        { href: baseUrl, label: '홈', icon: Home },
+        { href: `${baseUrl}/jobs`, label: '현장', icon: Briefcase },
+        { href: `${baseUrl}/search`, label: '검색', icon: Search },
+        { href: `${baseUrl}/talents`, label: '인재', icon: Users },
+        { href: `${baseUrl}/mypage`, label: 'MY', icon: User },
+      ];
 
   const isActive = (href: string) => {
     if (href === baseUrl) {

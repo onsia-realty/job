@@ -492,7 +492,7 @@ export default function SalesMainPage() {
               <Link href="#" className="hover:text-purple-600">이벤트</Link>
               <Link href="#" className="hover:text-purple-600">공지사항</Link>
               <Link href="#" className="hover:text-purple-600">고객센터</Link>
-              <Link href="#" className="hover:text-purple-600">상품안내</Link>
+              <Link href="/sales/premium" className="hover:text-purple-600">상품안내</Link>
             </div>
           </div>
         </div>
@@ -629,6 +629,22 @@ export default function SalesMainPage() {
               </div>
             )}
 
+            {/* 유니크 광고 배너 (섹션 상단) */}
+            {!isLoading && uniqueJobs.length > 0 && (
+              <div className="mb-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-lg p-3 md:p-4 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] md:text-xs bg-white/20 px-2 py-0.5 rounded">유니크</span>
+                    <p className="mt-1 md:mt-2 text-xs md:text-sm">슬라이드 광고 최고의 위치</p>
+                    <p className="font-bold text-sm md:text-base">노출효과</p>
+                  </div>
+                  <Link href="/sales/premium" className="bg-white text-purple-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-purple-50 transition-colors whitespace-nowrap">
+                    상품안내
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {/* 유니크 섹션 */}
             {!isLoading && uniqueJobs.length > 0 && (
               <section className="mb-6 md:mb-8">
@@ -650,7 +666,7 @@ export default function SalesMainPage() {
                     <JobCard key={job.id} job={job} variant="compact" />
                   ))}
                   {uniqueJobs.length % 4 !== 0 && Array.from({ length: 4 - (uniqueJobs.length % 4) }).map((_, i) => (
-                    <Link key={`unique-empty-${i}`} href="/event/premium" className="group">
+                    <Link key={`unique-empty-${i}`} href="/sales/premium" className="group">
                       <div className="bg-gradient-to-br from-purple-50/50 to-blue-50/50 rounded-lg border-2 border-dashed border-purple-200 hover:border-purple-400 hover:bg-purple-50 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[200px] cursor-pointer h-full">
                         <div className="w-14 h-14 rounded-full bg-purple-100 group-hover:bg-purple-200 transition-colors flex items-center justify-center mb-3">
                           <Star className="w-7 h-7 text-purple-300 group-hover:text-purple-500 transition-colors" />
@@ -662,15 +678,15 @@ export default function SalesMainPage() {
                     </Link>
                   ))}
                 </div>
-                {/* 유니크 광고 배너 */}
-                <div className="mt-4 bg-gradient-to-r from-purple-600 to-purple-500 rounded-lg p-3 md:p-4 text-white">
+                {/* 광고대행사 전문 노출 상품안내 배너 */}
+                <div className="mt-4 bg-gradient-to-r from-orange-500 to-amber-500 rounded-lg p-3 md:p-4 text-white">
                   <div className="flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] md:text-xs bg-white/20 px-2 py-0.5 rounded">유니크</span>
-                      <p className="mt-1 md:mt-2 text-xs md:text-sm">슬라이드 광고 최고의 위치</p>
-                      <p className="font-bold text-sm md:text-base">노출효과</p>
+                      <span className="text-[10px] md:text-xs bg-white/20 px-2 py-0.5 rounded">광고대행사</span>
+                      <p className="mt-1 md:mt-2 text-xs md:text-sm">분양상담사에게 직접 광고하세요!</p>
+                      <p className="font-bold text-sm md:text-base">LMS · 유튜브 · SNS 마케팅 전문 노출</p>
                     </div>
-                    <Link href="#" className="bg-white text-purple-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-purple-50 transition-colors whitespace-nowrap">
+                    <Link href="/sales/premium" className="bg-white text-orange-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-orange-50 transition-colors whitespace-nowrap">
                       상품안내
                     </Link>
                   </div>
@@ -716,7 +732,7 @@ export default function SalesMainPage() {
                 ))}
                 {/* 빈칸 4개 */}
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <Link key={`ad-empty-${i}`} href="/event/premium" className="group">
+                  <Link key={`ad-empty-${i}`} href="/sales/premium" className="group">
                     <div className="bg-gradient-to-br from-orange-50/50 to-yellow-50/50 rounded-lg border-2 border-dashed border-orange-200 hover:border-orange-400 hover:bg-orange-50 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[140px] cursor-pointer h-full">
                       <div className="w-12 h-12 rounded-full bg-orange-100 group-hover:bg-orange-200 transition-colors flex items-center justify-center mb-2">
                         <Megaphone className="w-6 h-6 text-orange-300 group-hover:text-orange-500 transition-colors" />
@@ -729,6 +745,22 @@ export default function SalesMainPage() {
                 ))}
               </div>
             </section>
+
+            {/* 슈페리어 광고 배너 (섹션 상단) */}
+            {superiorJobs.length > 0 && (
+              <div className="mb-4 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg p-3 md:p-4 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] md:text-xs bg-white/20 px-2 py-0.5 rounded">슈페리어</span>
+                    <p className="mt-1 md:mt-2 text-xs md:text-sm">효율적인 분양현장 구인 광고</p>
+                    <p className="font-bold text-sm md:text-base">썸네일과 함께 눈에 띄는 노출!</p>
+                  </div>
+                  <Link href="/sales/premium" className="bg-white text-blue-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-50 transition-colors whitespace-nowrap">
+                    상품안내
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {/* 슈페리어 섹션 */}
             {superiorJobs.length > 0 && (
@@ -752,7 +784,7 @@ export default function SalesMainPage() {
                   ))}
                   {/* 5x3=15칸 채우기 */}
                   {Array.from({ length: Math.max(0, 15 - superiorJobs.length) }).map((_, i) => (
-                    <Link key={`superior-empty-${i}`} href="/event/premium" className="group">
+                    <Link key={`superior-empty-${i}`} href="/sales/premium" className="group">
                       <div className="bg-gradient-to-br from-blue-50/50 to-cyan-50/50 rounded-lg border-2 border-dashed border-blue-200 hover:border-blue-400 hover:bg-blue-50 transition-all overflow-hidden flex flex-col items-center justify-center min-h-[180px] cursor-pointer h-full">
                         <div className="w-12 h-12 rounded-full bg-blue-100 group-hover:bg-blue-200 transition-colors flex items-center justify-center mb-2">
                           <Star className="w-6 h-6 text-blue-300 group-hover:text-blue-500 transition-colors" />
@@ -764,20 +796,23 @@ export default function SalesMainPage() {
                     </Link>
                   ))}
                 </div>
-                {/* 슈페리어 광고 배너 */}
-                <div className="mt-4 bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg p-3 md:p-4 text-white">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] md:text-xs bg-white/20 px-2 py-0.5 rounded">슈페리어</span>
-                      <p className="mt-1 md:mt-2 text-xs md:text-sm">효율적인 분양현장 구인 광고</p>
-                      <p className="font-bold text-sm md:text-base">지금이 최적의 타이밍입니다!</p>
-                    </div>
-                    <Link href="#" className="bg-white text-blue-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-blue-50 transition-colors whitespace-nowrap">
-                      상품안내
-                    </Link>
-                  </div>
-                </div>
               </section>
+            )}
+
+            {/* 프리미엄 광고 배너 (섹션 상단) */}
+            {premiumJobs.length > 0 && (
+              <div className="mb-4 bg-gradient-to-r from-cyan-500 to-teal-500 rounded-lg p-3 md:p-4 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] md:text-xs bg-white/20 px-2 py-0.5 rounded">프리미엄</span>
+                    <p className="mt-1 md:mt-2 text-xs md:text-sm">합리적인 가격으로 시작하는</p>
+                    <p className="font-bold text-sm md:text-base">스마트한 구인 광고!</p>
+                  </div>
+                  <Link href="/sales/premium" className="bg-white text-cyan-600 px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-medium hover:bg-cyan-50 transition-colors whitespace-nowrap">
+                    상품안내
+                  </Link>
+                </div>
+              </div>
             )}
 
             {/* 프리미엄 섹션 - 텍스트 기반 (썸네일 없음) */}
@@ -838,7 +873,7 @@ export default function SalesMainPage() {
                   ))}
                   {/* 빈 슬롯 채우기 */}
                   {premiumJobs.length % 3 !== 0 && Array.from({ length: 3 - (premiumJobs.length % 3) }).map((_, i) => (
-                    <Link key={`premium-empty-${i}`} href="/event/premium" className="group">
+                    <Link key={`premium-empty-${i}`} href="/sales/premium" className="group">
                       <div className="bg-gradient-to-br from-cyan-50/30 to-teal-50/30 rounded-lg border-2 border-dashed border-cyan-200 hover:border-cyan-400 hover:bg-cyan-50/50 transition-all p-4 flex flex-col items-center justify-center min-h-[140px] cursor-pointer h-full">
                         <Star className="w-6 h-6 text-cyan-300 group-hover:text-cyan-500 transition-colors mb-2" />
                         <p className="text-xs font-bold text-cyan-500 group-hover:text-cyan-600">프리미엄 광고</p>
@@ -920,7 +955,7 @@ export default function SalesMainPage() {
 
                 {/* 업그레이드 유도 */}
                 <div className="mt-3 text-center">
-                  <Link href="/event/premium" className="text-xs text-gray-400 hover:text-cyan-600 transition-colors">
+                  <Link href="/sales/premium" className="text-xs text-gray-400 hover:text-cyan-600 transition-colors">
                     더 많은 노출이 필요하신가요? <span className="text-cyan-500 font-medium">프리미엄으로 업그레이드 →</span>
                   </Link>
                 </div>
