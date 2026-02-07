@@ -127,6 +127,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/image|favicon.ico|icon.svg|apple-touch-icon.png|og-image.png|robots.txt|sitemap.xml).*)',
+    '/((?!_next/static|_next/image|favicon.ico|icon.svg|apple-touch-icon.png|og-image.png|robots.txt|sitemap.xml|intro\\.mp4|.*\\.(?:mp4|webm|ogg|jpg|jpeg|png|gif|webp|svg|ico|woff|woff2|ttf|eot)).*)',
   ],
 };
