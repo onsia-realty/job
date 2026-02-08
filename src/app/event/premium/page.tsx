@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowRight,
+  ArrowLeft,
   CheckCircle2,
   XCircle,
   Sparkles,
@@ -22,6 +23,7 @@ import {
   Award,
   BadgeCheck,
   Quote,
+  LogIn,
 } from 'lucide-react';
 
 export default function PremiumLandingPage() {
@@ -33,8 +35,29 @@ export default function PremiumLandingPage() {
 
   return (
     <div className="min-h-screen bg-[#0a1628] text-white overflow-x-hidden">
+      {/* ========== 상단 네비게이션 ========== */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/80 backdrop-blur-md border-b border-white/10">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2.5 text-white/70 hover:text-white transition-colors text-base"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="hidden sm:inline font-medium">홈으로</span>
+          </Link>
+          <span className="text-base font-semibold text-amber-400">부동산인 플랫폼 소개</span>
+          <Link
+            href="/agent/auth/login"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 hover:bg-amber-500/30 hover:text-amber-300 transition-all text-base font-semibold"
+          >
+            <LogIn className="w-4.5 h-4.5" />
+            <span>로그인</span>
+          </Link>
+        </div>
+      </nav>
+
       {/* ========== 1. Hero Section ========== */}
-      <section className="relative pt-16 md:pt-36 pb-20 md:pb-48 flex items-center justify-center overflow-hidden">
+      <section className="relative pt-24 md:pt-44 pb-20 md:pb-48 flex items-center justify-center overflow-hidden">
         {/* 배경 그라데이션 */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#1a2d4a] to-[#0a1628]" />
 
