@@ -541,22 +541,24 @@ export default function PremiumLandingPage() {
                   href="/agent/mypage/resume/dna?direct=true"
                   className="group inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold text-lg rounded-xl hover:from-amber-400 hover:to-yellow-400 transition-all shadow-lg shadow-amber-500/25"
                 >
-                  적성검사 받기
+                  이력서 등록 하기
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
                   href="/agent/jobs"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl hover:bg-white/20 transition-all"
+                  className="group relative inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-blue-600/80 to-cyan-500/80 border border-blue-400/40 text-white font-bold text-lg rounded-xl hover:from-blue-500 hover:to-cyan-400 transition-all shadow-lg shadow-blue-500/20 overflow-hidden"
                 >
-                  <Building2 className="w-5 h-5" />
-                  공인중개사 채용공고
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                  <Building2 className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">공인중개사 채용공고</span>
                 </Link>
                 <Link
                   href="/sales/jobs"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl hover:bg-white/20 transition-all"
+                  className="group relative inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-600/80 to-pink-500/80 border border-purple-400/40 text-white font-bold text-lg rounded-xl hover:from-purple-500 hover:to-pink-400 transition-all shadow-lg shadow-purple-500/20 overflow-hidden"
                 >
-                  <Briefcase className="w-5 h-5" />
-                  분양상담사 채용공고
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                  <Briefcase className="w-5 h-5 relative z-10" />
+                  <span className="relative z-10">분양상담사 채용공고</span>
                 </Link>
               </div>
 
