@@ -15,7 +15,8 @@ export interface DNAQuestion {
 }
 
 // 카테고리별 질문 풀
-const QUESTION_POOL: Record<string, DNAQuestion[]> = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const QUESTION_POOL: Record<string, any[]> = {
   // ========== 1. 리스크 감수성 (10개) ==========
   risk: [
     {
@@ -4592,8 +4593,10 @@ export function generateRandomQuestions(): DNAQuestion[] {
 
   CATEGORY_KEYS.forEach((key) => {
     const categoryQuestions = QUESTION_POOL[key];
+    if (!categoryQuestions || categoryQuestions.length === 0) return;
     const randomIndex = Math.floor(Math.random() * categoryQuestions.length);
-    questions.push(categoryQuestions[randomIndex]);
+    const q = categoryQuestions[randomIndex];
+    if (q) questions.push(q);
   });
 
   // 질문 순서도 랜덤하게 섞기

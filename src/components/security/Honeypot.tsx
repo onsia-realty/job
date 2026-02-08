@@ -19,8 +19,8 @@ export default function Honeypot() {
         overflow: 'hidden',
         opacity: 0,
         pointerEvents: 'none',
-        tabIndex: -1,
       }}
+      tabIndex={-1}
     >
       <a href="/api/trap?src=sitemap" tabIndex={-1}>사이트맵</a>
       <a href="/api/trap?src=admin" tabIndex={-1}>관리자</a>

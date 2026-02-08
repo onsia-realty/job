@@ -11,7 +11,7 @@ export default function SecurityShield() {
     const methods = ['log', 'debug', 'info', 'warn', 'table', 'dir', 'dirxml', 'trace', 'group', 'groupCollapsed', 'groupEnd', 'clear', 'count', 'countReset', 'assert', 'profile', 'profileEnd', 'time', 'timeLog', 'timeEnd', 'timeStamp'] as const;
     methods.forEach((method) => {
       try {
-        (console as Record<string, unknown>)[method] = noop;
+        (console as unknown as Record<string, unknown>)[method] = noop;
       } catch {}
     });
 
@@ -105,16 +105,16 @@ export default function SecurityShield() {
       const indicators: string[] = [];
 
       // Selenium/WebDriver 감지
-      if ((navigator as Record<string, unknown>).webdriver) indicators.push('webdriver');
+      if ((navigator as unknown as Record<string, unknown>).webdriver) indicators.push('webdriver');
       // PhantomJS 감지
-      if ((window as Record<string, unknown>).__phantom) indicators.push('phantom');
-      if ((window as Record<string, unknown>)._phantom) indicators.push('_phantom');
+      if ((window as unknown as Record<string, unknown>).__phantom) indicators.push('phantom');
+      if ((window as unknown as Record<string, unknown>)._phantom) indicators.push('_phantom');
       // Nightmare.js 감지
-      if ((window as Record<string, unknown>).__nightmare) indicators.push('nightmare');
+      if ((window as unknown as Record<string, unknown>).__nightmare) indicators.push('nightmare');
       // Headless Chrome 감지
       if (/HeadlessChrome/.test(navigator.userAgent)) indicators.push('headless');
       // Chrome DevTools Protocol 감지
-      if ((window as Record<string, unknown>).chrome && !(window as Record<string, unknown>).chrome) indicators.push('cdp');
+      if ((window as unknown as Record<string, unknown>).chrome && !(window as unknown as Record<string, unknown>).chrome) indicators.push('cdp');
       // 비정상적인 플러그인 수 (Headless는 보통 0개)
       if (navigator.plugins.length === 0 && !/Mobile|Android/i.test(navigator.userAgent)) {
         indicators.push('no-plugins');
