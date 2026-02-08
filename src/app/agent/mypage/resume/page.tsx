@@ -501,48 +501,65 @@ export default function ResumePage() {
               기본 정보
             </h2>
             <div className="space-y-4">
-              <div className="flex items-start gap-4">
-                {/* 프로필 사진 */}
-                <div className="flex-shrink-0">
-                  <label className="cursor-pointer group">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
-                      className="hidden"
-                    />
-                    <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-dashed border-gray-300 group-hover:border-blue-400 transition-colors bg-gray-50">
-                      {photoPreview || editData.photo ? (
-                        <img
-                          src={photoPreview || editData.photo}
-                          alt="프로필"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
-                          <Camera className="w-6 h-6 mb-1" />
-                          <span className="text-[10px]">사진 등록</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        {(photoPreview || editData.photo) && (
-                          <Camera className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                        )}
+              {/* 사진등록 | AI 프로필 | 이름 - 가로 배치 */}
+              <div className="flex items-center gap-4">
+                {/* 사진 등록 */}
+                <label className="cursor-pointer group flex-shrink-0">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handlePhotoChange}
+                    className="hidden"
+                  />
+                  <div className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-gray-300 group-hover:border-blue-400 transition-colors bg-gray-50">
+                    {photoPreview || editData.photo ? (
+                      <img
+                        src={photoPreview || editData.photo}
+                        alt="프로필"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 group-hover:text-blue-500 transition-colors">
+                        <Camera className="w-5 h-5" />
                       </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                      {(photoPreview || editData.photo) && (
+                        <Camera className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                      )}
                     </div>
-                  </label>
-                </div>
+                  </div>
+                  <p className="text-[10px] text-gray-400 text-center mt-1">사진등록</p>
+                </label>
+
+                {/* 구분선 */}
+                <div className="w-px h-12 bg-gray-200 flex-shrink-0" />
+
+                {/* AI 프로필 만들기 */}
+                <Link
+                  href="/profile/ai-photo"
+                  className="flex-shrink-0 flex flex-col items-center gap-1 group"
+                >
+                  <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center group-hover:from-blue-600 group-hover:to-cyan-600 transition-all shadow-md group-hover:shadow-lg">
+                    <Sparkles className="w-6 h-6 text-white" />
+                  </div>
+                  <p className="text-[10px] font-medium text-blue-600">AI 프로필</p>
+                </Link>
+
+                {/* 구분선 */}
+                <div className="w-px h-12 bg-gray-200 flex-shrink-0" />
+
                 {/* 이름 */}
-                <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                <div className="flex-1 min-w-0">
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
                     이름 <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={editData.name}
                     onChange={(e) => setEditData({ ...editData, name: e.target.value })}
-                    placeholder="이름을 입력하세요"
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="이름"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 </div>
               </div>
@@ -557,16 +574,44 @@ export default function ResumePage() {
                       </span>
                     )}
                   </label>
-                  <input
-                    type="tel"
-                    value={editData.phone}
-                    onChange={(e) => !userPhone && setEditData({ ...editData, phone: formatPhoneNumber(e.target.value) })}
-                    placeholder="010-0000-0000"
-                    readOnly={!!userPhone}
-                    className={`w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      userPhone ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''
-                    }`}
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      value={editData.phone}
+                      onChange={(e) => !userPhone && setEditData({ ...editData, phone: formatPhoneNumber(e.target.value) })}
+                      placeholder="010-0000-0000"
+                      readOnly={!!userPhone}
+                      className={`flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        userPhone ? 'bg-gray-50 text-gray-600 cursor-not-allowed' : ''
+                      }`}
+                    />
+                    {!userPhone && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!editData.phone || editData.phone.length < 13) {
+                            alert('연락처를 정확히 입력해주세요');
+                            return;
+                          }
+                          const { supabase } = await import('@/lib/supabase');
+                          const { data } = await supabase
+                            .from('resumes')
+                            .select('id')
+                            .eq('phone', editData.phone)
+                            .neq('user_id', user?.id || '')
+                            .limit(1);
+                          if (data && data.length > 0) {
+                            alert('이미 등록된 연락처입니다');
+                          } else {
+                            alert('사용 가능한 연락처입니다');
+                          }
+                        }}
+                        className="shrink-0 px-3 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-xl transition-colors whitespace-nowrap"
+                      >
+                        중복확인
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">

@@ -34,7 +34,7 @@ export default function PremiumLandingPage() {
   return (
     <div className="min-h-screen bg-[#0a1628] text-white overflow-x-hidden">
       {/* ========== 1. Hero Section ========== */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative pt-16 md:pt-36 pb-20 md:pb-48 flex items-center justify-center overflow-hidden">
         {/* 배경 그라데이션 */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#0a1628] via-[#1a2d4a] to-[#0a1628]" />
 
@@ -45,57 +45,39 @@ export default function PremiumLandingPage() {
         <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000" />
 
-        <div className={`relative z-10 max-w-7xl mx-auto px-4 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+        <div className={`relative z-10 max-w-6xl mx-auto px-8 transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+          <div className="grid lg:grid-cols-[1fr_1.2fr] gap-20 items-stretch">
             {/* 왼쪽: 텍스트 콘텐츠 */}
             <div className="text-center lg:text-left">
               {/* 뱃지 */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-full mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/30 rounded-full mb-6">
                 <Sparkles className="w-4 h-4 text-amber-400" />
                 <span className="text-amber-300 text-sm font-medium">대한민국 최초 부동산 전문 AI 매칭 플랫폼</span>
               </div>
 
               {/* 메인 헤드라인 */}
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6 leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-[3.6rem] font-black mb-6 leading-tight break-keep">
                 <span className="text-white">알바가 아닙니다.</span>
                 <br />
                 <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
-                  전문가입니다.
+                  부동산 전문가입니다.
                 </span>
               </h1>
 
               {/* 서브 헤드라인 */}
-              <p className="text-lg md:text-xl text-gray-300 mb-4 leading-relaxed">
-                35년간 <span className="text-amber-400 font-semibold">50만 명</span>의 공인중개사가 배출되었지만,
+              <p className="text-lg md:text-xl lg:text-[1.35rem] text-gray-300 mb-5 leading-relaxed">
+                36년간 <span className="text-amber-400 font-semibold">약 50만 명</span>의 공인중개사가 배출되었지만,
                 <br className="hidden md:block" />
                 그들을 위한 <span className="text-white font-semibold">'진짜'</span> 구인구직 플랫폼은 없었습니다.
               </p>
 
-              <p className="text-base text-gray-400 mb-8">
+              <p className="text-base md:text-lg text-gray-400 mb-8">
                 대한민국에서 가장 비싼 자산을 다루는 전문가,<br />
                 이제 그에 걸맞은 대우를 받으세요.
               </p>
 
-              {/* CTA 버튼 */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                <Link
-                  href="/agent/auth/register"
-                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold text-lg rounded-xl hover:from-amber-400 hover:to-yellow-400 transition-all shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 hover:scale-105"
-                >
-                  지금 시작하기
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link
-                  href="#problem"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl hover:bg-white/20 transition-all"
-                >
-                  더 알아보기
-                  <ChevronDown className="w-5 h-5" />
-                </Link>
-              </div>
-
               {/* 신뢰 지표 */}
-              <div className="flex flex-wrap justify-center lg:justify-start gap-6 mt-10 text-sm text-gray-400">
+              <div className="flex flex-wrap justify-center lg:justify-start gap-6 mt-8 text-sm md:text-base text-gray-400">
                 <div className="flex items-center gap-2">
                   <BadgeCheck className="w-5 h-5 text-green-400" />
                   <span>보험/다단계 0%</span>
@@ -112,33 +94,35 @@ export default function PremiumLandingPage() {
             </div>
 
             {/* 오른쪽: Hero 이미지 */}
-            <div className="relative hidden lg:block">
+            <div className="relative flex flex-col justify-center lg:-mr-16">
               {/* 이미지 배경 효과 */}
               <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-blue-500/20 rounded-3xl blur-3xl" />
 
               {/* 메인 이미지 */}
-              <div className="relative">
-                <div className="relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl shadow-amber-500/10">
+              <div className="relative lg:h-full">
+                <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl border border-white/10 shadow-2xl shadow-amber-500/10 lg:h-full">
                   <Image
-                    src="/images/onsia_realty_Professional_Korean_woman_real_estate_consultant_dd65c326-faa8-4e9f-a4bf-78d8ea09fc56_0.png"
+                    src="/Gemini_Generated_Image_hmq7yyhmq7yyhmq7.png"
                     alt="부동산 전문가"
-                    width={600}
-                    height={700}
-                    className="object-cover w-full h-auto"
+                    width={960}
+                    height={540}
+                    className="w-full h-auto lg:object-cover lg:h-full"
                     priority
                   />
                   {/* 이미지 오버레이 그라데이션 */}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/80 via-transparent to-transparent" />
+                  {/* 반짝임 효과 */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer" />
                 </div>
 
                 {/* 플로팅 뱃지들 */}
-                <div className="absolute -left-4 top-1/4 px-4 py-2 bg-green-500/90 text-white text-sm font-bold rounded-lg shadow-lg animate-pulse">
+                <div className="absolute -left-2 lg:-left-6 top-1/4 px-3 lg:px-5 py-1.5 lg:py-3 bg-green-500/90 text-white text-xs lg:text-base font-bold rounded-lg lg:rounded-xl shadow-xl animate-pulse backdrop-blur-sm">
                   ✓ 검증된 전문가
                 </div>
-                <div className="absolute -right-4 top-1/2 px-4 py-2 bg-amber-500/90 text-black text-sm font-bold rounded-lg shadow-lg">
+                <div className="absolute -right-2 lg:-right-6 top-1/2 px-3 lg:px-5 py-1.5 lg:py-3 bg-amber-500/90 text-black text-xs lg:text-base font-bold rounded-lg lg:rounded-xl shadow-xl animate-bounce-slow backdrop-blur-sm">
                   🎯 AI 매칭 98%
                 </div>
-                <div className="absolute -left-2 bottom-1/4 px-4 py-2 bg-blue-500/90 text-white text-sm font-bold rounded-lg shadow-lg">
+                <div className="absolute -left-1 lg:-left-4 bottom-1/4 px-3 lg:px-5 py-1.5 lg:py-3 bg-blue-500/90 text-white text-xs lg:text-base font-bold rounded-lg lg:rounded-xl shadow-xl animate-pulse backdrop-blur-sm">
                   💼 연봉 협상 지원
                 </div>
               </div>
@@ -147,30 +131,55 @@ export default function PremiumLandingPage() {
         </div>
 
         {/* 스크롤 인디케이터 */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+        <div className="absolute bottom-4 md:bottom-8 left-1/2 -translate-x-1/2 animate-bounce hidden md:block">
           <ChevronDown className="w-8 h-8 text-gray-500" />
         </div>
       </section>
 
       {/* ========== 2. Problem Section (문제 제기) ========== */}
-      <section id="problem" className="py-24 bg-gradient-to-b from-[#0a1628] to-[#0f1f35]">
+      <section id="problem" className="py-14 md:py-24 bg-gradient-to-b from-[#0a1628] to-[#0f1f35]">
         <div className="max-w-6xl mx-auto px-4">
-          {/* 섹션 헤더 */}
-          <div className="text-center mb-16">
-            <span className="inline-block px-4 py-1 bg-red-500/20 text-red-400 text-sm font-medium rounded-full mb-4">
-              PROBLEM
-            </span>
-            <h2 className="text-3xl md:text-5xl font-bold mb-6">
-              지금까지 우리는<br />
-              <span className="text-red-400">잘못된 곳</span>에 있었습니다
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              대한민국 최고의 자산 전문가가 왜 보험설계사, 다단계, 알바와 같은 카테고리에 있어야 할까요?
-            </p>
+          {/* 섹션 헤더 - 이미지 | 텍스트 레이아웃 */}
+          <div className="grid lg:grid-cols-[1fr_1.2fr] gap-10 lg:gap-16 items-center mb-16">
+            {/* 왼쪽: 이미지 */}
+            <div className="relative mx-auto lg:mx-0 max-w-[380px] lg:max-w-none">
+              <div className="absolute -inset-4 bg-gradient-to-br from-red-500/15 to-amber-500/10 rounded-[2rem] blur-2xl" />
+              <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/30">
+                <Image
+                  src="/images/onsia_realty_A_vertical_web_photograph_focusing_on_a_handsome_K_0fb5ded3-15e3-4ab0-9ba2-3d139d50865f.png"
+                  alt="부동산 전문가"
+                  width={480}
+                  height={600}
+                  className="object-cover w-full h-[520px] lg:h-[480px]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/70 via-transparent to-transparent" />
+              </div>
+            </div>
+
+            {/* 오른쪽: 텍스트 */}
+            <div className="text-center lg:text-left">
+              <span className="inline-block px-4 py-1.5 bg-red-500/15 text-red-400 text-xs font-semibold tracking-widest uppercase rounded-full mb-6">
+                Problem
+              </span>
+              <h2 className="text-3xl lg:text-[2.6rem] xl:text-[2.85rem] font-bold mb-8 leading-[1.3] tracking-tight">
+                아직도 <span className="text-red-400">&apos;알바&apos;</span>와 같은<br className="hidden lg:block" />
+                플랫폼에서 부동산 취업을<br className="hidden lg:block" />
+                준비하십니까?
+              </h2>
+              <div className="space-y-3">
+                <p className="text-gray-400 text-base lg:text-lg leading-relaxed">
+                  보험, 렌터카, 다단계와 뒤섞인 혼란스러운 시장을 떠나십시오.
+                </p>
+                <p className="text-gray-200 text-base lg:text-lg leading-relaxed">
+                  오직 검증된 부동산 전문가만을 위한{' '}
+                  <span className="text-amber-400 font-semibold">&apos;진짜 구인구직 플랫폼&apos;</span>이 시작됩니다.
+                </p>
+              </div>
+            </div>
           </div>
 
           {/* 비교 카드 */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-8">
             {/* 기존 플랫폼 */}
             <div className="p-8 bg-red-950/30 border border-red-500/20 rounded-2xl">
               <div className="flex items-center gap-3 mb-6">
@@ -181,9 +190,9 @@ export default function PremiumLandingPage() {
                 {[
                   '보험, 자동차, 다단계와 같은 카테고리',
                   '전문성 무시한 "아무나 지원" 시스템',
-                  '월 500~1,000만원 광고비 소모',
+                  '월 500~1,000만원 구인 광고비 소모',
                   '허위/스팸 공고 난무',
-                  '"알바" 취급받는 전문가들',
+                  '"알바" 취급받는 부동산 전문가들',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-3 text-gray-300">
                     <XCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -217,10 +226,10 @@ export default function PremiumLandingPage() {
           </div>
 
           {/* 충격적인 통계 */}
-          <div className="mt-16 p-8 bg-white/5 border border-white/10 rounded-2xl max-w-4xl mx-auto">
+          <div className="mt-16 p-8 bg-white/5 border border-white/10 rounded-2xl">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
               {[
-                { value: '35회', label: '공인중개사 시험 회차' },
+                { value: '36회', label: '공인중개사 시험 회차' },
                 { value: '50만+', label: '누적 합격자 수' },
                 { value: '0개', label: '전문 구인구직 플랫폼' },
                 { value: '30년', label: '방치된 시간' },
@@ -236,7 +245,7 @@ export default function PremiumLandingPage() {
       </section>
 
       {/* ========== 3. Solution Section (AI Tech) ========== */}
-      <section className="py-24 bg-[#0f1f35]">
+      <section className="py-14 md:py-24 bg-[#0f1f35]">
         <div className="max-w-6xl mx-auto px-4">
           <div className="text-center mb-16">
             <span className="inline-block px-4 py-1 bg-blue-500/20 text-blue-400 text-sm font-medium rounded-full mb-4">
@@ -246,13 +255,13 @@ export default function PremiumLandingPage() {
               AI가 당신에게<br />
               <span className="text-blue-400">최적의 매칭</span>을 찾아드립니다
             </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              단순 게시판이 아닙니다. DNA 분석 기반 AI 매칭 시스템이 당신의 성향과 경력을 분석해 최적의 기회를 연결합니다.
+            <p className="text-gray-400 text-lg mx-auto">
+              단순 구인구직 게시판이 아닙니다. 1,000가지 유형별 DNA 분석 기반 AI 매칭 시스템이 <br /> 당신의 성향과 경력을 분석해 최적의 기회를 기업과 연결합니다.
             </p>
           </div>
 
           {/* AI 매칭 플로우 */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
               {
                 step: '01',
@@ -277,15 +286,15 @@ export default function PremiumLandingPage() {
               },
             ].map((item, i) => (
               <div key={i} className="relative group">
-                <div className="p-8 bg-white/5 border border-white/10 rounded-2xl hover:border-white/20 transition-all h-full">
-                  <span className={`inline-block px-3 py-1 bg-gradient-to-r ${item.color} text-white text-xs font-bold rounded-full mb-4`}>
+                <div className="p-8 bg-white/5 border border-white/10 rounded-2xl hover:border-white/20 transition-all h-full text-center">
+                  <span className={`inline-block px-3 py-1 bg-gradient-to-r ${item.color} text-white text-xs font-bold rounded-full mb-5`}>
                     STEP {item.step}
                   </span>
-                  <div className={`w-14 h-14 bg-gradient-to-r ${item.color} rounded-xl flex items-center justify-center mb-4`}>
+                  <div className={`w-14 h-14 bg-gradient-to-r ${item.color} rounded-xl flex items-center justify-center mb-5 mx-auto`}>
                     <item.icon className="w-7 h-7 text-white" />
                   </div>
                   <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                  <p className="text-gray-400">{item.desc}</p>
+                  <p className="text-gray-400 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
@@ -293,18 +302,23 @@ export default function PremiumLandingPage() {
 
           {/* DNA 유형 미리보기 */}
           <div className="mt-16 text-center">
-            <p className="text-gray-400 mb-6">5가지 부동산 DNA 유형</p>
-            <div className="flex flex-wrap justify-center gap-3">
+            <p className="text-gray-400 mb-6">10가지 부동산 DNA 유형</p>
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3 max-w-3xl mx-auto">
               {[
                 { emoji: '🦁', name: '야수형', color: 'bg-orange-500/20 border-orange-500/30' },
                 { emoji: '🎯', name: '승부사형', color: 'bg-blue-500/20 border-blue-500/30' },
                 { emoji: '🤝', name: '카운셀러형', color: 'bg-emerald-500/20 border-emerald-500/30' },
                 { emoji: '📊', name: '관리형', color: 'bg-purple-500/20 border-purple-500/30' },
                 { emoji: '🚀', name: '자유영혼형', color: 'bg-pink-500/20 border-pink-500/30' },
+                { emoji: '👑', name: '팀리더형', color: 'bg-amber-500/20 border-amber-500/30' },
+                { emoji: '📚', name: '교육형', color: 'bg-cyan-500/20 border-cyan-500/30' },
+                { emoji: '🌐', name: '네트워커형', color: 'bg-teal-500/20 border-teal-500/30' },
+                { emoji: '💡', name: '테크형', color: 'bg-indigo-500/20 border-indigo-500/30' },
+                { emoji: '🔬', name: '전문특화형', color: 'bg-rose-500/20 border-rose-500/30' },
               ].map((type, i) => (
-                <span key={i} className={`inline-flex items-center gap-2 px-4 py-2 ${type.color} border rounded-full`}>
-                  <span>{type.emoji}</span>
-                  <span className="text-sm font-medium">{type.name}</span>
+                <span key={i} className={`inline-flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 ${type.color} border rounded-full`}>
+                  <span className="text-sm sm:text-base">{type.emoji}</span>
+                  <span className="text-xs sm:text-sm font-medium">{type.name}</span>
                 </span>
               ))}
             </div>
@@ -313,31 +327,32 @@ export default function PremiumLandingPage() {
       </section>
 
       {/* ========== 4. Benefit - 구인자 편 ========== */}
-      <section className="py-24 bg-gradient-to-b from-[#0f1f35] to-[#0a1628]">
+      <section className="py-14 md:py-24 bg-gradient-to-b from-[#0f1f35] to-[#0a1628]">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="grid md:grid-cols-2 gap-10 items-stretch">
+            {/* 왼쪽: 텍스트 + 비용비교 + 프리미엄 혜택 */}
             <div>
               <span className="inline-block px-4 py-1 bg-amber-500/20 text-amber-400 text-sm font-medium rounded-full mb-4">
                 FOR EMPLOYERS
               </span>
               <h2 className="text-3xl md:text-4xl font-bold mb-6 leading-tight">
                 광고비 낭비하지 마세요.<br />
-                <span className="text-amber-400">그 돈으로 면접비를</span> 주세요.
+                <span className="text-amber-400">그 돈으로 면접비를</span> 지급하세요.
               </h2>
-              <p className="text-gray-400 text-lg mb-8">
+              <p className="text-gray-400 text-lg mb-7">
                 기존 플랫폼에 월 500~1,000만 원 광고비, 정말 효과 있으셨나요?<br />
-                우리는 1/10 가격입니다. 아낀 돈으로 좋은 인재에게 면접비를 지급하세요.
+                우리는 1/10 가격입니다. 절약한 돈으로 좋은 인재에게 투자하세요.
               </p>
 
               {/* 비용 비교 */}
-              <div className="p-6 bg-white/5 rounded-xl mb-8">
+              <div className="p-6 bg-white/5 rounded-xl">
                 <div className="flex items-center justify-between mb-4 pb-4 border-b border-white/10">
                   <span className="text-gray-400">기존 플랫폼 월 광고비</span>
                   <span className="text-red-400 font-bold text-xl line-through">500~1,000만원</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400">부동산인</span>
-                  <span className="text-green-400 font-bold text-xl">50~100만원</span>
+                  <span className="text-green-400 font-bold text-xl">10~100만원</span>
                 </div>
                 <div className="mt-4 p-3 bg-green-500/10 rounded-lg">
                   <p className="text-green-400 text-sm text-center">
@@ -346,40 +361,40 @@ export default function PremiumLandingPage() {
                 </div>
               </div>
 
-              <Link
-                href="/agent/jobs/new"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-amber-500 text-black font-bold rounded-xl hover:bg-amber-400 transition-all"
-              >
-                <Building2 className="w-5 h-5" />
-                채용공고 등록하기
-              </Link>
-            </div>
-
-            <div className="relative">
-              <div className="p-8 bg-gradient-to-br from-amber-500/20 to-transparent border border-amber-500/30 rounded-2xl">
-                <h4 className="text-xl font-bold text-amber-400 mb-6 flex items-center gap-2">
-                  <Award className="w-6 h-6" />
+              {/* 프리미엄 혜택 - 비용비교 바로 아래 */}
+              <div className="mt-6 p-6 bg-gradient-to-br from-amber-500/20 to-transparent border border-amber-500/30 rounded-2xl">
+                <h4 className="text-lg font-bold text-amber-400 mb-4 flex items-center gap-2">
+                  <Award className="w-5 h-5" />
                   프리미엄 공고 혜택
                 </h4>
-                <ul className="space-y-4">
+                <div className="flex flex-col gap-3">
                   {[
                     '상단 VIP 영역 노출',
                     'AI 추천 인재 우선 매칭',
-                    '지원자 DNA 분석 결과 열람',
-                    '전담 매니저 배정',
                     '1:1 인재 추천 서비스',
                   ].map((item, i) => (
-                    <li key={i} className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-amber-400" />
+                    <div key={i} className="flex items-center gap-3">
+                      <CheckCircle2 className="w-5 h-5 text-amber-400 flex-shrink-0" />
                       <span className="text-gray-200">{item}</span>
-                    </li>
+                    </div>
                   ))}
-                </ul>
-
-                {/* 할인 뱃지 */}
-                <div className="absolute -top-4 -right-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full text-white font-bold shadow-lg">
-                  오픈 기념 50% 할인
                 </div>
+              </div>
+            </div>
+
+            {/* 오른쪽: 이미지 + 할인뱃지 */}
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl shadow-black/30 flex items-center justify-center bg-[#0a1628]">
+              <Image
+                src="/images/123123.png"
+                alt="부동산 전문가 구인"
+                width={600}
+                height={600}
+                className="w-full h-auto"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a1628]/50 via-transparent to-transparent" />
+              {/* 할인 뱃지 - 이미지 위 */}
+              <div className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-500 rounded-full text-white font-bold shadow-lg">
+                오픈 기념 50% 할인
               </div>
             </div>
           </div>
@@ -387,7 +402,7 @@ export default function PremiumLandingPage() {
       </section>
 
       {/* ========== 5. Benefit - 구직자 편 ========== */}
-      <section className="py-24 bg-[#0a1628]">
+      <section className="py-14 md:py-24 bg-[#0a1628]">
         <div className="max-w-6xl mx-auto px-4">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div className="order-2 md:order-1">
@@ -447,7 +462,7 @@ export default function PremiumLandingPage() {
               </ul>
 
               <Link
-                href="/agent/mypage/resume/dna"
+                href="/agent/mypage/resume/dna?direct=true"
                 className="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-400 transition-all"
               >
                 <Brain className="w-5 h-5" />
@@ -459,7 +474,7 @@ export default function PremiumLandingPage() {
       </section>
 
       {/* ========== 6. Social Proof & CTA ========== */}
-      <section className="py-24 bg-gradient-to-b from-[#0a1628] to-[#050d1a]">
+      <section className="py-14 md:py-24 bg-gradient-to-b from-[#0a1628] to-[#050d1a]">
         <div className="max-w-6xl mx-auto px-4">
           {/* 후기 */}
           <div className="text-center mb-16">
@@ -476,16 +491,16 @@ export default function PremiumLandingPage() {
               {
                 name: '김○○ 대표',
                 role: '분양대행사 운영',
-                text: '기존 사이트 광고비로 월 800만원 썼는데, 여기선 5천원이면 공고를 올려요~ 나머지 돈으로 면접비 주니까 좋은 분들이 많이 오세요.',
+                text: '기존 사이트 광고비로 월 300만원 이상 썼는데, 여기선 5천원이면 공고를 올려요~ 나머지 돈으로 면접비 주니까 좋은 분들이 많이 오세요.',
               },
               {
-                name: '이○○',
+                name: '이○○ 팀장',
                 role: '경력 5년 공인중개사',
-                text: '알○몬에서 공인중개사 공고 찾다가 TM, 보험설계, 낚시성 공고만 잔뜩... 여기는 진짜 부동산만 있어서 좋습니다.',
+                text: '알바O ,잡OOO, 에서 공인중개사 공고 찾다가 TM, 보험설계, 낚시성 공고만 잔뜩... 여기는 진짜 부동산만 있어서 좋습니다.',
               },
               {
                 name: '박○○ 실장',
-                role: '분양상담 팀장',
+                role: '30회 공인중개사 실장',
                 text: 'DNA 분석 재밌어요. 저 야수형이래요 ㅋㅋ 실제로 공격적인 영업 스타일인데 신기하게 맞더라고요.',
               },
             ].map((review, i) => (
@@ -517,7 +532,7 @@ export default function PremiumLandingPage() {
                 <span className="text-amber-400">새로운 기준</span>이 시작됩니다
               </h2>
               <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-                더 이상 잡탕 사이트에서 소외받지 마세요.<br />
+                더 이상 타 플랫폼 사이트에서 소외받지 마세요.<br />
                 부동산인에서 전문가로서 대우받으세요.
               </p>
 
@@ -526,7 +541,7 @@ export default function PremiumLandingPage() {
                   href="/agent/auth/register"
                   className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold text-lg rounded-xl hover:from-amber-400 hover:to-yellow-400 transition-all shadow-lg shadow-amber-500/25"
                 >
-                  무료로 시작하기
+                  이력서 등록하기 
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
@@ -548,7 +563,7 @@ export default function PremiumLandingPage() {
       {/* 푸터 */}
       <footer className="py-8 border-t border-white/10 bg-[#050d1a]">
         <div className="max-w-6xl mx-auto px-4 text-center text-gray-500 text-sm">
-          <p>© 2025 부동산인. 부동산 전문가를 위한 AI 매칭 플랫폼.</p>
+          <p>© 2026 부동산인. 부동산 전문가를 위한 AI 매칭 플랫폼.</p>
         </div>
       </footer>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, LogIn, Building2, HardHat, Crown } from 'lucide-react';
+import { User, LogIn, Building2, HardHat, Crown, Sparkles } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface HeaderProps {
@@ -89,6 +89,10 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <Crown className="w-3.5 h-3.5" />
                   상품안내
                 </Link>
+                <Link href="/profile/ai-photo" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI 사진
+                </Link>
               </>
             )}
             {variant === 'sales' && (
@@ -108,6 +112,20 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
 
           {/* 로그인/마이페이지 버튼 */}
           <div className="flex items-center gap-2">
+            {!isLoading && user && (
+              <Link
+                href="/profile/ai-photo"
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm transition-colors ${
+                  variant === 'landing' || variant === 'sales'
+                    ? 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
+                    : 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-600 hover:from-blue-100 hover:to-cyan-100'
+                }`}
+                title="AI 프로필 사진"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-xs font-medium">AI 사진</span>
+              </Link>
+            )}
             {!isLoading && user ? (
               <Link
                 href={variant === 'sales' ? '/sales/mypage' : '/agent/mypage'}

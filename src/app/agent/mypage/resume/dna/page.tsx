@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -75,6 +75,56 @@ const DNA_TYPES = {
     jobs: ['부동산 유튜버', '프리랜서 중개인', '온라인 마케터'],
     strengths: ['자기 관리 능력', '콘텐츠 제작', '유연한 사고'],
   },
+  TL: {
+    code: 'TL',
+    name: '팀리더형 총괄자',
+    emoji: '👑',
+    color: 'from-amber-500 to-yellow-500',
+    description: '팀을 이끌며 조직의 성과를 극대화하는 리더',
+    detail: '탁월한 리더십과 소통 능력을 갖춘 당신은 분양대행사 팀장, 지점장 등 조직 관리에 최적화된 인재입니다.',
+    jobs: ['분양팀 팀장', '중개법인 지점장', '영업조직 총괄'],
+    strengths: ['조직 관리', '동기 부여', '성과 관리'],
+  },
+  ED: {
+    code: 'ED',
+    name: '교육형 멘토',
+    emoji: '📚',
+    color: 'from-cyan-500 to-sky-500',
+    description: '지식을 나누고 후배를 키우는 업계의 스승',
+    detail: '풍부한 경험과 교육 역량을 갖춘 당신은 신입 교육, 자격증 강의, 실무 코칭 분야에서 빛을 발합니다.',
+    jobs: ['부동산 강사', '신입 교육 담당', '실무 코칭 멘토'],
+    strengths: ['지식 전달력', '인내심', '체계적 사고'],
+  },
+  NW: {
+    code: 'NW',
+    name: '네트워커형 연결자',
+    emoji: '🌐',
+    color: 'from-teal-500 to-green-500',
+    description: '사람과 사람을 연결해 가치를 만드는 커넥터',
+    detail: '넓은 인맥과 커뮤니케이션 능력의 당신은 투자자 매칭, 공동중개, 네트워크 비즈니스에 강합니다.',
+    jobs: ['공동중개 전문', '투자자 매칭', '부동산 네트워킹'],
+    strengths: ['인맥 관리', '정보 수집력', '신뢰 구축'],
+  },
+  TC: {
+    code: 'TC',
+    name: '테크형 혁신가',
+    emoji: '💡',
+    color: 'from-indigo-500 to-blue-500',
+    description: '기술과 데이터로 부동산을 혁신하는 선구자',
+    detail: 'IT 기술과 부동산 지식을 결합한 당신은 프롭테크, 데이터 분석, 플랫폼 비즈니스에 적합합니다.',
+    jobs: ['프롭테크 기획', '부동산 데이터 분석', 'AI 매칭 컨설턴트'],
+    strengths: ['기술 활용력', '데이터 분석', '트렌드 파악'],
+  },
+  SP: {
+    code: 'SP',
+    name: '전문특화형 장인',
+    emoji: '🔬',
+    color: 'from-rose-500 to-red-500',
+    description: '한 분야를 깊이 파고드는 부동산계의 장인',
+    detail: '깊은 전문성과 집중력의 당신은 상업용, 토지, 재개발 등 특수 분야에서 독보적인 전문가가 될 수 있습니다.',
+    jobs: ['상업용 부동산 전문', '토지 전문 중개', '재개발 컨설턴트'],
+    strengths: ['깊은 전문 지식', '집중력', '꾸준한 학습'],
+  },
 };
 
 type DNAType = keyof typeof DNA_TYPES;
@@ -87,8 +137,25 @@ interface Scores {
 }
 
 export default function DNAQuizPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white flex items-center justify-center">
+        <div className="text-center">
+          <Sparkles className="w-12 h-12 mx-auto mb-4 animate-pulse text-yellow-400" />
+          <p>질문을 준비하고 있습니다...</p>
+        </div>
+      </div>
+    }>
+      <DNAQuizContent />
+    </Suspense>
+  );
+}
+
+function DNAQuizContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
+  const isDirect = searchParams.get('direct') === 'true';
   const [questions, setQuestions] = useState<DNAQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -96,8 +163,8 @@ export default function DNAQuizPage() {
   const [isComplete, setIsComplete] = useState(false);
   const [dnaType, setDnaType] = useState<DNAType | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [showIntroPopup, setShowIntroPopup] = useState(true);
-  const [introChecked, setIntroChecked] = useState(false);
+  const [showIntroPopup, setShowIntroPopup] = useState(!isDirect);
+  const [introChecked, setIntroChecked] = useState(isDirect);
 
   // 컴포넌트 마운트 시 랜덤 질문 생성
   useEffect(() => {
@@ -150,7 +217,7 @@ export default function DNAQuizPage() {
   const calculateDNAType = (): DNAType => {
     const { risk, social, logic, resilience } = scores;
 
-    // 가장 높은 두 가지 변수 조합으로 유형 결정
+    // 4가지 축 순위로 10가지 유형 매핑
     const sorted = [
       { key: 'R', value: risk },
       { key: 'S', value: social },
@@ -161,12 +228,17 @@ export default function DNAQuizPage() {
     const top1 = sorted[0].key;
     const top2 = sorted[1].key;
 
-    // 유형 매핑
-    if ((top1 === 'R' && top2 === 'S') || (top1 === 'S' && top2 === 'R')) return 'RS';
-    if ((top1 === 'R' && top2 === 'L') || (top1 === 'L' && top2 === 'R')) return 'RL';
-    if ((top1 === 'S' && top2 === 'L') || (top1 === 'L' && top2 === 'S')) return 'SL';
-    if ((top1 === 'L' && top2 === 'E') || (top1 === 'E' && top2 === 'L')) return 'LA';
-    if (top1 === 'R' || resilience >= 8) return 'RF';
+    // 1순위 + 2순위 조합으로 10가지 유형 결정 (순서 중요)
+    if (top1 === 'R' && top2 === 'S') return 'RS'; // 야수형 영업왕
+    if (top1 === 'R' && top2 === 'L') return 'RL'; // 승부사형 전략가
+    if (top1 === 'R' && top2 === 'E') return 'RF'; // 자유영혼형 크리에이터
+    if (top1 === 'S' && top2 === 'R') return 'TL'; // 팀리더형 총괄자
+    if (top1 === 'S' && top2 === 'L') return 'SL'; // 카운셀러형 전문가
+    if (top1 === 'S' && top2 === 'E') return 'NW'; // 네트워커형 연결자
+    if (top1 === 'L' && top2 === 'R') return 'TC'; // 테크형 혁신가
+    if (top1 === 'L' && top2 === 'S') return 'ED'; // 교육형 멘토
+    if (top1 === 'L' && top2 === 'E') return 'LA'; // 스마트 관리형
+    if (top1 === 'E') return 'SP';                  // 전문특화형 장인
 
     // 기본값
     return 'SL';
@@ -606,7 +678,7 @@ export default function DNAQuizPage() {
                 <div className="flex gap-3 p-3 bg-white/5 rounded-xl">
                   <Brain className="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-white/80">5가지 DNA 유형</p>
+                    <p className="text-sm font-medium text-white/80">10가지 DNA 유형</p>
                     <p className="text-xs text-white/50 mt-0.5">나만의 부동산 성향 분석</p>
                   </div>
                 </div>
