@@ -536,19 +536,29 @@ export default function PremiumLandingPage() {
                 부동산인에서 전문가로서 대우받으세요.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-4">
                 <Link
-                  href="/agent/auth/register"
+                  href="/agent/mypage/resume/dna?direct=true"
                   className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold text-lg rounded-xl hover:from-amber-400 hover:to-yellow-400 transition-all shadow-lg shadow-amber-500/25"
                 >
-                  이력서 등록하기 
+                  적성검사 받기
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   href="/agent/jobs"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl hover:bg-white/20 transition-all"
                 >
-                  채용공고 둘러보기
+                  <Building2 className="w-5 h-5" />
+                  공인중개사 채용공고
+                </Link>
+                <Link
+                  href="/sales/jobs"
+                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl hover:bg-white/20 transition-all"
+                >
+                  <Briefcase className="w-5 h-5" />
+                  분양상담사 채용공고
                 </Link>
               </div>
 
