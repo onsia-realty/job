@@ -215,12 +215,13 @@ const sampleJobs: AgentJobListing[] = [
     deadline: '2026-02-15',
     benefits: ['flexible', 'incentive', 'education'],
   },
+  // ===== 주거용 BASIC =====
   {
     id: '6',
     title: '신림동 빌라/다세대 전문 신입환영',
     description: '관악구 빌라 전문, 초보자 교육 시스템 완비',
     type: 'villa',
-    tier: 'normal',
+    tier: 'basic',
     badges: ['new'],
     salary: { type: 'mixed', amount: '200만+α', min: 200 },
     experience: '경력무관',
@@ -238,7 +239,7 @@ const sampleJobs: AgentJobListing[] = [
     title: '분당 아파트 전문 경력 중개사',
     description: '분당 신도시 대단지 아파트 전문',
     type: 'apartment',
-    tier: 'normal',
+    tier: 'basic',
     badges: [],
     salary: { type: 'mixed', amount: '250~320만', min: 250, max: 320 },
     experience: '1년 이상',
@@ -256,7 +257,7 @@ const sampleJobs: AgentJobListing[] = [
     title: '송도 오피스텔 임대 관리 전문',
     description: '송도국제도시 오피스텔 임대 관리',
     type: 'officetel',
-    tier: 'normal',
+    tier: 'basic',
     badges: [],
     salary: { type: 'monthly', amount: '280만' },
     experience: '6개월 이상',
@@ -269,23 +270,24 @@ const sampleJobs: AgentJobListing[] = [
     deadline: '2026-02-20',
     benefits: ['insurance', 'meal'],
   },
+  // ===== 주거용 무료 =====
   {
-    id: '9',
-    title: '강동구 상가 임대 전문 중개사',
-    description: '천호/길동 상권 상가 전문',
-    type: 'store',
+    id: '9-r',
+    title: '용인 수지 아파트 신입 중개사 모집',
+    description: '수지구 대단지 아파트 전문, 신입 교육',
+    type: 'apartment',
     tier: 'normal',
     badges: [],
-    salary: { type: 'mixed', amount: '220만+α', min: 220 },
-    experience: '1년 이상',
-    experienceLevel: '1year',
-    company: '강동상가전문',
-    region: '서울',
-    views: 432,
-    applicants: 8,
-    createdAt: '2026.01.26',
-    deadline: '2026-02-25',
-    benefits: ['insurance', 'transport'],
+    salary: { type: 'mixed', amount: '180만+α', min: 180 },
+    experience: '경력무관',
+    experienceLevel: 'none',
+    company: '수지부동산',
+    region: '경기',
+    views: 234,
+    applicants: 5,
+    createdAt: '2026.02.09',
+    deadline: '2026-02-10',
+    benefits: ['insurance'],
   },
   {
     id: '11',
@@ -301,26 +303,26 @@ const sampleJobs: AgentJobListing[] = [
     region: '부산',
     views: 876,
     applicants: 15,
-    createdAt: '2026.01.29',
+    createdAt: '2026.02.09',
     deadline: '2026-02-18',
     benefits: ['insurance', 'parking'],
   },
   {
     id: '12',
-    title: '대전 둔산동 사무실 임대 전문',
-    description: '둔산동 오피스 빌딩 임대 전문',
-    type: 'office',
+    title: '대전 둔산동 빌라 전문',
+    description: '둔산동 빌라/다세대 임대',
+    type: 'villa',
     tier: 'normal',
     badges: [],
-    salary: { type: 'monthly', amount: '250만' },
+    salary: { type: 'monthly', amount: '200만' },
     experience: '6개월 이상',
     experienceLevel: '6month',
-    company: '대전오피스공인',
+    company: '대전빌라공인',
     region: '대전',
-    views: 345,
-    applicants: 6,
-    createdAt: '2026.01.24',
-    deadline: '2026-02-28',
+    views: 145,
+    applicants: 3,
+    createdAt: '2026.02.09',
+    deadline: '2026-02-10',
     benefits: ['insurance'],
   },
   // ===== 상업용 VIP =====
@@ -423,13 +425,13 @@ const sampleJobs: AgentJobListing[] = [
     deadline: '2026-02-20',
     benefits: ['flexible', 'incentive', 'education'],
   },
-  // ===== 상업용 Normal 추가 =====
+  // ===== 상업용 BASIC =====
   {
     id: '25',
     title: '일산 상가 임대 관리 신입 환영',
     description: '일산 웨스턴돔/라페스타 상가 관리',
     type: 'store',
-    tier: 'normal',
+    tier: 'basic',
     badges: ['new'],
     salary: { type: 'mixed', amount: '200만+α', min: 200 },
     experience: '경력무관',
@@ -447,7 +449,7 @@ const sampleJobs: AgentJobListing[] = [
     title: '천안 사무실 임대 전문 중개사',
     description: '천안 불당동/쌍용동 오피스 임대',
     type: 'office',
-    tier: 'normal',
+    tier: 'basic',
     badges: [],
     salary: { type: 'monthly', amount: '230만' },
     experience: '6개월 이상',
@@ -465,7 +467,7 @@ const sampleJobs: AgentJobListing[] = [
     title: '대구 동성로 상가 전문 중개사',
     description: '동성로/반월당 상권 상가 임대/매매',
     type: 'store',
-    tier: 'normal',
+    tier: 'basic',
     badges: [],
     salary: { type: 'mixed', amount: '220만+α', min: 220 },
     experience: '1년 이상',
@@ -478,6 +480,7 @@ const sampleJobs: AgentJobListing[] = [
     deadline: '2026-02-20',
     benefits: ['insurance', 'transport'],
   },
+  // ===== 상업용 무료 =====
   {
     id: '28',
     title: '광주 충장로 빌딩매매 전문',
@@ -492,8 +495,8 @@ const sampleJobs: AgentJobListing[] = [
     region: '광주',
     views: 198,
     applicants: 3,
-    createdAt: '2026.01.23',
-    deadline: '2026-03-10',
+    createdAt: '2026.02.09',
+    deadline: '2026-02-10',
     benefits: ['flexible'],
   },
   {
@@ -510,8 +513,8 @@ const sampleJobs: AgentJobListing[] = [
     region: '인천',
     views: 312,
     applicants: 5,
-    createdAt: '2026.01.22',
-    deadline: '2026-02-15',
+    createdAt: '2026.02.09',
+    deadline: '2026-02-10',
     benefits: ['insurance', 'education'],
   },
 ];
@@ -665,12 +668,13 @@ export default function AgentJobsPage() {
     return result;
   }, [allJobs, searchQuery, selectedRegion, selectedCategory, sortBy, currentConfig]);
 
-  // Tier별 분리
+  // Tier별 분리 (4단계: VIP > 프리미엄 > BASIC > 무료)
   const vipJobs = filteredJobs.filter(j => j.tier === 'vip');
   const premiumJobs = filteredJobs.filter(j => j.tier === 'premium');
+  const basicJobs = filteredJobs.filter(j => j.tier === 'basic');
   const normalJobs = filteredJobs.filter(j => j.tier === 'normal');
 
-  // 일반 공고 페이지네이션
+  // 무료 공고 페이지네이션
   const totalNormalPages = Math.ceil(normalJobs.length / ITEMS_PER_PAGE);
   const paginatedNormalJobs = normalJobs.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
@@ -1183,19 +1187,32 @@ export default function AgentJobsPage() {
               </div>
             </section>
 
-            {/* 일반 공고 섹션 (텍스트 리스트) */}
-            {normalJobs.length > 0 && (
+            {/* ★ BASIC 공고 섹션 (반짝이/텍스트 효과로 강조) - 30칸 */}
+            {basicJobs.length > 0 && (
               <section>
+                <style>{`
+                  @keyframes basicGlow {
+                    0%, 100% { box-shadow: 0 0 4px rgba(245, 158, 11, 0.15), inset 0 0 4px rgba(245, 158, 11, 0.05); }
+                    50% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.25), inset 0 0 8px rgba(245, 158, 11, 0.08); }
+                  }
+                  @keyframes basicBadgeShimmer {
+                    0% { background-position: -200% center; }
+                    100% { background-position: 200% center; }
+                  }
+                `}</style>
                 <div className="flex items-center gap-2 mb-4">
-                  <List className="w-5 h-5 text-slate-500" />
-                  <h2 className="text-lg font-bold text-slate-800">일반 공고</h2>
-                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
-                    {normalJobs.length}건
+                  <Sparkles className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-lg font-bold text-slate-800">BASIC 공고</h2>
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                    {basicJobs.length}건
                   </span>
+                  <Link href="/agent/premium" className="ml-auto text-xs text-amber-500 hover:text-amber-600 transition-colors">
+                    ₩4,900~/5일 →
+                  </Link>
                 </div>
 
                 {/* 테이블 헤더 (데스크톱) */}
-                <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2.5 bg-slate-100 rounded-t-lg text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2.5 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-t-lg text-xs font-semibold text-amber-700 uppercase tracking-wide border-x border-t border-amber-200">
                   <div className="col-span-5">공고제목</div>
                   <div className="col-span-2">회사명</div>
                   <div className="col-span-1">지역</div>
@@ -1204,8 +1221,8 @@ export default function AgentJobsPage() {
                   <div className="col-span-1 text-center">조회</div>
                 </div>
 
-                <div className="bg-white rounded-b-lg md:rounded-t-none rounded-lg border border-slate-200 divide-y divide-slate-100">
-                  {paginatedNormalJobs.map((job) => {
+                <div className="bg-white rounded-b-lg md:rounded-t-none rounded-lg border border-amber-200 divide-y divide-amber-100/50">
+                  {basicJobs.slice(0, 30).map((job) => {
                     const category = getCategory(job.type);
                     const dday = getDDay(job.deadline, job.isAlwaysRecruiting);
 
@@ -1213,22 +1230,34 @@ export default function AgentJobsPage() {
                       <Link
                         key={job.id}
                         href={`/agent/jobs/${job.id}`}
-                        className="block hover:bg-slate-50 transition-colors"
+                        className="block hover:bg-amber-50/50 transition-colors"
+                        style={{ animation: 'basicGlow 3s ease-in-out infinite' }}
                       >
                         {/* 데스크톱 뷰 */}
                         <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-3.5 items-center">
                           <div className="col-span-5 flex items-center gap-2 min-w-0">
+                            <span
+                              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-amber-700 flex-shrink-0"
+                              style={{
+                                background: 'linear-gradient(90deg, #fef3c7, #fde68a, #fef3c7)',
+                                backgroundSize: '200% auto',
+                                animation: 'basicBadgeShimmer 3s linear infinite',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                              }}
+                            >
+                              BASIC
+                            </span>
                             <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${category.bgColor} ${category.textColor}`}>
                               {category.name}
                             </span>
                             {job.badges.includes('new') && (
                               <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500 text-white flex-shrink-0">N</span>
                             )}
-                            <span className="text-sm font-medium text-slate-800 truncate">{job.title}</span>
+                            <span className="text-sm font-bold text-slate-800 truncate">{job.title}</span>
                           </div>
-                          <div className="col-span-2 text-sm text-slate-600 truncate">{job.company}</div>
+                          <div className="col-span-2 text-sm font-semibold text-slate-700 truncate">{job.company}</div>
                           <div className="col-span-1 text-sm text-slate-500">{job.region}</div>
-                          <div className="col-span-2 text-sm font-medium text-emerald-600 truncate">{job.salary.amount}</div>
+                          <div className="col-span-2 text-sm font-bold text-amber-600 truncate">{job.salary.amount}</div>
                           <div className="col-span-1 flex justify-center">
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${dday.color}`}>
                               {dday.text}
@@ -1240,23 +1269,31 @@ export default function AgentJobsPage() {
                         {/* 모바일 뷰 */}
                         <div className="md:hidden px-4 py-3.5">
                           <div className="flex items-center gap-1.5 mb-1">
+                            <span
+                              className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-amber-700"
+                              style={{
+                                background: 'linear-gradient(90deg, #fef3c7, #fde68a, #fef3c7)',
+                                backgroundSize: '200% auto',
+                                animation: 'basicBadgeShimmer 3s linear infinite',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                              }}
+                            >
+                              BASIC
+                            </span>
                             <span className={`text-xs px-1.5 py-0.5 rounded ${category.bgColor} ${category.textColor}`}>
                               {category.name}
                             </span>
                             <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${dday.color}`}>
                               {dday.text}
                             </span>
-                            {job.badges.includes('new') && (
-                              <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500 text-white">N</span>
-                            )}
                           </div>
-                          <p className="text-sm font-medium text-slate-800 mb-1 line-clamp-1">{job.title}</p>
+                          <p className="text-sm font-bold text-slate-800 mb-1 line-clamp-1">{job.title}</p>
                           <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <span>{job.company}</span>
+                            <span className="font-semibold text-slate-700">{job.company}</span>
                             <span>·</span>
                             <span>{job.region}</span>
                             <span>·</span>
-                            <span className="text-emerald-600 font-medium">{job.salary.amount}</span>
+                            <span className="text-amber-600 font-bold">{job.salary.amount}</span>
                           </div>
                         </div>
                       </Link>
@@ -1264,7 +1301,139 @@ export default function AgentJobsPage() {
                   })}
                 </div>
 
-                {/* 페이지네이션 (일반 공고) */}
+                {/* BASIC 빈 슬롯 안내 */}
+                {basicJobs.length < 30 && (
+                  <Link
+                    href="/agent/premium"
+                    className="mt-2 block text-center py-3 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-dashed border-amber-200 hover:border-amber-400 transition-colors"
+                  >
+                    <p className="text-xs text-amber-500">
+                      BASIC 슬롯 {30 - basicJobs.length}자리 남음 · <span className="font-bold">₩4,900/5일</span> (커피 한 잔 값!) →
+                    </p>
+                  </Link>
+                )}
+              </section>
+            )}
+
+            {/* 📢 배너 광고 슬롯 */}
+            <section className="my-4">
+              <div className="bg-gradient-to-r from-slate-100 to-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                <Link href="/agent/premium" className="block p-6 text-center hover:bg-slate-100 transition-colors">
+                  <p className="text-xs text-slate-400 mb-1">SPONSORED</p>
+                  <p className="text-lg font-bold text-slate-600 mb-1">이 자리에 배너 광고를 게재하세요</p>
+                  <p className="text-sm text-slate-400">월 200,000원부터 · 부동산 전문가에게 직접 노출</p>
+                </Link>
+              </div>
+            </section>
+
+            {/* 무료 공고 섹션 (24시간 한정) */}
+            {normalJobs.length > 0 && (
+              <section>
+                <div className="flex items-center gap-2 mb-4">
+                  <List className="w-5 h-5 text-slate-400" />
+                  <h2 className="text-lg font-bold text-slate-600">무료 공고</h2>
+                  <span className="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
+                    {normalJobs.length}건
+                  </span>
+                  <span className="text-[10px] text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full font-medium flex items-center gap-0.5">
+                    <AlertCircle className="w-3 h-3" /> 24시간 한정
+                  </span>
+                </div>
+
+                {/* 테이블 헤더 (데스크톱) */}
+                <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-2.5 bg-slate-100 rounded-t-lg text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  <div className="col-span-5">공고제목</div>
+                  <div className="col-span-2">회사명</div>
+                  <div className="col-span-1">지역</div>
+                  <div className="col-span-2">급여</div>
+                  <div className="col-span-1 text-center">남은시간</div>
+                  <div className="col-span-1 text-center">조회</div>
+                </div>
+
+                <div className="bg-white rounded-b-lg md:rounded-t-none rounded-lg border border-slate-200 divide-y divide-slate-100">
+                  {paginatedNormalJobs.map((job) => {
+                    const category = getCategory(job.type);
+                    // 무료 공고: 24시간 만료 계산 (등록일 기준)
+                    const createdDate = new Date(job.createdAt.replace(/\./g, '-'));
+                    const expiryDate = new Date(createdDate.getTime() + 24 * 60 * 60 * 1000);
+                    const now = new Date();
+                    const hoursLeft = Math.max(0, Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60)));
+                    const isExpiringSoon = hoursLeft <= 6;
+
+                    return (
+                      <Link
+                        key={job.id}
+                        href={`/agent/jobs/${job.id}`}
+                        className={`block transition-colors ${hoursLeft === 0 ? 'opacity-50' : 'hover:bg-slate-50'}`}
+                      >
+                        {/* 데스크톱 뷰 */}
+                        <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-3.5 items-center">
+                          <div className="col-span-5 flex items-center gap-2 min-w-0">
+                            <span className={`text-xs px-1.5 py-0.5 rounded flex-shrink-0 ${category.bgColor} ${category.textColor}`}>
+                              {category.name}
+                            </span>
+                            {job.badges.includes('new') && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500 text-white flex-shrink-0">N</span>
+                            )}
+                            <span className="text-sm font-medium text-slate-700 truncate">{job.title}</span>
+                          </div>
+                          <div className="col-span-2 text-sm text-slate-500 truncate">{job.company}</div>
+                          <div className="col-span-1 text-sm text-slate-400">{job.region}</div>
+                          <div className="col-span-2 text-sm font-medium text-slate-600 truncate">{job.salary.amount}</div>
+                          <div className="col-span-1 flex justify-center">
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                              hoursLeft === 0 ? 'bg-slate-200 text-slate-400' :
+                              isExpiringSoon ? 'bg-red-100 text-red-600' :
+                              'bg-orange-100 text-orange-600'
+                            }`}>
+                              {hoursLeft === 0 ? '만료' : `${hoursLeft}시간`}
+                            </span>
+                          </div>
+                          <div className="col-span-1 text-center text-xs text-slate-400">{job.views.toLocaleString()}</div>
+                        </div>
+
+                        {/* 모바일 뷰 */}
+                        <div className="md:hidden px-4 py-3.5">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${category.bgColor} ${category.textColor}`}>
+                              {category.name}
+                            </span>
+                            <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                              hoursLeft === 0 ? 'bg-slate-200 text-slate-400' :
+                              isExpiringSoon ? 'bg-red-100 text-red-600' :
+                              'bg-orange-100 text-orange-600'
+                            }`}>
+                              {hoursLeft === 0 ? '만료' : `${hoursLeft}h 남음`}
+                            </span>
+                            {job.badges.includes('new') && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-500 text-white">N</span>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-slate-700 mb-1 line-clamp-1">{job.title}</p>
+                          <div className="flex items-center gap-2 text-xs text-slate-400">
+                            <span>{job.company}</span>
+                            <span>·</span>
+                            <span>{job.region}</span>
+                            <span>·</span>
+                            <span className="text-slate-600 font-medium">{job.salary.amount}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+
+                {/* 무료 → 유료 업그레이드 유도 */}
+                <Link
+                  href="/agent/premium"
+                  className="mt-3 block text-center py-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-200 hover:border-blue-400 transition-colors"
+                >
+                  <p className="text-xs text-blue-600">
+                    무료 공고는 24시간 후 자동 만료됩니다. <span className="font-bold">BASIC ₩4,900</span>으로 5일간 노출하세요 →
+                  </p>
+                </Link>
+
+                {/* 페이지네이션 (무료 공고) */}
                 {totalNormalPages > 1 && (
                   <div className="flex items-center justify-center gap-2 mt-6">
                     <button

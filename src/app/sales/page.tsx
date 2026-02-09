@@ -489,9 +489,7 @@ export default function SalesMainPage() {
               <Link href="/" className="hover:text-purple-600">홈</Link>
               <Link href="/sales/auth/login" className="hover:text-purple-600">로그인</Link>
               <Link href="/sales/auth/login" className="hover:text-purple-600">회원가입</Link>
-              <Link href="#" className="hover:text-purple-600">이벤트</Link>
               <Link href="#" className="hover:text-purple-600">공지사항</Link>
-              <Link href="#" className="hover:text-purple-600">고객센터</Link>
               <Link href="/sales/premium" className="hover:text-purple-600">상품안내</Link>
             </div>
           </div>

@@ -70,10 +70,10 @@ const BENEFITS_OPTIONS = [
 ];
 
 const TIERS = [
-  { value: 'normal', label: '일반 (무료)', price: 0, color: 'bg-gray-500' },
-  { value: 'premium', label: '프리미엄', price: 50000, color: 'bg-cyan-500' },
-  { value: 'superior', label: '슈페리어', price: 100000, color: 'bg-blue-600' },
-  { value: 'unique', label: '유니크', price: 200000, color: 'bg-purple-600' },
+  { value: 'normal', label: '무료 (24시간)', price: 0, originalPrice: 0, duration: '24시간', color: 'bg-gray-500' },
+  { value: 'premium', label: '프리미엄', price: 4900, originalPrice: 49000, duration: '5일', color: 'bg-cyan-500' },
+  { value: 'superior', label: '슈페리어', price: 9900, originalPrice: 99000, duration: '1주일', color: 'bg-blue-600' },
+  { value: 'unique', label: '유니크 (광고대행사)', price: 24900, originalPrice: 249000, duration: '1주일', color: 'bg-purple-600' },
 ];
 
 // 마감일 제한: 오늘 ~ 오늘+10일
@@ -345,15 +345,29 @@ export default function NewJobPage() {
                 >
                   <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
                   <p className="font-bold text-gray-900">{tier.label}</p>
-                  <p className="text-sm text-gray-500">
-                    {tier.price === 0 ? '무료' : `${tier.price.toLocaleString()}원/월`}
-                  </p>
+                  {tier.originalPrice > 0 ? (
+                    <div>
+                      <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
+                      <p className="text-sm font-bold text-purple-600">
+                        {tier.price.toLocaleString()}원<span className="text-xs text-gray-500 font-normal">/{tier.duration}</span>
+                      </p>
+                      <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold">90% OFF</span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
+                  )}
                 </button>
               ))}
             </div>
-            {selectedTier && selectedTier.price > 0 && (
+            {selectedTier && (
               <p className="mt-4 text-sm text-purple-600 bg-purple-50 p-3 rounded-lg">
-                {selectedTier.label} 상품은 상위 노출 및 강조 표시가 제공됩니다.
+                {selectedTier.price === 0
+                  ? '무료 공고는 24시간 후 자동 만료됩니다. 프리미엄(₩4,900)으로 5일간 반짝이 효과 노출!'
+                  : selectedTier.value === 'premium'
+                  ? '프리미엄 상품은 일반 목록에서 반짝이 효과 + 시안 배지가 제공됩니다.'
+                  : selectedTier.value === 'superior'
+                  ? '슈페리어 상품은 유니크 아래 전용 그리드에 블루 배지로 강조 노출됩니다.'
+                  : '유니크(광고대행사) 상품은 레인보우 네온 슬라이더 최상단 + 전용 그리드에 노출됩니다.'}
               </p>
             )}
           </FormSection>

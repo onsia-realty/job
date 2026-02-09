@@ -350,6 +350,11 @@ export default function JobDetailPage() {
                     <Award className="w-3.5 h-3.5" />PREMIUM
                   </span>
                 )}
+                {job.tier === 'basic' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-amber-400 to-yellow-400 text-white text-xs font-bold rounded-full">
+                    BASIC
+                  </span>
+                )}
                 {job.badges.map((badge) => {
                   const cfg = BADGE_CONFIG[badge]; const Icon = cfg.icon;
                   return <span key={badge} className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${cfg.color}`}><Icon className="w-3 h-3" />{cfg.label}</span>;

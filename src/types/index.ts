@@ -51,7 +51,7 @@ export type AgentJobType =
 
 // 부동산 대분류
 export type PropertyCategory = 'residential' | 'commercial';
-export type AgentJobTier = 'vip' | 'premium' | 'normal';
+export type AgentJobTier = 'vip' | 'premium' | 'basic' | 'normal';
 export type AgentSalaryType = 'monthly' | 'commission' | 'mixed';
 export type AgentExperience = 'none' | '6month' | '1year' | '2year' | '3year' | '5year';
 

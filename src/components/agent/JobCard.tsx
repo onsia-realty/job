@@ -65,6 +65,11 @@ const TIER_STYLES: Record<AgentJobTier, { container: string; badge: string; glow
     badge: 'bg-gradient-to-r from-blue-600 to-blue-500 text-white',
     glow: 'shadow-blue-100',
   },
+  basic: {
+    container: 'border border-amber-200 bg-gradient-to-br from-amber-50/30 to-white',
+    badge: 'bg-gradient-to-r from-amber-400 to-yellow-400 text-white',
+    glow: 'shadow-amber-100',
+  },
   normal: {
     container: 'border border-gray-200 bg-white',
     badge: '',

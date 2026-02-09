@@ -71,10 +71,11 @@ const IMAGE_SLOTS = [
   { key: 'interior', label: '내부 이미지', placeholder: '사무소 내부 사진을 업로드하세요' },
 ] as const;
 
-const TIERS: { value: AgentJobTier; label: string; price: number; color: string }[] = [
-  { value: 'normal', label: '일반 (무료)', price: 0, color: 'bg-gray-500' },
-  { value: 'premium', label: '프리미엄', price: 50000, color: 'bg-blue-500' },
-  { value: 'vip', label: 'VIP', price: 100000, color: 'bg-gradient-to-r from-amber-500 to-yellow-500' },
+const TIERS: { value: AgentJobTier; label: string; price: number; originalPrice: number; duration: string; color: string }[] = [
+  { value: 'normal', label: '무료', price: 0, originalPrice: 0, duration: '24시간', color: 'bg-gray-500' },
+  { value: 'basic', label: 'BASIC', price: 4900, originalPrice: 49000, duration: '5일', color: 'bg-gradient-to-r from-amber-400 to-yellow-400' },
+  { value: 'premium', label: '프리미엄', price: 9900, originalPrice: 99000, duration: '1주일', color: 'bg-blue-500' },
+  { value: 'vip', label: 'VIP', price: 24900, originalPrice: 249000, duration: '1주일', color: 'bg-gradient-to-r from-amber-500 to-yellow-500' },
 ];
 
 const WORK_DAYS_OPTIONS = [
@@ -533,7 +534,7 @@ export default function NewAgentJobPage() {
 
           {/* 공고 등급 선택 */}
           <FormSection icon={DollarSign} title="공고 등급 선택">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {TIERS.map((tier) => (
                 <button
                   key={tier.value}
@@ -547,9 +548,15 @@ export default function NewAgentJobPage() {
                 >
                   <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
                   <p className="font-bold text-gray-900">{tier.label}</p>
-                  <p className="text-sm text-gray-500">
-                    {tier.price === 0 ? '무료' : `${tier.price.toLocaleString()}원/월`}
-                  </p>
+                  {tier.price === 0 ? (
+                    <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
+                      <p className="text-sm font-bold text-red-500">{tier.price.toLocaleString()}원/{tier.duration}</p>
+                      <p className="text-[10px] text-red-400 font-bold">90% OFF</p>
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -557,11 +564,15 @@ export default function NewAgentJobPage() {
               <p className={`mt-4 text-sm p-3 rounded-lg ${
                 formData.tier === 'vip'
                   ? 'text-amber-700 bg-amber-50'
+                  : formData.tier === 'basic'
+                  ? 'text-amber-600 bg-amber-50/50'
                   : 'text-blue-600 bg-blue-50'
               }`}>
                 {formData.tier === 'vip'
-                  ? 'VIP 공고는 최상단 노출, 큰 썸네일, 골드 테두리가 제공됩니다.'
-                  : '프리미엄 공고는 상위 노출 및 강조 표시가 제공됩니다.'}
+                  ? 'VIP 공고는 최상단 레인보우 네온 슬라이더 + 그리드에 노출됩니다. (1주일)'
+                  : formData.tier === 'basic'
+                  ? 'BASIC 공고는 일반 목록에서 반짝이 효과로 강조됩니다. (5일)'
+                  : '프리미엄 공고는 전용 그리드 섹션에 상위 노출됩니다. (1주일)'}
               </p>
             )}
           </FormSection>
