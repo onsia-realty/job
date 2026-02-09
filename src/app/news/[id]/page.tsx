@@ -262,7 +262,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
                 </div>
               </Link>
               <Link
-                href="/sales/jobs"
+                href="/agent/jobs"
                 className="flex items-center gap-3 p-3 bg-[#252628] rounded-lg hover:bg-[#353638] transition-colors group"
               >
                 <div className="w-10 h-10 bg-purple-500/20 rounded-lg flex items-center justify-center">

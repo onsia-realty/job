@@ -340,7 +340,7 @@ export default function VerificationPage() {
           </p>
           <div className="space-y-3">
             <Link
-              href="/sales/jobs/new"
+              href="/agent/jobs/new"
               className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
             >
               구인글 작성하기
@@ -590,7 +590,7 @@ export default function VerificationPage() {
 
           <div className="space-y-3 pt-2">
             <Link
-              href="/sales/jobs/new"
+              href="/agent/jobs/new"
               className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors text-center"
             >
               구인글 작성하기
