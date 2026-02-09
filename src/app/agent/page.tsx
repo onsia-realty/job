@@ -452,6 +452,28 @@ export default function AgentMainPage() {
         </div>
       </section>
 
+      {/* 플랫폼 소개 배너 (모바일) */}
+      <div className="md:hidden max-w-7xl mx-auto px-4 pt-4">
+        <Link
+          href="/event/premium"
+          className="block relative overflow-hidden rounded-xl bg-gradient-to-r from-[#0a1628] via-[#1a2d4a] to-[#0a1628] border border-amber-500/20"
+        >
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+          <div className="absolute -top-8 -right-8 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl" />
+          <div className="relative p-4 flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-amber-400 text-[10px] font-bold tracking-wider mb-0.5">BOOIN PLATFORM</p>
+              <p className="text-white font-bold text-sm">알바가 아닙니다. 부동산 전문가입니다.</p>
+              <p className="text-gray-400 text-xs mt-0.5 truncate">AI 매칭 · 부동산 전문가 Only · 90% 저렴한 광고비</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-amber-400 flex-shrink-0" />
+          </div>
+        </Link>
+      </div>
+
       {/* 파워/VIP 광고 섹션 */}
       <section className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">

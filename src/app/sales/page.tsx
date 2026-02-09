@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Search, ChevronDown, ChevronLeft, ChevronRight, Star,
   MapPin, Home, Map, Heart, Megaphone, PenSquare,
-  ArrowUp, Loader2, Eye, Building2
+  ArrowUp, Loader2, Eye, Building2, Sparkles
 } from 'lucide-react';
 import JobCard from '@/components/sales/JobCard';
 import VipSlider from '@/components/sales/VipSlider';
@@ -608,6 +608,28 @@ export default function SalesMainPage() {
         todayVisitors={stats.todayVisitors}
         totalJobs={stats.totalJobs}
       />
+
+      {/* 플랫폼 소개 배너 (모바일) */}
+      <div className="md:hidden max-w-7xl mx-auto px-4 pt-4">
+        <Link
+          href="/event/premium"
+          className="block relative overflow-hidden rounded-xl bg-gradient-to-r from-[#0a1628] via-[#1a2d4a] to-[#0a1628] border border-purple-500/20"
+        >
+          <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-purple-500 to-transparent" />
+          <div className="absolute -top-8 -right-8 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl" />
+          <div className="relative p-4 flex items-center gap-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <Sparkles className="w-6 h-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-purple-400 text-[10px] font-bold tracking-wider mb-0.5">BOOIN PLATFORM</p>
+              <p className="text-white font-bold text-sm">알바가 아닙니다. 부동산 전문가입니다.</p>
+              <p className="text-gray-400 text-xs mt-0.5 truncate">AI 매칭 · 부동산 전문가 Only · 90% 저렴한 광고비</p>
+            </div>
+            <ChevronRight className="w-5 h-5 text-purple-400 flex-shrink-0" />
+          </div>
+        </Link>
+      </div>
 
       {/* VIP 슬라이더 (모바일/PC 공통) */}
       <div className="max-w-7xl mx-auto px-4 py-4">
