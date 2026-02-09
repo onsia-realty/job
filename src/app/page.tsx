@@ -251,36 +251,59 @@ export default function LandingPage() {
               )}
             </div>
 
-            {/* 우측: 광고 배너 */}
-            <div className="bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 min-h-[280px] relative overflow-hidden">
-              <div className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-400">AD</div>
-              <div className="relative z-10 h-full flex flex-col justify-between">
-                <div>
-                  <p className="text-cyan-400 text-sm font-medium mb-2">PREMIUM</p>
-                  <h3 className="text-xl font-bold mb-2">프리미엄 채용공고</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">
-                    상위 노출로 최고의 인재를<br />
-                    빠르게 만나보세요
-                  </p>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <Sparkles className="w-4 h-4 text-yellow-400" />
-                    <span>7일간 상위 노출</span>
+            {/* 우측: 플랫폼 소개 + 광고 배너 */}
+            <div className="flex flex-col gap-4">
+              {/* 플랫폼 소개 배너 */}
+              <Link
+                href="/event/premium"
+                className="block relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1628] via-[#1a2d4a] to-[#0a1628] border border-amber-500/20 hover:border-amber-500/40 transition-all group"
+              >
+                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+                <div className="absolute -top-10 -right-10 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl" />
+                <div className="relative p-4 flex items-center gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <Sparkles className="w-6 h-6 text-white" />
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <TrendingUp className="w-4 h-4 text-green-400" />
-                    <span>조회수 3배 증가</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-amber-400 text-[10px] font-bold tracking-wider mb-0.5">BOOIN PLATFORM</p>
+                    <p className="text-white font-bold text-sm leading-snug">알바가 아닙니다.<br className="md:hidden" /> 부동산 전문가입니다.</p>
+                    <p className="text-gray-400 text-xs mt-0.5 truncate">AI 매칭 · 부동산 전문가 Only · 90% 저렴한 광고비</p>
                   </div>
-                  <Link
-                    href="/premium"
-                    className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl text-center font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
-                  >
-                    광고 문의하기
-                  </Link>
+                  <ArrowRight className="w-5 h-5 text-amber-400 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                 </div>
+              </Link>
+
+              {/* 광고 배너 */}
+              <div className="bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 min-h-[200px] md:min-h-0 md:flex-1 relative overflow-hidden">
+                <div className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-400">AD</div>
+                <div className="relative z-10 h-full flex flex-col justify-between">
+                  <div>
+                    <p className="text-cyan-400 text-sm font-medium mb-2">PREMIUM</p>
+                    <h3 className="text-xl font-bold mb-2">프리미엄 채용공고</h3>
+                    <p className="text-gray-400 text-sm leading-relaxed">
+                      상위 노출로 최고의 인재를<br />
+                      빠르게 만나보세요
+                    </p>
+                  </div>
+                  <div className="space-y-3 mt-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <Sparkles className="w-4 h-4 text-yellow-400" />
+                      <span>최대 1주일 상위 노출</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <TrendingUp className="w-4 h-4 text-green-400" />
+                      <span>조회수 최대 5배 증가</span>
+                    </div>
+                    <Link
+                      href="/premium"
+                      className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl text-center font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
+                    >
+                      광고 문의하기
+                    </Link>
+                  </div>
+                </div>
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
               </div>
-              <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
             </div>
           </div>
         </section>
