@@ -576,7 +576,7 @@ export default function PremiumLandingPage() {
                   <span className="relative z-10">공인중개사 채용공고</span>
                 </Link>
                 <Link
-                  href="/agent/jobs"
+                  href="/sales"
                   className="group relative inline-flex items-center justify-center gap-2 px-6 py-4 bg-gradient-to-r from-purple-600/80 to-pink-500/80 border border-purple-400/40 text-white font-bold text-lg rounded-xl hover:from-purple-500 hover:to-pink-400 transition-all shadow-lg shadow-purple-500/20 overflow-hidden"
                 >
                   <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
