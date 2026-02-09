@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { SalesJobListing, AgentResume, AgentCareer } from '@/types';
+import type { SalesJobListing, AgentResume, AgentCareer, CompanyProfile } from '@/types';
 
 let _supabase: SupabaseClient | null = null;
 
@@ -380,6 +380,91 @@ export async function fetchApplicationCounts(jobIds: string[]): Promise<Record<s
   });
 
   return counts;
+}
+
+// ========== 기업 프로필 관련 함수 ==========
+
+// DB 데이터를 CompanyProfile 타입으로 변환
+export function mapDbCompanyProfile(data: any): CompanyProfile {
+  return {
+    id: data.id,
+    userId: data.user_id,
+    companyName: data.company_name,
+    businessType: data.business_type,
+    description: data.description,
+    address: data.address,
+    detailAddress: data.detail_address,
+    region: data.region,
+    phone: data.phone,
+    website: data.website,
+    employeeCount: data.employee_count,
+    foundedYear: data.founded_year,
+    logoUrl: data.logo_url,
+    signboardUrl: data.signboard_url,
+    interiorUrls: data.interior_urls || [],
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+  };
+}
+
+// CompanyProfile을 DB 형식으로 변환
+export function mapCompanyProfileToDb(profile: Partial<CompanyProfile>, userId: string) {
+  return {
+    user_id: userId,
+    company_name: profile.companyName,
+    business_type: profile.businessType,
+    description: profile.description,
+    address: profile.address,
+    detail_address: profile.detailAddress,
+    region: profile.region,
+    phone: profile.phone,
+    website: profile.website,
+    employee_count: profile.employeeCount,
+    founded_year: profile.foundedYear,
+    logo_url: profile.logoUrl,
+    signboard_url: profile.signboardUrl,
+    interior_urls: profile.interiorUrls,
+  };
+}
+
+// 내 기업 프로필 가져오기
+export async function fetchMyCompanyProfile(userId: string): Promise<CompanyProfile | null> {
+  const { data, error } = await supabase
+    .from('company_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      return null; // 프로필 없음 (정상)
+    }
+    console.error('Error fetching company profile:', error);
+    return null;
+  }
+
+  return mapDbCompanyProfile(data);
+}
+
+// 기업 프로필 저장 (upsert)
+export async function saveCompanyProfile(
+  profile: Partial<CompanyProfile>,
+  userId: string
+): Promise<CompanyProfile | null> {
+  const dbData = mapCompanyProfileToDb(profile, userId);
+
+  const { data, error } = await supabase
+    .from('company_profiles')
+    .upsert(dbData, { onConflict: 'user_id' })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error saving company profile:', error);
+    return null;
+  }
+
+  return mapDbCompanyProfile(data);
 }
 
 // 타입 정의 (추후 Supabase 스키마와 연동)

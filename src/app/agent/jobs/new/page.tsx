@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import {
   ArrowLeft, Upload, X, Building2, Briefcase,
   DollarSign, Clock, Phone, FileText, Image as ImageIcon,
-  ShieldAlert, Loader2, CheckCircle2,
+  ShieldAlert, Loader2, CheckCircle2, Lock,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { uploadImage, uploadMultipleImages } from '@/lib/upload';
@@ -16,7 +16,7 @@ import FormSection from '@/components/shared/FormSection';
 import ThumbnailUpload from '@/components/shared/ThumbnailUpload';
 import ContactSection from '@/components/shared/ContactSection';
 import AddressSearch from '@/components/shared/AddressSearch';
-import type { AgentJobType, AgentSalaryType, AgentExperience, AgentJobTier } from '@/types';
+import type { AgentJobType, AgentSalaryType, AgentExperience, AgentJobTier, SalesJobType } from '@/types';
 
 const RichTextEditor = dynamic(() => import('@/components/editor/RichTextEditor'), {
   ssr: false,
@@ -33,7 +33,7 @@ const REGIONS = [
   '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'
 ];
 
-const JOB_TYPES: { value: AgentJobType; label: string }[] = [
+const AGENT_JOB_TYPES: { value: AgentJobType; label: string }[] = [
   { value: 'apartment', label: '아파트' },
   { value: 'officetel', label: '오피스텔' },
   { value: 'villa', label: '빌라/다세대' },
@@ -41,6 +41,13 @@ const JOB_TYPES: { value: AgentJobType; label: string }[] = [
   { value: 'office', label: '사무실' },
   { value: 'building', label: '빌딩매매' },
   { value: 'auction', label: '경매' },
+];
+
+const SALES_JOB_TYPES: { value: SalesJobType; label: string }[] = [
+  { value: 'apartment', label: '아파트' },
+  { value: 'officetel', label: '오피스텔' },
+  { value: 'store', label: '상가' },
+  { value: 'industrial', label: '지식산업센터' },
 ];
 
 const SALARY_TYPES: { value: AgentSalaryType; label: string }[] = [
@@ -94,6 +101,7 @@ export default function NewAgentJobPage() {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<'agent' | 'sales' | null>(null);
 
   // 부동산 이미지 3장 (로고, 옥외 간판, 내부)
   const [imageFiles, setImageFiles] = useState<Record<string, File | null>>({ logo: null, signboard: null, interior: null });
@@ -101,7 +109,11 @@ export default function NewAgentJobPage() {
 
   // 인증 상태 확인
   const meta = authUser?.user_metadata;
-  const isVerified = meta?.brokerVerified === true || meta?.businessVerified === true;
+  const isVerified = meta?.brokerVerified === true || meta?.businessVerified === true || meta?.cardVerified === true;
+  const hasBrokerVerified = meta?.brokerVerified === true;
+  const hasBusinessVerified = meta?.businessVerified === true;
+  const hasCardVerified = meta?.cardVerified === true;
+  const canPostSales = hasBusinessVerified || hasCardVerified; // 분양상담사 구인: 사업자 or 명함
 
   useEffect(() => {
     if (!authLoading && authUser && !isVerified) {
@@ -277,7 +289,7 @@ export default function NewAgentJobPage() {
         title: formData.title,
         description: formData.description,
         html_content: fullHtmlContent,
-        category: 'agent',
+        category: selectedCategory || 'agent',
         type: formData.type,
         tier: formData.tier,
         badges: [],
@@ -335,8 +347,8 @@ export default function NewAgentJobPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* 인증 필요 모달 */}
-      {showVerificationModal && !isVerified && (
+      {/* 인증 필요 모달 (카테고리 선택 후에만 표시) */}
+      {showVerificationModal && !isVerified && selectedCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-md bg-white rounded-2xl p-6 shadow-xl">
             <div className="flex items-center justify-center mb-4">
@@ -373,14 +385,150 @@ export default function NewAgentJobPage() {
       {/* 헤더 */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-          <Link href="/agent/jobs" className="p-2 hover:bg-gray-100 rounded-lg">
-            <ArrowLeft className="w-5 h-5 text-gray-600" />
-          </Link>
-          <h1 className="text-lg font-bold text-gray-900">공인중개사 구인글 등록</h1>
+          {selectedCategory ? (
+            <button onClick={() => setSelectedCategory(null)} className="p-2 hover:bg-gray-100 rounded-lg">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+          ) : (
+            <Link href="/agent/mypage" className="p-2 hover:bg-gray-100 rounded-lg">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </Link>
+          )}
+          <h1 className="text-lg font-bold text-gray-900">
+            {selectedCategory === 'agent' ? '공인중개사 구인글 등록' : selectedCategory === 'sales' ? '분양상담사 구인글 등록' : '구인글 작성'}
+          </h1>
         </div>
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-6">
+
+        {/* 카테고리 선택 화면 */}
+        {!selectedCategory && (
+          <div className="max-w-2xl mx-auto py-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">구인글 유형 선택</h2>
+              <p className="text-gray-500 text-sm">작성할 구인글 유형을 선택해주세요</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* 공인중개사 구인글 */}
+              <button
+                type="button"
+                onClick={() => hasBrokerVerified && setSelectedCategory('agent')}
+                disabled={!hasBrokerVerified}
+                className={`relative p-6 rounded-2xl border-2 text-left transition-all ${
+                  hasBrokerVerified
+                    ? 'border-blue-200 hover:border-blue-500 hover:shadow-lg hover:shadow-blue-100 cursor-pointer bg-white'
+                    : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                }`}
+              >
+                {!hasBrokerVerified && (
+                  <div className="absolute top-3 right-3">
+                    <Lock className="w-5 h-5 text-gray-400" />
+                  </div>
+                )}
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
+                  hasBrokerVerified ? 'bg-blue-100' : 'bg-gray-200'
+                }`}>
+                  <Building2 className={`w-7 h-7 ${hasBrokerVerified ? 'text-blue-600' : 'text-gray-400'}`} />
+                </div>
+                <h3 className={`text-lg font-bold mb-1 ${hasBrokerVerified ? 'text-gray-900' : 'text-gray-400'}`}>
+                  공인중개사
+                </h3>
+                <p className={`text-sm mb-3 ${hasBrokerVerified ? 'text-gray-500' : 'text-gray-400'}`}>
+                  구인글 작성
+                </p>
+                {hasBrokerVerified ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> 중개업소 인증됨
+                  </span>
+                ) : (
+                  <span className="text-xs text-red-500 font-medium">
+                    중개업소 인증 필요
+                  </span>
+                )}
+              </button>
+
+              {/* 분양상담사 구인글 */}
+              <button
+                type="button"
+                onClick={() => canPostSales && setSelectedCategory('sales')}
+                disabled={!canPostSales}
+                className={`relative p-6 rounded-2xl border-2 text-left transition-all ${
+                  canPostSales
+                    ? 'border-teal-200 hover:border-teal-500 hover:shadow-lg hover:shadow-teal-100 cursor-pointer bg-white'
+                    : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                }`}
+              >
+                {!canPostSales && (
+                  <div className="absolute top-3 right-3">
+                    <Lock className="w-5 h-5 text-gray-400" />
+                  </div>
+                )}
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center mb-4 ${
+                  canPostSales ? 'bg-teal-100' : 'bg-gray-200'
+                }`}>
+                  <Briefcase className={`w-7 h-7 ${canPostSales ? 'text-teal-600' : 'text-gray-400'}`} />
+                </div>
+                <h3 className={`text-lg font-bold mb-1 ${canPostSales ? 'text-gray-900' : 'text-gray-400'}`}>
+                  분양상담사
+                </h3>
+                <p className={`text-sm mb-3 ${canPostSales ? 'text-gray-500' : 'text-gray-400'}`}>
+                  구인글 작성
+                </p>
+                {canPostSales ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 px-2.5 py-1 rounded-full">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {hasBusinessVerified ? '사업자 인증됨' : '명함 인증됨'}
+                  </span>
+                ) : (
+                  <span className="text-xs text-red-500 font-medium">
+                    사업자 또는 명함 인증 필요
+                  </span>
+                )}
+              </button>
+            </div>
+
+            {/* 인증 안내 */}
+            {!isVerified && (
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                <p className="text-sm text-amber-800 mb-3">
+                  구인글을 작성하려면 기업 인증이 필요합니다.
+                </p>
+                <Link
+                  href="/agent/mypage/verification"
+                  className="inline-block px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+                >
+                  인증하러 가기
+                </Link>
+              </div>
+            )}
+
+            {!hasBrokerVerified && canPostSales && (
+              <p className="mt-4 text-center text-xs text-gray-500">
+                공인중개사 구인글은 중개업소 등록번호 인증이 필요합니다. {' '}
+                <Link href="/agent/mypage/verification#broker" className="text-blue-600 hover:underline">
+                  중개업소 인증하기
+                </Link>
+              </p>
+            )}
+
+            {hasBrokerVerified && !canPostSales && (
+              <p className="mt-4 text-center text-xs text-gray-500">
+                분양상담사 구인글은 사업자 또는 명함 인증이 필요합니다. {' '}
+                <Link href="/agent/mypage/verification#business" className="text-blue-600 hover:underline">
+                  사업자 인증
+                </Link>
+                {' / '}
+                <Link href="/agent/mypage/verification#card" className="text-teal-600 hover:underline">
+                  명함 인증
+                </Link>
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* 구인글 작성 폼 */}
+        {selectedCategory && (
         <form onSubmit={handleSubmit} className="space-y-6">
 
           {/* 공고 등급 선택 */}
@@ -496,7 +644,7 @@ export default function NewAgentJobPage() {
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 >
-                  {JOB_TYPES.map((type) => (
+                  {(selectedCategory === 'sales' ? SALES_JOB_TYPES : AGENT_JOB_TYPES).map((type) => (
                     <option key={type.value} value={type.value}>{type.label}</option>
                   ))}
                 </select>
@@ -778,22 +926,28 @@ export default function NewAgentJobPage() {
 
           {/* 제출 버튼 */}
           <div className="flex gap-3">
-            <Link
-              href="/agent/jobs"
+            <button
+              type="button"
+              onClick={() => setSelectedCategory(null)}
               className="flex-1 py-4 text-center bg-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-300 transition-colors"
             >
               취소
-            </Link>
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex-1 py-4 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`flex-1 py-4 text-white rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                selectedCategory === 'sales'
+                  ? 'bg-teal-600 hover:bg-teal-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
-              {isSubmitting ? '등록 중...' : '구인글 등록하기'}
+              {isSubmitting ? '등록 중...' : selectedCategory === 'sales' ? '분양상담사 구인글 등록하기' : '공인중개사 구인글 등록하기'}
             </button>
           </div>
 
         </form>
+        )}
       </main>
     </div>
   );

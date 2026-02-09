@@ -171,13 +171,14 @@ export interface UserProfile {
 }
 
 // 기업회원 인증 상태 타입
-export type VerificationStatus = 'unverified' | 'broker_verified' | 'business_verified';
+export type VerificationStatus = 'unverified' | 'broker_verified' | 'business_verified' | 'both_verified';
 
 // 인증 상태 라벨
 export const VERIFICATION_STATUS_LABELS: Record<VerificationStatus, string> = {
   unverified: '미인증',
-  broker_verified: '중개사무소 인증',
+  broker_verified: '중개업소 인증',
   business_verified: '사업자 인증',
+  both_verified: '인증완료',
 };
 
 // 인증 상태 색상
@@ -185,7 +186,41 @@ export const VERIFICATION_STATUS_COLORS: Record<VerificationStatus, string> = {
   unverified: 'bg-gray-100 text-gray-500',
   broker_verified: 'bg-green-100 text-green-700',
   business_verified: 'bg-blue-100 text-blue-700',
+  both_verified: 'bg-emerald-100 text-emerald-700',
 };
+
+// ========== 기업 프로필 타입 ==========
+
+export type CompanyBusinessType = 'brokerage' | 'agency' | 'developer' | 'builder' | 'trust' | 'other';
+
+export const COMPANY_BUSINESS_TYPE_LABELS: Record<CompanyBusinessType, string> = {
+  brokerage: '공인중개사무소',
+  agency: '분양대행사',
+  developer: '시행사',
+  builder: '시공사',
+  trust: '신탁사',
+  other: '기타',
+};
+
+export interface CompanyProfile {
+  id: string;
+  userId: string;
+  companyName: string;
+  businessType?: CompanyBusinessType;
+  description?: string;
+  address?: string;
+  detailAddress?: string;
+  region?: string;
+  phone?: string;
+  website?: string;
+  employeeCount?: number;
+  foundedYear?: number;
+  logoUrl?: string;
+  signboardUrl?: string;
+  interiorUrls: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 // 뉴스 타입
 export interface NewsItem {

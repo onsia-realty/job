@@ -9,7 +9,10 @@ const IMAGE_SIZE_LIMITS: Record<string, { maxWidth: number; maxHeight: number; q
   'thumbnails':    { maxWidth: 600,  maxHeight: 400,  quality: 0.75 },
   'agent-images':  { maxWidth: 800,  maxHeight: 600,  quality: 0.75 },
   'editor-images': { maxWidth: 1000, maxHeight: 800,  quality: 0.75 },
-  'banner-images': { maxWidth: 1200, maxHeight: 600,  quality: 0.75 },
+  'banner-images':   { maxWidth: 1200, maxHeight: 600,  quality: 0.75 },
+  'company-images':  { maxWidth: 800,  maxHeight: 800,  quality: 0.80 },
+  'profile-photos':  { maxWidth: 400,  maxHeight: 400,  quality: 0.80 },
+  'card-images':     { maxWidth: 800,  maxHeight: 600,  quality: 0.80 },
 };
 
 /** 이미지를 최대 크기에 맞게 리사이즈 + JPEG 압축 (클라이언트) */
@@ -84,7 +87,7 @@ function generateFileName(file: File, prefix: string): string {
 
 export async function uploadImage(
   file: File,
-  folder: 'thumbnails' | 'agent-images' | 'editor-images' | 'banner-images'
+  folder: 'thumbnails' | 'agent-images' | 'editor-images' | 'banner-images' | 'company-images' | 'profile-photos' | 'card-images'
 ): Promise<string | null> {
   // 파일 크기 검증 (최대 2MB)
   if (file.size > MAX_FILE_SIZE) {
@@ -116,7 +119,7 @@ export async function uploadImage(
 
 export async function uploadMultipleImages(
   files: Record<string, File | null>,
-  folder: 'thumbnails' | 'agent-images' | 'editor-images' | 'banner-images'
+  folder: 'thumbnails' | 'agent-images' | 'editor-images' | 'banner-images' | 'company-images' | 'profile-photos' | 'card-images'
 ): Promise<Record<string, string>> {
   const urls: Record<string, string> = {};
 
@@ -128,4 +131,28 @@ export async function uploadMultipleImages(
   }
 
   return urls;
+}
+
+/** Supabase Storage에서 이미지 삭제 (public URL 기반) */
+export async function deleteUploadedImage(publicUrl: string): Promise<boolean> {
+  try {
+    // public URL에서 파일 경로 추출
+    // 형식: https://<project>.supabase.co/storage/v1/object/public/job-images/<path>
+    const match = publicUrl.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+    if (!match) return false;
+
+    const filePath = decodeURIComponent(match[1]);
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .remove([filePath]);
+
+    if (error) {
+      console.error('Delete error:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Delete image error:', err);
+    return false;
+  }
 }

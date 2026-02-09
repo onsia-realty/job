@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "@/components/providers/Providers";
 import SecurityShield from "@/components/security/SecurityShield";
 import Honeypot from "@/components/security/Honeypot";
+import ChatWidget from "@/components/shared/ChatWidget";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -126,6 +127,7 @@ export default function RootLayout({
           <SecurityShield />
           <Honeypot />
           {children}
+          <ChatWidget />
         </Providers>
       </body>
     </html>

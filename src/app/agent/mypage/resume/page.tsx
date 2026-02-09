@@ -34,6 +34,7 @@ import type { AgentResume, AgentCareer, AgentJobType, AgentSalaryType, AgentExpe
 import { REGIONS, AGENT_JOB_TYPE_LABELS, AGENT_SALARY_TYPE_LABELS, AGENT_EXPERIENCE_LABELS, DNA_TYPE_INFO } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchMyResume, saveResume } from '@/lib/supabase';
+import { uploadImage } from '@/lib/upload';
 
 const EMPTY_RESUME: AgentResume = {
   id: '',
@@ -186,18 +187,18 @@ export default function ResumePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [dnaResult, setDnaResult] = useState<{ type: AgentDNAType; scores: any; answerDetails?: AnswerDetail[] } | null>(null);
   const [introMode, setIntroMode] = useState<'manual' | 'ai'>('manual');
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
 
-  // 프로필 사진 업로드 핸들러
+  // 프로필 사진 업로드 핸들러 (Supabase Storage)
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPhotoPreview(result);
-        setEditData({ ...editData, photo: result });
-      };
-      reader.readAsDataURL(file);
+      // 파일 보관 (저장 시 Storage에 업로드)
+      setPhotoFile(file);
+      // 미리보기용 ObjectURL 생성
+      const previewUrl = URL.createObjectURL(file);
+      setPhotoPreview(previewUrl);
+      // editData.photo는 저장 시 업로드 URL로 교체됨
     }
   };
 
@@ -312,10 +313,23 @@ export default function ResumePage() {
     setSaveError(null);
 
     try {
-      const savedResume = await saveResume(editData, user.id);
+      let dataToSave = { ...editData };
+
+      // 새 사진 파일이 있으면 Supabase Storage에 업로드
+      if (photoFile) {
+        const photoUrl = await uploadImage(photoFile, 'profile-photos');
+        if (photoUrl) {
+          dataToSave.photo = photoUrl;
+        }
+        setPhotoFile(null);
+      }
+
+      const savedResume = await saveResume(dataToSave, user.id);
       if (savedResume) {
         setResume(savedResume);
+        setEditData(savedResume);
         setIsEditing(false);
+        if (savedResume.photo) setPhotoPreview(savedResume.photo);
       } else {
         setSaveError('이력서 저장에 실패했습니다');
       }

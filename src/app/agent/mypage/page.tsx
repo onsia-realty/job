@@ -24,6 +24,7 @@ import {
   PenSquare,
   LayoutDashboard,
   Users,
+  CreditCard,
 } from 'lucide-react';
 import type { QuickApplication, Bookmark as BookmarkType, VerificationStatus } from '@/types';
 import { VERIFICATION_STATUS_LABELS, VERIFICATION_STATUS_COLORS } from '@/types';
@@ -57,9 +58,15 @@ export default function MyPage() {
       const role = meta?.role;
       setIsEmployer(role === 'employer');
 
-      if (meta?.brokerVerified) {
+      const hasBroker = meta?.brokerVerified === true;
+      const hasBusiness = meta?.businessVerified === true;
+      const hasCard = meta?.cardVerified === true;
+
+      if (hasBroker && (hasBusiness || hasCard)) {
+        setVerificationStatus('both_verified');
+      } else if (hasBroker) {
         setVerificationStatus('broker_verified');
-      } else if (meta?.businessVerified) {
+      } else if (hasBusiness || hasCard) {
         setVerificationStatus('business_verified');
       } else {
         setVerificationStatus('unverified');
@@ -166,7 +173,7 @@ export default function MyPage() {
             </div>
           )}
 
-          {/* 역할 전환 */}
+          {/* 역할 전환 (구직자만) / 현재 모드 표시 */}
           {user && (
             <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -179,21 +186,15 @@ export default function MyPage() {
                 </span>
                 <span className="text-xs text-gray-400">현재 모드</span>
               </div>
-              <button
-                onClick={handleSwitchRole}
-                disabled={isSwitchingRole}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 ${
-                  isEmployer
-                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
-                    : 'bg-purple-50 text-purple-600 hover:bg-purple-100'
-                }`}
-              >
-                {isSwitchingRole
-                  ? '전환 중...'
-                  : isEmployer
-                    ? '구직자로 전환'
-                    : '사업자로 전환'}
-              </button>
+              {!isEmployer && (
+                <button
+                  onClick={handleSwitchRole}
+                  disabled={isSwitchingRole}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 bg-purple-50 text-purple-600 hover:bg-purple-100"
+                >
+                  {isSwitchingRole ? '전환 중...' : '사업자로 전환'}
+                </button>
+              )}
             </div>
           )}
 
@@ -226,136 +227,262 @@ export default function MyPage() {
 
         {/* 기업회원 인증 상태 */}
         {isEmployer && user && (
-          <div className={`rounded-2xl p-4 mb-6 border ${
-            verificationStatus === 'unverified'
-              ? 'bg-amber-50 border-amber-200'
-              : 'bg-green-50 border-green-200'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {verificationStatus === 'unverified' ? (
-                  <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="w-5 h-5 text-amber-600" />
+          <div className="mb-6 space-y-3">
+            {/* 미인증 안내 */}
+            {verificationStatus === 'unverified' && (
+              <div className="rounded-2xl p-4 border bg-amber-50 border-amber-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                      <AlertTriangle className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <span className="font-medium text-gray-900">기업 인증</span>
+                      <p className="text-xs text-gray-500 mt-0.5">구인글 작성을 위해 인증이 필요합니다</p>
+                    </div>
                   </div>
-                ) : (
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <BadgeCheck className="w-5 h-5 text-green-600" />
-                  </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">기업 인증</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      VERIFICATION_STATUS_COLORS[verificationStatus]
-                    }`}>
-                      {VERIFICATION_STATUS_LABELS[verificationStatus]}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-0.5">
-                    {verificationStatus === 'unverified'
-                      ? '구인글 작성을 위해 인증이 필요합니다'
-                      : '구인글 작성이 가능합니다'}
-                  </p>
+                  <Link
+                    href="/agent/mypage/verification"
+                    className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors whitespace-nowrap"
+                  >
+                    인증하기
+                  </Link>
                 </div>
               </div>
-              {verificationStatus === 'unverified' && (
-                <Link
-                  href="/agent/mypage/verification"
-                  className="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors whitespace-nowrap"
-                >
-                  인증하기
-                </Link>
-              )}
-            </div>
+            )}
+
+            {/* 인증됨: 3개 카드 분류 */}
+            {verificationStatus !== 'unverified' && (() => {
+              const m = authUser?.user_metadata;
+              return (
+                <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+                  {/* 중개업소 인증 */}
+                  <Link
+                    href="/agent/mypage/verification#broker"
+                    className={`flex items-center justify-between px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                      m?.brokerVerified ? '' : 'opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        m?.brokerVerified ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                        <Building2 className={`w-4.5 h-4.5 ${m?.brokerVerified ? 'text-green-600' : 'text-gray-400'}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-sm font-semibold text-gray-900 block">중개업소</span>
+                        {m?.brokerVerified && m?.brokerOfficeName ? (
+                          <span className="text-xs text-gray-500 truncate block">{m.brokerOfficeName}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">미인증</span>
+                        )}
+                      </div>
+                    </div>
+                    {m?.brokerVerified ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 flex-shrink-0">
+                        <BadgeCheck className="w-3.5 h-3.5" /> 완료
+                      </span>
+                    ) : (
+                      <span className="text-xs text-blue-600 font-medium flex-shrink-0">+ 인증</span>
+                    )}
+                  </Link>
+
+                  {/* 사업자 인증 */}
+                  <Link
+                    href="/agent/mypage/verification#business"
+                    className={`flex items-center justify-between px-5 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+                      m?.businessVerified ? '' : 'opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        m?.businessVerified ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                        <FileText className={`w-4.5 h-4.5 ${m?.businessVerified ? 'text-green-600' : 'text-gray-400'}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-gray-900">사업자</span>
+                          {m?.businessVerified && m?.bizTypeLabel && (
+                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                              m.bizType === 'corporate' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                            }`}>
+                              {m.bizTypeLabel}
+                            </span>
+                          )}
+                        </div>
+                        {m?.businessVerified && m?.bizName ? (
+                          <span className="text-xs text-gray-500 truncate block">{m.bizName}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">미인증</span>
+                        )}
+                      </div>
+                    </div>
+                    {m?.businessVerified ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 flex-shrink-0">
+                        <BadgeCheck className="w-3.5 h-3.5" /> 완료
+                      </span>
+                    ) : (
+                      <span className="text-xs text-blue-600 font-medium flex-shrink-0">+ 인증</span>
+                    )}
+                  </Link>
+
+                  {/* 명함 인증 */}
+                  <Link
+                    href="/agent/mypage/verification#card"
+                    className={`flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors ${
+                      m?.cardVerified ? '' : 'opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        m?.cardVerified ? 'bg-green-100' : 'bg-gray-100'
+                      }`}>
+                        <CreditCard className={`w-4.5 h-4.5 ${m?.cardVerified ? 'text-green-600' : 'text-gray-400'}`} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-sm font-semibold text-gray-900 block">명함 인증</span>
+                        {m?.cardVerified && m?.cardProject ? (
+                          <span className="text-xs text-gray-500 truncate block">{m.cardCompany} · {m.cardProject}</span>
+                        ) : (
+                          <span className="text-xs text-gray-400">미인증</span>
+                        )}
+                      </div>
+                    </div>
+                    {m?.cardVerified ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 flex-shrink-0">
+                        <BadgeCheck className="w-3.5 h-3.5" /> 완료
+                      </span>
+                    ) : (
+                      <span className="text-xs text-blue-600 font-medium flex-shrink-0">+ 인증</span>
+                    )}
+                  </Link>
+                </div>
+              );
+            })()}
           </div>
         )}
 
         {/* 기업회원 메뉴 */}
         {isEmployer && user && verificationStatus !== 'unverified' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-3 gap-3 mb-6">
+            <Link
+              href="/agent/mypage/company"
+              className="flex flex-col items-center gap-2 bg-gradient-to-br from-emerald-600 to-teal-600 text-white rounded-2xl p-4 hover:from-emerald-700 hover:to-teal-700 transition-all shadow-md hover:shadow-lg"
+            >
+              <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                <Building2 className="w-5 h-5" />
+              </div>
+              <span className="text-xs font-bold">기업 정보</span>
+            </Link>
             <Link
               href="/agent/employer"
-              className="flex items-center gap-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl p-5 hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg group"
+              className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-2xl p-4 hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
             >
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <LayoutDashboard className="w-6 h-6" />
+              <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                <LayoutDashboard className="w-5 h-5" />
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-lg">기업 대시보드</p>
-                <p className="text-sm text-white/80">공고 및 지원자 관리</p>
-              </div>
-              <ChevronRight className="w-6 h-6 text-white/70 group-hover:translate-x-1 transition-transform" />
+              <span className="text-xs font-bold">대시보드</span>
             </Link>
             <Link
               href="/agent/jobs/new"
-              className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl p-5 hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg group"
+              className="flex flex-col items-center gap-2 bg-gradient-to-br from-blue-600 to-cyan-600 text-white rounded-2xl p-4 hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg"
             >
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                <PenSquare className="w-6 h-6" />
+              <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
+                <PenSquare className="w-5 h-5" />
               </div>
-              <div className="flex-1">
-                <p className="font-bold text-lg">구인글 작성</p>
-                <p className="text-sm text-white/80">새로운 구인 공고를 등록하세요</p>
-              </div>
-              <ChevronRight className="w-6 h-6 text-white/70 group-hover:translate-x-1 transition-transform" />
+              <span className="text-xs font-bold">구인글 작성</span>
             </Link>
           </div>
         )}
 
-        {/* 활동 통계 */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <Link
-            href="/agent/mypage/applications"
-            className="bg-white rounded-xl p-4 border border-gray-200 text-center hover:shadow-md transition-shadow"
-          >
-            <Send className="w-6 h-6 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{applicationCount}</p>
-            <p className="text-xs text-gray-500">지원완료</p>
-          </Link>
-          <Link
-            href="/agent/mypage/bookmarks"
-            className="bg-white rounded-xl p-4 border border-gray-200 text-center hover:shadow-md transition-shadow"
-          >
-            <Heart className="w-6 h-6 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{bookmarkCount}</p>
-            <p className="text-xs text-gray-500">스크랩</p>
-          </Link>
-          <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
-            <Eye className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">0</p>
-            <p className="text-xs text-gray-500">프로필 열람</p>
-          </div>
-        </div>
-
-        {/* 메뉴 섹션 */}
-        <div className="bg-white rounded-2xl border border-gray-200 mb-6 overflow-hidden">
-          <h3 className="px-4 py-3 text-sm font-medium text-gray-500 bg-gray-50 border-b border-gray-100">
-            구직 활동
-          </h3>
-          {menuItems.map((item, index) => (
+        {/* 사업자: 공고 보기 */}
+        {isEmployer && user && (
+          <div className="bg-white rounded-2xl border border-gray-200 mb-6 overflow-hidden">
+            <h3 className="px-4 py-3 text-sm font-medium text-gray-500 bg-gray-50 border-b border-gray-100">
+              공고 보기
+            </h3>
             <Link
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-4 px-4 py-4 hover:bg-gray-50 transition-colors ${
-                index !== menuItems.length - 1 ? 'border-b border-gray-100' : ''
-              }`}
+              href="/agent?tab=broker"
+              className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.color}`}>
-                <item.icon className="w-5 h-5" />
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600">
+                <Building2 className="w-5 h-5" />
               </div>
-              <span className="flex-1 font-medium text-gray-900">{item.label}</span>
-              {item.badge && (
-                <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
-                  {item.badge}
-                </span>
-              )}
+              <span className="flex-1 font-medium text-gray-900">공인중개사 공고보기</span>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </Link>
-          ))}
-        </div>
+            <Link
+              href="/agent?tab=sales"
+              className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-orange-100 text-orange-600">
+                <Users className="w-5 h-5" />
+              </div>
+              <span className="flex-1 font-medium text-gray-900">분양상담사 공고보기</span>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </Link>
+          </div>
+        )}
 
-        {/* 최근 지원 내역 */}
-        {recentApplications.length > 0 && (
+        {/* 구직자: 활동 통계 */}
+        {!isEmployer && (
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <Link
+              href="/agent/mypage/applications"
+              className="bg-white rounded-xl p-4 border border-gray-200 text-center hover:shadow-md transition-shadow"
+            >
+              <Send className="w-6 h-6 text-blue-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">{applicationCount}</p>
+              <p className="text-xs text-gray-500">지원완료</p>
+            </Link>
+            <Link
+              href="/agent/mypage/bookmarks"
+              className="bg-white rounded-xl p-4 border border-gray-200 text-center hover:shadow-md transition-shadow"
+            >
+              <Heart className="w-6 h-6 text-red-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">{bookmarkCount}</p>
+              <p className="text-xs text-gray-500">스크랩</p>
+            </Link>
+            <div className="bg-white rounded-xl p-4 border border-gray-200 text-center">
+              <Eye className="w-6 h-6 text-emerald-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900">0</p>
+              <p className="text-xs text-gray-500">프로필 열람</p>
+            </div>
+          </div>
+        )}
+
+        {/* 구직자: 구직 활동 메뉴 */}
+        {!isEmployer && (
+          <div className="bg-white rounded-2xl border border-gray-200 mb-6 overflow-hidden">
+            <h3 className="px-4 py-3 text-sm font-medium text-gray-500 bg-gray-50 border-b border-gray-100">
+              구직 활동
+            </h3>
+            {menuItems.map((item, index) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex items-center gap-4 px-4 py-4 hover:bg-gray-50 transition-colors ${
+                  index !== menuItems.length - 1 ? 'border-b border-gray-100' : ''
+                }`}
+              >
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${item.color}`}>
+                  <item.icon className="w-5 h-5" />
+                </div>
+                <span className="flex-1 font-medium text-gray-900">{item.label}</span>
+                {item.badge && (
+                  <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                    {item.badge}
+                  </span>
+                )}
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </Link>
+            ))}
+          </div>
+        )}
+
+        {/* 구직자: 최근 지원 내역 */}
+        {!isEmployer && recentApplications.length > 0 && (
           <div className="bg-white rounded-2xl border border-gray-200 mb-6 overflow-hidden">
             <div className="px-4 py-3 flex items-center justify-between bg-gray-50 border-b border-gray-100">
               <h3 className="text-sm font-medium text-gray-500">최근 지원 내역</h3>
