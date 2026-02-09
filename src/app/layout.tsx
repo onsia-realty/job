@@ -56,7 +56,7 @@ export const metadata: Metadata = {
       {
         url: `${SITE_URL}/og-image.png`,
         width: 1200,
-        height: 630,
+        height: 556,
         alt: "부동산인 BOOIN - 부동산 전문가 구인구직",
       },
     ],
