@@ -1,17 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, ArrowRight, Sparkles, Shield, MessageCircle, ChevronLeft,
+  ChevronRight, MapPin, Briefcase,
 } from 'lucide-react';
+
+// VIP 슬라이드 더미 데이터
+const VIP_JOBS = [
+  {
+    id: 'v1',
+    title: '강남역 초역세권 중개사무소 공인중개사 모집',
+    description: '월 거래량 50건 이상! 강남 핵심상권 대형 중개사무소에서 함께할 공인중개사를 모집합니다.',
+    company: '(주)강남부동산',
+    region: '서울 강남',
+    jobType: '매매·임대',
+    salary: '기본급 300만 + 인센티브',
+    badges: ['HOT', '급구'],
+  },
+  {
+    id: 'v2',
+    title: '판교 테크노밸리 상업용 전문 중개사 급구',
+    description: '판교 IT밸리 오피스·상가 전문. 법인 거래 다수, 높은 수수료 보장.',
+    company: '판교프라퍼티',
+    region: '경기 성남',
+    jobType: '상업용',
+    salary: '수수료 70% 지급',
+    badges: ['신규', '인기'],
+  },
+  {
+    id: 'v3',
+    title: '해운대 마린시티 고급 주거 전문 중개사',
+    description: '부산 해운대 최고급 아파트 단지 전담. 고액 매매 전문 중개사 모집.',
+    company: '해운대에셋공인중개사',
+    region: '부산 해운대',
+    jobType: '매매 전문',
+    salary: '수수료 60% + 월 고정 200만',
+    badges: ['HOT'],
+  },
+];
 
 const PLANS = [
   {
     tier: 'normal',
-    name: '일반',
-    badge: '무료로 시작',
+    name: '무료',
+    badge: '기본 공고',
     gradientFrom: 'from-emerald-600',
     gradientTo: 'to-teal-500',
     borderColor: 'border-emerald-500/30',
@@ -65,7 +100,7 @@ const PLANS = [
     ],
     features: [
       '검색 결과 최상단 노출',
-      '대형 썸네일 이미지',
+      '대형 슬라이드 배너',
       'VIP 골드 배지',
       '조회수 5배 증가 효과',
       '지원자 우선 알림',
@@ -85,12 +120,51 @@ const STATS = [
 const FAQS = [
   { q: '광고 효과는 언제부터 시작되나요?', a: '결제 완료 후 즉시 광고가 적용됩니다. 관리자 승인 없이 바로 상위 노출이 시작됩니다.' },
   { q: '광고 기간을 연장할 수 있나요?', a: '네, 마이페이지에서 언제든지 광고 기간을 연장하실 수 있습니다. 연장 시에도 할인이 적용됩니다.' },
-  { q: 'VIP와 프리미엄의 차이점은 무엇인가요?', a: 'VIP는 가장 상단에 대형 썸네일과 함께 노출되며, 프리미엄은 VIP 다음 영역에 로고와 함께 노출됩니다.' },
+  { q: 'VIP와 프리미엄의 차이점은 무엇인가요?', a: 'VIP는 가장 상단에 대형 슬라이드 배너로 노출되며, 프리미엄은 VIP 다음 영역에 로고와 함께 노출됩니다.' },
   { q: '환불 정책은 어떻게 되나요?', a: '광고 시작 후 24시간 이내 미노출 시 전액 환불, 이후에는 잔여 기간에 대해 비례 환불됩니다.' },
 ];
 
 export default function AgentPremiumPage() {
   const [selectedDuration, setSelectedDuration] = useState(0);
+  const [vipIndex, setVipIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  // VIP 자동 슬라이드
+  useEffect(() => {
+    if (!isAutoPlaying) return;
+    const interval = setInterval(() => {
+      setVipIndex((prev) => (prev + 1) % VIP_JOBS.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isAutoPlaying]);
+
+  const goToPrev = () => {
+    setVipIndex((prev) => (prev - 1 + VIP_JOBS.length) % VIP_JOBS.length);
+    setIsAutoPlaying(false);
+  };
+
+  const goToNext = () => {
+    setVipIndex((prev) => (prev + 1) % VIP_JOBS.length);
+    setIsAutoPlaying(false);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) goToNext();
+      else goToPrev();
+    }
+  };
+
+  const currentVip = VIP_JOBS[vipIndex];
 
   const formatPrice = (price: number) => {
     if (price === 0) return '무료';
@@ -132,9 +206,126 @@ export default function AgentPremiumPage() {
             우수한 공인중개사를 빠르게 채용하세요.<br />
             상위 노출 광고로 지원자 수와 조회수를 극대화합니다.
           </p>
-          <Link href="/sales/premium" className="inline-flex items-center gap-1 mt-4 text-sm text-purple-400 hover:text-purple-300 transition-colors">
-            분양상담사 상품안내 보기 <ArrowRight className="w-3 h-3" />
+          <Link href="/agent/jobs" className="inline-flex items-center gap-1 mt-4 text-sm text-blue-400 hover:text-blue-300 transition-colors">
+            부동산 구인공고 바로가기 <ArrowRight className="w-3 h-3" />
           </Link>
+        </div>
+
+        {/* VIP 공고 슬라이드 미리보기 */}
+        <div className="mb-12">
+          <div className="flex items-center gap-2 mb-4">
+            <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+            <h2 className="text-lg font-bold">VIP 공고는 이렇게 노출됩니다</h2>
+          </div>
+          <div
+            className="relative bg-gradient-to-r from-blue-900 via-blue-800 to-cyan-900 rounded-xl overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* VIP 라벨 */}
+            <div className="absolute top-3 left-3 z-10">
+              <span className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full shadow-lg">
+                VIP
+              </span>
+            </div>
+            {/* 슬라이드 카운터 */}
+            <div className="absolute top-3 right-3 z-10">
+              <span className="bg-black/50 text-white text-xs px-2 py-1 rounded-full">
+                {vipIndex + 1} / {VIP_JOBS.length}
+              </span>
+            </div>
+
+            <div className="flex flex-col md:flex-row">
+              {/* 썸네일 영역 */}
+              <div className="relative w-full md:w-1/2 h-48 md:h-64 bg-gradient-to-br from-blue-700 to-cyan-700 flex items-center justify-center">
+                <Building2 className="w-20 h-20 text-white/20" />
+                {currentVip.badges.length > 0 && (
+                  <div className="absolute bottom-3 left-3 flex gap-1">
+                    {currentVip.badges.map((badge) => (
+                      <span
+                        key={badge}
+                        className={`text-xs px-2 py-0.5 rounded font-bold ${
+                          badge === 'HOT' ? 'bg-red-500 text-white' :
+                          badge === '급구' ? 'bg-yellow-500 text-black' :
+                          badge === '신규' ? 'bg-green-500 text-white' :
+                          'bg-purple-500 text-white'
+                        }`}
+                      >
+                        {badge}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 정보 영역 */}
+              <div className="flex-1 p-4 md:p-6 text-white">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="bg-white/20 text-xs px-2 py-0.5 rounded flex items-center gap-1">
+                    <Briefcase className="w-3 h-3" />
+                    {currentVip.jobType}
+                  </span>
+                  <span className="text-white/70 text-xs flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {currentVip.region}
+                  </span>
+                </div>
+
+                <h3 className="text-lg md:text-xl font-bold mb-2 line-clamp-2">
+                  {currentVip.title}
+                </h3>
+
+                <p className="text-white/80 text-sm mb-3 line-clamp-2">
+                  {currentVip.description}
+                </p>
+
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className="bg-amber-500/30 text-amber-300 px-2 py-1 rounded">
+                    {currentVip.salary}
+                  </span>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-white/60 text-xs">{currentVip.company}</span>
+                  <span className="text-amber-400 text-sm font-medium">자세히 보기 →</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 네비게이션 버튼 */}
+            <button
+              onClick={goToPrev}
+              className="hidden md:flex absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/30 hover:bg-black/50 rounded-full items-center justify-center text-white transition-colors"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={goToNext}
+              className="hidden md:flex absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/30 hover:bg-black/50 rounded-full items-center justify-center text-white transition-colors"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+
+            {/* 도트 인디케이터 */}
+            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+              {VIP_JOBS.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setVipIndex(idx);
+                    setIsAutoPlaying(false);
+                  }}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    idx === vipIndex ? 'bg-white w-4' : 'bg-white/40'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+          <p className="text-center text-xs text-gray-500 mt-2">
+            * VIP 공고는 메인 최상단 슬라이드에 대형 배너로 노출됩니다
+          </p>
         </div>
 
         {/* 기간 선택 */}
@@ -263,7 +454,7 @@ export default function AgentPremiumPage() {
           <h2 className="text-2xl font-bold mb-2">광고 상담이 필요하신가요?</h2>
           <p className="text-gray-400 mb-6">전문 상담사가 최적의 광고 상품을 추천해 드립니다.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="tel:1660-0000" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl font-bold hover:opacity-90 transition-all">
+            <a href="tel:1660-0464" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl font-bold hover:opacity-90 transition-all">
               <MessageCircle className="w-5 h-5" />전화 상담 1660-0464
             </a>
             <Link href="/sales/premium" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-slate-700 rounded-xl font-medium hover:bg-slate-600 transition-all">

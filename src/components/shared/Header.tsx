@@ -91,7 +91,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                 </Link>
                 <Link href="/profile/ai-photo" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                   <Sparkles className="w-3.5 h-3.5" />
-                  AI 사진
+                  AI 이력서 사진
                 </Link>
               </>
             )}
@@ -120,10 +120,10 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                     ? 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
                     : 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-600 hover:from-blue-100 hover:to-cyan-100'
                 }`}
-                title="AI 프로필 사진"
+                title="AI 이력서 사진"
               >
                 <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-xs font-medium">AI 사진</span>
+                <span className="hidden sm:inline text-xs font-medium">AI 이력서 사진</span>
               </Link>
             )}
             {!isLoading && user ? (

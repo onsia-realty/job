@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   Search,
@@ -564,6 +564,12 @@ export default function AgentJobsPage() {
   const [bookmarkedJobs, setBookmarkedJobs] = useState<string[]>([]);
   const [allJobs, setAllJobs] = useState<AgentJobListing[]>(sampleJobs);
 
+  // VIP 슬라이더 상태
+  const [vipSlideIndex, setVipSlideIndex] = useState(0);
+  const [isVipAutoPlaying, setIsVipAutoPlaying] = useState(true);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
   const ITEMS_PER_PAGE = 20;
 
   // Supabase에서 agent 공고 가져와서 샘플 데이터와 병합
@@ -688,6 +694,36 @@ export default function AgentJobsPage() {
     );
   };
 
+  // VIP 슬라이더 자동 재생
+  const vipSliderJobs = vipJobs.slice(0, 8);
+  useEffect(() => {
+    if (!isVipAutoPlaying || vipSliderJobs.length <= 1) return;
+    const timer = setInterval(() => {
+      setVipSlideIndex(prev => (prev + 1) % vipSliderJobs.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [isVipAutoPlaying, vipSliderJobs.length]);
+
+  const goVipPrev = () => {
+    setVipSlideIndex(prev => (prev - 1 + vipSliderJobs.length) % vipSliderJobs.length);
+    setIsVipAutoPlaying(false);
+    setTimeout(() => setIsVipAutoPlaying(true), 10000);
+  };
+  const goVipNext = () => {
+    setVipSlideIndex(prev => (prev + 1) % vipSliderJobs.length);
+    setIsVipAutoPlaying(false);
+    setTimeout(() => setIsVipAutoPlaying(true), 10000);
+  };
+  const handleVipTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
+  const handleVipTouchMove = (e: React.TouchEvent) => { touchEndX.current = e.touches[0].clientX; };
+  const handleVipTouchEnd = () => {
+    const diff = touchStartX.current - touchEndX.current;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) goVipNext();
+      else goVipPrev();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20 md:pb-0">
       <Header variant="agent" />
@@ -785,6 +821,110 @@ export default function AgentJobsPage() {
 
         {totalJobCount > 0 ? (
           <div className="space-y-8">
+
+            {/* ★ VIP 슬라이드 배너 */}
+            {vipSliderJobs.length > 0 && (
+              <section className="mb-6">
+                <div
+                  className="relative bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-200 overflow-hidden"
+                  onTouchStart={handleVipTouchStart}
+                  onTouchMove={handleVipTouchMove}
+                  onTouchEnd={handleVipTouchEnd}
+                  onMouseEnter={() => setIsVipAutoPlaying(false)}
+                  onMouseLeave={() => setIsVipAutoPlaying(true)}
+                >
+                  {(() => {
+                    const job = vipSliderJobs[vipSlideIndex];
+                    if (!job) return null;
+                    const dday = getDDay(job.deadline, job.isAlwaysRecruiting);
+                    return (
+                      <Link href={`/agent/jobs/${job.id}`} className="block">
+                        <div className="flex flex-col sm:flex-row">
+                          {/* 썸네일 */}
+                          <div className="relative w-full sm:w-72 h-48 sm:h-52 bg-gradient-to-br from-amber-100 to-yellow-100 flex-shrink-0 overflow-hidden">
+                            {job.thumbnail ? (
+                              <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Building2 className="w-16 h-16 text-amber-200" />
+                              </div>
+                            )}
+                            <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white flex items-center gap-1 shadow-sm">
+                                <Star className="w-3 h-3 fill-current" /> VIP
+                              </span>
+                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${dday.color}`}>
+                                {dday.text}
+                              </span>
+                            </div>
+                            <div className="absolute bottom-3 right-3 text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                              {vipSlideIndex + 1} / {vipSliderJobs.length}
+                            </div>
+                          </div>
+                          {/* 정보 */}
+                          <div className="flex-1 p-4 sm:p-5 flex flex-col justify-center">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+                                {job.type}
+                              </span>
+                              <span className="text-xs text-slate-400 flex items-center gap-0.5">
+                                <MapPin className="w-3 h-3" /> {job.region}
+                              </span>
+                            </div>
+                            <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1.5 line-clamp-2">
+                              {job.title}
+                            </h3>
+                            {job.description && (
+                              <p className="text-sm text-slate-500 mb-3 line-clamp-2">{job.description}</p>
+                            )}
+                            <div className="flex items-center justify-between">
+                              <p className="text-lg font-bold text-amber-600">{job.salary.amount || '면접 후 결정'}</p>
+                              <div className="flex items-center gap-2 text-xs text-slate-400">
+                                <span className="flex items-center gap-0.5"><Eye className="w-3 h-3" />{job.views}</span>
+                                <span>{job.company}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })()}
+
+                  {/* 네비게이션 버튼 */}
+                  {vipSliderJobs.length > 1 && (
+                    <>
+                      <button
+                        onClick={(e) => { e.preventDefault(); goVipPrev(); }}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md transition-colors z-10"
+                      >
+                        <ChevronLeft className="w-4 h-4 text-slate-600" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); goVipNext(); }}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md transition-colors z-10"
+                      >
+                        <ChevronRight className="w-4 h-4 text-slate-600" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* 도트 인디케이터 */}
+                  {vipSliderJobs.length > 1 && (
+                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                      {vipSliderJobs.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={(e) => { e.preventDefault(); setVipSlideIndex(idx); }}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            idx === vipSlideIndex ? 'bg-amber-500 w-5' : 'bg-amber-300/50 hover:bg-amber-400/70'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
             {/* ★ VIP 공고 섹션 (4칸 x 2열 = 8개 고정) */}
             <section>

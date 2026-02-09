@@ -549,7 +549,7 @@ export default function ResumePage() {
                 {/* 구분선 */}
                 <div className="w-px h-12 bg-gray-200 flex-shrink-0" />
 
-                {/* AI 프로필 만들기 */}
+                {/* AI 이력서 사진 */}
                 <Link
                   href="/profile/ai-photo"
                   className="flex-shrink-0 flex flex-col items-center gap-1 group"
@@ -557,7 +557,7 @@ export default function ResumePage() {
                   <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center group-hover:from-blue-600 group-hover:to-cyan-600 transition-all shadow-md group-hover:shadow-lg">
                     <Sparkles className="w-6 h-6 text-white" />
                   </div>
-                  <p className="text-[10px] font-medium text-blue-600">AI 프로필</p>
+                  <p className="text-[10px] font-medium text-blue-600">AI 이력서</p>
                 </Link>
 
                 {/* 구분선 */}

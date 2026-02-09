@@ -276,7 +276,7 @@ export default function AiPhotoPage() {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <h1 className="font-bold text-gray-900">AI 프로필 사진</h1>
+            <h1 className="font-bold text-gray-900">AI 이력서 사진</h1>
           </div>
         </div>
       </div>
@@ -389,7 +389,7 @@ export default function AiPhotoPage() {
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl font-bold text-lg transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Sparkles className="w-5 h-5" />
-                {remaining <= 0 ? '생성 한도를 초과했습니다' : 'AI 프로필 사진 생성하기'}
+                {remaining <= 0 ? '생성 한도를 초과했습니다' : 'AI 이력서 사진 생성하기'}
               </button>
 
               {remaining <= 0 && (
@@ -407,7 +407,7 @@ export default function AiPhotoPage() {
           {step === 'preview' && result && (
             <div className="space-y-4">
               <div className="text-center">
-                <h2 className="text-xl font-bold text-gray-900">AI 프로필 사진 완성!</h2>
+                <h2 className="text-xl font-bold text-gray-900">AI 이력서 사진 완성!</h2>
                 <p className="text-gray-500 text-sm mt-1">
                   {STYLE_INFO[result.style]?.label} 스타일
                 </p>
