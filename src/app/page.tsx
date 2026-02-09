@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Building2, HardHat, Newspaper,
   ArrowRight, ChevronLeft, ChevronRight,
-  Sparkles, TrendingUp
+  Sparkles, TrendingUp, Shield, Brain, BadgeCheck
 } from 'lucide-react';
 
 // 뉴스 타입 정의
@@ -256,20 +256,53 @@ export default function LandingPage() {
               {/* 플랫폼 소개 배너 */}
               <Link
                 href="/event/premium"
-                className="block relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0a1628] via-[#1a2d4a] to-[#0a1628] border border-amber-500/20 hover:border-amber-500/40 transition-all group"
+                className="block relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0a1628] via-[#132240] to-[#0d1a2e] border border-amber-500/30 hover:border-amber-400/50 transition-all group min-h-[280px]"
               >
-                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-                <div className="absolute -top-10 -right-10 w-28 h-28 bg-amber-500/10 rounded-full blur-2xl" />
-                <div className="relative p-4 flex items-center gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
-                    <Sparkles className="w-6 h-6 text-white" />
+                {/* 상단 골드 라인 */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+                {/* 배경 글로우 효과 */}
+                <div className="absolute -top-16 -right-16 w-48 h-48 bg-amber-500/8 rounded-full blur-3xl" />
+                <div className="absolute -bottom-12 -left-12 w-40 h-40 bg-blue-500/8 rounded-full blur-3xl" />
+                {/* 반짝임 애니메이션 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent group-hover:via-white/[0.06] transition-all" />
+
+                <div className="relative z-10 p-6 h-full flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border border-amber-500/30 rounded-full">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span className="text-amber-300 text-[10px] font-bold tracking-widest">BOOIN PLATFORM</span>
+                      </span>
+                      <ArrowRight className="w-4 h-4 text-amber-400/60 group-hover:text-amber-400 group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-1.5 leading-tight">
+                      <span className="text-white">알바가 아닙니다.</span><br />
+                      <span className="bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 bg-clip-text text-transparent">
+                        부동산 전문가입니다.
+                      </span>
+                    </h3>
+                    <p className="text-gray-400 text-sm leading-relaxed">
+                      대한민국 최초 부동산 전문가<br />
+                      AI 매칭 플랫폼
+                    </p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-amber-400 text-[10px] font-bold tracking-wider mb-0.5">BOOIN PLATFORM</p>
-                    <p className="text-white font-bold text-sm leading-snug">알바가 아닙니다.<br className="md:hidden" /> 부동산 전문가입니다.</p>
-                    <p className="text-gray-400 text-xs mt-0.5 truncate">AI 매칭 · 부동산 전문가 Only · 90% 저렴한 광고비</p>
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <BadgeCheck className="w-4 h-4 text-green-400" />
+                      <span>보험/다단계 0% · 부동산 전문가 Only</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <Brain className="w-4 h-4 text-blue-400" />
+                      <span>DNA 분석 기반 AI 매칭</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <Shield className="w-4 h-4 text-amber-400" />
+                      <span>광고비 1/10 · 90% OFF 오픈 특가</span>
+                    </div>
+                    <div className="w-full py-3 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-xl text-center font-bold text-black text-sm group-hover:from-amber-400 group-hover:to-yellow-400 transition-all shadow-lg shadow-amber-500/20 mt-1">
+                      플랫폼 소개 보기
+                    </div>
                   </div>
-                  <ArrowRight className="w-5 h-5 text-amber-400 flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
 
