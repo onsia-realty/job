@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
 import SecurityShield from "@/components/security/SecurityShield";
@@ -102,7 +103,7 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         {/* Google Identity Services */}
-        <script src="https://accounts.google.com/gsi/client" async defer />
+        <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
         {/* DNS Prefetch & Preconnect */}
         <link rel="dns-prefetch" href="//images.unsplash.com" />
         <link rel="dns-prefetch" href="//images.pexels.com" />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -20,6 +20,7 @@ declare global {
       accounts: {
         id: {
           initialize: (config: any) => void;
+          renderButton: (element: HTMLElement, config: any) => void;
           prompt: (callback?: (notification: any) => void) => void;
         };
       };
@@ -53,6 +54,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const googleBtnRef = useRef<HTMLDivElement>(null);
+  const [gisReady, setGisReady] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
@@ -74,6 +77,43 @@ export default function LoginPage() {
       setLoadingProvider(null);
     }
   }, [router]);
+
+  // GIS 초기화 - 숨김 Google 버튼 렌더링
+  useEffect(() => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) return;
+
+    const initGis = () => {
+      if (!window.google?.accounts?.id || !googleBtnRef.current) return;
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredential,
+        auto_select: false,
+      });
+
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        type: 'standard',
+        size: 'large',
+        width: 300,
+      });
+
+      setGisReady(true);
+    };
+
+    // GIS 스크립트 로드 완료 대기
+    if (window.google?.accounts?.id) {
+      initGis();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          clearInterval(interval);
+          initGis();
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, [handleGoogleCredential]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,36 +167,24 @@ export default function LoginPage() {
     setError('');
 
     if (provider === 'google') {
-      // Google Identity Services 사용 - 인앱 브라우저에서도 작동
-      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-      if (!clientId) {
-        setError('Google Client ID가 설정되지 않았습니다.');
-        return;
-      }
-
-      if (!window.google?.accounts?.id) {
-        setError('Google 로그인을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
-        return;
-      }
-
-      setLoadingProvider('google');
-
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: true,
-      });
-
-      window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          // One Tap이 안 뜨면 기존 OAuth redirect로 fallback
-          setLoadingProvider(null);
-          signInWithProvider('google').catch((err: any) => {
-            setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
-          });
+      // GIS 준비됨 → 숨김 Google 버튼 클릭
+      if (gisReady && googleBtnRef.current) {
+        const btn = googleBtnRef.current.querySelector('[role="button"]') as HTMLElement
+          || googleBtnRef.current.querySelector('div[aria-labelledby]') as HTMLElement
+          || googleBtnRef.current.querySelector('iframe');
+        if (btn) {
+          btn.click();
+          return;
         }
-      });
+      }
+      // GIS 미준비 시 기존 OAuth fallback
+      setLoadingProvider('google');
+      try {
+        await signInWithProvider('google');
+      } catch (err: any) {
+        setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
+        setLoadingProvider(null);
+      }
       return;
     }
 
@@ -260,6 +288,9 @@ export default function LoginPage() {
             )}
             구글로 시작하기
           </button>
+
+          {/* GIS 숨김 버튼 (renderButton용) */}
+          <div ref={googleBtnRef} className="absolute overflow-hidden" style={{ width: 0, height: 0, opacity: 0 }} />
         </div>
 
         {/* 구분선 */}
