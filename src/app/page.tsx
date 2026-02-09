@@ -24,7 +24,7 @@ const adBanners = [
   {
     id: 1,
     label: 'SPONSORED',
-    title: '프리미엄 광고 50% 할인',
+    title: '프리미엄 광고 90% 할인',
     description: '오픈 기념 특별 프로모션',
     gradient: 'from-purple-600 to-blue-600',
   },
@@ -51,7 +51,7 @@ const announcements = [
   {
     id: 2,
     badge: '이벤트',
-    title: '프리미엄 광고 50% 할인',
+    title: '프리미엄 광고 90% 할인',
     description: '오픈 기념 프리미엄 현장 광고 할인 이벤트를 진행합니다.',
     color: 'from-orange-500 to-pink-500',
     link: '/event/premium',
@@ -253,29 +253,46 @@ export default function LandingPage() {
 
             {/* 우측: 플랫폼 소개 + 광고 배너 */}
             <div className="flex flex-col gap-4">
-              {/* 플랫폼 소개 배너 */}
+              {/* 플랫폼 소개 배너 - 모바일 전용 */}
               <Link
                 href="/event/premium"
-                className="block relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#0a1628] via-[#132240] to-[#0d1a2e] border border-amber-500/30 hover:border-amber-400/50 transition-all group"
+                className="block md:hidden relative overflow-hidden rounded-2xl backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] hover:border-amber-400/40 transition-all duration-500 group"
               >
-                <div className="absolute top-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-amber-500/10 rounded-full blur-3xl" />
-                <div className="relative z-10 p-5 flex items-center gap-4">
-                  <div className="flex-shrink-0 w-11 h-11 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
-                    <Sparkles className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-amber-400 text-sm font-bold">부동산인</p>
-                    <p className="text-gray-400 text-xs">부동산 AI 구인구직 플랫폼</p>
-                  </div>
-                  <div className="flex-shrink-0 px-3.5 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-lg text-black text-xs font-bold group-hover:from-amber-400 group-hover:to-yellow-400 transition-all">
-                    소개 보기
+                {/* 상단 네온 라인 */}
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+                {/* 배경 글로우 */}
+                <div className="absolute -top-20 -left-20 w-48 h-48 bg-amber-500/[0.07] rounded-full blur-3xl group-hover:bg-amber-500/[0.12] transition-all duration-700" />
+                <div className="absolute -bottom-16 -right-16 w-40 h-40 bg-cyan-500/[0.05] rounded-full blur-3xl" />
+                {/* 도트 패턴 */}
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+
+                <div className="relative z-10 px-5 py-6">
+                  <div className="flex items-center gap-4">
+                    {/* 네온 글로우 아이콘 */}
+                    <div className="relative flex-shrink-0">
+                      <div className="absolute inset-0 bg-amber-400/30 rounded-2xl blur-xl group-hover:bg-amber-400/50 transition-all duration-500" />
+                      <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 flex items-center justify-center shadow-[0_0_20px_rgba(251,191,36,0.3)]">
+                        <Sparkles className="w-5 h-5 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+                      </div>
+                    </div>
+                    {/* 텍스트 */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-amber-300 text-[15px] font-bold tracking-tight">부동산인</p>
+                      <p className="text-white/40 text-xs mt-0.5 tracking-wide">AI 구인구직 플랫폼</p>
+                    </div>
+                    {/* CTA 버튼 */}
+                    <div className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.1] text-amber-300 text-xs font-semibold group-hover:bg-amber-400/10 group-hover:border-amber-400/30 transition-all duration-300">
+                      <span>소개 보기</span>
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
                   </div>
                 </div>
+                {/* 하단 네온 라인 */}
+                <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
               </Link>
 
-              {/* 광고 배너 */}
-              <div className="bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 min-h-[200px] md:min-h-0 md:flex-1 relative overflow-hidden">
+              {/* 광고 배너 - 데스크톱 전용 */}
+              <div className="hidden md:block bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 flex-1 relative overflow-hidden">
                 <div className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-400">AD</div>
                 <div className="relative z-10 h-full flex flex-col justify-between">
                   <div>
@@ -326,10 +343,26 @@ export default function LandingPage() {
 
             {/* 카테고리 카드 (1/3) */}
             <div className="flex flex-col gap-4 h-[400px]">
-              {/* 공인중개사 */}
+              {/* 공인중개사 - 모바일: /agent/jobs, PC: /agent */}
+              <Link
+                href="/agent/jobs"
+                className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer md:hidden"
+              >
+                <img
+                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
+                  alt="공인중개사"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                  <Building2 className="w-10 h-10 mb-2" />
+                  <h3 className="text-xl font-bold">공인중개사</h3>
+                  <p className="text-sm text-white/80 mt-1">중개사무소 구인구직</p>
+                </div>
+              </Link>
               <Link
                 href="/agent"
-                className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer"
+                className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer hidden md:block"
               >
                 <img
                   src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
@@ -362,6 +395,40 @@ export default function LandingPage() {
                 </div>
               </Link>
             </div>
+          </div>
+        </section>
+
+        {/* 프리미엄 채용공고 - 모바일 전용 */}
+        <section className="mb-8 md:hidden">
+          <div className="bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 min-h-[200px] relative overflow-hidden">
+            <div className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-400">AD</div>
+            <div className="relative z-10 h-full flex flex-col justify-between">
+              <div>
+                <p className="text-cyan-400 text-sm font-medium mb-2">PREMIUM</p>
+                <h3 className="text-xl font-bold mb-2">프리미엄 채용공고</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">
+                  상위 노출로 최고의 인재를<br />
+                  빠르게 만나보세요
+                </p>
+              </div>
+              <div className="space-y-3 mt-4">
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                  <Sparkles className="w-4 h-4 text-yellow-400" />
+                  <span>최대 1주일 상위 노출</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-300">
+                  <TrendingUp className="w-4 h-4 text-green-400" />
+                  <span>조회수 최대 5배 증가</span>
+                </div>
+                <Link
+                  href="/premium"
+                  className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl text-center font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
+                >
+                  광고 문의하기
+                </Link>
+              </div>
+            </div>
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
           </div>
         </section>
 
@@ -408,8 +475,9 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* 광고 배너 (1/3) */}
-            <div className="flex flex-col gap-4">
+            {/* 광고 배너 (1/3) - 모바일 숨김 */}
+            <div className="hidden md:flex flex-col gap-4">
+              {/* SPONSORED / PROMOTION 배너 */}
               {adBanners.map((banner) => (
                 <Link
                   key={banner.id}
@@ -435,7 +503,7 @@ export default function LandingPage() {
           >
             <div className="relative z-10">
               <h3 className="text-xl font-bold mb-2">
-                함께 성장하는 부동산 전문가 커뮤니티
+                함께 성장하는<br className="md:hidden" /> 부동산 전문가 커뮤니티
               </h3>
               <p className="text-gray-400">
                 부동산인 커뮤니티에서 정보를 공유하고 네트워킹하세요
