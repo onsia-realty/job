@@ -102,8 +102,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        {/* Google Identity Services */}
-        <Script src="https://accounts.google.com/gsi/client" strategy="beforeInteractive" />
+        {/* Google Identity Services - loaded only on login page via dynamic script */}
         {/* DNS Prefetch & Preconnect */}
         <link rel="dns-prefetch" href="//images.unsplash.com" />
         <link rel="dns-prefetch" href="//images.pexels.com" />

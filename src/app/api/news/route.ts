@@ -22,20 +22,26 @@ const DEFAULT_THUMBNAILS: Record<string, string> = {
   '부동산': 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop',
 };
 
-// Pexels API에서 이미지 가져오기
+// Pexels API 캐시 (메모리 캐시 - 1시간)
+const pexelsCache: Record<string, { url: string; timestamp: number }> = {};
+const PEXELS_CACHE_TTL = 3600000; // 1시간
+
+// Pexels API에서 카테고리별 이미지 가져오기 (캐시 적용)
 async function getPexelsImage(category: string): Promise<string | null> {
   if (!PEXELS_API_KEY) return null;
 
+  // 캐시 확인
+  const cached = pexelsCache[category];
+  if (cached && Date.now() - cached.timestamp < PEXELS_CACHE_TTL) {
+    return cached.url;
+  }
+
   try {
     const keyword = CATEGORY_KEYWORDS[category] || CATEGORY_KEYWORDS['부동산'];
-    const page = Math.floor(Math.random() * 5) + 1; // 랜덤 페이지로 다양성 확보
-
     const response = await fetch(
-      `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=15&page=${page}`,
+      `https://api.pexels.com/v1/search?query=${encodeURIComponent(keyword)}&per_page=5&page=1`,
       {
-        headers: {
-          'Authorization': PEXELS_API_KEY,
-        },
+        headers: { 'Authorization': PEXELS_API_KEY },
       }
     );
 
@@ -43,14 +49,16 @@ async function getPexelsImage(category: string): Promise<string | null> {
 
     const data = await response.json();
     if (data.photos && data.photos.length > 0) {
-      // 랜덤으로 하나 선택
       const randomIndex = Math.floor(Math.random() * data.photos.length);
-      return data.photos[randomIndex]?.src?.medium || null;
+      const url = data.photos[randomIndex]?.src?.medium || null;
+      if (url) {
+        pexelsCache[category] = { url, timestamp: Date.now() };
+      }
+      return url;
     }
 
     return null;
-  } catch (error) {
-    console.error('Pexels API error:', error);
+  } catch {
     return null;
   }
 }
@@ -106,16 +114,20 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 썸네일 설정 (Pexels API + 기본 이미지)
-    const thumbnailPromises = newsData.map(async (news: any) => {
-      const pexelsImage = await getPexelsImage(news.category);
-      if (pexelsImage) {
-        news.thumbnail = pexelsImage;
-      }
-      return news;
-    });
+    // 썸네일 설정 - 고유 카테고리만 Pexels 호출 (5회→최대 4회)
+    const uniqueCategories = [...new Set(newsData.map((n: any) => n.category))];
+    const categoryImages: Record<string, string> = {};
+    await Promise.all(
+      uniqueCategories.map(async (cat) => {
+        const img = await getPexelsImage(cat as string);
+        if (img) categoryImages[cat as string] = img;
+      })
+    );
+    const newsWithThumbnails = newsData.map((news: any) => ({
+      ...news,
+      thumbnail: categoryImages[news.category] || news.thumbnail,
+    }));
 
-    const newsWithThumbnails = await Promise.all(thumbnailPromises);
     return NextResponse.json(
       { news: newsWithThumbnails, total: items.length },
       { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' } }

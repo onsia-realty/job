@@ -54,26 +54,8 @@ export default function SecurityShield() {
       return false;
     };
 
-    // ─── 7. DevTools 감지 (최적화: 2초 간격, 가벼운 체크) ───
+    // ─── 7. DevTools 감지 (최적화: 10초 간격, 단일 인터벌) ───
     let devtoolsOpen = false;
-    const devtoolsCheck = setInterval(() => {
-      const widthThreshold = window.outerWidth - window.innerWidth > 160;
-      const heightThreshold = window.outerHeight - window.innerHeight > 160;
-
-      if (widthThreshold || heightThreshold) {
-        if (!devtoolsOpen) {
-          devtoolsOpen = true;
-          document.title = '접근이 제한됩니다';
-        }
-      } else {
-        if (devtoolsOpen) {
-          devtoolsOpen = false;
-          document.title = '부동산인 BOOIN - 부동산 전문가 구인구직';
-        }
-      }
-    }, 2000); // 2초 간격 (성능 최적화)
-
-    // ─── 8. debugger 트랩 (최적화: DevTools 감지 시에만 활성화) ───
     let debuggerInterval: ReturnType<typeof setInterval> | null = null;
 
     const startDebuggerTrap = () => {
@@ -81,7 +63,7 @@ export default function SecurityShield() {
       debuggerInterval = setInterval(() => {
         // eslint-disable-next-line no-debugger
         debugger;
-      }, 5000); // 5초 간격 (성능 이슈 방지)
+      }, 10000);
     };
 
     const stopDebuggerTrap = () => {
@@ -91,14 +73,17 @@ export default function SecurityShield() {
       }
     };
 
-    // DevTools 감지와 연동: 열릴 때만 debugger 트랩 활성화
-    const debuggerCheck = setInterval(() => {
-      if (devtoolsOpen) {
-        startDebuggerTrap();
-      } else {
-        stopDebuggerTrap();
+    const devtoolsCheck = setInterval(() => {
+      const widthThreshold = window.outerWidth - window.innerWidth > 160;
+      const heightThreshold = window.outerHeight - window.innerHeight > 160;
+      const isOpen = widthThreshold || heightThreshold;
+
+      if (isOpen !== devtoolsOpen) {
+        devtoolsOpen = isOpen;
+        document.title = isOpen ? '접근이 제한됩니다' : '부동산인 BOOIN - 부동산 전문가 구인구직';
+        if (isOpen) startDebuggerTrap(); else stopDebuggerTrap();
       }
-    }, 2000);
+    }, 10000);
 
     // ─── 9. 자동화 도구 감지 (행동 기반) ───
     const detectAutomation = () => {
@@ -164,7 +149,6 @@ export default function SecurityShield() {
       document.removeEventListener('dragstart', blockDrag);
       document.removeEventListener('copy', blockCopy);
       clearInterval(devtoolsCheck);
-      clearInterval(debuggerCheck);
       stopDebuggerTrap();
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';

@@ -103,7 +103,7 @@ export default function JobCard({ job, variant = 'default' }: JobCardProps) {
                 alt={job.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                unoptimized
+                sizes="(max-width: 768px) 100vw, 33vw"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
@@ -191,7 +191,7 @@ export default function JobCard({ job, variant = 'default' }: JobCardProps) {
                 alt={job.title}
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
-                unoptimized
+                sizes="(max-width: 768px) 100vw, 33vw"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -260,7 +260,7 @@ export default function JobCard({ job, variant = 'default' }: JobCardProps) {
                 alt={job.title}
                 fill
                 className="object-cover rounded-l-lg group-hover:scale-105 transition-transform duration-300"
-                unoptimized
+                sizes="(max-width: 768px) 100vw, 33vw"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center rounded-l-lg">

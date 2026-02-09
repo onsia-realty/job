@@ -78,7 +78,7 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  // GIS 초기화 - 숨김 Google 버튼 렌더링
+  // GIS 초기화 - 로그인 페이지에서만 스크립트 로드
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) return;
@@ -101,16 +101,28 @@ export default function LoginPage() {
       setGisReady(true);
     };
 
-    // GIS 스크립트 로드 완료 대기
+    // 이미 로드됐으면 바로 초기화
     if (window.google?.accounts?.id) {
       initGis();
+      return;
+    }
+
+    // 동적으로 GIS 스크립트 로드 (로그인 페이지에서만)
+    const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
+    if (!existing) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.onload = initGis;
+      document.head.appendChild(script);
     } else {
+      // 스크립트 태그는 있지만 아직 로드 안됨
       const interval = setInterval(() => {
         if (window.google?.accounts?.id) {
           clearInterval(interval);
           initGis();
         }
-      }, 100);
+      }, 200);
       return () => clearInterval(interval);
     }
   }, [handleGoogleCredential]);

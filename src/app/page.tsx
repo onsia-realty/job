@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Building2, HardHat, Newspaper,
   ArrowRight, ChevronLeft, ChevronRight,
@@ -261,8 +262,8 @@ export default function LandingPage() {
                 {/* 상단 네온 라인 */}
                 <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
                 {/* 배경 글로우 */}
-                <div className="absolute -top-20 -left-20 w-48 h-48 bg-amber-500/[0.07] rounded-full blur-3xl group-hover:bg-amber-500/[0.12] transition-all duration-700" />
-                <div className="absolute -bottom-16 -right-16 w-40 h-40 bg-cyan-500/[0.05] rounded-full blur-3xl" />
+                <div className="absolute -top-20 -left-20 w-48 h-48 bg-amber-500/[0.07] rounded-full blur-2xl" />
+                <div className="absolute -bottom-16 -right-16 w-40 h-40 bg-cyan-500/[0.05] rounded-full blur-2xl" />
                 {/* 도트 패턴 */}
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
@@ -320,7 +321,7 @@ export default function LandingPage() {
                     </Link>
                   </div>
                 </div>
-                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
+                <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-2xl" />
               </div>
             </div>
           </div>
@@ -337,8 +338,7 @@ export default function LandingPage() {
                 muted
                 loop
                 playsInline
-                preload="metadata"
-                poster=""
+                preload="none"
                 className="w-full h-full object-cover"
               />
             </div>
@@ -350,10 +350,13 @@ export default function LandingPage() {
                 href="/agent/jobs"
                 className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer md:hidden"
               >
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
                   alt="공인중개사"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
@@ -366,10 +369,13 @@ export default function LandingPage() {
                 href="/agent"
                 className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer hidden md:block"
               >
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
                   alt="공인중개사"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="33vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
@@ -384,10 +390,13 @@ export default function LandingPage() {
                 href="/sales"
                 className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer"
               >
-                <img
+                <Image
                   src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop"
                   alt="분양상담사"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
@@ -430,7 +439,7 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
-            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-2xl" />
           </div>
         </section>
 
@@ -456,14 +465,15 @@ export default function LandingPage() {
                       className="flex gap-4 p-3 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
                     >
                       {/* 썸네일 */}
-                      <div className="w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700">
-                        <img
-                          src={news.thumbnail}
+                      <div className="w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700 relative">
+                        <Image
+                          src={news.thumbnail || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop'}
                           alt=""
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop';
-                          }}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                          loading="lazy"
+                          unoptimized
                         />
                       </div>
                       {/* 콘텐츠 */}
