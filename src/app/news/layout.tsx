@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: `${SITE_URL}/og-news.png`,
+        url: `${SITE_URL}/og-image.png`,
         width: 1200,
         height: 630,
         alt: '부동산인 부동산 뉴스',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: '부동산 뉴스 | 부동산인',
     description: '최신 부동산 뉴스, 분양정보, 시장동향을 실시간으로 확인하세요.',
-    images: [`${SITE_URL}/og-news.png`],
+    images: [`${SITE_URL}/og-image.png`],
   },
   alternates: {
     canonical: `${SITE_URL}/news`,
