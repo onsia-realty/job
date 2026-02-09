@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -11,15 +11,20 @@ import {
   EyeOff,
   AlertCircle,
   Loader2,
-  ExternalLink,
 } from 'lucide-react';
-import { signInWithProvider, signInWithEmail, resendConfirmationEmail } from '@/lib/auth';
+import { signInWithProvider, signInWithEmail, resendConfirmationEmail, supabase } from '@/lib/auth';
 
-// 인앱 브라우저 감지
-function isInAppBrowser(): boolean {
-  if (typeof window === 'undefined') return false;
-  const ua = navigator.userAgent || navigator.vendor || '';
-  return /KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|SamsungBrowser\/.*CrossApp|wv|WebView/i.test(ua);
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: any) => void;
+          prompt: (callback?: (notification: any) => void) => void;
+        };
+      };
+    };
+  }
 }
 
 // 카카오 로고 컴포넌트
@@ -50,7 +55,25 @@ export default function LoginPage() {
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
-  const [showInAppGuide, setShowInAppGuide] = useState(false);
+
+  // Google Identity Services 콜백 - ID 토큰으로 Supabase 로그인
+  const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
+    setLoadingProvider('google');
+    setError('');
+    try {
+      const { data, error: authError } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.credential,
+      });
+      if (authError) throw authError;
+      if (data.session) {
+        router.replace('/agent/mypage');
+      }
+    } catch (err: any) {
+      setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
+      setLoadingProvider(null);
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +88,7 @@ export default function LoginPage() {
 
     try {
       await signInWithEmail(email, password);
-      router.push('/agent/mypage');
+      router.replace('/agent/mypage');
     } catch (err: any) {
       if (err.message.includes('Invalid login credentials')) {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -103,12 +126,41 @@ export default function LoginPage() {
   const handleSocialLogin = async (provider: 'kakao' | 'google') => {
     setError('');
 
-    // 구글 로그인 + 인앱 브라우저 감지
-    if (provider === 'google' && isInAppBrowser()) {
-      setShowInAppGuide(true);
+    if (provider === 'google') {
+      // Google Identity Services 사용 - 인앱 브라우저에서도 작동
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+      if (!clientId) {
+        setError('Google Client ID가 설정되지 않았습니다.');
+        return;
+      }
+
+      if (!window.google?.accounts?.id) {
+        setError('Google 로그인을 불러오는 중입니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+
+      setLoadingProvider('google');
+
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: handleGoogleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // One Tap이 안 뜨면 기존 OAuth redirect로 fallback
+          setLoadingProvider(null);
+          signInWithProvider('google').catch((err: any) => {
+            setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
+          });
+        }
+      });
       return;
     }
 
+    // 카카오 등 다른 provider
     setLoadingProvider(provider);
 
     try {
@@ -119,65 +171,8 @@ export default function LoginPage() {
     }
   };
 
-  const handleOpenExternalBrowser = () => {
-    const url = window.location.href;
-    // Android intent로 크롬 열기 시도
-    window.location.href = `intent://${url.replace(/https?:\/\//, '')}#Intent;scheme=https;package=com.android.chrome;end`;
-    // fallback: 일정 시간 후 URL 복사 안내
-    setTimeout(() => {
-      navigator.clipboard?.writeText(url);
-    }, 1500);
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      {/* 인앱 브라우저 안내 모달 */}
-      {showInAppGuide && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
-            <div className="text-center mb-4">
-              <div className="inline-flex items-center justify-center w-14 h-14 bg-amber-100 rounded-full mb-3">
-                <ExternalLink className="w-7 h-7 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">외부 브라우저에서 열어주세요</h3>
-              <p className="text-sm text-slate-500 leading-relaxed">
-                현재 앱 내 브라우저에서는 구글 로그인이 지원되지 않습니다.
-                <br />
-                <strong>Chrome</strong> 또는 <strong>Safari</strong>에서 접속해주세요.
-              </p>
-            </div>
-
-            <button
-              onClick={handleOpenExternalBrowser}
-              className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold mb-3 hover:from-emerald-600 hover:to-cyan-600 transition-all flex items-center justify-center gap-2"
-            >
-              <ExternalLink className="w-4 h-4" />
-              외부 브라우저로 열기
-            </button>
-
-            <div className="bg-slate-50 rounded-xl p-3 mb-3">
-              <p className="text-xs text-slate-500 text-center mb-2">또는 아래 주소를 브라우저에 직접 입력하세요</p>
-              <button
-                onClick={() => {
-                  navigator.clipboard?.writeText(window.location.href);
-                  alert('URL이 복사되었습니다!');
-                }}
-                className="w-full py-2.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-700 font-medium hover:bg-slate-100 transition-colors"
-              >
-                URL 복사하기
-              </button>
-            </div>
-
-            <button
-              onClick={() => setShowInAppGuide(false)}
-              className="w-full py-3 text-slate-500 text-sm font-medium hover:text-slate-700 transition-colors"
-            >
-              닫기
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* 헤더 */}
       <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4">

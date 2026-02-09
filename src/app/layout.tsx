@@ -101,6 +101,13 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
+        {/* Google Identity Services */}
+        <script src="https://accounts.google.com/gsi/client" async defer />
+        {/* DNS Prefetch & Preconnect */}
+        <link rel="dns-prefetch" href="//images.unsplash.com" />
+        <link rel="dns-prefetch" href="//images.pexels.com" />
+        <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://images.pexels.com" crossOrigin="anonymous" />
         {/* RSS Autodiscovery */}
         <link
           rel="alternate"

@@ -337,6 +337,8 @@ export default function LandingPage() {
                 muted
                 loop
                 playsInline
+                preload="metadata"
+                poster=""
                 className="w-full h-full object-cover"
               />
             </div>
@@ -497,20 +499,23 @@ export default function LandingPage() {
 
         {/* 하단 배너 */}
         <section className="mb-16">
-          <Link
-            href="/community"
-            className="block relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1a1f35] to-[#0f172a] p-8"
-          >
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1a1f35] to-[#0f172a] p-8">
             <div className="relative z-10">
               <h3 className="text-xl font-bold mb-2">
                 함께 성장하는<br className="md:hidden" /> 부동산 전문가 커뮤니티
               </h3>
-              <p className="text-gray-400">
+              <p className="text-gray-400 mb-4">
                 부동산인 커뮤니티에서 정보를 공유하고 네트워킹하세요
               </p>
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FEE500]/10 border border-[#FEE500]/20 rounded-full">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="#FEE500">
+                  <path d="M12 3c-5.52 0-10 3.58-10 8 0 2.83 1.9 5.31 4.75 6.72l-.92 3.38c-.08.28.28.5.52.33l4.08-2.73c.52.07 1.05.1 1.57.1 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
+                </svg>
+                <span className="text-sm text-[#FEE500]/90 font-medium">카카오톡 오픈채팅방 준비 중입니다</span>
+              </div>
             </div>
             <div className="absolute right-8 top-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-xl" />
-          </Link>
+          </div>
         </section>
       </main>
 

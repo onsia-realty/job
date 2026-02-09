@@ -116,7 +116,10 @@ export async function GET(request: NextRequest) {
     });
 
     const newsWithThumbnails = await Promise.all(thumbnailPromises);
-    return NextResponse.json({ news: newsWithThumbnails, total: items.length });
+    return NextResponse.json(
+      { news: newsWithThumbnails, total: items.length },
+      { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200' } }
+    );
   } catch (error) {
     console.error('RSS parsing error:', error);
     return NextResponse.json({

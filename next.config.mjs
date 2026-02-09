@@ -4,6 +4,7 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
 
   images: {
+    formats: ['image/avif', 'image/webp'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -11,10 +12,20 @@ const nextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'images.pexels.com',
+      },
+      {
+        protocol: 'https',
         hostname: 'pkbnudkbkhzqjhwffkbj.supabase.co',
       },
     ],
   },
+
+  // X-Powered-By 헤더 제거
+  poweredByHeader: false,
+
+  // 정적 자산 압축
+  compress: true,
 
   // 보안 헤더
   async headers() {

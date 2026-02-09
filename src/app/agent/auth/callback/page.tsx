@@ -34,9 +34,6 @@ function AuthCallbackContent() {
           }
 
           if (data.session) {
-            // AuthContext가 세션 변경을 감지할 시간 확보
-            await new Promise(resolve => setTimeout(resolve, 500));
-            // 로그인 성공 - 마이페이지로 이동
             router.replace('/agent/mypage');
             return;
           }
