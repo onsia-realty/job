@@ -822,65 +822,114 @@ export default function AgentJobsPage() {
         {totalJobCount > 0 ? (
           <div className="space-y-8">
 
-            {/* ★ VIP 슬라이드 배너 */}
+            {/* ★ VIP 슬라이드 배너 - 레인보우 네온 */}
             {vipSliderJobs.length > 0 && (
               <section className="mb-6">
+                {/* 레인보우 보더 래퍼 */}
                 <div
-                  className="relative bg-gradient-to-r from-amber-50 to-yellow-50 rounded-2xl border-2 border-amber-200 overflow-hidden"
+                  className="relative rounded-xl p-[3px]"
+                  style={{
+                    background: 'linear-gradient(135deg, #ff0080, #ff8c00, #ffd700, #00ff88, #00cfff, #7b68ee, #ff0080)',
+                    backgroundSize: '400% 400%',
+                    animation: 'rainbowBorder 4s ease infinite',
+                    boxShadow: '0 0 20px rgba(255, 0, 128, 0.25), 0 0 40px rgba(0, 207, 255, 0.15), 0 0 60px rgba(123, 104, 238, 0.1)',
+                  }}
+                >
+                <style>{`
+                  @keyframes rainbowBorder {
+                    0% { background-position: 0% 50%; }
+                    50% { background-position: 100% 50%; }
+                    100% { background-position: 0% 50%; }
+                  }
+                `}</style>
+                <div
+                  className="relative rounded-[9px] overflow-hidden"
+                  style={{
+                    background: 'linear-gradient(135deg, #0a0e1a 0%, #111827 50%, #0a0e1a 100%)',
+                  }}
                   onTouchStart={handleVipTouchStart}
                   onTouchMove={handleVipTouchMove}
                   onTouchEnd={handleVipTouchEnd}
                   onMouseEnter={() => setIsVipAutoPlaying(false)}
                   onMouseLeave={() => setIsVipAutoPlaying(true)}
                 >
+
                   {(() => {
                     const job = vipSliderJobs[vipSlideIndex];
                     if (!job) return null;
                     const dday = getDDay(job.deadline, job.isAlwaysRecruiting);
                     return (
-                      <Link href={`/agent/jobs/${job.id}`} className="block">
-                        <div className="flex flex-col sm:flex-row">
-                          {/* 썸네일 */}
-                          <div className="relative w-full sm:w-72 h-48 sm:h-52 bg-gradient-to-br from-amber-100 to-yellow-100 flex-shrink-0 overflow-hidden">
+                      <Link href={`/agent/jobs/${job.id}`} className="block relative z-[1]">
+                        <div className="flex flex-col sm:flex-row sm:h-72">
+                          {/* 썸네일 (5:5 비율) */}
+                          <div className="relative w-full sm:w-1/2 h-52 sm:h-full overflow-hidden">
                             {job.thumbnail ? (
                               <img src={job.thumbnail} alt={job.title} className="w-full h-full object-cover" />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <Building2 className="w-16 h-16 text-amber-200" />
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-900 to-gray-900">
+                                <Building2 className="w-20 h-20 text-white/10" />
                               </div>
                             )}
+                            {/* 이미지 오버레이 그라데이션 */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#0a0e1a]/90 hidden sm:block" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a]/70 to-transparent sm:hidden" />
+
                             <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white flex items-center gap-1 shadow-sm">
+                              <span
+                                className="text-xs font-black px-3 py-1 rounded-full text-white flex items-center gap-1 tracking-wider uppercase"
+                                style={{
+                                  background: 'linear-gradient(135deg, #ff0080, #ff8c00, #ffd700)',
+                                  boxShadow: '0 0 12px rgba(255, 0, 128, 0.5), 0 0 24px rgba(255, 140, 0, 0.3)',
+                                  textShadow: '0 0 8px rgba(255,255,255,0.5)',
+                                }}
+                              >
                                 <Star className="w-3 h-3 fill-current" /> VIP
                               </span>
                               <span className={`text-xs font-bold px-2 py-1 rounded-full ${dday.color}`}>
                                 {dday.text}
                               </span>
                             </div>
-                            <div className="absolute bottom-3 right-3 text-xs text-white/80 bg-black/40 px-2 py-0.5 rounded-full backdrop-blur-sm">
+                            <div className="absolute bottom-3 right-3 text-xs text-white/80 bg-black/50 px-2.5 py-1 rounded-full backdrop-blur-sm border border-white/10">
                               {vipSlideIndex + 1} / {vipSliderJobs.length}
                             </div>
                           </div>
-                          {/* 정보 */}
-                          <div className="flex-1 p-4 sm:p-5 flex flex-col justify-center">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
+
+                          {/* 정보 (5:5 비율) */}
+                          <div className="w-full sm:w-1/2 p-5 sm:p-7 flex flex-col justify-center relative">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span
+                                className="text-xs font-bold px-2.5 py-1 rounded-full text-emerald-300 border border-emerald-400/40"
+                                style={{ boxShadow: '0 0 8px rgba(52, 211, 153, 0.25)' }}
+                              >
                                 {job.type}
                               </span>
-                              <span className="text-xs text-slate-400 flex items-center gap-0.5">
+                              <span className="text-xs text-gray-400 flex items-center gap-0.5">
                                 <MapPin className="w-3 h-3" /> {job.region}
                               </span>
                             </div>
-                            <h3 className="text-lg sm:text-xl font-bold text-slate-800 mb-1.5 line-clamp-2">
+                            <h3
+                              className="text-xl sm:text-2xl font-black text-white mb-2 line-clamp-2 leading-tight"
+                              style={{ textShadow: '0 0 20px rgba(255, 255, 255, 0.15)' }}
+                            >
                               {job.title}
                             </h3>
                             {job.description && (
-                              <p className="text-sm text-slate-500 mb-3 line-clamp-2">{job.description}</p>
+                              <p className="text-sm text-gray-400 mb-4 line-clamp-2 leading-relaxed">{job.description}</p>
                             )}
-                            <div className="flex items-center justify-between">
-                              <p className="text-lg font-bold text-amber-600">{job.salary.amount || '면접 후 결정'}</p>
-                              <div className="flex items-center gap-2 text-xs text-slate-400">
-                                <span className="flex items-center gap-0.5"><Eye className="w-3 h-3" />{job.views}</span>
+                            <div className="flex items-center justify-between mt-auto">
+                              <p
+                                className="text-xl sm:text-2xl font-black"
+                                style={{
+                                  background: 'linear-gradient(90deg, #ff0080, #ff8c00, #ffd700)',
+                                  WebkitBackgroundClip: 'text',
+                                  WebkitTextFillColor: 'transparent',
+                                  filter: 'drop-shadow(0 0 10px rgba(255, 0, 128, 0.4))',
+                                }}
+                              >
+                                {job.salary.amount || '면접 후 결정'}
+                              </p>
+                              <div className="flex items-center gap-3 text-xs text-gray-500">
+                                <span className="flex items-center gap-0.5"><Eye className="w-3.5 h-3.5" /> {job.views}</span>
                                 <span>{job.company}</span>
                               </div>
                             </div>
@@ -890,38 +939,55 @@ export default function AgentJobsPage() {
                     );
                   })()}
 
-                  {/* 네비게이션 버튼 */}
+                  {/* 네비게이션 버튼 - 네온 */}
                   {vipSliderJobs.length > 1 && (
                     <>
                       <button
                         onClick={(e) => { e.preventDefault(); goVipPrev(); }}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md transition-colors z-10"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all z-10 hover:scale-110"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          boxShadow: '0 0 12px rgba(255, 0, 128, 0.2)',
+                        }}
                       >
-                        <ChevronLeft className="w-4 h-4 text-slate-600" />
+                        <ChevronLeft className="w-4 h-4 text-white/80" />
                       </button>
                       <button
                         onClick={(e) => { e.preventDefault(); goVipNext(); }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/80 hover:bg-white rounded-full flex items-center justify-center shadow-md transition-colors z-10"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all z-10 hover:scale-110"
+                        style={{
+                          background: 'rgba(255, 255, 255, 0.1)',
+                          border: '1px solid rgba(255, 255, 255, 0.2)',
+                          boxShadow: '0 0 12px rgba(0, 207, 255, 0.2)',
+                        }}
                       >
-                        <ChevronRight className="w-4 h-4 text-slate-600" />
+                        <ChevronRight className="w-4 h-4 text-white/80" />
                       </button>
                     </>
                   )}
 
-                  {/* 도트 인디케이터 */}
+                  {/* 도트 인디케이터 - 네온 */}
                   {vipSliderJobs.length > 1 && (
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2 z-10">
                       {vipSliderJobs.map((_, idx) => (
                         <button
                           key={idx}
                           onClick={(e) => { e.preventDefault(); setVipSlideIndex(idx); }}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            idx === vipSlideIndex ? 'bg-amber-500 w-5' : 'bg-amber-300/50 hover:bg-amber-400/70'
-                          }`}
+                          className="rounded-full transition-all"
+                          style={idx === vipSlideIndex ? {
+                            width: '24px', height: '8px',
+                            background: 'linear-gradient(90deg, #ff0080, #ff8c00, #00cfff)',
+                            boxShadow: '0 0 8px rgba(255, 0, 128, 0.5)',
+                          } : {
+                            width: '8px', height: '8px',
+                            background: 'rgba(255, 255, 255, 0.2)',
+                          }}
                         />
                       ))}
                     </div>
                   )}
+                </div>
                 </div>
               </section>
             )}
