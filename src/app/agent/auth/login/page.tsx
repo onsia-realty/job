@@ -80,10 +80,12 @@ export default function LoginPage() {
       });
 
       window.google.accounts.id.renderButton(googleBtnRef.current, {
-        theme: 'outline',
+        theme: 'filled_blue',
         size: 'large',
+        shape: 'rectangular',
         width: 400,
         text: 'continue_with',
+        locale: 'ko',
       });
     };
 
@@ -233,11 +235,11 @@ export default function LoginPage() {
         )}
 
         {/* 소셜 로그인 (메인) */}
-        <div className="space-y-3 mb-8">
+        <div className="flex flex-col items-center gap-3 mb-8">
           <button
             onClick={() => handleSocialLogin('kakao')}
             disabled={!!loadingProvider}
-            className="w-full py-4 bg-[#FEE500] text-[#191919] rounded-xl font-semibold flex items-center justify-center gap-3 hover:bg-[#FADA0A] disabled:opacity-50 transition-all shadow-sm hover:shadow-md"
+            className="w-[400px] max-w-full h-[44px] bg-[#FEE500] text-[#191919] rounded font-semibold flex items-center justify-center gap-3 hover:bg-[#FADA0A] disabled:opacity-50 transition-all text-sm"
           >
             {loadingProvider === 'kakao' ? (
               <Loader2 className="w-5 h-5 animate-spin" />
@@ -248,7 +250,7 @@ export default function LoginPage() {
           </button>
 
           {/* Google GIS 공식 버튼 */}
-          <div ref={googleBtnRef} className="flex justify-center" />
+          <div ref={googleBtnRef} className="flex items-center justify-center" />
         </div>
 
         {/* 구분선 */}
