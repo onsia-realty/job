@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://booin.co.kr";
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://onsia-job.vercel.app";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
