@@ -55,9 +55,9 @@ export const metadata: Metadata = {
     description: "공인중개사, 분양상담사를 위한 AI 기반 구인구직 플랫폼",
     images: [
       {
-        url: `${SITE_URL}/og-image.png`,
+        url: `${SITE_URL}/images/Gemini_Generated_Image_ug5k94ug5k94ug5k.png`,
         width: 1200,
-        height: 556,
+        height: 400,
         alt: "부동산인 BOOIN - 부동산 전문가 구인구직",
       },
     ],
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "부동산인 BOOIN - 부동산 전문가 구인구직",
     description: "공인중개사, 분양상담사를 위한 AI 기반 구인구직 플랫폼",
-    images: [`${SITE_URL}/og-image.png`],
+    images: [`${SITE_URL}/images/Gemini_Generated_Image_ug5k94ug5k94ug5k.png`],
     creator: "@booin_kr",
   },
   robots: {
