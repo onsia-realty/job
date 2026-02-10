@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -12,21 +12,7 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { signInWithProvider, signInWithEmail, resendConfirmationEmail, supabase } from '@/lib/auth';
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: any) => void;
-          renderButton: (element: HTMLElement, config: any) => void;
-          prompt: (callback?: (notification: any) => void) => void;
-        };
-      };
-    };
-  }
-}
+import { signInWithProvider, signInWithEmail, resendConfirmationEmail } from '@/lib/auth';
 
 // 카카오 로고 컴포넌트
 const KakaoLogo = () => (
@@ -54,78 +40,8 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-  const [gisReady, setGisReady] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
-
-  // Google Identity Services 콜백 - ID 토큰으로 Supabase 로그인
-  const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
-    setLoadingProvider('google');
-    setError('');
-    try {
-      const { data, error: authError } = await supabase.auth.signInWithIdToken({
-        provider: 'google',
-        token: response.credential,
-      });
-      if (authError) throw authError;
-      if (data.session) {
-        router.replace('/agent/mypage');
-      }
-    } catch (err: any) {
-      setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
-      setLoadingProvider(null);
-    }
-  }, [router]);
-
-  // GIS 초기화 - 로그인 페이지에서만 스크립트 로드
-  useEffect(() => {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) return;
-
-    const initGis = () => {
-      if (!window.google?.accounts?.id || !googleBtnRef.current) return;
-
-      window.google.accounts.id.initialize({
-        client_id: clientId,
-        callback: handleGoogleCredential,
-        auto_select: false,
-      });
-
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        type: 'standard',
-        size: 'large',
-        width: 300,
-      });
-
-      setGisReady(true);
-    };
-
-    // 이미 로드됐으면 바로 초기화
-    if (window.google?.accounts?.id) {
-      initGis();
-      return;
-    }
-
-    // 동적으로 GIS 스크립트 로드 (로그인 페이지에서만)
-    const existing = document.querySelector('script[src*="accounts.google.com/gsi/client"]');
-    if (!existing) {
-      const script = document.createElement('script');
-      script.src = 'https://accounts.google.com/gsi/client';
-      script.async = true;
-      script.onload = initGis;
-      document.head.appendChild(script);
-    } else {
-      // 스크립트 태그는 있지만 아직 로드 안됨
-      const interval = setInterval(() => {
-        if (window.google?.accounts?.id) {
-          clearInterval(interval);
-          initGis();
-        }
-      }, 200);
-      return () => clearInterval(interval);
-    }
-  }, [handleGoogleCredential]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,30 +93,6 @@ export default function LoginPage() {
 
   const handleSocialLogin = async (provider: 'kakao' | 'google') => {
     setError('');
-
-    if (provider === 'google') {
-      // GIS 준비됨 → 숨김 Google 버튼 클릭
-      if (gisReady && googleBtnRef.current) {
-        const btn = googleBtnRef.current.querySelector('[role="button"]') as HTMLElement
-          || googleBtnRef.current.querySelector('div[aria-labelledby]') as HTMLElement
-          || googleBtnRef.current.querySelector('iframe');
-        if (btn) {
-          btn.click();
-          return;
-        }
-      }
-      // GIS 미준비 시 기존 OAuth fallback
-      setLoadingProvider('google');
-      try {
-        await signInWithProvider('google');
-      } catch (err: any) {
-        setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
-        setLoadingProvider(null);
-      }
-      return;
-    }
-
-    // 카카오 등 다른 provider
     setLoadingProvider(provider);
 
     try {
@@ -300,9 +192,6 @@ export default function LoginPage() {
             )}
             구글로 시작하기
           </button>
-
-          {/* GIS 숨김 버튼 (renderButton용) */}
-          <div ref={googleBtnRef} className="absolute overflow-hidden" style={{ width: 0, height: 0, opacity: 0 }} />
         </div>
 
         {/* 구분선 */}

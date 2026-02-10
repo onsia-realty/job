@@ -9,7 +9,8 @@
       "Bash(pnpm install)",
       "Bash(pnpm dev)",
       "mcp__playwright__playwright_navigate",
-      "mcp__playwright__playwright_screenshot"
+      "mcp__playwright__playwright_screenshot",
+      "mcp__playwright__playwright_evaluate"
     ]
   }
 }
