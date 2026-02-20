@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
+import { createClient } from '@supabase/supabase-js';
 
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://onsia.city';
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://onsia-job.vercel.app';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const currentDate = new Date();
@@ -45,13 +46,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // 뉴스 페이지 (동적 생성)
-  const newsPages: MetadataRoute.Sitemap = Array.from({ length: 50 }, (_, i) => ({
-    url: `${SITE_URL}/news/${i + 1}`,
-    lastModified: currentDate,
-    changeFrequency: 'weekly' as const,
-    priority: 0.7,
-  }));
+  // 동적 공고 페이지
+  let jobPages: MetadataRoute.Sitemap = [];
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (supabaseUrl && supabaseKey) {
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      const { data: jobs } = await supabase
+        .from('jobs')
+        .select('id, updated_at, category')
+        .eq('is_active', true)
+        .eq('is_approved', true)
+        .order('created_at', { ascending: false })
+        .limit(500);
 
-  return [...staticPages, ...newsPages];
+      if (jobs) {
+        jobPages = jobs.map((job) => ({
+          url: `${SITE_URL}/${job.category === 'sales' ? 'sales' : 'agent'}/jobs/${job.id}`,
+          lastModified: new Date(job.updated_at),
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        }));
+      }
+    }
+  } catch {
+    // sitemap 생성 실패 시 동적 페이지 없이 반환
+  }
+
+  return [...staticPages, ...jobPages];
 }

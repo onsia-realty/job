@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Footer from '@/components/shared/Footer';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, ArrowRight, Sparkles, Shield, MessageCircle, ChevronLeft,
@@ -460,11 +461,7 @@ export default function SalesPremiumPage() {
         </div>
       </main>
 
-      <footer className="border-t border-white/10 py-8 mt-16">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-gray-500">
-          <p>© BOOIN Corp. 부동산 전문가를 위한 AI 매칭 플랫폼</p>
-        </div>
-      </footer>
+      <Footer variant="simple" />
     </div>
   );
 }

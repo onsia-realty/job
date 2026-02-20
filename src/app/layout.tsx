@@ -126,6 +126,29 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#141517" />
         {/* Google News 최적화 */}
         <meta name="news_keywords" content="부동산,분양,아파트,시장동향,정책,공인중개사,분양상담사" />
+        {/* JSON-LD 구조화 데이터 */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "부동산인 BOOIN",
+              url: SITE_URL,
+              description: "공인중개사, 분양상담사를 위한 AI 기반 구인구직 플랫폼",
+              publisher: {
+                "@type": "Organization",
+                name: "온시아 주식회사",
+                url: SITE_URL,
+              },
+              potentialAction: {
+                "@type": "SearchAction",
+                target: `${SITE_URL}/agent/jobs?q={search_term_string}`,
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
       </head>
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}

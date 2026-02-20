@@ -85,6 +85,10 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                 <Link href="/agent/talents" className="text-gray-500 hover:text-blue-600">
                   인재정보
                 </Link>
+                <Link href="/agent/ai-assistant" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  AI 실무비서
+                </Link>
                 <Link href="/agent/premium" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                   <Crown className="w-3.5 h-3.5" />
                   상품안내
@@ -112,20 +116,6 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
 
           {/* 로그인/마이페이지 버튼 */}
           <div className="flex items-center gap-2">
-            {!isLoading && user && (
-              <Link
-                href="/profile/ai-photo"
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-sm transition-colors ${
-                  variant === 'landing' || variant === 'sales'
-                    ? 'bg-white/10 text-white/80 hover:bg-white/20 hover:text-white'
-                    : 'bg-gradient-to-r from-blue-50 to-cyan-50 text-blue-600 hover:from-blue-100 hover:to-cyan-100'
-                }`}
-                title="AI 이력서 사진"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-xs font-medium">AI 이력서 사진</span>
-              </Link>
-            )}
             {!isLoading && user ? (
               <Link
                 href={variant === 'sales' ? '/sales/mypage' : '/agent/mypage'}

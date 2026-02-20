@@ -286,7 +286,7 @@ export default function NewAgentJobPage() {
 
       // 4. 공고 데이터 저장
       const insertPayload = {
-        user_id: null, // 인증 연동 전까지 null 허용
+        user_id: authUser!.id,
         title: formData.title,
         description: formData.description,
         html_content: fullHtmlContent,
@@ -342,6 +342,39 @@ export default function NewAgentJobPage() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  // 비로그인 유저 → 로그인 안내
+  if (!authUser) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
+            <Link href="/agent/jobs" className="p-2 hover:bg-gray-100 rounded-lg">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </Link>
+            <h1 className="text-lg font-bold text-gray-900">구인글 작성</h1>
+          </div>
+        </header>
+        <div className="max-w-md mx-auto px-4 py-16 text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">로그인이 필요합니다</h2>
+          <p className="text-gray-500 text-sm mb-6">구인글을 작성하려면 먼저 로그인해주세요.</p>
+          <Link
+            href="/agent/auth/login"
+            className="inline-block px-8 py-3.5 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+          >
+            로그인하기
+          </Link>
+          <p className="mt-4 text-xs text-gray-400">
+            아직 회원이 아니신가요?{' '}
+            <Link href="/agent/auth/signup" className="text-blue-600 hover:underline">회원가입</Link>
+          </p>
+        </div>
       </div>
     );
   }

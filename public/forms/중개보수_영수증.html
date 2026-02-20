@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>중개보수 영수증</title>
+<style>
+  @page { size: A4; margin: 20mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: '맑은 고딕', 'Malgun Gothic', sans-serif; font-size: 13px; color: #000; background: #fff; padding: 40px; max-width: 210mm; margin: 0 auto; }
+
+  .title { text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 8px; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 15px; }
+
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th, td { border: 1px solid #000; padding: 8px 12px; text-align: left; vertical-align: middle; }
+  th { background: #f5f5f5; font-weight: bold; width: 120px; text-align: center; }
+
+  .section-title { font-size: 14px; font-weight: bold; margin: 20px 0 8px 0; padding-left: 4px; }
+
+  .amount-row td { font-size: 16px; font-weight: bold; text-align: center; }
+  .amount-cell { height: 50px; font-size: 20px; }
+
+  .seal-area { display: flex; justify-content: space-between; margin-top: 40px; }
+  .seal-box { width: 45%; }
+  .seal-box .label { font-weight: bold; margin-bottom: 10px; font-size: 14px; }
+  .seal-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #999; }
+  .seal-row:last-child { border-bottom: none; }
+  .seal-circle { width: 60px; height: 60px; border: 1px solid #ccc; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 10px; margin-top: 10px; float: right; }
+
+  .date-area { text-align: center; margin: 30px 0; font-size: 15px; }
+  .date-area span { margin: 0 5px; display: inline-block; width: 50px; border-bottom: 1px solid #000; }
+
+  .office-area { margin-top: 30px; }
+  .office-area table th { width: 140px; }
+
+  .footer { margin-top: 30px; text-align: center; font-size: 11px; color: #666; }
+  .footer p { margin: 3px 0; }
+
+  .print-btn { display: block; margin: 20px auto; padding: 12px 40px; font-size: 16px; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; }
+  .print-btn:hover { background: #1d4ed8; }
+
+  @media print {
+    body { padding: 0; }
+    .print-btn { display: none; }
+    .no-print { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">인쇄하기</button>
+
+<div class="title">중 개 보 수  영 수 증</div>
+
+<p class="section-title">1. 거래 내용</p>
+<table>
+  <tr>
+    <th>거래유형</th>
+    <td style="width:35%">□ 매매 &nbsp; □ 전세 &nbsp; □ 월세 &nbsp; □ 교환 &nbsp; □ 기타 (　　　)</td>
+    <th>거래일자</th>
+    <td>　　　년　　월　　일</td>
+  </tr>
+  <tr>
+    <th>부동산 소재지</th>
+    <td colspan="3">&nbsp;</td>
+  </tr>
+  <tr>
+    <th>부동산 유형</th>
+    <td colspan="3">□ 아파트 &nbsp; □ 오피스텔 &nbsp; □ 단독/다세대 &nbsp; □ 상가 &nbsp; □ 토지 &nbsp; □ 기타 (　　　)</td>
+  </tr>
+</table>
+
+<p class="section-title">2. 거래 금액</p>
+<table>
+  <tr>
+    <th>매매가 / 보증금</th>
+    <td style="text-align:right; padding-right:20px;">원 (₩　　　　　　　　　　　　　)</td>
+  </tr>
+  <tr>
+    <th>월 차임 (월세)</th>
+    <td style="text-align:right; padding-right:20px;">원 (₩　　　　　　　　　　　　　)</td>
+  </tr>
+</table>
+
+<p class="section-title">3. 중개보수</p>
+<table>
+  <tr>
+    <th>적용 요율</th>
+    <td style="width:35%">　　　　　　　%</td>
+    <th style="width:120px">법정 상한 요율</th>
+    <td>　　　　　　　%</td>
+  </tr>
+  <tr class="amount-row">
+    <th>중개보수액</th>
+    <td colspan="3" class="amount-cell">금　　　　　　　　　　　　　　원정 (₩　　　　　　　　　　　)</td>
+  </tr>
+  <tr>
+    <th>부가가치세</th>
+    <td style="text-align:right; padding-right:20px;">원 (₩　　　　　　　　　　　　　)</td>
+    <th>합계 금액</th>
+    <td style="text-align:right; padding-right:20px; font-weight:bold;">원 (₩　　　　　　　　　　　　　)</td>
+  </tr>
+</table>
+
+<p class="section-title">4. 거래 당사자</p>
+<table>
+  <tr>
+    <th rowspan="2">의뢰인<br>(매도인/임대인)</th>
+    <th style="width:80px">성명</th>
+    <td style="width:35%">&nbsp;</td>
+    <th style="width:80px">연락처</th>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>주소</th>
+    <td colspan="3">&nbsp;</td>
+  </tr>
+  <tr>
+    <th rowspan="2">의뢰인<br>(매수인/임차인)</th>
+    <th>성명</th>
+    <td>&nbsp;</td>
+    <th>연락처</th>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>주소</th>
+    <td colspan="3">&nbsp;</td>
+  </tr>
+</table>
+
+<div class="date-area">
+  위 금액을 중개보수로 정히 영수합니다.<br><br>
+  <span>&nbsp;</span>년 <span>&nbsp;</span>월 <span>&nbsp;</span>일
+</div>
+
+<p class="section-title">5. 중개사무소</p>
+<table class="office-area">
+  <tr>
+    <th>사무소 명칭</th>
+    <td style="width:55%">&nbsp;</td>
+    <td rowspan="4" style="width:100px; text-align:center; vertical-align:middle;">
+      <div style="border:1px solid #ccc; border-radius:50%; width:70px; height:70px; margin:0 auto; display:flex; align-items:center; justify-content:center; color:#ccc; font-size:10px;">(인)</div>
+    </td>
+  </tr>
+  <tr>
+    <th>대표 중개사</th>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>등록번호</th>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>사무소 소재지</th>
+    <td>&nbsp;</td>
+  </tr>
+  <tr>
+    <th>전화번호</th>
+    <td colspan="2">&nbsp;</td>
+  </tr>
+</table>
+
+<div class="footer">
+  <p>※ 본 영수증은 공인중개사법 시행규칙에 따른 중개보수 수령 확인 용도입니다.</p>
+  <p>※ 중개보수는 법정 상한요율을 초과하여 수령할 수 없습니다.</p>
+  <p style="margin-top:8px; color:#999;">부동산인 (budongsan-in.com) 제공 양식</p>
+</div>
+
+</body>
+</html>

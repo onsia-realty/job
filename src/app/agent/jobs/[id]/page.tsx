@@ -11,7 +11,7 @@ import {
   Timer, X, User, Mail, MessageSquare, Check, Star,
   GraduationCap, TrendingUp, Navigation,
 } from 'lucide-react';
-import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, QuickApplication, AgentResume } from '@/types';
+import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, AgentResume } from '@/types';
 import { AGENT_JOB_TYPE_LABELS, AGENT_EXPERIENCE_LABELS } from '@/types';
 import { supabase, fetchMyResume, applyWithResume } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -115,8 +115,6 @@ const TABS = [
   { id: 'related', label: '추천공고' },
 ];
 
-interface ApplyFormData { name: string; phone: string; email: string; message: string; agreePrivacy: boolean; }
-interface ApplyFormErrors { name?: string; phone?: string; email?: string; agreePrivacy?: boolean; }
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -127,13 +125,10 @@ export default function JobDetailPage() {
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('details');
-  const [applyStep, setApplyStep] = useState<'form' | 'confirm' | 'success'>('form');
-  const [applyForm, setApplyForm] = useState<ApplyFormData>({ name: '', phone: '', email: '', message: '', agreePrivacy: false });
-  const [formErrors, setFormErrors] = useState<ApplyFormErrors>({});
+  const [applyStep, setApplyStep] = useState<'form' | 'success'>('form');
   const [mapCoord, setMapCoord] = useState<{ lat: number; lng: number } | null>(null);
   // 이력서 지원 관련 상태
   const [myResume, setMyResume] = useState<AgentResume | null>(null);
-  const [applyMode, setApplyMode] = useState<'resume' | 'quick'>('resume');
   const [isApplying, setIsApplying] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
@@ -196,7 +191,6 @@ export default function JobDetailPage() {
       // 이력서 로드
       const resume = await fetchMyResume(user.id);
       setMyResume(resume);
-      setApplyMode(resume ? 'resume' : 'quick');
 
       // 기존 지원 여부 확인
       const { data } = await supabase
@@ -239,19 +233,6 @@ export default function JobDetailPage() {
     catch { await navigator.clipboard.writeText(window.location.href); alert('링크가 클립보드에 복사되었습니다.'); }
   };
 
-  const validateForm = (): boolean => {
-    const errors: ApplyFormErrors = {};
-    if (!applyForm.name.trim()) errors.name = '이름을 입력해주세요';
-    if (!applyForm.phone.trim()) errors.phone = '연락처를 입력해주세요';
-    else if (!/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(applyForm.phone.replace(/-/g, ''))) errors.phone = '올바른 연락처를 입력해주세요';
-    if (applyForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(applyForm.email)) errors.email = '올바른 이메일을 입력해주세요';
-    if (!applyForm.agreePrivacy) errors.agreePrivacy = true;
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  const handleApplySubmit = () => { if (!validateForm()) return; setApplyStep('confirm'); };
-
   // 이력서로 지원하기
   const handleResumeApply = async () => {
     if (!job || !user?.id || !myResume?.id) return;
@@ -273,17 +254,7 @@ export default function JobDetailPage() {
     }
   };
 
-  const handleApplyConfirm = () => {
-    if (!job) return;
-    const applications = JSON.parse(localStorage.getItem('agent_applications') || '[]');
-    const newApp: QuickApplication = { id: `app_${Date.now()}`, jobId: job.id, jobTitle: job.title, company: job.company, name: applyForm.name, phone: applyForm.phone, email: applyForm.email || undefined, message: applyForm.message || undefined, status: 'pending', appliedAt: new Date().toISOString() };
-    applications.push(newApp);
-    localStorage.setItem('agent_applications', JSON.stringify(applications));
-    setApplyStep('success');
-  };
-
-  const closeApplyModal = () => { setShowApplyModal(false); setApplyStep('form'); setApplyForm({ name: '', phone: '', email: '', message: '', agreePrivacy: false }); setFormErrors({}); };
-  const fmtPhone = (v: string) => { const n = v.replace(/[^\d]/g, ''); if (n.length <= 3) return n; if (n.length <= 7) return `${n.slice(0,3)}-${n.slice(3)}`; return `${n.slice(0,3)}-${n.slice(3,7)}-${n.slice(7,11)}`; };
+  const closeApplyModal = () => { setShowApplyModal(false); setApplyStep('form'); setApplyMessage(''); };
 
   if (isLoading) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">

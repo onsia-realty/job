@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import Footer from '@/components/shared/Footer';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, ArrowRight, Sparkles, Shield, MessageCircle, ChevronLeft,
@@ -19,6 +21,7 @@ const VIP_JOBS = [
     jobType: '매매·임대',
     salary: '기본급 300만 + 인센티브',
     badges: ['HOT', '급구'],
+    image: '/images/grid-1.png',
   },
   {
     id: 'v2',
@@ -29,6 +32,7 @@ const VIP_JOBS = [
     jobType: '상업용',
     salary: '수수료 70% 지급',
     badges: ['신규', '인기'],
+    image: '/images/grid-2.png',
   },
   {
     id: 'v3',
@@ -39,6 +43,7 @@ const VIP_JOBS = [
     jobType: '매매 전문',
     salary: '수수료 60% + 월 고정 200만',
     badges: ['HOT'],
+    image: '/images/grid-3.png',
   },
 ];
 
@@ -217,7 +222,7 @@ export default function AgentPremiumPage() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500/20 to-orange-500/20 rounded-full border border-red-500/30 mb-6">
             <Tag className="w-4 h-4 text-red-400" />
-            <span className="text-sm text-red-300 font-bold">오픈 기념 90% OFF! 경쟁사 대비 1/15~1/50 가격</span>
+            <span className="text-sm text-red-300 font-bold">오픈 기념 특별가! 경쟁사 대비 10분의 1 가격</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             <Building2 className="w-8 h-8 inline mr-2 text-blue-400" />
@@ -256,8 +261,8 @@ export default function AgentPremiumPage() {
             </div>
 
             <div className="flex flex-col md:flex-row">
-              <div className="relative w-full md:w-1/2 h-48 md:h-64 bg-gradient-to-br from-blue-700 to-cyan-700 flex items-center justify-center">
-                <Building2 className="w-20 h-20 text-white/20" />
+              <div className="relative w-full md:w-1/2 h-48 md:h-64 bg-gradient-to-br from-blue-700 to-cyan-700">
+                <Image src={currentVip.image} alt={currentVip.title} fill className="object-cover" />
                 {currentVip.badges.length > 0 && (
                   <div className="absolute bottom-3 left-3 flex gap-1">
                     {currentVip.badges.map((badge) => (
@@ -322,11 +327,11 @@ export default function AgentPremiumPage() {
           </p>
         </div>
 
-        {/* ★ 4단계 가격표 카드 - 90% OFF */}
+        {/* ★ 4단계 가격표 카드 - 오픈 특별가 */}
         <div className="mb-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">상품 가격</h2>
-            <p className="text-gray-400 text-sm">정상가 대비 <span className="text-red-400 font-bold text-lg">90% OFF</span> 오픈 특별가</p>
+            <p className="text-gray-400 text-sm">오픈 기념 특별가! <span className="text-cyan-400 font-bold text-lg">경쟁사 대비 10분의 1 가격</span></p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -359,7 +364,7 @@ export default function AgentPremiumPage() {
                       <span className="text-[10px] text-gray-500">{plan.badge}</span>
                     </div>
 
-                    {/* 가격 - 정상가 취소선 + 90% OFF + 할인가 */}
+                    {/* 가격 - 정상가 취소선 + 특별가 + 할인가 */}
                     <div className="mb-5">
                       {plan.originalPrice > 0 ? (
                         <>
@@ -367,8 +372,8 @@ export default function AgentPremiumPage() {
                             <span className="text-sm text-gray-500 line-through">
                               {plan.originalPrice.toLocaleString()}원
                             </span>
-                            <span className="text-xs font-black px-1.5 py-0.5 rounded bg-red-500 text-white">
-                              90% OFF
+                            <span className="text-xs font-black px-1.5 py-0.5 rounded bg-cyan-500 text-white">
+                              특별가
                             </span>
                           </div>
                           <div className="flex items-end gap-1">
@@ -452,7 +457,7 @@ export default function AgentPremiumPage() {
         <div className="hidden mb-16">
           <div className="text-center mb-8">
             <h2 className="text-xl font-bold mb-2">경쟁사 대비 가격 비교</h2>
-            <p className="text-sm text-gray-400">잡코리아 대비 <span className="text-cyan-400 font-bold">1/15~1/42</span>, 알바몬 대비 <span className="text-cyan-400 font-bold">1/20~1/50</span></p>
+            <p className="text-sm text-gray-400">경쟁사 대비 <span className="text-cyan-400 font-bold">10분의 1 가격</span></p>
           </div>
           <div className="bg-slate-800/30 rounded-xl border border-slate-700 overflow-hidden">
             <div className="grid grid-cols-3 gap-0 text-xs font-bold text-gray-400 uppercase tracking-wide border-b border-slate-700">
@@ -555,11 +560,7 @@ export default function AgentPremiumPage() {
         </div>
       </main>
 
-      <footer className="border-t border-white/10 py-8 mt-16">
-        <div className="max-w-6xl mx-auto px-4 text-center text-sm text-gray-500">
-          <p>© BOOIN Corp. 부동산 전문가를 위한 AI 매칭 플랫폼</p>
-        </div>
-      </footer>
+      <Footer variant="simple" />
     </div>
   );
 }

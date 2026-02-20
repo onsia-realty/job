@@ -382,6 +382,42 @@ export async function fetchApplicationCounts(jobIds: string[]): Promise<Record<s
   return counts;
 }
 
+// 공고 활성/비활성 토글
+export async function toggleJobActive(jobId: string, isActive: boolean): Promise<boolean> {
+  const { error } = await supabase
+    .from('jobs')
+    .update({ is_active: isActive })
+    .eq('id', jobId);
+
+  if (error) {
+    console.error('Error toggling job active:', error);
+    return false;
+  }
+
+  return true;
+}
+
+// 공고 삭제
+export async function deleteJob(jobId: string): Promise<boolean> {
+  // 먼저 관련 지원 내역 삭제
+  await supabase
+    .from('applications')
+    .delete()
+    .eq('job_id', jobId);
+
+  const { error } = await supabase
+    .from('jobs')
+    .delete()
+    .eq('id', jobId);
+
+  if (error) {
+    console.error('Error deleting job:', error);
+    return false;
+  }
+
+  return true;
+}
+
 // ========== 기업 프로필 관련 함수 ==========
 
 // DB 데이터를 CompanyProfile 타입으로 변환

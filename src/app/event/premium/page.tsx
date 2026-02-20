@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   ArrowRight,
   ArrowLeft,
@@ -24,9 +25,11 @@ import {
   BadgeCheck,
   Quote,
   LogIn,
+  User,
 } from 'lucide-react';
 
 export default function PremiumLandingPage() {
+  const { user, isLoading } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -45,14 +48,35 @@ export default function PremiumLandingPage() {
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline font-medium">홈으로</span>
           </Link>
-          <span className="text-base font-semibold text-amber-400">부동산인 플랫폼 소개</span>
-          <Link
-            href="/agent/auth/login"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 hover:bg-amber-500/30 hover:text-amber-300 transition-all text-base font-semibold"
-          >
-            <LogIn className="w-4.5 h-4.5" />
-            <span>로그인</span>
-          </Link>
+          <div className="flex items-center gap-1 sm:gap-4">
+            <span className="text-sm sm:text-base font-semibold text-amber-400">부동산인 플랫폼 소개</span>
+            <span className="hidden sm:inline text-white/20">|</span>
+            <Link href="/agent/premium" className="hidden sm:inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+              <Building2 className="w-3.5 h-3.5" />
+              공인중개사 상품
+            </Link>
+            <Link href="/sales/premium" className="hidden sm:inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+              <Briefcase className="w-3.5 h-3.5" />
+              분양상담사 상품
+            </Link>
+          </div>
+          {!isLoading && user ? (
+            <Link
+              href="/agent/mypage"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 hover:bg-amber-500/30 hover:text-amber-300 transition-all text-base font-semibold"
+            >
+              <User className="w-4 h-4" />
+              <span>{user.user_metadata?.name || '마이페이지'}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/agent/auth/login"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/20 border border-amber-500/40 rounded-full text-amber-400 hover:bg-amber-500/30 hover:text-amber-300 transition-all text-base font-semibold"
+            >
+              <LogIn className="w-4 h-4" />
+              <span>로그인</span>
+            </Link>
+          )}
         </div>
       </nav>
 

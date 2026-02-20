@@ -15,25 +15,28 @@ import {
   TrendingUp,
   Users,
   Briefcase,
-  Star,
-  Clock,
   Flame,
-  Eye,
   Bell,
   Sparkles,
   Crown,
   Zap,
   Target,
-  CheckCircle2,
-  BadgeCheck,
   Gavel,
   Building,
-  ChevronDown,
+  Calculator,
+  FileText,
+  Scale,
+  FileCheck,
+  MessageCircle,
+  ArrowRight,
+  Bot,
+  Check,
+  ExternalLink,
+  FileSignature,
 } from 'lucide-react';
 import Header from '@/components/shared/Header';
 import MobileNav from '@/components/shared/MobileNav';
 import type { AgentJobListing, PropertyCategory, AgentJobType } from '@/types';
-import { REGIONS, PROPERTY_CATEGORY_LABELS, PROPERTY_CATEGORY_TYPES } from '@/types';
 
 // 카테고리 정의 (대분류 > 소분류)
 const CATEGORY_CONFIG = {
@@ -72,7 +75,7 @@ const premiumAds = [
     company: '㈜에이피부동산중개법인',
     badge: '부동산 지원 TOP100',
     deadline: '내일마감',
-    bgImage: '/images/ad-bg-1.svg',
+    bgImage: '/images/grid-1.png',
     logo: '/images/company-logo-1.svg',
     link: '/agent/jobs/1',
     tier: 'power',
@@ -84,7 +87,7 @@ const premiumAds = [
     company: '(주)프로그레시브인베스트먼트',
     badge: '오늘 뜬',
     deadline: '~03.01(일)',
-    bgImage: '/images/ad-bg-2.svg',
+    bgImage: '/images/grid-2.png',
     logo: '/images/company-logo-2.svg',
     link: '/agent/jobs/2',
     tier: 'vip',
@@ -96,7 +99,7 @@ const premiumAds = [
     company: '아이에스동서㈜',
     badge: '건설·건축 지원 TOP100',
     deadline: 'D-3',
-    bgImage: '/images/ad-bg-3.svg',
+    bgImage: '/images/grid-3.png',
     logo: '/images/company-logo-3.svg',
     link: '/agent/jobs/3',
     tier: 'power',
@@ -108,7 +111,7 @@ const premiumAds = [
     company: '(주)바이앤셀파트너스',
     badge: '마케팅·홍보 급상승',
     deadline: '~02.28(토)',
-    bgImage: '/images/ad-bg-4.svg',
+    bgImage: '/images/grid-4.png',
     logo: '/images/company-logo-4.svg',
     link: '/agent/jobs/4',
     tier: 'vip',
@@ -305,7 +308,6 @@ function getCategoryInfo(type: AgentJobType) {
 export default function AgentMainPage() {
   const [mainCategory, setMainCategory] = useState<PropertyCategory>('residential');
   const [selectedSubType, setSelectedSubType] = useState<AgentJobType | null>(null);
-  const [selectedRegion, setSelectedRegion] = useState('전체');
   const [searchQuery, setSearchQuery] = useState('');
 
   const currentConfig = CATEGORY_CONFIG[mainCategory];
@@ -318,9 +320,6 @@ export default function AgentMainPage() {
 
     // 소분류 필터
     if (selectedSubType && job.type !== selectedSubType) return false;
-
-    // 지역 필터
-    if (selectedRegion !== '전체' && job.region !== selectedRegion) return false;
 
     return true;
   });
@@ -347,32 +346,18 @@ export default function AgentMainPage() {
           <div className="flex items-center gap-2 mb-3">
             <span className="inline-flex items-center gap-1.5 bg-white/10 backdrop-blur-sm text-white/90 text-sm px-3 py-1.5 rounded-full border border-white/10">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              부동산 전문가를 위한 프리미엄 플랫폼
+              중개사 전용 AI 실무 플랫폼
             </span>
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
             부동산<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">인</span>
           </h1>
-          <p className="text-slate-300 mb-6">주거용부터 상업용까지, 부동산 전 분야 채용 정보</p>
+          <p className="text-slate-300 mb-6">구인구직부터 AI 부동산인 실무비서까지, 중개사에게 필요한 모든 것</p>
 
           {/* 검색바 */}
           <div className="bg-white rounded-2xl p-2 shadow-2xl shadow-black/20 max-w-4xl">
             <div className="flex flex-col md:flex-row gap-2">
-              <div className="relative md:w-36">
-                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <select
-                  value={selectedRegion}
-                  onChange={(e) => setSelectedRegion(e.target.value)}
-                  className="w-full bg-slate-50 text-slate-700 pl-10 pr-4 py-3 rounded-xl appearance-none focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm font-medium"
-                >
-                  <option value="전체">전체 지역</option>
-                  {REGIONS.map(region => (
-                    <option key={region} value={region}>{region}</option>
-                  ))}
-                </select>
-              </div>
-
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
@@ -385,7 +370,7 @@ export default function AgentMainPage() {
               </div>
 
               <Link
-                href={`/agent/jobs?region=${selectedRegion}&q=${searchQuery}&category=${mainCategory}`}
+                href={`/agent/jobs?q=${searchQuery}&category=${mainCategory}`}
                 className="bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-semibold px-6 py-3 rounded-xl hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-500/25 text-center flex items-center justify-center gap-2"
               >
                 <Search className="w-5 h-5" />
@@ -540,7 +525,7 @@ export default function AgentMainPage() {
       <main className="max-w-7xl mx-auto px-4 pb-8">
         <div className="grid lg:grid-cols-3 gap-8">
           {/* 메인 콘텐츠 */}
-          <div className="lg:col-span-2 space-y-8">
+          <div className="lg:col-span-2 flex flex-col gap-8">
 
             {/* 마감임박 공고 */}
             {urgentJobs.length > 0 && (
@@ -612,119 +597,96 @@ export default function AgentMainPage() {
               </section>
             )}
 
-            {/* PREMIUM 채용 */}
+            {/* AI 부동산인 실무비서 프리뷰 */}
             <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                  <div className="w-8 h-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg flex items-center justify-center">
-                    <Crown className="w-4 h-4 text-white" />
+              <div className="rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-5 md:p-6 overflow-hidden relative">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-cyan-500/10 to-transparent rounded-bl-full"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-emerald-500/10 to-transparent rounded-tr-full"></div>
+
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-8 h-8 bg-gradient-to-br from-cyan-400 to-emerald-400 rounded-lg flex items-center justify-center">
+                      <Sparkles className="w-4 h-4 text-white" />
+                    </div>
+                    <h2 className="text-lg font-bold text-white">AI 부동산인 실무비서</h2>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">NEW</span>
                   </div>
-                  PREMIUM 채용
-                </h2>
-                <Link href="/agent/jobs?tier=premium" className="text-sm text-slate-500 hover:text-amber-500 flex items-center gap-1">
-                  더보기 <ChevronRight className="w-4 h-4" />
-                </Link>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                {premiumJobs.slice(0, 4).map((job) => {
-                  const categoryInfo = getCategoryInfo(job.type);
-                  const dday = getDDay(job.deadline);
-                  if (!categoryInfo) return null;
-                  const Icon = categoryInfo.icon;
-                  return (
-                    <Link
-                      key={job.id}
-                      href={`/agent/jobs/${job.id}`}
-                      className="group block bg-white rounded-xl border-2 border-amber-100 hover:border-amber-200 hover:shadow-lg transition-all p-4 relative overflow-hidden"
-                    >
-                      <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-amber-50 to-transparent rounded-bl-full"></div>
-                      <div className="relative">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className={`w-10 h-10 rounded-xl ${categoryInfo.parentConfig.bgColor} flex items-center justify-center`}>
-                            <Icon className={`w-5 h-5 ${categoryInfo.parentConfig.textColor}`} />
-                          </div>
-                          <span className={`text-xs font-bold px-2 py-1 rounded ${dday.color}`}>
-                            {dday.text}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-sm text-slate-500">{job.company}</span>
-                          <BadgeCheck className="w-4 h-4 text-amber-500" />
-                        </div>
-                        <h3 className="font-semibold text-slate-800 group-hover:text-emerald-600 transition-colors mb-2 line-clamp-2">
-                          {job.title}
-                        </h3>
-                        <div className="flex flex-wrap gap-1.5 text-xs mb-3">
-                          <span className={`px-2 py-1 rounded ${categoryInfo.parentConfig.bgColor} ${categoryInfo.parentConfig.textColor}`}>
-                            {categoryInfo.name}
-                          </span>
-                          <span className="px-2 py-1 rounded bg-slate-100 text-slate-600">{job.region}</span>
-                          <span className="px-2 py-1 rounded bg-slate-100 text-slate-600">{job.experience}</span>
-                        </div>
-                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                          <span className="text-emerald-600 font-bold text-sm">{job.salary.amount}</span>
-                          <div className="flex items-center gap-2 text-xs text-slate-400">
-                            <span className="flex items-center gap-0.5">
-                              <Eye className="w-3 h-3" /> {job.views.toLocaleString()}
-                            </span>
-                            <span className="flex items-center gap-0.5">
-                              <Users className="w-3 h-3" /> {job.applicants}명
-                            </span>
-                          </div>
-                        </div>
+                  <p className="text-slate-400 text-sm mb-4">법률, 계약, 분쟁, 수수료 — 중개실무 전문 AI 비서</p>
+
+                  {/* 기능 칩 */}
+                  <div className="flex flex-wrap gap-2 mb-5">
+                    {['판례 AI 검색', '중개보수 계산', '계약서 특약 생성'].map((chip) => (
+                      <span key={chip} className="text-xs px-3 py-1.5 rounded-full bg-white/10 text-slate-300 border border-white/10">
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* 예시 대화 */}
+                  <div className="space-y-3 mb-5">
+                    <div className="flex justify-end">
+                      <div className="bg-cyan-600/30 border border-cyan-500/20 rounded-2xl rounded-tr-sm px-4 py-2.5 max-w-[85%]">
+                        <p className="text-sm text-white">&quot;8억 아파트 매매 중개보수 얼마야?&quot;</p>
                       </div>
-                    </Link>
-                  );
-                })}
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-cyan-400 to-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Bot className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <div className="bg-white/10 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-2.5 max-w-[85%]">
+                        <p className="text-sm text-slate-200">매매가 8억원 기준, 법정 상한 요율은 <strong className="text-cyan-300">0.4%</strong>이며 최대 중개보수는 <strong className="text-cyan-300">320만원</strong>입니다. (부가세 별도)</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/agent/ai-assistant"
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-semibold px-5 py-2.5 rounded-xl hover:from-cyan-600 hover:to-emerald-600 transition-all shadow-lg shadow-cyan-500/25 text-sm"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    AI 부동산인 비서에게 물어보기
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
               </div>
             </section>
 
-            {/* 최신 채용 */}
-            <section>
+            {/* 실무도구 프리뷰 */}
+            <section className="flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                   <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-slate-600" />
+                    <Briefcase className="w-4 h-4 text-slate-600" />
                   </div>
-                  최신 채용
+                  실무도구
                 </h2>
-                <Link href="/agent/jobs" className="text-sm text-slate-500 hover:text-emerald-600 flex items-center gap-1">
-                  전체보기 <ChevronRight className="w-4 h-4" />
-                </Link>
               </div>
-              <div className="bg-white rounded-xl border border-slate-200 divide-y divide-slate-100">
-                {filteredJobs.slice(0, 6).map((job) => {
-                  const categoryInfo = getCategoryInfo(job.type);
-                  const dday = getDDay(job.deadline);
-                  if (!categoryInfo) return null;
+              <div className="grid grid-cols-2 gap-4 flex-1">
+                {[
+                  { title: '중개보수 계산기', desc: '거래유형별 법정 수수료 계산', icon: Calculator, iconBg: 'bg-emerald-100', iconColor: 'text-emerald-600', href: '/agent/tools/commission', external: false },
+                  { title: '계약서 양식', desc: '매매·임대 계약서 다운로드', icon: FileSignature, iconBg: 'bg-violet-100', iconColor: 'text-violet-600', href: '/agent/tools/contracts', external: false },
+                  { title: '정부24시 가기', desc: '민원서류 발급·조회', icon: Building2, iconBg: 'bg-blue-100', iconColor: 'text-blue-600', href: 'https://plus.gov.kr/', external: true },
+                  { title: '등기부등본 열람', desc: '부동산 등기정보 조회', icon: FileCheck, iconBg: 'bg-amber-100', iconColor: 'text-amber-600', href: 'https://www.iros.go.kr/index.jsp', external: true },
+                ].map((tool) => {
+                  const Icon = tool.icon;
+                  const Wrapper = tool.external ? 'a' : Link;
+                  const extraProps = tool.external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
                   return (
-                    <Link
-                      key={job.id}
-                      href={`/agent/jobs/${job.id}`}
-                      className="group flex items-center gap-3 p-3.5 hover:bg-slate-50 transition-colors"
+                    <Wrapper
+                      key={tool.title}
+                      href={tool.href}
+                      {...extraProps}
+                      className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-5 md:p-6 hover:shadow-lg hover:border-slate-300 transition-all relative overflow-hidden"
                     >
-                      <div className={`w-9 h-9 rounded-lg ${categoryInfo.parentConfig.bgColor} flex items-center justify-center flex-shrink-0`}>
-                        <categoryInfo.icon className={`w-4 h-4 ${categoryInfo.parentConfig.textColor}`} />
+                      {tool.external && (
+                        <ExternalLink className="absolute top-4 right-4 w-4 h-4 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                      )}
+                      <div className={`w-12 h-12 rounded-xl ${tool.iconBg} flex items-center justify-center mb-4`}>
+                        <Icon className={`w-6 h-6 ${tool.iconColor}`} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className="text-sm text-slate-500">{job.company}</span>
-                          {job.tier === 'premium' && <Crown className="w-3 h-3 text-amber-500" />}
-                        </div>
-                        <h3 className="font-medium text-slate-800 group-hover:text-emerald-600 transition-colors truncate text-sm">
-                          {job.title}
-                        </h3>
-                      </div>
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <div className="text-right hidden sm:block">
-                          <p className="text-sm font-medium text-emerald-600">{job.salary.amount}</p>
-                          <p className="text-xs text-slate-400">{job.region}</p>
-                        </div>
-                        <span className={`text-xs font-medium px-2 py-1 rounded ${dday.color}`}>
-                          {dday.text}
-                        </span>
-                      </div>
-                    </Link>
+                      <h3 className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors mb-1.5">{tool.title}</h3>
+                      <p className="text-sm text-slate-500 mt-auto">{tool.desc}</p>
+                    </Wrapper>
                   );
                 })}
               </div>
@@ -733,21 +695,36 @@ export default function AgentMainPage() {
 
           {/* 사이드바 */}
           <div className="space-y-5">
-            {/* 맞춤 공고 알림 */}
-            <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 text-white">
-              <div className="flex items-center gap-2 mb-2">
-                <Bell className="w-5 h-5 text-amber-400" />
-                <h3 className="font-bold">맞춤 공고 알림</h3>
+            {/* 공고 등록 유도 */}
+            <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl p-6 text-white overflow-hidden relative">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-bl-full" />
+              <div className="relative">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4">
+                  <Briefcase className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-black mb-1">인재를 찾고 계신가요?</h3>
+                <p className="text-blue-200 text-sm mb-5">지금 바로 공고를 등록하세요</p>
+                <div className="space-y-2.5 mb-5">
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-300 flex-shrink-0" />
+                    <span className="text-sm text-white/90">무료 공고 24시간 노출</span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-300 flex-shrink-0" />
+                    <span className="text-sm text-white/90">프리미엄 5일 <strong className="text-yellow-300">₩4,900~</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2.5">
+                    <Check className="w-4 h-4 text-emerald-300 flex-shrink-0" />
+                    <span className="text-sm text-white/90">경쟁사 대비 <strong className="text-yellow-300">1/10 가격</strong></span>
+                  </div>
+                </div>
+                <Link
+                  href="/agent/jobs/new"
+                  className="block text-center bg-white text-blue-700 font-bold py-3 rounded-xl hover:bg-blue-50 transition-all text-sm shadow-lg"
+                >
+                  공고 등록하러 가기 →
+                </Link>
               </div>
-              <p className="text-sm text-slate-300 mb-4">
-                원하는 조건의 채용공고가 등록되면 바로 알려드려요
-              </p>
-              <Link
-                href="/agent/auth/login"
-                className="block text-center bg-gradient-to-r from-emerald-500 to-cyan-500 font-semibold py-2.5 rounded-xl hover:from-emerald-600 hover:to-cyan-600 transition-all text-sm"
-              >
-                알림 설정하기
-              </Link>
             </div>
 
             {/* 인기 지역 */}

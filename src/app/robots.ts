@@ -1,6 +1,6 @@
 import { MetadataRoute } from 'next';
 
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://booin.co.kr';
+const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://onsia-job.vercel.app';
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/api/', '/_next/', '/admin/'],
+        disallow: ['/api/', '/_next/', '/onsia/'],
       },
       {
         userAgent: 'Googlebot',

@@ -8,6 +8,7 @@ import {
   ArrowRight, ChevronLeft, ChevronRight,
   Sparkles, TrendingUp
 } from 'lucide-react';
+import Footer from '@/components/shared/Footer';
 
 // 뉴스 타입 정의
 interface NewsItem {
@@ -530,18 +531,7 @@ export default function LandingPage() {
       </main>
 
       {/* 푸터 */}
-      <footer className="border-t border-white/10 py-8">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-500 text-sm">© BOOIN Corp.</p>
-            <div className="flex items-center gap-6 text-sm text-gray-500">
-              <Link href="/terms" className="hover:text-white transition-colors">이용약관</Link>
-              <Link href="/privacy" className="hover:text-white transition-colors font-medium text-gray-300">개인정보 처리방침</Link>
-              <Link href="/contact" className="hover:text-white transition-colors">문의하기</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

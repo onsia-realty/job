@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, User, Search, Crown } from 'lucide-react';
+import { Home, Briefcase, Users, User, Search, Sparkles } from 'lucide-react';
 
 interface MobileNavProps {
   variant: 'agent' | 'sales';
@@ -17,7 +17,7 @@ export default function MobileNav({ variant }: MobileNavProps) {
         { href: baseUrl, label: '홈', icon: Home },
         { href: `${baseUrl}/jobs`, label: '구인', icon: Briefcase },
         { href: `${baseUrl}/talents`, label: '인재', icon: Users },
-        { href: `${baseUrl}/premium`, label: '상품', icon: Crown },
+        { href: `${baseUrl}/ai-assistant`, label: 'AI', icon: Sparkles },
         { href: `${baseUrl}/mypage`, label: 'MY', icon: User },
       ]
     : [

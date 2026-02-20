@@ -19,9 +19,13 @@ import {
   MapPin,
   Crown,
   Star,
+  MoreVertical,
+  Power,
+  Trash2,
+  Edit3,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchMyJobs, fetchApplicationCounts } from '@/lib/supabase';
+import { fetchMyJobs, fetchApplicationCounts, toggleJobActive, deleteJob } from '@/lib/supabase';
 
 interface JobPosting {
   id: string;
@@ -95,6 +99,8 @@ export default function EmployerDashboardPage() {
     totalApplications: 0,
     totalViews: 0,
   });
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -104,26 +110,14 @@ export default function EmployerDashboardPage() {
       }
 
       try {
-        // Fetch my jobs
         const myJobs = await fetchMyJobs(user.id);
         setJobs(myJobs);
 
-        // Fetch application counts
         if (myJobs.length > 0) {
           const jobIds = myJobs.map((job: JobPosting) => job.id);
           const counts = await fetchApplicationCounts(jobIds);
           setApplicationCounts(counts);
         }
-
-        // Calculate stats
-        const totalApplications = Object.values(applicationCounts).reduce((sum, count) => sum + count, 0);
-        const totalViews = myJobs.reduce((sum: number, job: JobPosting) => sum + (job.views || 0), 0);
-        setStats({
-          totalJobs: myJobs.length,
-          activeJobs: myJobs.filter((job: JobPosting) => job.is_active && job.is_approved).length,
-          totalApplications,
-          totalViews,
-        });
       } catch (error) {
         console.error('Error loading employer data:', error);
       } finally {
@@ -134,11 +128,17 @@ export default function EmployerDashboardPage() {
     loadData();
   }, [user?.id]);
 
-  // Recalculate stats when applicationCounts changes
+  // 통계 계산
   useEffect(() => {
     const totalApplications = Object.values(applicationCounts).reduce((sum, count) => sum + count, 0);
-    setStats(prev => ({ ...prev, totalApplications }));
-  }, [applicationCounts]);
+    const totalViews = jobs.reduce((sum, job) => sum + (job.views || 0), 0);
+    setStats({
+      totalJobs: jobs.length,
+      activeJobs: jobs.filter(job => job.is_active && job.is_approved).length,
+      totalApplications,
+      totalViews,
+    });
+  }, [jobs, applicationCounts]);
 
   const getJobStatus = (job: JobPosting) => {
     if (!job.is_approved) return 'pending';
@@ -160,6 +160,26 @@ export default function EmployerDashboardPage() {
     const deadlineDate = new Date(deadline);
     const diff = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
     return diff;
+  };
+
+  const handleToggleActive = async (jobId: string, currentActive: boolean) => {
+    const success = await toggleJobActive(jobId, !currentActive);
+    if (success) {
+      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, is_active: !currentActive } : j));
+    }
+    setOpenMenuId(null);
+  };
+
+  const handleDeleteJob = async (jobId: string) => {
+    const success = await deleteJob(jobId);
+    if (success) {
+      setJobs(prev => prev.filter(j => j.id !== jobId));
+      const newCounts = { ...applicationCounts };
+      delete newCounts[jobId];
+      setApplicationCounts(newCounts);
+    }
+    setDeleteConfirmId(null);
+    setOpenMenuId(null);
   };
 
   if (!user) {
@@ -361,21 +381,65 @@ export default function EmployerDashboardPage() {
 
                       {/* 지원자 수 & 관리 버튼 */}
                       <div className="flex flex-col items-end gap-2">
-                        <Link
-                          href={`/agent/employer/jobs/${job.id}/applicants`}
-                          className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
-                        >
-                          <Users className="w-4 h-4" />
-                          <span className="font-bold">{applicationCount}</span>
-                          <span className="text-sm">지원자</span>
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
-                        <Link
-                          href={`/agent/jobs/${job.id}`}
-                          className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                          공고 보기
-                        </Link>
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/agent/employer/jobs/${job.id}/applicants`}
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                          >
+                            <Users className="w-4 h-4" />
+                            <span className="font-bold">{applicationCount}</span>
+                            <span className="text-sm hidden sm:inline">지원자</span>
+                          </Link>
+
+                          {/* 더보기 메뉴 */}
+                          <div className="relative">
+                            <button
+                              onClick={() => setOpenMenuId(openMenuId === job.id ? null : job.id)}
+                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+
+                            {openMenuId === job.id && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                                <div className="absolute right-0 top-full mt-1 z-20 w-44 bg-white rounded-xl shadow-lg border border-gray-200 py-1">
+                                  <Link
+                                    href={`/agent/jobs/${job.id}`}
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                                    onClick={() => setOpenMenuId(null)}
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                    공고 보기
+                                  </Link>
+                                  <Link
+                                    href={`/agent/jobs/new?edit=${job.id}`}
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                                    onClick={() => setOpenMenuId(null)}
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                    수정하기
+                                  </Link>
+                                  <button
+                                    onClick={() => handleToggleActive(job.id, job.is_active)}
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 w-full"
+                                  >
+                                    <Power className="w-4 h-4" />
+                                    {job.is_active ? '비활성화' : '활성화'}
+                                  </button>
+                                  <div className="border-t border-gray-100 my-1" />
+                                  <button
+                                    onClick={() => { setDeleteConfirmId(job.id); setOpenMenuId(null); }}
+                                    className="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 w-full"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    삭제하기
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -398,6 +462,40 @@ export default function EmployerDashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* 삭제 확인 모달 */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-gray-900">공고 삭제</h3>
+                <p className="text-sm text-gray-500">이 작업은 되돌릴 수 없습니다</p>
+              </div>
+            </div>
+            <p className="text-sm text-gray-600 mb-6">
+              공고를 삭제하면 해당 공고에 대한 모든 지원 내역도 함께 삭제됩니다. 정말 삭제하시겠습니까?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirmId(null)}
+                className="flex-1 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => handleDeleteJob(deleteConfirmId)}
+                className="flex-1 py-3 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition-colors"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
