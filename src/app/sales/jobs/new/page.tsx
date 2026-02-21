@@ -332,44 +332,42 @@ export default function NewJobPage() {
           {/* 광고 티어 선택 */}
           <FormSection icon={DollarSign} title="광고 상품 선택" iconColor="text-purple-600">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {TIERS.map((tier) => (
-                <button
-                  key={tier.value}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, tier: tier.value }))}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    formData.tier === tier.value
-                      ? 'border-purple-500 bg-purple-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
-                  <p className="font-bold text-gray-900">{tier.label}</p>
-                  {tier.originalPrice > 0 ? (
-                    <div>
-                      <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
-                      <p className="text-sm font-bold text-purple-600">
-                        {tier.price.toLocaleString()}원<span className="text-xs text-gray-500 font-normal">/{tier.duration}</span>
-                      </p>
-                      <span className="text-[10px] bg-red-500 text-white px-1.5 py-0.5 rounded font-bold">90% OFF</span>
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
-                  )}
-                </button>
-              ))}
+              {TIERS.map((tier) => {
+                const isPaid = tier.price > 0;
+                return (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => !isPaid && setFormData(prev => ({ ...prev, tier: tier.value }))}
+                    disabled={isPaid}
+                    className={`relative p-4 rounded-xl border-2 transition-all ${
+                      isPaid
+                        ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                        : formData.tier === tier.value
+                        ? 'border-purple-500 bg-purple-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
+                    <p className={`font-bold ${isPaid ? 'text-gray-400' : 'text-gray-900'}`}>{tier.label}</p>
+                    {tier.originalPrice > 0 ? (
+                      <div>
+                        <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
+                        <p className="text-sm font-bold text-gray-400">
+                          {tier.price.toLocaleString()}원<span className="text-xs text-gray-400 font-normal">/{tier.duration}</span>
+                        </p>
+                        <p className="text-[10px] text-orange-500 font-bold mt-1">결제 준비중</p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            {selectedTier && (
-              <p className="mt-4 text-sm text-purple-600 bg-purple-50 p-3 rounded-lg">
-                {selectedTier.price === 0
-                  ? '무료 공고는 24시간 후 자동 만료됩니다. 프리미엄(₩4,900)으로 5일간 반짝이 효과 노출!'
-                  : selectedTier.value === 'premium'
-                  ? '프리미엄 상품은 일반 목록에서 반짝이 효과 + 시안 배지가 제공됩니다.'
-                  : selectedTier.value === 'superior'
-                  ? '슈페리어 상품은 유니크 아래 전용 그리드에 블루 배지로 강조 노출됩니다.'
-                  : '유니크(광고대행사) 상품은 레인보우 네온 슬라이더 최상단 + 전용 그리드에 노출됩니다.'}
-              </p>
-            )}
+            <p className="mt-3 text-xs text-gray-400">
+              유료 등급(프리미엄, 슈페리어, 유니크)은 결제 시스템 오픈 후 이용 가능합니다.
+            </p>
           </FormSection>
 
           {/* 기본 정보 + WYSIWYG 에디터 */}

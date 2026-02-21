@@ -26,20 +26,21 @@ export default function ContactSection({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            담당자명
+            담당자명 <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
             name="contact_name"
             value={contactName}
             onChange={onContactNameChange}
+            required
             placeholder="예: 홍길동"
             className={`w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none ${focusBorder}`}
           />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            휴대폰 <span className="text-xs text-gray-400">(마스킹 처리됨)</span>
+            휴대폰 <span className="text-red-500">*</span> <span className="text-xs text-gray-400">(마스킹 처리됨)</span>
           </label>
           <input
             type="tel"
@@ -68,6 +69,7 @@ export default function ContactSection({
           />
         </div>
       )}
+      <p className="text-xs text-gray-400">* 담당자명과 연락처(휴대폰 또는 회사전화) 하나 이상은 필수입니다.</p>
     </div>
   );
 }

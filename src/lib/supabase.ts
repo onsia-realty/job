@@ -275,11 +275,11 @@ export async function applyWithResume(
   if (error) {
     if (error.code === '23505') {
       // 이미 지원한 공고
-      console.error('Already applied to this job');
-    } else {
-      console.error('Error applying:', error);
+      return false;
     }
-    return false;
+    // 기타 오류는 throw하여 호출 측의 catch 블록에서 처리
+    console.error('Error applying:', JSON.stringify(error));
+    throw new Error(error.message || '지원 처리 중 오류가 발생했습니다.');
   }
 
   return true;

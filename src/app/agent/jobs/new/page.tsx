@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
@@ -94,8 +94,10 @@ const TIME_OPTIONS = [
 const today = new Date().toISOString().split('T')[0];
 const maxDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-export default function NewAgentJobPage() {
+function NewAgentJobContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get('edit');
   const { user: authUser, isLoading: authLoading } = useAuth();
   const imageInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,6 +105,7 @@ export default function NewAgentJobPage() {
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<'agent' | 'sales' | null>(null);
+  const [isEditLoading, setIsEditLoading] = useState(!!editId);
 
   // 부동산 이미지 3장 (로고, 옥외 간판, 내부)
   const [imageFiles, setImageFiles] = useState<Record<string, File | null>>({ logo: null, signboard: null, interior: null });
@@ -116,11 +119,90 @@ export default function NewAgentJobPage() {
   const hasCardVerified = meta?.cardVerified === true;
   const canPostSales = hasBusinessVerified || hasCardVerified; // 분양상담사 구인: 사업자 or 명함
 
+  // 인증된 회사/사무소명 가져오기
+  const verifiedCompanyName = meta?.brokerOfficeName || meta?.bizName || meta?.cardCompany || '';
+
   useEffect(() => {
     if (!authLoading && authUser && !isVerified) {
       setShowVerificationModal(true);
     }
-  }, [authUser, authLoading, isVerified]);
+    // 인증된 회사명으로 자동 채우기 (신규 작성시만)
+    if (!editId && verifiedCompanyName && !formData.company) {
+      setFormData(prev => ({ ...prev, company: verifiedCompanyName }));
+    }
+  }, [authUser, authLoading, isVerified, verifiedCompanyName]);
+
+  // 수정 모드: 기존 공고 데이터 불러오기
+  useEffect(() => {
+    if (!editId || !authUser) return;
+    setIsEditLoading(true);
+    (async () => {
+      const { data, error } = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('id', editId)
+        .eq('user_id', authUser.id)
+        .single();
+
+      if (error || !data) {
+        alert('공고를 불러올 수 없습니다.');
+        router.push('/agent/employer');
+        return;
+      }
+
+      // 카테고리 설정
+      setSelectedCategory((data.category || 'agent') as 'agent' | 'sales');
+
+      // 주소에서 상세주소 분리
+      const address = data.address || '';
+      const workHoursMatch = data.html_content?.match(/근무시간: (.+?) ~ (.+)/);
+      const workDaysMatch = data.html_content?.match(/근무요일: (.+)/);
+
+      // 폼 데이터 복원
+      setFormData({
+        title: data.title || '',
+        description: data.description || '',
+        type: data.type || 'apartment',
+        tier: data.tier || 'normal',
+        salary_type: data.salary_type || 'monthly',
+        salary_amount: data.salary_amount ? data.salary_amount.replace(/[^0-9]/g, '') : '',
+        experience: data.experience || 'none',
+        company: data.company || '',
+        region: data.region || '서울',
+        address: address,
+        detail_address: '',
+        phone: data.phone || '',
+        office_phone: data.office_phone || '',
+        contact_name: data.contact_name || '',
+        deadline: data.deadline || '',
+        is_always_recruiting: !data.deadline,
+        work_start: workHoursMatch?.[1] || '09:00',
+        work_end: workHoursMatch?.[2] || '18:00',
+        work_days: workDaysMatch?.[1] || '',
+        html_content: data.html_content || '',
+      });
+
+      // 썸네일 복원
+      if (data.thumbnail) {
+        setThumbnailPreview(data.thumbnail);
+      }
+
+      // 부동산 이미지 복원
+      const imgMatch = data.html_content?.match(/<!-- AGENT_IMAGES:(.*?) -->/);
+      if (imgMatch) {
+        try {
+          const imgs = JSON.parse(imgMatch[1]);
+          setImagePreviews({
+            logo: imgs.logo || null,
+            signboard: imgs.signboard || null,
+            interior: imgs.interior || null,
+          });
+        } catch {}
+      }
+
+      setIsEditLoading(false);
+    })();
+  }, [editId, authUser]);
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -249,6 +331,17 @@ export default function NewAgentJobPage() {
   // 폼 제출
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 담당자 정보 필수 체크
+    if (!formData.contact_name.trim()) {
+      alert('담당자명을 입력해주세요.');
+      return;
+    }
+    if (!formData.phone.trim() && !formData.office_phone.trim()) {
+      alert('연락처(휴대폰 또는 회사전화)를 하나 이상 입력해주세요.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -261,6 +354,9 @@ export default function NewAgentJobPage() {
           setIsSubmitting(false);
           return;
         }
+      } else if (editId && thumbnailPreview) {
+        // 수정 모드: 기존 썸네일 유지
+        thumbnailUrl = thumbnailPreview;
       }
 
       // 2. 부동산 이미지 3장 업로드
@@ -271,6 +367,15 @@ export default function NewAgentJobPage() {
         ? `${formData.work_start} ~ ${formData.work_end}`
         : '';
 
+      // 기존 html_content에서 이전에 append된 extra info/이미지 데이터 제거 (중복 방지)
+      let cleanHtml = formData.html_content
+        .replace(/\n*상세주소: .+/g, '')
+        .replace(/\n*근무시간: .+/g, '')
+        .replace(/\n*근무요일: .+/g, '')
+        .replace(/\n*상시채용/g, '')
+        .replace(/\n*<!-- AGENT_IMAGES:.*? -->/g, '')
+        .trimEnd();
+
       const extraInfo = [
         formData.detail_address && `상세주소: ${formData.detail_address}`,
         workHours && `근무시간: ${workHours}`,
@@ -278,29 +383,32 @@ export default function NewAgentJobPage() {
         formData.is_always_recruiting && '상시채용',
       ].filter(Boolean).join('\n');
 
-      const imageData = Object.keys(imageUrls).length > 0
-        ? `<!-- AGENT_IMAGES:${JSON.stringify(imageUrls)} -->`
-        : '';
+      // 수정 모드: 기존 이미지 유지 (새 업로드가 없으면)
+      let imageData = '';
+      if (Object.keys(imageUrls).length > 0) {
+        imageData = `<!-- AGENT_IMAGES:${JSON.stringify(imageUrls)} -->`;
+      } else if (editId) {
+        // 기존 이미지 데이터 보존
+        const existingImgMatch = formData.html_content.match(/<!-- AGENT_IMAGES:(.*?) -->/);
+        if (existingImgMatch) {
+          imageData = existingImgMatch[0];
+        }
+      }
 
-      const fullHtmlContent = [formData.html_content, extraInfo, imageData].filter(Boolean).join('\n\n') || null;
+      const fullHtmlContent = [cleanHtml, extraInfo, imageData].filter(Boolean).join('\n\n') || null;
 
       // 4. 공고 데이터 저장
-      const insertPayload = {
-        user_id: authUser!.id,
+      const jobPayload = {
         title: formData.title,
         description: formData.description,
         html_content: fullHtmlContent,
         category: selectedCategory || 'agent',
         type: formData.type,
         tier: formData.tier,
-        badges: [],
-        position: 'member',
         salary_type: formData.salary_type,
         salary_amount: formData.salary_amount ? `${formData.salary_amount}만원` : null,
-        benefits: [],
         experience: formData.experience,
-        company: formData.company,
-        company_type: null,
+        company: verifiedCompanyName || formData.company,
         region: formData.region,
         address: formData.address ? `${formData.address}${formData.detail_address ? ` ${formData.detail_address}` : ''}` : null,
         thumbnail: thumbnailUrl,
@@ -308,25 +416,52 @@ export default function NewAgentJobPage() {
         office_phone: formData.office_phone || null,
         contact_name: formData.contact_name || null,
         deadline: formData.is_always_recruiting ? null : (formData.deadline || null),
-        is_active: true,
-        is_approved: true,
       };
 
-      const { error } = await supabase
-        .from('jobs')
-        .insert(insertPayload)
-        .select()
-        .single();
+      let error;
+      if (editId) {
+        // 수정 모드 — .select()로 실제 업데이트 확인
+        const res = await supabase
+          .from('jobs')
+          .update(jobPayload)
+          .eq('id', editId)
+          .eq('user_id', authUser!.id)
+          .select()
+          .single();
+        error = res.error;
+        if (!res.error && !res.data) {
+          alert('수정 권한이 없거나 공고를 찾을 수 없습니다.');
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        // 신규 등록
+        const res = await supabase
+          .from('jobs')
+          .insert({
+            ...jobPayload,
+            user_id: authUser!.id,
+            badges: [],
+            position: 'member',
+            benefits: [],
+            company_type: null,
+            is_active: true,
+            is_approved: true,
+          })
+          .select()
+          .single();
+        error = res.error;
+      }
 
       if (error) {
-        console.error('Insert error:', JSON.stringify(error, null, 2));
-        alert('공고 등록에 실패했습니다: ' + (error.message || error.code || JSON.stringify(error)));
+        console.error(editId ? 'Update error:' : 'Insert error:', JSON.stringify(error, null, 2));
+        alert(`공고 ${editId ? '수정' : '등록'}에 실패했습니다: ` + (error.message || error.code || JSON.stringify(error)));
         setIsSubmitting(false);
         return;
       }
 
-      alert('공고가 등록되었습니다!');
-      router.push('/agent/jobs');
+      alert(editId ? '공고가 수정되었습니다!' : '공고가 등록되었습니다!');
+      router.push(editId ? '/agent/employer' : '/agent/jobs');
 
     } catch (err) {
       console.error('Submit error:', err);
@@ -338,10 +473,13 @@ export default function NewAgentJobPage() {
 
   const selectedTier = TIERS.find(t => t.value === formData.tier);
 
-  if (authLoading) {
+  if (authLoading || isEditLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
+          {isEditLoading && <p className="text-sm text-gray-500">공고 데이터를 불러오는 중...</p>}
+        </div>
       </div>
     );
   }
@@ -419,7 +557,11 @@ export default function NewAgentJobPage() {
       {/* 헤더 */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-          {selectedCategory ? (
+          {editId ? (
+            <Link href="/agent/employer" className="p-2 hover:bg-gray-100 rounded-lg">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </Link>
+          ) : selectedCategory ? (
             <button onClick={() => setSelectedCategory(null)} className="p-2 hover:bg-gray-100 rounded-lg">
               <ArrowLeft className="w-5 h-5 text-gray-600" />
             </button>
@@ -429,7 +571,10 @@ export default function NewAgentJobPage() {
             </Link>
           )}
           <h1 className="text-lg font-bold text-gray-900">
-            {selectedCategory === 'agent' ? '공인중개사 구인글 등록' : selectedCategory === 'sales' ? '분양상담사 구인글 등록' : '구인글 작성'}
+            {editId
+              ? (selectedCategory === 'agent' ? '공인중개사 구인글 수정' : selectedCategory === 'sales' ? '분양상담사 구인글 수정' : '구인글 수정')
+              : (selectedCategory === 'agent' ? '공인중개사 구인글 등록' : selectedCategory === 'sales' ? '분양상담사 구인글 등록' : '구인글 작성')
+            }
           </h1>
         </div>
       </header>
@@ -568,46 +713,40 @@ export default function NewAgentJobPage() {
           {/* 공고 등급 선택 */}
           <FormSection icon={DollarSign} title="공고 등급 선택">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {TIERS.map((tier) => (
-                <button
-                  key={tier.value}
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, tier: tier.value }))}
-                  className={`p-4 rounded-xl border-2 transition-all ${
-                    formData.tier === tier.value
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
-                  <p className="font-bold text-gray-900">{tier.label}</p>
-                  {tier.price === 0 ? (
-                    <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
-                  ) : (
-                    <div>
-                      <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
-                      <p className="text-sm font-bold text-red-500">{tier.price.toLocaleString()}원/{tier.duration}</p>
-                      <p className="text-[10px] text-red-400 font-bold">90% OFF</p>
-                    </div>
-                  )}
-                </button>
-              ))}
+              {TIERS.map((tier) => {
+                const isPaid = tier.price > 0;
+                return (
+                  <button
+                    key={tier.value}
+                    type="button"
+                    onClick={() => !isPaid && setFormData(prev => ({ ...prev, tier: tier.value }))}
+                    disabled={isPaid}
+                    className={`relative p-4 rounded-xl border-2 transition-all ${
+                      isPaid
+                        ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                        : formData.tier === tier.value
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
+                    <p className={`font-bold ${isPaid ? 'text-gray-400' : 'text-gray-900'}`}>{tier.label}</p>
+                    {tier.price === 0 ? (
+                      <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
+                    ) : (
+                      <div>
+                        <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
+                        <p className="text-sm font-bold text-gray-400">{tier.price.toLocaleString()}원/{tier.duration}</p>
+                        <p className="text-[10px] text-orange-500 font-bold mt-1">결제 준비중</p>
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
             </div>
-            {selectedTier && selectedTier.price > 0 && (
-              <p className={`mt-4 text-sm p-3 rounded-lg ${
-                formData.tier === 'vip'
-                  ? 'text-amber-700 bg-amber-50'
-                  : formData.tier === 'basic'
-                  ? 'text-amber-600 bg-amber-50/50'
-                  : 'text-blue-600 bg-blue-50'
-              }`}>
-                {formData.tier === 'vip'
-                  ? 'VIP 공고는 최상단 레인보우 네온 슬라이더 + 그리드에 노출됩니다. (1주일)'
-                  : formData.tier === 'basic'
-                  ? 'BASIC 공고는 일반 목록에서 반짝이 효과로 강조됩니다. (5일)'
-                  : '프리미엄 공고는 전용 그리드 섹션에 상위 노출됩니다. (1주일)'}
-              </p>
-            )}
+            <p className="mt-3 text-xs text-gray-400">
+              유료 등급(BASIC, 프리미엄, VIP)은 결제 시스템 오픈 후 이용 가능합니다.
+            </p>
           </FormSection>
 
           {/* 기본 정보 + WYSIWYG 에디터 */}
@@ -896,12 +1035,23 @@ export default function NewAgentJobPage() {
                 <input
                   type="text"
                   name="company"
-                  value={formData.company}
-                  onChange={handleChange}
+                  value={verifiedCompanyName || formData.company}
+                  onChange={verifiedCompanyName ? undefined : handleChange}
+                  readOnly={!!verifiedCompanyName}
                   required
                   placeholder="예: 강남부동산중개사무소"
-                  className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
+                  className={`w-full border rounded-lg px-4 py-3 focus:outline-none ${
+                    verifiedCompanyName
+                      ? 'border-blue-200 bg-blue-50 text-gray-900 font-medium cursor-not-allowed'
+                      : 'border-gray-300 focus:border-blue-500'
+                  }`}
                 />
+                {verifiedCompanyName && (
+                  <p className="text-xs text-blue-500 mt-1 flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3" />
+                    인증된 사무소명이 자동 적용됩니다
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -986,7 +1136,12 @@ export default function NewAgentJobPage() {
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {isSubmitting ? '등록 중...' : selectedCategory === 'sales' ? '분양상담사 구인글 등록하기' : '공인중개사 구인글 등록하기'}
+              {isSubmitting
+                ? (editId ? '수정 중...' : '등록 중...')
+                : editId
+                  ? '구인글 수정하기'
+                  : (selectedCategory === 'sales' ? '분양상담사 구인글 등록하기' : '공인중개사 구인글 등록하기')
+              }
             </button>
           </div>
 
@@ -994,5 +1149,17 @@ export default function NewAgentJobPage() {
         )}
       </main>
     </div>
+  );
+}
+
+export default function NewAgentJobPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <NewAgentJobContent />
+    </Suspense>
   );
 }

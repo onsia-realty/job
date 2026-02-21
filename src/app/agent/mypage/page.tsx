@@ -22,7 +22,6 @@ import {
   BadgeCheck,
   AlertTriangle,
   PenSquare,
-  LayoutDashboard,
   Users,
   CreditCard,
 } from 'lucide-react';
@@ -380,9 +379,9 @@ export default function MyPage() {
               className="flex flex-col items-center gap-2 bg-gradient-to-br from-purple-600 to-indigo-600 text-white rounded-2xl p-4 hover:from-purple-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
             >
               <div className="w-11 h-11 bg-white/20 rounded-xl flex items-center justify-center">
-                <LayoutDashboard className="w-5 h-5" />
+                <Briefcase className="w-5 h-5" />
               </div>
-              <span className="text-xs font-bold">대시보드</span>
+              <span className="text-xs font-bold text-center leading-tight">내 공고<br/>확인하기 →</span>
             </Link>
             <Link
               href="/agent/jobs/new"
@@ -403,7 +402,7 @@ export default function MyPage() {
               공고 보기
             </h3>
             <Link
-              href="/agent?tab=broker"
+              href="/agent/jobs"
               className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
               <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-100 text-blue-600">

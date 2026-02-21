@@ -9,11 +9,11 @@ import {
   ExternalLink, CheckCircle2, AlertCircle, ChevronRight,
   Sparkles, Flame, Send, Heart, FileText, Award, Banknote,
   Timer, X, User, Mail, MessageSquare, Check, Star,
-  GraduationCap, TrendingUp, Navigation,
+  GraduationCap, TrendingUp, Navigation, Globe, CalendarDays,
 } from 'lucide-react';
-import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, AgentResume } from '@/types';
-import { AGENT_JOB_TYPE_LABELS, AGENT_EXPERIENCE_LABELS } from '@/types';
-import { supabase, fetchMyResume, applyWithResume } from '@/lib/supabase';
+import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, AgentResume, CompanyProfile, CompanyBusinessType } from '@/types';
+import { AGENT_JOB_TYPE_LABELS, AGENT_EXPERIENCE_LABELS, COMPANY_BUSINESS_TYPE_LABELS } from '@/types';
+import { supabase, fetchMyResume, applyWithResume, fetchMyCompanyProfile } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import AgentJobCard from '@/components/agent/JobCard';
 import dynamic from 'next/dynamic';
@@ -132,6 +132,9 @@ export default function JobDetailPage() {
   const [isApplying, setIsApplying] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [hasAlreadyApplied, setHasAlreadyApplied] = useState(false);
+  // 기업 프로필
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const [jobUserId, setJobUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -164,6 +167,7 @@ export default function JobDetailPage() {
           })(),
         };
         setJob(dbJob);
+        if (data.user_id) setJobUserId(data.user_id);
       } else {
         setJob(MOCK_JOB);
       }
@@ -182,6 +186,14 @@ export default function JobDetailPage() {
       .then(data => { if (data.lat && data.lng) setMapCoord({ lat: data.lat, lng: data.lng }); })
       .catch(() => {});
   }, [job?.address]);
+
+  // 기업 프로필 불러오기
+  useEffect(() => {
+    if (!jobUserId) return;
+    fetchMyCompanyProfile(jobUserId).then(profile => {
+      if (profile) setCompanyProfile(profile);
+    });
+  }, [jobUserId]);
 
   // 내 이력서 불러오기 & 기존 지원 여부 확인
   useEffect(() => {
@@ -566,100 +578,159 @@ export default function JobDetailPage() {
 
             {/* ===== 기업 정보 (잡코리아 스타일) ===== */}
             <section id="company" className="mb-10">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-gray-900">기업 정보</h2>
-              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-4">기업 정보</h2>
 
-              {/* 4카드 그리드 (잡코리아 스타일 컬러 아이콘) */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {/* 사무소명 */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4 h-[140px] flex flex-col hover:shadow-sm transition-shadow">
-                  <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center mb-auto">
-                    <Building2 className="w-5 h-5 text-blue-600" />
+              <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                {/* 상단: 로고 + 회사명 + 업종 */}
+                <div className="p-5 flex items-center gap-4 border-b border-gray-100">
+                  {/* 회사 로고 */}
+                  <div className="w-16 h-16 rounded-xl border border-gray-200 bg-gray-50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {(companyProfile?.logoUrl || job.agentImages?.logo) ? (
+                      <img
+                        src={companyProfile?.logoUrl || job.agentImages?.logo}
+                        alt={job.company}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Building2 className="w-7 h-7 text-gray-400" />
+                    )}
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">사무소명</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{job.company}</p>
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-bold text-gray-900 truncate">{companyProfile?.companyName || job.company}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {companyProfile?.businessType
+                        ? COMPANY_BUSINESS_TYPE_LABELS[companyProfile.businessType]
+                        : AGENT_JOB_TYPE_LABELS[job.type] + ' 전문'}
+                    </p>
                   </div>
                 </div>
 
-                {/* 매물유형 */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4 h-[140px] flex flex-col hover:shadow-sm transition-shadow">
-                  <div className="w-10 h-10 bg-amber-50 rounded-lg flex items-center justify-center mb-auto">
-                    <Briefcase className="w-5 h-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">매물유형</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{AGENT_JOB_TYPE_LABELS[job.type]}</p>
-                  </div>
-                </div>
-
-                {/* 지역 */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4 h-[140px] flex flex-col hover:shadow-sm transition-shadow">
-                  <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center mb-auto">
-                    <MapPin className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">지역</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{job.region}</p>
-                  </div>
-                </div>
-
-                {/* 위치 + 지도보기 */}
-                <div className="bg-white border border-gray-200 rounded-xl p-4 h-[140px] flex flex-col hover:shadow-sm transition-shadow">
-                  <div className="flex items-start justify-between mb-auto">
-                    <div className="w-10 h-10 bg-cyan-50 rounded-lg flex items-center justify-center">
-                      <Navigation className="w-5 h-5 text-cyan-600" />
+                {/* 기업 정보 테이블 */}
+                <div className="divide-y divide-gray-100">
+                  {/* 기업형태 */}
+                  <div className="flex items-center px-5 py-3.5">
+                    <div className="flex items-center gap-2 w-28 flex-shrink-0">
+                      <Briefcase className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-500">기업형태</span>
                     </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {companyProfile?.businessType
+                        ? COMPANY_BUSINESS_TYPE_LABELS[companyProfile.businessType]
+                        : '부동산 중개업'}
+                    </span>
+                  </div>
+
+                  {/* 매물유형 */}
+                  <div className="flex items-center px-5 py-3.5">
+                    <div className="flex items-center gap-2 w-28 flex-shrink-0">
+                      <Award className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-500">매물유형</span>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">
+                      {AGENT_JOB_TYPE_LABELS[job.type]}
+                    </span>
+                  </div>
+
+                  {/* 설립연도 */}
+                  {companyProfile?.foundedYear && (
+                    <div className="flex items-center px-5 py-3.5">
+                      <div className="flex items-center gap-2 w-28 flex-shrink-0">
+                        <CalendarDays className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-500">설립연도</span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">{companyProfile.foundedYear}년</span>
+                    </div>
+                  )}
+
+                  {/* 직원수 */}
+                  {companyProfile?.employeeCount && (
+                    <div className="flex items-center px-5 py-3.5">
+                      <div className="flex items-center gap-2 w-28 flex-shrink-0">
+                        <Users className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-500">직원수</span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">{companyProfile.employeeCount}명</span>
+                    </div>
+                  )}
+
+                  {/* 지역 */}
+                  <div className="flex items-center px-5 py-3.5">
+                    <div className="flex items-center gap-2 w-28 flex-shrink-0">
+                      <MapPin className="w-4 h-4 text-gray-400" />
+                      <span className="text-sm text-gray-500">지역</span>
+                    </div>
+                    <span className="text-sm font-medium text-gray-900">{job.address || job.region}</span>
                     {job.address && (
                       <button
                         onClick={() => {
                           const mapEl = document.getElementById('company-map');
                           if (mapEl) mapEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }}
-                        className="text-xs text-blue-500 hover:text-blue-700 font-medium flex items-center gap-0.5"
+                        className="ml-2 text-xs text-blue-500 hover:text-blue-700 font-medium flex items-center gap-0.5"
                       >
                         지도보기
                         <ChevronRight className="w-3 h-3" />
                       </button>
                     )}
                   </div>
-                  <div>
-                    <p className="text-xs text-gray-500 mb-0.5">위치</p>
-                    <p className="text-sm font-bold text-gray-900 truncate">{job.address || job.region}</p>
-                  </div>
-                </div>
-              </div>
 
-              {/* 담당자 정보 */}
-              {(job.contactName || job.contactPhone || job.officePhone) && (
-                <div className="mt-4 border border-gray-200 rounded-xl p-5">
-                  <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-blue-600" />
-                    담당자 정보
-                  </h3>
-                  <div className="flex flex-wrap gap-x-8 gap-y-2">
-                    {job.contactName && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">담당자</span>
-                        <span className="text-sm font-medium text-gray-900">{job.contactName}</span>
+                  {/* 홈페이지 */}
+                  {companyProfile?.website && (
+                    <div className="flex items-center px-5 py-3.5">
+                      <div className="flex items-center gap-2 w-28 flex-shrink-0">
+                        <Globe className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-500">홈페이지</span>
                       </div>
-                    )}
-                    {job.officePhone && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">회사전화</span>
-                        <a href={`tel:${job.officePhone}`} className="text-sm font-medium text-blue-600 hover:underline">{job.officePhone}</a>
+                      <a
+                        href={companyProfile.website.startsWith('http') ? companyProfile.website : `https://${companyProfile.website}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-blue-600 hover:underline flex items-center gap-1"
+                      >
+                        {companyProfile.website}
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* 담당자 정보 */}
+                  {(job.contactName || job.contactPhone || job.officePhone) && (
+                    <div className="px-5 py-3.5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Phone className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm text-gray-500">담당자 정보</span>
                       </div>
-                    )}
-                    {job.contactPhone && (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">휴대폰</span>
-                        <span className="text-sm font-medium text-gray-900">{maskPhone(job.contactPhone)}</span>
+                      <div className="flex flex-wrap gap-x-6 gap-y-1.5 ml-6">
+                        {job.contactName && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-400">담당자</span>
+                            <span className="text-sm font-medium text-gray-900">{job.contactName}</span>
+                          </div>
+                        )}
+                        {job.officePhone && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-400">회사전화</span>
+                            <a href={`tel:${job.officePhone}`} className="text-sm font-medium text-blue-600 hover:underline">{job.officePhone}</a>
+                          </div>
+                        )}
+                        {job.contactPhone && (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-400">휴대폰</span>
+                            <span className="text-sm font-medium text-gray-900">{maskPhone(job.contactPhone)}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
-              )}
+
+                {/* 회사 소개 */}
+                {companyProfile?.description && (
+                  <div className="border-t border-gray-100 px-5 py-4">
+                    <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{companyProfile.description}</p>
+                  </div>
+                )}
+              </div>
 
               {/* VWorld 지도 */}
               {job.address && mapCoord && (
