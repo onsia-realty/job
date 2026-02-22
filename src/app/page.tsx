@@ -121,6 +121,9 @@ export default function LandingPage() {
                 <Link href="/event/premium" className="text-gray-300 hover:text-white transition-colors">
                   플랫폼 소개
                 </Link>
+                <Link href="/event/ai-assistant" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+                  AI 실무비서
+                </Link>
                 <Link href="/news" className="text-gray-300 hover:text-white transition-colors">
                   뉴스
                 </Link>

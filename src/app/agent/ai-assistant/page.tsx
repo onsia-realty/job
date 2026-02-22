@@ -172,7 +172,7 @@ export default function AiAssistantPage() {
 
   const sendMessage = async (text?: string) => {
     const messageText = text || input.trim();
-    if (!messageText || isStreaming || !session?.access_token) return;
+    if (!messageText || isStreaming) return;
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
@@ -194,56 +194,21 @@ export default function AiAssistantPage() {
 
     const isFirstMessage = messages.length === 0;
 
-    // 프리셋 답변 확인
+    // 프리셋 답변 확인 (DB 저장 안함, 차감 안함, 로그인 불필요)
     const presetAnswer = getPresetAnswer(messageText);
     if (presetAnswer) {
       const answerWithTag = `[예시]\n\n${presetAnswer}`;
       await streamPresetAnswer(answerWithTag, updatedMessages, assistantId);
       setIsStreaming(false);
+      return;
+    }
 
-      // 프리셋도 DB에 저장 (세션 생성 포함)
-      try {
-        const saveRes = await fetch('/api/ai-assistant/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: messageText }],
-            sessionId: activeSessionId,
-            isFirstMessage,
-            presetAnswer: answerWithTag,
-          }),
-        });
-        // 프리셋은 rate limit을 쓰지 않으므로 별도 저장 로직이 필요할 수 있지만
-        // 현재는 간단하게 API 호출로 처리 (rate limit은 Gemini API 호출에만 적용)
-        // → 아래에서 done 이벤트의 sessionId 반영
-        if (saveRes.ok && saveRes.body) {
-          const reader = saveRes.body.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              try {
-                const data = JSON.parse(line.slice(6).trim());
-                if (data.type === 'done' && data.sessionId) {
-                  setActiveSessionId(data.sessionId);
-                  loadSessions();
-                }
-              } catch { /* skip */ }
-            }
-          }
-        }
-      } catch (e) {
-        console.error('Failed to save preset to DB:', e);
-      }
+    // API 호출 필요 → 로그인 필수 체크
+    if (!user || !session?.access_token) {
+      // 로그인 안 됨 → 답변 표시하지 않고 회원가입으로 이동
+      setMessages((prev) => prev.slice(0, -1)); // 빈 assistant 메시지 제거
+      setIsStreaming(false);
+      window.location.href = '/agent/auth/signup';
       return;
     }
 
@@ -371,40 +336,17 @@ export default function AiAssistantPage() {
     );
   }
 
-  // Not logged in
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center px-4">
-        <div className="w-20 h-20 md:w-28 md:h-28 bg-gradient-to-br from-cyan-400 to-emerald-400 rounded-2xl md:rounded-3xl flex items-center justify-center mb-6 md:mb-8">
-          <Bot className="w-10 h-10 md:w-14 md:h-14 text-white" />
-        </div>
-        <h1 className="text-2xl md:text-4xl font-bold text-white mb-2 md:mb-3">AI 부동산인 실무비서</h1>
-        <p className="text-slate-400 text-center mb-8 max-w-sm md:max-w-lg text-sm md:text-lg">
-          AI 부동산인 실무비서를 이용하려면 로그인이 필요합니다
-        </p>
-        <Link
-          href="/agent/auth/login"
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-semibold px-6 py-3 md:px-10 md:py-4 rounded-xl md:rounded-2xl hover:from-cyan-600 hover:to-emerald-600 transition-all text-base md:text-lg"
-        >
-          <LogIn className="w-5 h-5 md:w-6 md:h-6" />
-          로그인하기
-        </Link>
-        <Link href="/agent" className="mt-4 text-sm md:text-base text-slate-500 hover:text-slate-300 transition-colors">
-          홈으로 돌아가기
-        </Link>
-      </div>
-    );
-  }
+  const isLoggedIn = !!user && !!session?.access_token;
 
   return (
     <div className="min-h-screen bg-slate-900 flex">
       {/* Sidebar overlay (mobile) */}
-      {sidebarOpen && (
+      {isLoggedIn && sidebarOpen && (
         <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar - 데스크톱 항상 노출, 모바일은 토글 */}
-      <aside
+      {/* Sidebar - 로그인 시에만 표시: 데스크톱 항상 노출, 모바일은 토글 */}
+      {isLoggedIn && <aside
         className={`fixed md:relative md:flex z-50 md:z-auto h-full bg-slate-800 border-r border-slate-700/50 flex-col transition-all duration-300 flex-shrink-0 ${
           sidebarOpen ? 'flex w-80' : 'hidden md:flex md:w-80'
         }`}
@@ -475,7 +417,7 @@ export default function AiAssistantPage() {
             </div>
           )}
         </div>
-      </aside>
+      </aside>}
 
       {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
@@ -483,14 +425,16 @@ export default function AiAssistantPage() {
         <header className="bg-slate-800/80 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-30">
           <div className="max-w-5xl mx-auto px-4 md:px-8 py-3 md:py-4 flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-4">
-              {/* Sidebar toggle (mobile only) */}
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="text-slate-400 hover:text-white transition-colors md:hidden"
-                title="대화 내역"
-              >
-                <PanelLeftOpen className="w-5 h-5" />
-              </button>
+              {/* Sidebar toggle (mobile only, logged in only) */}
+              {isLoggedIn && (
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="text-slate-400 hover:text-white transition-colors md:hidden"
+                  title="대화 내역"
+                >
+                  <PanelLeftOpen className="w-5 h-5" />
+                </button>
+              )}
               <button
                 onClick={() => {
                   if (messages.length > 0) {
@@ -508,21 +452,25 @@ export default function AiAssistantPage() {
                   <Sparkles className="w-4 h-4 md:w-6 md:h-6 text-white" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-1.5 md:gap-2">
-                    <h1 className="text-white font-semibold text-sm md:text-xl">AI 부동산인 실무비서</h1>
-                    <span className="px-1.5 py-0.5 md:px-2.5 md:py-1 bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 rounded md:rounded-md text-[10px] md:text-xs text-amber-400 font-medium">
-                      최고급 AI
-                    </span>
-                  </div>
+                  <h1 className="text-white font-semibold text-sm md:text-xl">AI 부동산인 실무비서</h1>
                   <p className="text-slate-500 text-xs md:text-sm">최고급 AI 모델 · 중개실무 전문</p>
                 </div>
               </div>
             </div>
-            {remaining !== null && (
-              <span className="text-xs md:text-sm text-slate-500">
-                오늘 {remaining}회 남음
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center justify-center px-3 py-1 md:px-4 md:py-1.5 bg-cyan-500/10 border border-cyan-500/30 rounded-full text-xs md:text-sm text-cyan-400 font-semibold whitespace-nowrap leading-none">
+                {remaining !== null ? `오늘 ${remaining}회 남음` : '5회/일 무료'}
               </span>
-            )}
+              {!isLoggedIn && (
+                <Link
+                  href="/agent/auth/signup"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-cyan-500/20 border border-cyan-500/30 rounded-lg text-cyan-300 text-xs md:text-sm font-medium hover:bg-cyan-500/30 transition-colors whitespace-nowrap"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  로그인
+                </Link>
+              )}
+            </div>
           </div>
         </header>
 
@@ -543,7 +491,7 @@ export default function AiAssistantPage() {
                 <p className="text-slate-400 text-sm md:text-lg mb-8 md:mb-10 text-center max-w-md md:max-w-xl">
                   중개보수, 계약서 특약, 세금, 판례 등<br />부동산 중개 실무에 관한 모든 질문을 해보세요
                 </p>
-                <div className="grid grid-cols-2 gap-2.5 md:gap-4 w-full max-w-lg md:max-w-3xl">
+                <div className="grid grid-cols-2 gap-3 md:gap-5 w-full max-w-lg md:max-w-4xl">
                   {SUGGESTED_QUESTIONS.map((q) => {
                     const Icon = q.icon;
                     return (
@@ -552,8 +500,8 @@ export default function AiAssistantPage() {
                         onClick={() => sendMessage(q.question)}
                         className="flex items-center gap-3 md:gap-4 p-4 md:px-6 md:py-5 rounded-xl md:rounded-2xl bg-slate-800/60 border border-slate-700/50 hover:bg-slate-700/80 hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/5 active:scale-[0.97] transition-all text-left group cursor-pointer"
                       >
-                        <div className={`w-9 h-9 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-700/50 group-hover:bg-slate-600/50 transition-colors`}>
-                          <Icon className={`w-4 h-4 md:w-6 md:h-6 ${q.color}`} />
+                        <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg md:rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-700/50 group-hover:bg-slate-600/50 transition-colors`}>
+                          <Icon className={`w-5 h-5 md:w-6 md:h-6 ${q.color}`} />
                         </div>
                         <span className="text-sm md:text-base font-medium text-slate-300 group-hover:text-white transition-colors leading-snug">
                           {q.label}

@@ -126,24 +126,52 @@ export async function streamChatResponse(
   return response;
 }
 
-// Rate limit: simple in-memory counter (resets on server restart)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+// Rate limit: Supabase DB 기반, 한국시간(KST) 자정 리셋
+import { supabaseAdmin } from '@/lib/supabase-server';
+
 const DAILY_LIMIT = 5;
 
-export function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
-  const now = Date.now();
-  const entry = rateLimitMap.get(userId);
+function getTodayKST(): string {
+  // 한국시간(UTC+9) 기준 오늘 날짜 (YYYY-MM-DD)
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toISOString().slice(0, 10);
+}
 
-  if (!entry || now > entry.resetAt) {
-    // Reset: new day window (24h from now)
-    rateLimitMap.set(userId, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
-    return { allowed: true, remaining: DAILY_LIMIT - 1 };
+export async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remaining: number }> {
+  const todayKST = getTodayKST();
+
+  // 오늘 사용량 조회
+  const { data, error } = await supabaseAdmin
+    .from('ai_usage')
+    .select('count')
+    .eq('user_id', userId)
+    .eq('used_date', todayKST)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows found (정상: 오늘 처음 사용)
+    console.error('Rate limit check error:', error);
+    return { allowed: true, remaining: DAILY_LIMIT };
   }
 
-  if (entry.count >= DAILY_LIMIT) {
+  const currentCount = data?.count || 0;
+
+  if (currentCount >= DAILY_LIMIT) {
     return { allowed: false, remaining: 0 };
   }
 
-  entry.count++;
-  return { allowed: true, remaining: DAILY_LIMIT - entry.count };
+  // 사용량 증가 (upsert)
+  const { error: upsertError } = await supabaseAdmin
+    .from('ai_usage')
+    .upsert(
+      { user_id: userId, used_date: todayKST, count: currentCount + 1 },
+      { onConflict: 'user_id,used_date' }
+    );
+
+  if (upsertError) {
+    console.error('Rate limit update error:', upsertError);
+  }
+
+  return { allowed: true, remaining: DAILY_LIMIT - (currentCount + 1) };
 }

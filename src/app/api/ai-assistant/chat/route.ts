@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
     const messages: ChatMessage[] = body.messages;
     const sessionId: string | undefined = body.sessionId;
     const isFirstMessage: boolean = body.isFirstMessage || false;
-    const presetAnswer: string | undefined = body.presetAnswer;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json(
@@ -99,34 +98,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. 프리셋 답변인 경우: Gemini 호출 없이 DB 저장만
-    if (presetAnswer) {
-      const activeSessionId = await resolveSession(user.id, sessionId, lastMessage.content);
-
-      if (activeSessionId) {
-        await saveMessageToDb(activeSessionId, 'user', lastMessage.content);
-        await saveMessageToDb(activeSessionId, 'assistant', presetAnswer);
-        await touchSession(activeSessionId);
-      }
-
-      // SSE 형식으로 sessionId 반환
-      const encoder = new TextEncoder();
-      const stream = new ReadableStream({
-        start(controller) {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ type: 'done', sessionId: activeSessionId })}\n\n`)
-          );
-          controller.close();
-        },
-      });
-
-      return new Response(stream, {
-        headers: { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' },
-      });
-    }
-
-    // 4. Rate limit check (Gemini API 호출만 카운트)
-    const { allowed, remaining } = checkRateLimit(user.id);
+    // 3. Rate limit check (Gemini API 호출만 카운트)
+    const { allowed, remaining } = await checkRateLimit(user.id);
     if (!allowed) {
       return NextResponse.json(
         { error: 'RATE_LIMITED', message: '일일 사용 한도(5회)를 초과했습니다. 내일 다시 이용해주세요.' },
