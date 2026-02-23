@@ -40,15 +40,26 @@ export async function PATCH(
         .eq('id', id)
         .single();
 
-      // is_active 필드가 없을 수 있으므로 user_type으로 대체하지 않음
-      // Supabase Auth에서 사용자 비활성화
       if (member) {
-        const currentStatus = member.is_active !== false; // default true
+        const currentStatus = member.is_active !== false;
         await supabaseAdmin
           .from('users')
           .update({ is_active: !currentStatus })
           .eq('id', id);
       }
+    } else if (action === 'set_role') {
+      const { role } = body;
+      if (!['admin', 'employer', 'seeker'].includes(role)) {
+        return NextResponse.json({ error: '유효하지 않은 역할입니다' }, { status: 400 });
+      }
+      // 자기 자신의 관리자 권한은 해제할 수 없음
+      if (id === admin.id && role !== 'admin') {
+        return NextResponse.json({ error: '자기 자신의 관리자 권한은 해제할 수 없습니다' }, { status: 400 });
+      }
+      await supabaseAdmin
+        .from('users')
+        .update({ user_type: role })
+        .eq('id', id);
     }
 
     return NextResponse.json({ success: true });

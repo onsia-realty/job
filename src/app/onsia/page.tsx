@@ -8,7 +8,7 @@ import {
   Search, Ban, Trash2, CheckCircle2, XCircle, Eye,
   ArrowLeft, ToggleLeft, ToggleRight,
   Activity, Bell, Image as ImageIcon, Shield, Loader2,
-  Lock, Mail, KeyRound,
+  Lock, Mail, KeyRound, ShieldCheck, UserCog,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -522,6 +522,24 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleSetMemberRole = async (memberId: string, role: 'admin' | 'employer' | 'seeker') => {
+    const roleLabel = role === 'admin' ? '관리자' : role === 'employer' ? '구인' : '구직';
+    if (!confirm(`이 회원을 "${roleLabel}" 역할로 변경하시겠습니까?`)) return;
+    setActionLoading(memberId);
+    try {
+      await adminFetch(`/api/admin/members/${memberId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ action: 'set_role', role }),
+      });
+      await loadMembers();
+    } catch (err: any) {
+      alert(err.message || '역할 변경 실패');
+      console.error('Member role change failed:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleDeleteMember = async (memberId: string) => {
     if (!confirm('정말 삭제하시겠습니까? 해당 회원의 모든 데이터가 삭제됩니다.')) return;
     setActionLoading(memberId);
@@ -743,8 +761,16 @@ export default function AdminDashboardPage() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1">
-                      {m.user_type !== 'admin' && (
+                      {m.user_type !== 'admin' ? (
                         <>
+                          <button
+                            onClick={() => handleSetMemberRole(m.id, 'admin')}
+                            disabled={actionLoading === m.id}
+                            className="p-1.5 rounded-md text-purple-400 hover:bg-purple-500/10 transition-colors disabled:opacity-50"
+                            title="관리자 지정"
+                          >
+                            {actionLoading === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                          </button>
                           <button
                             onClick={() => handleToggleMemberStatus(m.id)}
                             disabled={actionLoading === m.id}
@@ -755,7 +781,7 @@ export default function AdminDashboardPage() {
                             }`}
                             title={m.is_active !== false ? '정지' : '해제'}
                           >
-                            {actionLoading === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Ban className="w-4 h-4" />}
+                            <Ban className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDeleteMember(m.id)}
@@ -766,6 +792,15 @@ export default function AdminDashboardPage() {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </>
+                      ) : (
+                        <button
+                          onClick={() => handleSetMemberRole(m.id, 'employer')}
+                          disabled={actionLoading === m.id}
+                          className="p-1.5 rounded-md text-gray-400 hover:bg-gray-500/10 transition-colors disabled:opacity-50"
+                          title="관리자 해제"
+                        >
+                          {actionLoading === m.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCog className="w-4 h-4" />}
+                        </button>
                       )}
                     </div>
                   </td>
@@ -791,35 +826,54 @@ export default function AdminDashboardPage() {
               <p className="text-xs text-gray-500 mb-1">{m.email}</p>
               <div className="flex items-center gap-2 mb-3">
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  m.user_type === 'employer' ? 'bg-blue-500/20 text-blue-400' : 'bg-teal-500/20 text-teal-400'
+                  m.user_type === 'admin' ? 'bg-purple-500/20 text-purple-400'
+                  : m.user_type === 'employer' ? 'bg-blue-500/20 text-blue-400'
+                  : 'bg-teal-500/20 text-teal-400'
                 }`}>
                   {getUserTypeLabel(m.user_type)}
                 </span>
                 {m.company_name && <span className="text-xs text-gray-500">{m.company_name}</span>}
                 <span className="text-xs text-gray-600">{formatDate(m.created_at)}</span>
               </div>
-              {m.user_type !== 'admin' && (
-                <div className="flex gap-2">
+              <div className="flex gap-2">
+                {m.user_type !== 'admin' ? (
+                  <>
+                    <button
+                      onClick={() => handleSetMemberRole(m.id, 'admin')}
+                      disabled={actionLoading === m.id}
+                      className="flex-1 text-xs py-1.5 rounded-lg border border-purple-500/30 text-purple-400 hover:bg-purple-500/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
+                    >
+                      <ShieldCheck className="w-3 h-3" /> 관리자 지정
+                    </button>
+                    <button
+                      onClick={() => handleToggleMemberStatus(m.id)}
+                      disabled={actionLoading === m.id}
+                      className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                        m.is_active !== false
+                          ? 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
+                          : 'border-green-500/30 text-green-400 hover:bg-green-500/10'
+                      }`}
+                    >
+                      {m.is_active !== false ? '정지' : '해제'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteMember(m.id)}
+                      disabled={actionLoading === m.id}
+                      className="flex-1 text-xs py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                    >
+                      삭제
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => handleToggleMemberStatus(m.id)}
+                    onClick={() => handleSetMemberRole(m.id, 'employer')}
                     disabled={actionLoading === m.id}
-                    className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
-                      m.is_active !== false
-                        ? 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
-                        : 'border-green-500/30 text-green-400 hover:bg-green-500/10'
-                    }`}
+                    className="flex-1 text-xs py-1.5 rounded-lg border border-gray-500/30 text-gray-400 hover:bg-gray-500/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-1"
                   >
-                    {m.is_active !== false ? '정지' : '해제'}
+                    <UserCog className="w-3 h-3" /> 관리자 해제
                   </button>
-                  <button
-                    onClick={() => handleDeleteMember(m.id)}
-                    disabled={actionLoading === m.id}
-                    className="flex-1 text-xs py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
-                  >
-                    삭제
-                  </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ))}
           {filteredMembers.length === 0 && (
