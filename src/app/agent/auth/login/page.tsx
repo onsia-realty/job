@@ -35,9 +35,12 @@ const KakaoLogo = () => (
   </svg>
 );
 
+type LoginRole = 'seeker' | 'employer';
+
 export default function LoginPage() {
   const router = useRouter();
   const googleBtnRef = useRef<HTMLDivElement>(null);
+  const [activeRole, setActiveRole] = useState<LoginRole>('seeker');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -47,6 +50,10 @@ export default function LoginPage() {
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+
+  const redirectByRole = (role: LoginRole) => {
+    router.replace(role === 'employer' ? '/agent/employer' : '/agent/jobs');
+  };
 
   // GIS 콜백 → Supabase signInWithIdToken
   const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
@@ -58,12 +65,13 @@ export default function LoginPage() {
       });
       if (authError) throw authError;
       if (data.session) {
-        router.replace('/agent/mypage');
+        const role = data.session.user?.user_metadata?.role as LoginRole | undefined;
+        redirectByRole(role || activeRole);
       }
     } catch (err: any) {
       setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
     }
-  }, [router]);
+  }, [router, activeRole]);
 
   // GIS 초기화
   useEffect(() => {
@@ -124,8 +132,9 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      await signInWithEmail(email, password);
-      router.replace('/agent/mypage');
+      const result = await signInWithEmail(email, password);
+      const role = result?.user?.user_metadata?.role as LoginRole | undefined;
+      redirectByRole(role || activeRole);
     } catch (err: any) {
       if (err.message.includes('Invalid login credentials')) {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
@@ -190,7 +199,7 @@ export default function LoginPage() {
 
       <main className="max-w-md mx-auto px-4 py-8">
         {/* 로고 및 타이틀 */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl mb-4 shadow-lg shadow-emerald-500/25">
             <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -198,6 +207,32 @@ export default function LoginPage() {
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">부동산<span className="text-cyan-500">인</span></h1>
           <p className="text-slate-500">공인중개사를 위한 구인구직 플랫폼</p>
+        </div>
+
+        {/* 개인회원 / 기업회원 탭 */}
+        <div className="flex bg-slate-100 rounded-xl p-1 mb-8">
+          <button
+            type="button"
+            onClick={() => setActiveRole('seeker')}
+            className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
+              activeRole === 'seeker'
+                ? 'bg-white text-emerald-600 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            개인회원
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveRole('employer')}
+            className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
+              activeRole === 'employer'
+                ? 'bg-white text-emerald-600 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            기업회원
+          </button>
         </div>
 
         {/* 에러 메시지 */}
@@ -340,7 +375,7 @@ export default function LoginPage() {
         <p className="text-center text-sm text-slate-500">
           아직 회원이 아니신가요?{' '}
           <Link
-            href="/agent/auth/signup"
+            href={`/agent/auth/signup?role=${activeRole}`}
             className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
           >
             회원가입

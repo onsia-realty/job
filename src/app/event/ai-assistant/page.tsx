@@ -41,7 +41,7 @@ export default function AiAssistantLandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link
-            href="/agent"
+            href="/"
             className="inline-flex items-center gap-2.5 text-white/70 hover:text-white transition-colors text-base"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -55,7 +55,9 @@ export default function AiAssistantLandingPage() {
               플랫폼 소개
             </Link>
           </div>
-          {!isLoading && user ? (
+          {isLoading ? (
+            <div className="w-20 h-9" />
+          ) : user ? (
             <Link
               href="/agent/mypage"
               className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-500/20 border border-cyan-500/40 rounded-full text-cyan-400 hover:bg-cyan-500/30 hover:text-cyan-300 transition-all text-base font-semibold"
@@ -99,7 +101,9 @@ export default function AiAssistantLandingPage() {
 
               {/* 메인 헤드라인 */}
               <h1 className="text-4xl md:text-5xl lg:text-[3.6rem] font-black mb-6 leading-tight break-keep">
-                <span className="text-white">중개실무,</span>
+                <span className="text-white">중개실무, 특약</span>
+                <br />
+                <span className="text-white">분양권 세금</span>
                 <br />
                 <span className="bg-gradient-to-r from-cyan-400 via-emerald-300 to-cyan-400 bg-clip-text text-transparent">
                   AI에게 물어보세요.
@@ -574,13 +578,20 @@ export default function AiAssistantLandingPage() {
                   AI 비서 시작하기
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <Link
-                  href="/agent/auth/login"
-                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-bold text-lg rounded-xl hover:bg-white/20 transition-all"
-                >
-                  <LogIn className="w-5 h-5" />
-                  회원가입하기
-                </Link>
+                {!user ? (
+                  <Link
+                    href="/agent/auth/login"
+                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-bold text-lg rounded-xl hover:bg-white/20 transition-all"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    회원가입하기
+                  </Link>
+                ) : (
+                  <div className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 border border-white/20 text-white font-medium text-lg rounded-xl">
+                    <User className="w-5 h-5 text-cyan-400" />
+                    {user.user_metadata?.name || user.email}
+                  </div>
+                )}
               </div>
 
               <p className="mt-8 text-gray-500 text-sm">

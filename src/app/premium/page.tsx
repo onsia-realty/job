@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/shared/Footer';
 import { useAuth } from '@/contexts/AuthContext';
+import { PORTONE_CONFIG, PAYMENT_PRODUCTS, generatePaymentId } from '@/lib/portone';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
-  ChevronLeft, ChevronRight, MapPin, Briefcase, Tag, User,
+  ChevronLeft, ChevronRight, MapPin, Briefcase, Tag, User, Loader2,
 } from 'lucide-react';
 
 // 카테고리 타입
@@ -208,17 +210,115 @@ const PRICING_DATA = {
   },
 };
 
-export default function PremiumPricingPage() {
-  const { user } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType>('agent');
+function PremiumPricingContent() {
+  const { user, isLoading: authLoading, session } = useAuth();
+  const searchParams = useSearchParams();
+  const jobId = searchParams.get('job');        // 공고 ID (공고 작성 후 이동 시)
+  const paramTier = searchParams.get('tier');    // 선택된 티어
+  const paramCategory = searchParams.get('category') as CategoryType | null;
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType>(paramCategory || 'agent');
   const [slideIndex, setSlideIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [payingTier, setPayingTier] = useState<string | null>(null);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
   const currentData = PRICING_DATA[selectedCategory];
   const slideJobs = selectedCategory === 'agent' ? AGENT_VIP_JOBS : SALES_UNIQUE_JOBS;
   const currentSlide = slideJobs[slideIndex];
+
+  // 결제 처리
+  const handlePayment = async (tier: string) => {
+    if (tier === 'normal') {
+      // 무료 공고는 바로 작성 페이지로
+      window.location.href = selectedCategory === 'agent' ? '/agent/jobs/new' : '/sales/jobs/new';
+      return;
+    }
+
+    if (!user) {
+      alert('결제를 진행하려면 로그인이 필요합니다.');
+      window.location.href = '/agent/auth/login';
+      return;
+    }
+
+    const productKey = `${selectedCategory}-${tier}`;
+    const product = PAYMENT_PRODUCTS[productKey];
+    if (!product) {
+      alert('유효하지 않은 상품입니다.');
+      return;
+    }
+
+    setPayingTier(tier);
+
+    try {
+      const PortOne = await import('@portone/browser-sdk/v2');
+      const paymentId = generatePaymentId();
+
+      const paymentRequest = {
+        storeId: PORTONE_CONFIG.storeId,
+        channelKey: PORTONE_CONFIG.channelKey,
+        paymentId,
+        orderName: product.name,
+        totalAmount: product.price,
+        currency: 'CURRENCY_KRW' as const,
+        payMethod: 'CARD' as const,
+        customer: {
+          fullName: user.user_metadata?.name || '사용자',
+          email: user.email || undefined,
+          phoneNumber: user.user_metadata?.phone || undefined,
+        },
+        redirectUrl: `${window.location.origin}/premium`,
+      };
+      console.log('결제 요청:', paymentRequest);
+
+      const response = await PortOne.requestPayment(paymentRequest);
+
+      console.log('PortOne 응답:', response);
+
+      if (response?.code) {
+        // 사용자가 결제를 취소한 경우
+        if (response.code === 'FAILURE_TYPE_PG' || response.message?.includes('취소')) {
+          setPayingTier(null);
+          return;
+        }
+        alert(`결제 실패: ${response.code} - ${response.message}`);
+        setPayingTier(null);
+        return;
+      }
+
+      // 서버에서 결제 검증
+      const verifyRes = await fetch('/api/payment/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
+        body: JSON.stringify({ paymentId, productKey, jobId }),
+      });
+
+      const result = await verifyRes.json();
+
+      if (result.success) {
+        alert(`${product.name} 결제가 완료되었습니다!\n${product.duration}간 광고가 노출됩니다.`);
+        // 공고가 연결된 경우 → 공고 목록으로, 아니면 공고 작성으로
+        if (jobId) {
+          window.location.href = selectedCategory === 'agent' ? '/agent/employer' : '/sales/jobs';
+        } else {
+          window.location.href = selectedCategory === 'agent'
+            ? `/agent/jobs/new?tier=${tier}`
+            : `/sales/jobs/new?tier=${tier}`;
+        }
+      } else {
+        alert(`결제 검증 실패: ${result.message}`);
+      }
+    } catch (error: unknown) {
+      console.error('결제 오류 상세:', JSON.stringify(error, null, 2), error);
+      const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
+      alert(`결제 중 오류가 발생했습니다: ${errMsg}`);
+    } finally {
+      setPayingTier(null);
+    }
+  };
 
   // 탭 변경 시 슬라이드 리셋
   useEffect(() => {
@@ -265,8 +365,10 @@ export default function PremiumPricingPage() {
                 부동산<span className="text-cyan-400">인</span>
               </span>
             </Link>
-            {user ? (
-              <Link href="/mypage" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
+            {authLoading ? (
+              <div className="w-16 h-5" />
+            ) : user ? (
+              <Link href="/agent/mypage" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
                 <User className="w-4 h-4" />
                 {user.user_metadata?.name || '마이페이지'}
               </Link>
@@ -492,13 +594,25 @@ export default function PremiumPricingPage() {
                     </ul>
 
                     {/* CTA 버튼 */}
-                    <button className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm ${
+                    <button
+                      onClick={() => handlePayment(plan.tier)}
+                      disabled={payingTier !== null}
+                      className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm disabled:opacity-50 ${
                       plan.tier === 'normal'
                         ? 'border border-slate-600 text-slate-400 hover:bg-slate-700'
                         : `bg-gradient-to-r ${plan.gradientFrom} ${plan.gradientTo} hover:opacity-90 text-white`
                     }`}>
-                      {plan.tier === 'normal' ? '무료로 시작' : '신청하기'}
-                      <ArrowRight className="w-3.5 h-3.5" />
+                      {payingTier === plan.tier ? (
+                        <>
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          결제 중...
+                        </>
+                      ) : (
+                        <>
+                          {plan.tier === 'normal' ? '무료로 시작' : '신청하기'}
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -565,5 +679,13 @@ export default function PremiumPricingPage() {
 
       <Footer variant="simple" />
     </div>
+  );
+}
+
+export default function PremiumPricingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">로딩 중...</div>}>
+      <PremiumPricingContent />
+    </Suspense>
   );
 }

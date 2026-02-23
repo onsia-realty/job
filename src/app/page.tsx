@@ -6,8 +6,9 @@ import Image from 'next/image';
 import {
   Building2, HardHat, Newspaper,
   ArrowRight, ChevronLeft, ChevronRight,
-  Sparkles, TrendingUp
+  Sparkles, TrendingUp, User
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/shared/Footer';
 
 // 뉴스 타입 정의
@@ -25,10 +26,11 @@ interface NewsItem {
 const adBanners = [
   {
     id: 1,
-    label: 'SPONSORED',
-    title: '프리미엄 광고 90% 할인',
-    description: '오픈 기념 특별 프로모션',
-    gradient: 'from-purple-600 to-blue-600',
+    label: 'AI 실무비서',
+    title: 'AI 부동산인 실무비서',
+    description: '중개실무, AI에게 물어보세요',
+    gradient: 'from-cyan-600 to-emerald-600',
+    link: '/event/ai-assistant',
   },
   {
     id: 2,
@@ -36,6 +38,7 @@ const adBanners = [
     title: 'AI 매칭 서비스 오픈',
     description: '나에게 딱 맞는 현장을 추천받으세요',
     gradient: 'from-orange-500 to-pink-500',
+    link: '/ads',
   },
 ];
 
@@ -52,11 +55,11 @@ const announcements = [
   },
   {
     id: 2,
-    badge: '이벤트',
-    title: '프리미엄 광고 90% 할인',
-    description: '오픈 기념 프리미엄 현장 광고 할인 이벤트를 진행합니다.',
-    color: 'from-orange-500 to-pink-500',
-    link: '/event/premium',
+    badge: 'AI',
+    title: 'AI 부동산인 실무비서 오픈',
+    description: '중개보수 계산, 특약 작성, 판례 검색까지 AI가 즉시 답변합니다.',
+    color: 'from-cyan-500 to-emerald-500',
+    link: '/event/ai-assistant',
   },
   {
     id: 3,
@@ -72,6 +75,7 @@ const announcements = [
 
 
 export default function LandingPage() {
+  const { user, isLoading: authLoading } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
 
@@ -136,12 +140,24 @@ export default function LandingPage() {
               <button className="hidden md:flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                 <span className="text-sm">검색</span>
               </button>
-              <Link
-                href="/agent/auth/login"
-                className="bg-[#FEE500] text-black text-sm font-medium px-4 py-2 rounded-md hover:bg-[#FDD800] transition-colors"
-              >
-                로그인
-              </Link>
+              {authLoading ? (
+                <div className="w-16 h-9" />
+              ) : user ? (
+                <Link
+                  href="/agent/mypage"
+                  className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors font-medium"
+                >
+                  <User className="w-4 h-4" />
+                  {user.user_metadata?.name || '마이페이지'}
+                </Link>
+              ) : (
+                <Link
+                  href="/agent/auth/login"
+                  className="bg-[#FEE500] text-black text-sm font-medium px-4 py-2 rounded-md hover:bg-[#FDD800] transition-colors"
+                >
+                  로그인
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -497,7 +513,7 @@ export default function LandingPage() {
               {adBanners.map((banner) => (
                 <Link
                   key={banner.id}
-                  href="/ads"
+                  href={banner.link}
                   className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 flex flex-col justify-between min-h-[140px] hover:opacity-90 transition-opacity`}
                 >
                   <span className="text-xs text-white/70 font-medium">{banner.label}</span>

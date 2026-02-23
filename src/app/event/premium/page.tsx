@@ -51,6 +51,10 @@ export default function PremiumLandingPage() {
           <div className="flex items-center gap-1 sm:gap-4">
             <span className="text-sm sm:text-base font-semibold text-amber-400">부동산인 플랫폼 소개</span>
             <span className="hidden sm:inline text-white/20">|</span>
+            <Link href="/event/ai-assistant" className="hidden sm:inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+              <Sparkles className="w-3.5 h-3.5" />
+              AI 실무비서
+            </Link>
             <Link href="/agent/premium" className="hidden sm:inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
               <Building2 className="w-3.5 h-3.5" />
               공인중개사 상품

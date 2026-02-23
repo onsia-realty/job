@@ -34,6 +34,8 @@ interface JobPosting {
   region: string;
   tier: 'vip' | 'premium' | 'normal';
   type: string;
+  category?: string;
+  property_category?: 'residential' | 'commercial' | null;
   is_active: boolean;
   is_approved: boolean;
   views: number;
@@ -339,10 +341,19 @@ export default function EmployerDashboardPage() {
 
                       {/* 공고 정보 */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-bold ${tierStyle.badge}`}>
                             {tierStyle.label}
                           </span>
+                          {job.property_category && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${
+                              job.property_category === 'residential'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {job.property_category === 'residential' ? '🏠 주거용' : '🏢 상업용'}
+                            </span>
+                          )}
                           <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${statusConfig.color}`}>
                             <StatusIcon className="w-3 h-3" />
                             {statusConfig.label}

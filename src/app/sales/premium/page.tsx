@@ -6,8 +6,9 @@ import Footer from '@/components/shared/Footer';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, ArrowRight, Sparkles, Shield, MessageCircle, ChevronLeft,
-  ChevronRight, MapPin, Briefcase, Tag, HardHat,
+  ChevronRight, MapPin, Briefcase, Tag, HardHat, User,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 // 유니크 슬라이드 더미 데이터
 const UNIQUE_JOBS = [
@@ -152,6 +153,7 @@ const FAQS = [
 ];
 
 export default function SalesPremiumPage() {
+  const { user } = useAuth();
   const [uniqueIndex, setUniqueIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const touchStartX = useRef(0);
@@ -199,9 +201,16 @@ export default function SalesPremiumPage() {
               </span>
               <span className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full border border-purple-500/30">분양상담사</span>
             </Link>
-            <Link href="/sales/auth/login" className="text-sm text-gray-400 hover:text-white transition-colors">
-              로그인
-            </Link>
+            {user ? (
+              <Link href="/agent/mypage" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
+                <User className="w-4 h-4" />
+                {user.user_metadata?.name || '마이페이지'}
+              </Link>
+            ) : (
+              <Link href="/sales/auth/login" className="text-sm text-gray-400 hover:text-white transition-colors">
+                로그인
+              </Link>
+            )}
           </div>
         </div>
       </header>

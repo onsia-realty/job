@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   User,
@@ -63,9 +63,18 @@ const INITIAL_FORM: SignUpFormData = {
   agreeMarketing: false,
 };
 
-export default function SignUpPage() {
+function SignUpPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [form, setForm] = useState<SignUpFormData>(INITIAL_FORM);
+
+  // URL ?role= 파라미터로 초기 역할 설정
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    if (roleParam === 'employer' || roleParam === 'seeker') {
+      setForm(prev => ({ ...prev, role: roleParam }));
+    }
+  }, [searchParams]);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpFormData, string>>>({});
@@ -358,53 +367,32 @@ export default function SignUpPage() {
       </header>
 
       <main className="max-w-md mx-auto px-4 py-6">
-        {/* 회원 유형 선택 */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">회원 유형</label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, role: 'seeker' })}
-              className={`p-4 rounded-xl border-2 transition-colors ${
-                form.role === 'seeker'
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className={`w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center ${
-                  form.role === 'seeker' ? 'bg-blue-100' : 'bg-gray-100'
-                }`}>
-                  <User className={`w-6 h-6 ${form.role === 'seeker' ? 'text-blue-600' : 'text-gray-400'}`} />
-                </div>
-                <p className={`font-medium ${form.role === 'seeker' ? 'text-blue-600' : 'text-gray-900'}`}>
-                  구직자
-                </p>
-                <p className="text-xs text-gray-500 mt-1">일자리를 찾고 있어요</p>
-              </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => setForm({ ...form, role: 'employer' })}
-              className={`p-4 rounded-xl border-2 transition-colors ${
-                form.role === 'employer'
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 bg-white hover:border-gray-300'
-              }`}
-            >
-              <div className="text-center">
-                <div className={`w-12 h-12 rounded-full mx-auto mb-2 flex items-center justify-center ${
-                  form.role === 'employer' ? 'bg-blue-100' : 'bg-gray-100'
-                }`}>
-                  <User className={`w-6 h-6 ${form.role === 'employer' ? 'text-blue-600' : 'text-gray-400'}`} />
-                </div>
-                <p className={`font-medium ${form.role === 'employer' ? 'text-blue-600' : 'text-gray-900'}`}>
-                  기업회원
-                </p>
-                <p className="text-xs text-gray-500 mt-1">인재를 찾고 있어요</p>
-              </div>
-            </button>
-          </div>
+        {/* 개인회원 / 기업회원 탭 */}
+        <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, role: 'seeker' })}
+            className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
+              form.role === 'seeker'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            개인회원
+            <span className="block text-xs font-normal mt-0.5 text-gray-400">일자리를 찾고 있어요</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setForm({ ...form, role: 'employer' })}
+            className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
+              form.role === 'employer'
+                ? 'bg-white text-blue-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            기업회원
+            <span className="block text-xs font-normal mt-0.5 text-gray-400">인재를 찾고 있어요</span>
+          </button>
         </div>
 
         {/* 회원가입 폼 */}
@@ -796,5 +784,17 @@ export default function SignUpPage() {
         </p>
       </main>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <SignUpPageContent />
+    </Suspense>
   );
 }

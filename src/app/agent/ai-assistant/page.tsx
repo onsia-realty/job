@@ -439,8 +439,10 @@ export default function AiAssistantPage() {
                 onClick={() => {
                   if (messages.length > 0) {
                     startNewConversation();
+                  } else if (window.history.length > 1) {
+                    window.history.back();
                   } else {
-                    window.location.href = '/agent';
+                    window.location.href = '/';
                   }
                 }}
                 className="text-slate-400 hover:text-white transition-colors"

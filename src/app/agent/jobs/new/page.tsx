@@ -16,7 +16,8 @@ import FormSection from '@/components/shared/FormSection';
 import ThumbnailUpload from '@/components/shared/ThumbnailUpload';
 import ContactSection from '@/components/shared/ContactSection';
 import AddressSearch from '@/components/shared/AddressSearch';
-import type { AgentJobType, AgentSalaryType, AgentExperience, AgentJobTier, SalesJobType } from '@/types';
+import type { AgentJobType, AgentSalaryType, AgentExperience, AgentJobTier, SalesJobType, PropertyCategory } from '@/types';
+import { PROPERTY_CATEGORY_LABELS, PROPERTY_CATEGORY_TYPES } from '@/types';
 
 const RichTextEditor = dynamic(() => import('@/components/editor/RichTextEditor'), {
   ssr: false,
@@ -153,6 +154,15 @@ function NewAgentJobContent() {
       // 카테고리 설정
       setSelectedCategory((data.category || 'agent') as 'agent' | 'sales');
 
+      // 주거용/상업용 대분류 복원
+      if (data.property_category) {
+        setPropertyCategory(data.property_category as PropertyCategory);
+      } else if (data.type) {
+        // 기존 데이터에 property_category가 없으면 type으로 추론
+        const isCommercial = PROPERTY_CATEGORY_TYPES.commercial.includes(data.type);
+        setPropertyCategory(isCommercial ? 'commercial' : 'residential');
+      }
+
       // 주소에서 상세주소 분리
       const address = data.address || '';
       const workHoursMatch = data.html_content?.match(/근무시간: (.+?) ~ (.+)/);
@@ -203,6 +213,16 @@ function NewAgentJobContent() {
       setIsEditLoading(false);
     })();
   }, [editId, authUser]);
+
+  // 주거용/상업용 대분류 상태
+  const [propertyCategory, setPropertyCategory] = useState<PropertyCategory>('residential');
+
+  // 대분류 변경 시 매물유형도 해당 대분류의 첫 번째로 리셋
+  const handlePropertyCategoryChange = (cat: PropertyCategory) => {
+    setPropertyCategory(cat);
+    const firstType = PROPERTY_CATEGORY_TYPES[cat][0];
+    setFormData(prev => ({ ...prev, type: firstType }));
+  };
 
   // 폼 상태
   const [formData, setFormData] = useState({
@@ -403,6 +423,7 @@ function NewAgentJobContent() {
         description: formData.description,
         html_content: fullHtmlContent,
         category: selectedCategory || 'agent',
+        property_category: selectedCategory === 'agent' ? propertyCategory : null,
         type: formData.type,
         tier: formData.tier,
         salary_type: formData.salary_type,
@@ -419,6 +440,7 @@ function NewAgentJobContent() {
       };
 
       let error;
+      let newJobId: string | null = null;
       if (editId) {
         // 수정 모드 — .select()로 실제 업데이트 확인
         const res = await supabase
@@ -451,12 +473,20 @@ function NewAgentJobContent() {
           .select()
           .single();
         error = res.error;
+        newJobId = res.data?.id || null;
       }
 
       if (error) {
         console.error(editId ? 'Update error:' : 'Insert error:', JSON.stringify(error, null, 2));
         alert(`공고 ${editId ? '수정' : '등록'}에 실패했습니다: ` + (error.message || error.code || JSON.stringify(error)));
         setIsSubmitting(false);
+        return;
+      }
+
+      // 유료 티어: 결제 페이지로 이동
+      if (!editId && formData.tier !== 'normal') {
+        alert('공고가 등록되었습니다! 결제 페이지로 이동합니다.');
+        router.push(`/premium?job=${newJobId}&tier=${formData.tier}&category=${selectedCategory || 'agent'}`);
         return;
       }
 
@@ -719,25 +749,21 @@ function NewAgentJobContent() {
                   <button
                     key={tier.value}
                     type="button"
-                    onClick={() => !isPaid && setFormData(prev => ({ ...prev, tier: tier.value }))}
-                    disabled={isPaid}
+                    onClick={() => setFormData(prev => ({ ...prev, tier: tier.value }))}
                     className={`relative p-4 rounded-xl border-2 transition-all ${
-                      isPaid
-                        ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
-                        : formData.tier === tier.value
+                      formData.tier === tier.value
                         ? 'border-blue-500 bg-blue-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
                     <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
-                    <p className={`font-bold ${isPaid ? 'text-gray-400' : 'text-gray-900'}`}>{tier.label}</p>
+                    <p className="font-bold text-gray-900">{tier.label}</p>
                     {tier.price === 0 ? (
                       <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
                     ) : (
                       <div>
                         <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
-                        <p className="text-sm font-bold text-gray-400">{tier.price.toLocaleString()}원/{tier.duration}</p>
-                        <p className="text-[10px] text-orange-500 font-bold mt-1">결제 준비중</p>
+                        <p className="text-sm font-bold text-blue-600">{tier.price.toLocaleString()}원/{tier.duration}</p>
                       </div>
                     )}
                   </button>
@@ -745,7 +771,9 @@ function NewAgentJobContent() {
               })}
             </div>
             <p className="mt-3 text-xs text-gray-400">
-              유료 등급(BASIC, 프리미엄, VIP)은 결제 시스템 오픈 후 이용 가능합니다.
+              {formData.tier === 'normal'
+                ? '무료 공고는 24시간 후 자동 만료됩니다.'
+                : '유료 등급 선택 시 공고 등록 후 결제 페이지로 이동합니다.'}
             </p>
           </FormSection>
 
@@ -816,6 +844,38 @@ function NewAgentJobContent() {
           {/* 모집 조건 */}
           <FormSection icon={Briefcase} title="모집 조건">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* 주거용/상업용 대분류 (공인중개사만) */}
+              {selectedCategory === 'agent' && (
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    부동산 분야 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-3">
+                    {(Object.entries(PROPERTY_CATEGORY_LABELS) as [PropertyCategory, string][]).map(([key, label]) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => handlePropertyCategoryChange(key)}
+                        className={`flex-1 py-3.5 rounded-xl border-2 font-semibold text-sm transition-all ${
+                          propertyCategory === key
+                            ? key === 'residential'
+                              ? 'border-blue-500 bg-blue-50 text-blue-700'
+                              : 'border-amber-500 bg-amber-50 text-amber-700'
+                            : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300'
+                        }`}
+                      >
+                        <span className="block text-lg mb-0.5">{key === 'residential' ? '🏠' : '🏢'}</span>
+                        {label}
+                        <span className="block text-xs font-normal mt-0.5 text-gray-400">
+                          {PROPERTY_CATEGORY_TYPES[key].length}개 유형
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* 매물유형 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -827,7 +887,10 @@ function NewAgentJobContent() {
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
                 >
-                  {(selectedCategory === 'sales' ? SALES_JOB_TYPES : AGENT_JOB_TYPES).map((type) => (
+                  {(selectedCategory === 'sales'
+                    ? SALES_JOB_TYPES
+                    : AGENT_JOB_TYPES.filter(t => PROPERTY_CATEGORY_TYPES[propertyCategory].includes(t.value))
+                  ).map((type) => (
                     <option key={type.value} value={type.value}>{type.label}</option>
                   ))}
                 </select>

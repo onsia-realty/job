@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, User, Search, Sparkles } from 'lucide-react';
+import { Home, Briefcase, Users, User, Search, Sparkles, ClipboardList, PenSquare, Bookmark } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import type { UserRole } from '@/types';
 
 interface MobileNavProps {
   variant: 'agent' | 'sales';
@@ -10,16 +12,27 @@ interface MobileNavProps {
 
 export default function MobileNav({ variant }: MobileNavProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const baseUrl = variant === 'agent' ? '/agent' : '/sales';
+  const role = user?.user_metadata?.role as UserRole | undefined;
+  const isEmployer = role === 'employer';
 
   const navItems = variant === 'agent'
-    ? [
-        { href: baseUrl, label: '홈', icon: Home },
-        { href: `${baseUrl}/jobs`, label: '구인', icon: Briefcase },
-        { href: `${baseUrl}/talents`, label: '인재', icon: Users },
-        { href: `${baseUrl}/ai-assistant`, label: 'AI', icon: Sparkles },
-        { href: `${baseUrl}/mypage`, label: 'MY', icon: User },
-      ]
+    ? isEmployer
+      ? [
+          { href: baseUrl, label: '홈', icon: Home },
+          { href: `${baseUrl}/employer`, label: '채용관리', icon: ClipboardList },
+          { href: `${baseUrl}/jobs/create`, label: '구인작성', icon: PenSquare },
+          { href: `${baseUrl}/ai-assistant`, label: 'AI', icon: Sparkles },
+          { href: `${baseUrl}/mypage`, label: 'MY', icon: User },
+        ]
+      : [
+          { href: baseUrl, label: '홈', icon: Home },
+          { href: `${baseUrl}/jobs`, label: '구인', icon: Briefcase },
+          { href: `${baseUrl}/ai-assistant`, label: 'AI', icon: Sparkles },
+          { href: `${baseUrl}/mypage/scraps`, label: '스크랩', icon: Bookmark },
+          { href: `${baseUrl}/mypage`, label: 'MY', icon: User },
+        ]
     : [
         { href: baseUrl, label: '홈', icon: Home },
         { href: `${baseUrl}/jobs`, label: '현장', icon: Briefcase },

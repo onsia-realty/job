@@ -5,8 +5,9 @@ import Link from 'next/link';
 import {
   Search, ChevronDown, ChevronLeft, ChevronRight, Star,
   MapPin, Home, Map, Heart, Megaphone, PenSquare,
-  ArrowUp, Loader2, Eye, Building2, Sparkles
+  ArrowUp, Loader2, Eye, Building2, Sparkles, User
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import JobCard from '@/components/sales/JobCard';
 import VipSlider from '@/components/sales/VipSlider';
 import MobileStatsBar from '@/components/sales/MobileStatsBar';
@@ -357,6 +358,7 @@ const adItems = [
 
 
 export default function SalesMainPage() {
+  const { user } = useAuth();
   const [selectedRegion, setSelectedRegion] = useState<string>('지역');
   const [isRegionOpen, setIsRegionOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -487,8 +489,17 @@ export default function SalesMainPage() {
             {/* 상단 메뉴 */}
             <div className="hidden md:flex items-center gap-4 text-xs text-gray-500">
               <Link href="/" className="hover:text-purple-600">홈</Link>
-              <Link href="/sales/auth/login" className="hover:text-purple-600">로그인</Link>
-              <Link href="/sales/auth/login" className="hover:text-purple-600">회원가입</Link>
+              {user ? (
+                <Link href="/agent/mypage" className="hover:text-purple-600 flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  {user.user_metadata?.name || '마이페이지'}
+                </Link>
+              ) : (
+                <>
+                  <Link href="/sales/auth/login" className="hover:text-purple-600">로그인</Link>
+                  <Link href="/sales/auth/login" className="hover:text-purple-600">회원가입</Link>
+                </>
+              )}
               <Link href="#" className="hover:text-purple-600">공지사항</Link>
               <Link href="/sales/premium" className="hover:text-purple-600">상품안내</Link>
             </div>

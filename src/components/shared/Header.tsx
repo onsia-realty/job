@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { User, LogIn, Building2, HardHat, Crown, Sparkles } from 'lucide-react';
+import { User, LogIn, Building2, HardHat, Crown, Sparkles, ClipboardList, PenSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import type { UserRole } from '@/types';
 
 interface HeaderProps {
   variant?: 'landing' | 'agent' | 'sales';
@@ -74,31 +75,53 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                 </Link>
               </>
             )}
-            {variant === 'agent' && (
-              <>
-                <Link href="/agent" className="text-gray-700 hover:text-blue-600 font-medium">
-                  홈
-                </Link>
-                <Link href="/agent/jobs" className="text-gray-500 hover:text-blue-600">
-                  구인공고
-                </Link>
-                <Link href="/agent/talents" className="text-gray-500 hover:text-blue-600">
-                  인재정보
-                </Link>
-                <Link href="/agent/ai-assistant" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  AI 실무비서
-                </Link>
-                <Link href="/agent/premium" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
-                  <Crown className="w-3.5 h-3.5" />
-                  상품안내
-                </Link>
-                <Link href="/profile/ai-photo" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  AI 이력서 사진
-                </Link>
-              </>
-            )}
+            {variant === 'agent' && (() => {
+              const role = user?.user_metadata?.role as UserRole | undefined;
+              const isEmployer = role === 'employer';
+              return isEmployer ? (
+                <>
+                  <Link href="/agent" className="text-gray-700 hover:text-blue-600 font-medium">
+                    홈
+                  </Link>
+                  <Link href="/agent/employer" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    채용관리
+                  </Link>
+                  <Link href="/agent/talents" className="text-gray-500 hover:text-blue-600">
+                    인재정보
+                  </Link>
+                  <Link href="/agent/jobs/create" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                    <PenSquare className="w-3.5 h-3.5" />
+                    구인글 작성
+                  </Link>
+                  <Link href="/agent/ai-assistant" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    AI 실무비서
+                  </Link>
+                  <Link href="/agent/premium" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                    <Crown className="w-3.5 h-3.5" />
+                    상품안내
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link href="/agent" className="text-gray-700 hover:text-blue-600 font-medium">
+                    홈
+                  </Link>
+                  <Link href="/agent/jobs" className="text-gray-500 hover:text-blue-600">
+                    구인공고
+                  </Link>
+                  <Link href="/agent/ai-assistant" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    AI 실무비서
+                  </Link>
+                  <Link href="/profile/ai-photo" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5" />
+                    AI 이력서 사진
+                  </Link>
+                </>
+              );
+            })()}
             {variant === 'sales' && (
               <>
                 <Link href="/sales" className="text-white font-medium">

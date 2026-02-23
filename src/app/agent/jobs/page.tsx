@@ -590,13 +590,12 @@ export default function AgentJobsPage() {
       }
 
       if (data && data.length > 0) {
-        const dbJobs: AgentJobListing[] = data.map((job: any, index: number) => ({
+        const dbJobs: AgentJobListing[] = data.map((job: any) => ({
           id: job.id,
           title: job.title,
           description: job.description || '',
           type: job.type as AgentJobType,
-          // 최근 등록 2개는 VIP로 자동 승격
-          tier: (index < 2 ? 'vip' : (job.tier || 'normal')) as AgentJobTier,
+          tier: (job.tier || 'normal') as AgentJobTier,
           badges: job.badges || [],
           salary: {
             type: (job.salary_type || 'monthly') as AgentSalaryType,
