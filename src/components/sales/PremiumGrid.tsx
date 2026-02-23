@@ -76,7 +76,7 @@ export default function PremiumGrid({ jobs, tier }: PremiumGridProps) {
 
             {/* 티어 배지 */}
             <div className="absolute top-2 left-2">
-              <span className={`${styles.badge} text-white text-[10px] font-bold px-2 py-0.5 rounded`}>
+              <span className={`${styles.badge} text-white text-[11px] font-bold px-2 py-0.5 rounded`}>
                 {tierLabel}
               </span>
             </div>
@@ -87,7 +87,7 @@ export default function PremiumGrid({ jobs, tier }: PremiumGridProps) {
                 {job.badges.map((badge) => (
                   <span
                     key={badge}
-                    className={`text-[10px] px-1.5 py-0.5 rounded ${BADGE_COLORS[badge]?.bg} ${BADGE_COLORS[badge]?.text}`}
+                    className={`text-[11px] px-1.5 py-0.5 rounded ${BADGE_COLORS[badge]?.bg} ${BADGE_COLORS[badge]?.text}`}
                   >
                     {badge === 'new' ? 'NEW' : badge === 'hot' ? 'HOT' : badge === 'jackpot' ? '대박' : '인기'}
                   </span>
@@ -97,7 +97,7 @@ export default function PremiumGrid({ jobs, tier }: PremiumGridProps) {
 
             {/* 하단 정보 (썸네일 위) */}
             <div className="absolute bottom-2 left-2 right-2">
-              <div className="flex items-center gap-1 text-white text-[10px]">
+              <div className="flex items-center gap-1 text-white text-[11px]">
                 <MapPin className="w-3 h-3" />
                 <span>{job.region}</span>
                 <span className="mx-1">|</span>
@@ -120,21 +120,21 @@ export default function PremiumGrid({ jobs, tier }: PremiumGridProps) {
 
             {/* 태그들 */}
             <div className="flex flex-wrap gap-1 mb-2">
-              <span className={`text-[10px] px-1.5 py-0.5 rounded ${styles.accent} bg-gray-100`}>
+              <span className={`text-[11px] px-1.5 py-0.5 rounded ${styles.accent} bg-gray-100`}>
                 {POSITION_LABELS[job.position]}
               </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
+              <span className="text-[11px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">
                 {job.salary.type === 'commission' ? '수수료' : job.salary.type === 'base_incentive' ? '기본급+인센' : '일급'}
               </span>
               {job.benefits.slice(0, 1).map((benefit) => (
-                <span key={benefit} className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">
+                <span key={benefit} className="text-[11px] px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-700">
                   {benefit}
                 </span>
               ))}
             </div>
 
             {/* 하단: 회사명 + 조회수 */}
-            <div className="flex items-center justify-between text-[10px] text-gray-400">
+            <div className="flex items-center justify-between text-xs text-gray-400">
               <span className="truncate">{job.company}</span>
               <div className="flex items-center gap-0.5">
                 <Eye className="w-3 h-3" />

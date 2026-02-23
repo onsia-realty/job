@@ -168,7 +168,7 @@ export default function PhotoUploader({ onPhotoSelected, selectedPreview, onClea
         onDragLeave={handleDragLeave}
         onClick={() => fileInputRef.current?.click()}
         className={`
-          relative cursor-pointer border-2 border-dashed rounded-2xl p-8 md:p-12
+          relative cursor-pointer border-2 border-dashed rounded-2xl p-6 md:p-12
           transition-all duration-200 text-center
           ${isDragging
             ? 'border-blue-500 bg-blue-50 scale-[1.02]'

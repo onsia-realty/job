@@ -29,7 +29,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentUser = await getCurrentUser();
           setUser(currentUser);
         }
-      } catch (error) {
+      } catch (error: unknown) {
+        // 리프레시 토큰 만료 → 세션 정리
+        const msg = error instanceof Error ? error.message : '';
+        if (msg.includes('Refresh Token') || msg.includes('refresh_token')) {
+          await authSignOut().catch(() => {});
+          setUser(null);
+          setSession(null);
+        }
         console.error('Auth init error:', error);
       } finally {
         setIsLoading(false);
@@ -39,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth();
 
     // Auth 상태 변경 구독
-    const { data: { subscription } } = onAuthStateChange((event, newSession) => {
+    const { data: { subscription } } = onAuthStateChange(async (event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
@@ -52,6 +59,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setSession(null);
+      }
+
+      // 리프레시 토큰 만료 시 자동 로그아웃
+      if (event === 'TOKEN_REFRESHED' && !newSession) {
+        await authSignOut().catch(() => {});
         setUser(null);
         setSession(null);
       }

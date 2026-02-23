@@ -117,7 +117,7 @@ function ChipSelect({ label, options, value, onChange, multi = false }: {
 
   return (
     <div>
-      <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
         {label} {multi && <span className="text-gray-400 normal-case tracking-normal">(복수 선택)</span>}
       </label>
       <div className="flex flex-wrap gap-1.5">
@@ -128,7 +128,7 @@ function ChipSelect({ label, options, value, onChange, multi = false }: {
               key={option}
               type="button"
               onClick={() => handleClick(option)}
-              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all border ${
+              className={`px-2.5 py-1.5 rounded-full text-xs font-medium transition-all border ${
                 isSelected
                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                   : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'
@@ -497,7 +497,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
     return (
       <div className="space-y-4">
         <div className="px-3 py-2 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-lg border border-blue-100">
-          <p className="text-[11px] text-blue-600 font-medium">
+          <p className="text-xs text-blue-600 font-medium">
             옵션을 클릭하면 자동으로 양식에 반영됩니다
           </p>
         </div>
@@ -507,7 +507,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         <div className="space-y-3 pl-1">
           <ChipSelect label="모집직종" options={AGENT_JOB_TYPES} value={agentData.jobType} onChange={v => updateAgent('jobType', v as string)} />
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">담당업무</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">담당업무</label>
             <input
               type="text"
               value={agentData.duties}
@@ -519,7 +519,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
           <ChipSelect label="고용형태" options={EMPLOYMENT_TYPES} value={agentData.employmentType} onChange={v => updateAgent('employmentType', v as string)} />
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">모집인원</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">모집인원</label>
               <div className="relative">
                 <input
                   type="text"
@@ -528,11 +528,11 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
                   placeholder="0"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-8 text-xs focus:outline-none focus:border-blue-400"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400">명</span>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">명</span>
               </div>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">모집마감</label>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">모집마감</label>
               <input
                 type="text"
                 value={agentData.deadline}
@@ -549,7 +549,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         <div className="space-y-3 pl-1">
           <ChipSelect label="급여형태" options={AGENT_SALARY_TYPES} value={agentData.salaryType} onChange={v => updateAgent('salaryType', v as string)} />
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">급여액</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">급여액</label>
             <div className="relative">
               <input
                 type="text"
@@ -558,7 +558,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
                 placeholder="예: 250"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-12 text-xs focus:outline-none focus:border-blue-400"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400">
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
                 {agentData.salaryType === '비율제' ? '%' : '만원'}
               </span>
             </div>
@@ -572,7 +572,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         <div className="space-y-3 pl-1">
           <ChipSelect label="근무요일" options={WORK_DAYS} value={agentData.workDays} onChange={v => updateAgent('workDays', v as string)} />
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">근무시간</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">근무시간</label>
             <div className="flex items-center gap-2">
               <select
                 value={agentData.workStart}
@@ -593,7 +593,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
           </div>
           <ChipSelect label="휴게시간" options={BREAK_TIMES} value={agentData.breakTime} onChange={v => updateAgent('breakTime', v as string)} />
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">근무지역</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">근무지역</label>
             <input
               type="text"
               value={agentData.workLocation}
@@ -622,7 +622,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         <SectionHeader emoji="🏢" title="회사 소개" color="blue" />
         <div className="space-y-3 pl-1">
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">회사/사무소 소개</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">회사/사무소 소개</label>
             <textarea
               value={agentData.companyIntro}
               onChange={e => updateAgent('companyIntro', e.target.value)}
@@ -640,7 +640,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
   return (
     <div className="space-y-4">
       <div className="px-3 py-2 bg-gradient-to-r from-teal-50 to-emerald-50 rounded-lg border border-teal-100">
-        <p className="text-[11px] text-teal-600 font-medium">
+        <p className="text-xs text-teal-600 font-medium">
           옵션을 클릭하면 자동으로 양식에 반영됩니다
         </p>
       </div>
@@ -649,7 +649,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
       <SectionHeader emoji="📌" title="현장 정보" color="blue" />
       <div className="space-y-3 pl-1">
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">현장명</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">현장명</label>
           <input
             type="text"
             value={salesData.siteName}
@@ -660,7 +660,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">시행사</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">시행사</label>
             <input
               type="text"
               value={salesData.developer}
@@ -670,7 +670,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
             />
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">시공사</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">시공사</label>
             <input
               type="text"
               value={salesData.constructor}
@@ -682,7 +682,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         </div>
         <ChipSelect label="현장유형" options={SALES_SITE_TYPES} value={salesData.siteType} onChange={v => updateSales('siteType', v as string)} />
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">현장위치</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">현장위치</label>
           <input
             type="text"
             value={salesData.siteLocation}
@@ -693,7 +693,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">총 세대수</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">총 세대수</label>
             <div className="relative">
               <input
                 type="text"
@@ -702,11 +702,11 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
                 placeholder="0"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-10 text-xs focus:outline-none focus:border-blue-400"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400">세대</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">세대</span>
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">분양시기</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">분양시기</label>
             <input
               type="text"
               value={salesData.salesTiming}
@@ -723,7 +723,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
       <div className="space-y-3 pl-1">
         <ChipSelect label="급여형태" options={SALES_SALARY_TYPES} value={salesData.salaryType} onChange={v => updateSales('salaryType', v as string)} />
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">수수료</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">수수료</label>
           <div className="relative">
             <input
               type="text"
@@ -732,13 +732,13 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
               placeholder="예: 300"
               className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-12 text-xs focus:outline-none focus:border-blue-400"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400">만원</span>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">만원</span>
           </div>
         </div>
         <ChipSelect label="지급시기" options={PAYMENT_TIMINGS} value={salesData.paymentTiming} onChange={v => updateSales('paymentTiming', v as string)} />
         <ChipSelect label="정산방법" options={SETTLEMENTS} value={salesData.settlement} onChange={v => updateSales('settlement', v as string)} />
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">추가혜택</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">추가혜택</label>
           <input
             type="text"
             value={salesData.additionalBenefits}
@@ -755,7 +755,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         <ChipSelect label="모집직급" options={SALES_POSITIONS} value={salesData.position} onChange={v => updateSales('position', v as string)} />
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">모집인원</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">모집인원</label>
             <div className="relative">
               <input
                 type="text"
@@ -764,11 +764,11 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
                 placeholder="0"
                 className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-8 text-xs focus:outline-none focus:border-blue-400"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-gray-400">명</span>
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">명</span>
             </div>
           </div>
           <div>
-            <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">근무기간</label>
+            <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">근무기간</label>
             <input
               type="text"
               value={salesData.workPeriod}
@@ -787,7 +787,7 @@ export default function StructuredJobForm({ templateId, category, onHtmlChange }
         <ChipSelect label="복리후생" options={SALES_BENEFITS} value={salesData.benefits} onChange={v => updateSales('benefits', v as string[])} multi />
         <ChipSelect label="현장 특징" options={SALES_FEATURES} value={salesData.siteFeatures} onChange={v => updateSales('siteFeatures', v as string[])} multi />
         <div>
-          <label className="block text-[11px] font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">현장 소개</label>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">현장 소개</label>
           <textarea
             value={salesData.siteIntro}
             onChange={e => updateSales('siteIntro', e.target.value)}

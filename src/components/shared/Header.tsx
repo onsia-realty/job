@@ -142,7 +142,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
             {!isLoading && user ? (
               <Link
                 href={variant === 'sales' ? '/sales/mypage' : '/agent/mypage'}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm transition-colors ${
                   variant === 'landing' || variant === 'sales'
                     ? 'bg-white/20 text-white hover:bg-white/30'
                     : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
@@ -156,7 +156,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
             ) : (
               <Link
                 href={variant === 'sales' ? '/sales/auth/login' : '/agent/auth/login'}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-colors ${
+                className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm transition-colors ${
                   variant === 'landing' || variant === 'sales'
                     ? 'bg-white/20 text-white hover:bg-white/30'
                     : 'bg-blue-600 text-white hover:bg-blue-700'

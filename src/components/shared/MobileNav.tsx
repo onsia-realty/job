@@ -66,7 +66,7 @@ export default function MobileNav({ variant }: MobileNavProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-0.5 px-3 py-1 ${
+              className={`flex flex-col items-center gap-0.5 px-3 py-2 ${
                 active ? getActiveStyles() : 'text-gray-400'
               }`}
             >

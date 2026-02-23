@@ -75,7 +75,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
 
   // 필터 버튼 스타일
   const getButtonStyle = (isActive: boolean) =>
-    `px-3 py-1.5 rounded-full text-sm border transition-all ${
+    `px-3 py-2 rounded-full text-sm border transition-all ${
       isActive
         ? 'bg-purple-600 text-white border-purple-600'
         : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'
@@ -129,7 +129,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
           <div className="relative">
             <button
               onClick={() => toggleSection('region')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border transition-all ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm border transition-all ${
                 filters.regions.length > 0
                   ? 'bg-purple-100 text-purple-700 border-purple-300'
                   : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'
@@ -140,7 +140,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
             {activeSection === 'region' && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-64 max-h-72 overflow-y-auto p-3">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-[calc(100vw-32px)] sm:w-64 max-h-72 overflow-y-auto p-3">
                 <div className="grid grid-cols-3 gap-2">
                   {REGIONS.map((region) => (
                     <button
@@ -160,7 +160,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
           <div className="relative">
             <button
               onClick={() => toggleSection('type')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border transition-all ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm border transition-all ${
                 filters.types.length > 0
                   ? 'bg-purple-100 text-purple-700 border-purple-300'
                   : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'
@@ -171,7 +171,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
             {activeSection === 'type' && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-48 p-3">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-[calc(100vw-32px)] sm:w-48 p-3">
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(SALES_JOB_TYPE_LABELS) as SalesJobType[]).map((type) => (
                     <button
@@ -191,7 +191,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
           <div className="relative">
             <button
               onClick={() => toggleSection('position')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border transition-all ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm border transition-all ${
                 filters.positions.length > 0
                   ? 'bg-purple-100 text-purple-700 border-purple-300'
                   : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'
@@ -202,7 +202,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
             {activeSection === 'position' && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-40 p-3">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-[calc(100vw-32px)] sm:w-40 p-3">
                 <div className="flex flex-wrap gap-2">
                   {(Object.keys(POSITION_LABELS) as SalesPosition[]).map((pos) => (
                     <button
@@ -222,7 +222,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
           <div className="relative">
             <button
               onClick={() => toggleSection('salary')}
-              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm border transition-all ${
+              className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm border transition-all ${
                 filters.salaryTypes.length > 0
                   ? 'bg-purple-100 text-purple-700 border-purple-300'
                   : 'bg-white text-gray-700 border-gray-300 hover:border-purple-400'
@@ -233,7 +233,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
             {activeSection === 'salary' && (
-              <div className="absolute top-full left-0 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-40 p-3">
+              <div className="absolute top-full left-0 right-0 sm:right-auto mt-1 bg-white rounded-lg shadow-xl border border-gray-200 z-50 w-[calc(100vw-32px)] sm:w-40 p-3">
                 <div className="flex flex-col gap-2">
                   {(Object.keys(SALARY_TYPE_LABELS) as SalaryType[]).map((sal) => (
                     <button
@@ -303,7 +303,7 @@ export default function JobFilter({ filters, onFilterChange, totalCount, filtere
                 <button
                   key={tier}
                   onClick={() => toggleFilter('tiers', tier)}
-                  className={`px-3 py-1.5 rounded-full text-sm border transition-all ${
+                  className={`px-3 py-2 rounded-full text-sm border transition-all ${
                     filters.tiers.includes(tier)
                       ? tier === 'unique'
                         ? 'bg-purple-600 text-white border-purple-600'

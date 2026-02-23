@@ -199,7 +199,7 @@ export default function ChatWidget() {
 
             {/* FAQ 버튼 (메시지가 1개일 때만) */}
             {messages.length === 1 && (
-              <div className="flex flex-wrap gap-2 pl-10">
+              <div className="flex flex-wrap gap-2 pl-3">
                 {FAQ_BUTTONS.map((q) => (
                   <button
                     key={q}
