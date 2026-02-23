@@ -6,6 +6,17 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
+async function ensureUserRecord(accessToken: string) {
+  try {
+    await fetch('/api/auth/ensure-user', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    });
+  } catch (err) {
+    console.error('Ensure user record error:', err);
+  }
+}
+
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,6 +45,8 @@ function AuthCallbackContent() {
           }
 
           if (data.session) {
+            // users 테이블에 레코드 자동 생성
+            await ensureUserRecord(data.session.access_token);
             router.replace('/agent/mypage');
             return;
           }
@@ -43,6 +56,7 @@ function AuthCallbackContent() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
+          await ensureUserRecord(session.access_token);
           router.replace('/agent/mypage');
         } else {
           router.replace('/agent/auth/login');

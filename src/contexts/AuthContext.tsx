@@ -43,6 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(newSession);
       setUser(newSession?.user ?? null);
 
+      if (event === 'SIGNED_IN' && newSession?.access_token) {
+        // users 테이블에 레코드 자동 생성 (소셜 로그인 등 콜백 외 경로 보완)
+        fetch('/api/auth/ensure-user', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${newSession.access_token}` },
+        }).catch(() => {});
+      }
+
       if (event === 'SIGNED_OUT') {
         setUser(null);
         setSession(null);
