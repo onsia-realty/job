@@ -133,14 +133,25 @@ export default function AiAssistantLandingPage() {
 
               {/* CTA */}
               <div>
-                <Link
-                  href="/agent/ai-assistant"
-                  className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
-                >
-                  <Bot className="w-5 h-5" />
-                  AI 비서에게 물어보기
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                {user ? (
+                  <Link
+                    href="/agent/ai-assistant"
+                    className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
+                  >
+                    <Bot className="w-5 h-5" />
+                    AI 비서에게 물어보기
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/agent/auth/login"
+                    className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    로그인하고 AI 비서 사용하기
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                )}
               </div>
 
               {/* 신뢰 지표 */}
@@ -570,14 +581,25 @@ export default function AiAssistantLandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link
-                  href="/agent/ai-assistant"
-                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
-                >
-                  <Bot className="w-5 h-5" />
-                  AI 비서 시작하기
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                {user ? (
+                  <Link
+                    href="/agent/ai-assistant"
+                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
+                  >
+                    <Bot className="w-5 h-5" />
+                    AI 비서 시작하기
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                ) : (
+                  <Link
+                    href="/agent/auth/login"
+                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
+                  >
+                    <LogIn className="w-5 h-5" />
+                    로그인하고 AI 비서 사용하기
+                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                )}
                 {!user ? (
                   <Link
                     href="/agent/auth/login"
