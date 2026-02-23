@@ -99,7 +99,7 @@ function NewAgentJobContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
-  const { user: authUser, isLoading: authLoading } = useAuth();
+  const { user: authUser, session, isLoading: authLoading } = useAuth();
   const imageInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
@@ -135,17 +135,15 @@ function NewAgentJobContent() {
 
   // 수정 모드: 기존 공고 데이터 불러오기
   useEffect(() => {
-    if (!editId || !authUser) return;
+    if (!editId || !authUser || !session?.access_token) return;
     setIsEditLoading(true);
     (async () => {
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('*')
-        .eq('id', editId)
-        .eq('user_id', authUser.id)
-        .maybeSingle();
+      const res = await fetch(`/api/jobs/${editId}`, {
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const data = res.ok ? await res.json() : null;
 
-      if (error || !data) {
+      if (!data || data.error) {
         alert('공고를 불러올 수 없습니다.');
         router.push('/agent/employer');
         return;
@@ -212,7 +210,7 @@ function NewAgentJobContent() {
 
       setIsEditLoading(false);
     })();
-  }, [editId, authUser]);
+  }, [editId, authUser, session]);
 
   // 주거용/상업용 대분류 상태
   const [propertyCategory, setPropertyCategory] = useState<PropertyCategory>('residential');
@@ -266,16 +264,29 @@ function NewAgentJobContent() {
     setFormData(prev => ({ ...prev, phone: value }));
   };
 
-  // 회사 전화번호 포맷팅 핸들러 (02-XXXX-XXXX / 031-XXX-XXXX)
+  // 회사 전화번호 포맷팅 핸들러
+  // 서울: 02-XXX-XXXX(9자리) / 02-XXXX-XXXX(10자리)
+  // 기타: 0XX-XXX-XXXX(10자리) / 0XX-XXXX-XXXX(11자리)
   const handleOfficePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/[^0-9]/g, '');
-    if (value.length > 12) value = value.slice(0, 12);
     if (value.startsWith('02')) {
-      if (value.length > 6) value = `${value.slice(0,2)}-${value.slice(2,6)}-${value.slice(6)}`;
-      else if (value.length > 2) value = `${value.slice(0,2)}-${value.slice(2)}`;
+      if (value.length > 10) value = value.slice(0, 10);
+      if (value.length >= 10) {
+        value = `${value.slice(0,2)}-${value.slice(2,6)}-${value.slice(6)}`;
+      } else if (value.length >= 6) {
+        value = `${value.slice(0,2)}-${value.slice(2,5)}-${value.slice(5)}`;
+      } else if (value.length > 2) {
+        value = `${value.slice(0,2)}-${value.slice(2)}`;
+      }
     } else {
-      if (value.length > 7) value = `${value.slice(0,3)}-${value.slice(3,7)}-${value.slice(7)}`;
-      else if (value.length > 3) value = `${value.slice(0,3)}-${value.slice(3)}`;
+      if (value.length > 11) value = value.slice(0, 11);
+      if (value.length >= 11) {
+        value = `${value.slice(0,3)}-${value.slice(3,7)}-${value.slice(7)}`;
+      } else if (value.length >= 7) {
+        value = `${value.slice(0,3)}-${value.slice(3,6)}-${value.slice(6)}`;
+      } else if (value.length > 3) {
+        value = `${value.slice(0,3)}-${value.slice(3)}`;
+      }
     }
     setFormData(prev => ({ ...prev, office_phone: value }));
   };
@@ -425,7 +436,7 @@ function NewAgentJobContent() {
         category: selectedCategory || 'agent',
         property_category: selectedCategory === 'agent' ? propertyCategory : null,
         type: formData.type,
-        tier: formData.tier,
+        tier: 'normal',
         salary_type: formData.salary_type,
         salary_amount: formData.salary_amount ? `${formData.salary_amount}만원` : null,
         experience: formData.experience,
@@ -439,59 +450,57 @@ function NewAgentJobContent() {
         deadline: formData.is_always_recruiting ? null : (formData.deadline || null),
       };
 
-      let error;
+      let apiError: string | null = null;
       let newJobId: string | null = null;
+      const authHeaders = {
+        'Authorization': `Bearer ${session!.access_token}`,
+        'Content-Type': 'application/json',
+      };
+
       if (editId) {
-        // 수정 모드 — .select()로 실제 업데이트 확인
-        const res = await supabase
-          .from('jobs')
-          .update(jobPayload)
-          .eq('id', editId)
-          .eq('user_id', authUser!.id)
-          .select()
-          .single();
-        error = res.error;
-        if (!res.error && !res.data) {
-          alert('수정 권한이 없거나 공고를 찾을 수 없습니다.');
-          setIsSubmitting(false);
-          return;
+        // 수정 모드 — API 라우트로 업데이트 (서버에서 service role 사용)
+        const res = await fetch(`/api/jobs/${editId}`, {
+          method: 'PATCH',
+          headers: authHeaders,
+          body: JSON.stringify(jobPayload),
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          apiError = err.error || '수정 권한이 없거나 공고를 찾을 수 없습니다.';
         }
       } else {
-        // 신규 등록
-        const res = await supabase
-          .from('jobs')
-          .insert({
+        // 신규 등록 — API 라우트로 등록
+        const res = await fetch('/api/jobs', {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
             ...jobPayload,
-            user_id: authUser!.id,
             badges: [],
             position: 'member',
             benefits: [],
             company_type: null,
             is_active: true,
             is_approved: true,
-          })
-          .select()
-          .single();
-        error = res.error;
-        newJobId = res.data?.id || null;
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          newJobId = data?.id || null;
+        } else {
+          const err = await res.json().catch(() => ({}));
+          apiError = err.error || '공고 등록에 실패했습니다.';
+        }
       }
 
-      if (error) {
-        console.error(editId ? 'Update error:' : 'Insert error:', JSON.stringify(error, null, 2));
-        alert(`공고 ${editId ? '수정' : '등록'}에 실패했습니다: ` + (error.message || error.code || JSON.stringify(error)));
+      if (apiError) {
+        console.error(editId ? 'Update error:' : 'Insert error:', apiError);
+        alert(`공고 ${editId ? '수정' : '등록'}에 실패했습니다: ${apiError}`);
         setIsSubmitting(false);
         return;
       }
 
-      // 유료 티어: 결제 페이지로 이동
-      if (!editId && formData.tier !== 'normal') {
-        alert('공고가 등록되었습니다! 결제 페이지로 이동합니다.');
-        router.push(`/premium?job=${newJobId}&tier=${formData.tier}&category=${selectedCategory || 'agent'}`);
-        return;
-      }
-
-      alert(editId ? '공고가 수정되었습니다!' : '공고가 등록되었습니다!');
-      router.push(editId ? '/agent/employer' : '/agent/jobs');
+      alert(editId ? '공고가 수정되었습니다!' : '공고가 등록되었습니다! 내 공고보기에서 유료 업그레이드가 가능합니다.');
+      router.push('/agent/employer');
 
     } catch (err) {
       console.error('Submit error:', err);
@@ -500,8 +509,6 @@ function NewAgentJobContent() {
       setIsSubmitting(false);
     }
   };
-
-  const selectedTier = TIERS.find(t => t.value === formData.tier);
 
   if (authLoading || isEditLoading) {
     return (
@@ -740,41 +747,43 @@ function NewAgentJobContent() {
         {selectedCategory && (
         <form onSubmit={handleSubmit} className="space-y-6">
 
-          {/* 공고 등급 선택 */}
-          <FormSection icon={DollarSign} title="공고 등급 선택">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {TIERS.map((tier) => {
-                const isPaid = tier.price > 0;
-                return (
-                  <button
-                    key={tier.value}
-                    type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, tier: tier.value }))}
-                    className={`relative p-4 rounded-xl border-2 transition-all ${
-                      formData.tier === tier.value
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
-                    <p className="font-bold text-gray-900">{tier.label}</p>
-                    {tier.price === 0 ? (
-                      <p className="text-sm text-gray-500">무료 · {tier.duration}</p>
-                    ) : (
-                      <div>
-                        <p className="text-xs text-gray-400 line-through">{tier.originalPrice.toLocaleString()}원</p>
-                        <p className="text-sm font-bold text-blue-600">{tier.price.toLocaleString()}원/{tier.duration}</p>
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
+          {/* 공고 등급 안내 */}
+          <FormSection icon={DollarSign} title="공고 등급 안내">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+              <p className="text-sm text-blue-800 font-medium">
+                모든 공고는 무료(일반)로 등록됩니다
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                등록 후 &apos;내 공고보기&apos;에서 유료 등급으로 업그레이드할 수 있습니다.
+              </p>
             </div>
-            <p className="mt-3 text-xs text-gray-400">
-              {formData.tier === 'normal'
-                ? '무료 공고는 24시간 후 자동 만료됩니다.'
-                : '유료 등급 선택 시 공고 등록 후 결제 페이지로 이동합니다.'}
-            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {TIERS.map((tier) => (
+                <div
+                  key={tier.value}
+                  className={`relative p-4 rounded-xl border-2 ${
+                    tier.value === 'normal'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-200 bg-gray-50 opacity-70'
+                  }`}
+                >
+                  <div className={`w-full h-2 rounded ${tier.color} mb-3`} />
+                  <p className="font-bold text-gray-900">{tier.label}</p>
+                  {tier.price === 0 ? (
+                    <p className="text-sm text-green-600 font-medium">무료 · {tier.duration}</p>
+                  ) : (
+                    <div>
+                      <p className="text-sm font-bold text-gray-500">{tier.price.toLocaleString()}원/{tier.duration}</p>
+                    </div>
+                  )}
+                  {tier.value === 'normal' && (
+                    <span className="absolute top-2 right-2 text-xs bg-blue-600 text-white px-2 py-0.5 rounded-full">
+                      기본
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </FormSection>
 
           {/* 기본 정보 + WYSIWYG 에디터 */}

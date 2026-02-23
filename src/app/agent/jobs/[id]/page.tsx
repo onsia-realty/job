@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import type { AgentJobListing, AgentJobType, AgentSalaryType, AgentExperience, AgentResume, CompanyProfile, CompanyBusinessType } from '@/types';
 import { AGENT_JOB_TYPE_LABELS, AGENT_EXPERIENCE_LABELS, COMPANY_BUSINESS_TYPE_LABELS } from '@/types';
-import { supabase, fetchMyResume, applyWithResume, fetchMyCompanyProfile } from '@/lib/supabase';
+import { supabase, fetchMyResume, fetchMyCompanyProfile } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import AgentJobCard from '@/components/agent/JobCard';
 import dynamic from 'next/dynamic';
@@ -119,7 +119,7 @@ const TABS = [
 export default function JobDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [job, setJob] = useState<AgentJobListing | null>(null);
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showApplyModal, setShowApplyModal] = useState(false);
@@ -139,7 +139,8 @@ export default function JobDetailPage() {
   useEffect(() => {
     const fetchJob = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase.from('jobs').select('*').eq('id', params.id).single();
+      const { data: rows, error } = await supabase.from('jobs').select('*').eq('id', params.id);
+      const data = rows?.[0] ?? null;
       if (data && !error) {
         const dbJob: AgentJobListing = {
           id: data.id, title: data.title, description: data.description || '',
@@ -168,6 +169,8 @@ export default function JobDetailPage() {
         };
         setJob(dbJob);
         if (data.user_id) setJobUserId(data.user_id);
+        // 조회수 증가 (fire-and-forget)
+        fetch(`/api/jobs/${params.id}/view`, { method: 'POST' }).catch(() => {});
       } else {
         setJob(MOCK_JOB);
       }
@@ -205,14 +208,13 @@ export default function JobDetailPage() {
       setMyResume(resume);
 
       // 기존 지원 여부 확인
-      const { data } = await supabase
+      const { data: appRows } = await supabase
         .from('applications')
         .select('id')
         .eq('user_id', user.id)
-        .eq('job_id', params.id)
-        .single();
+        .eq('job_id', params.id);
 
-      if (data) {
+      if (appRows && appRows.length > 0) {
         setHasAlreadyApplied(true);
       }
     }
@@ -245,18 +247,35 @@ export default function JobDetailPage() {
     catch { await navigator.clipboard.writeText(window.location.href); alert('링크가 클립보드에 복사되었습니다.'); }
   };
 
-  // 이력서로 지원하기
+  // 이력서로 지원하기 (API 라우트 사용)
   const handleResumeApply = async () => {
-    if (!job || !user?.id || !myResume?.id) return;
+    if (!job || !user?.id) {
+      alert('로그인이 필요합니다.');
+      return;
+    }
+    if (!session?.access_token) {
+      alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+      return;
+    }
 
     setIsApplying(true);
     try {
-      const success = await applyWithResume(job.id, user.id, myResume.id, applyMessage);
-      if (success) {
+      const res = await fetch(`/api/jobs/${job.id}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ resumeId: myResume?.id || null, message: applyMessage }),
+      });
+      const data = await res.json();
+      if (res.ok) {
         setApplyStep('success');
         setHasAlreadyApplied(true);
-      } else {
+      } else if (data.duplicate) {
         alert('이미 지원한 공고입니다.');
+      } else {
+        alert(data.error || '지원 중 오류가 발생했습니다.');
       }
     } catch (err) {
       console.error('Apply error:', err);
@@ -837,9 +856,9 @@ export default function JobDetailPage() {
 
       {/* 지원 모달 */}
       {showApplyModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between rounded-t-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50" onClick={closeApplyModal}>
+          <div className="bg-white rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto relative" onClick={(e) => e.stopPropagation()}>
+            <div className="sticky top-0 bg-white border-b border-gray-100 p-4 flex items-center justify-between rounded-t-2xl z-10">
               <h3 className="text-lg font-bold text-gray-900">
                 {applyStep === 'success' ? '지원 완료' : '지원하기'}
               </h3>

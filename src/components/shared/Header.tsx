@@ -98,7 +98,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                     <Sparkles className="w-3.5 h-3.5" />
                     AI 실무비서
                   </Link>
-                  <Link href="/agent/premium" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                  <Link href="/premium?category=agent" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <Crown className="w-3.5 h-3.5" />
                     상품안내
                   </Link>

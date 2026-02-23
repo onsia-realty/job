@@ -23,16 +23,18 @@ import {
   Power,
   Trash2,
   Edit3,
+  Zap,
+  X,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { fetchMyJobs, fetchApplicationCounts, toggleJobActive, deleteJob } from '@/lib/supabase';
+import { fetchMyJobs, fetchApplicationCounts } from '@/lib/supabase';
 
 interface JobPosting {
   id: string;
   title: string;
   company: string;
   region: string;
-  tier: 'vip' | 'premium' | 'normal';
+  tier: 'vip' | 'premium' | 'basic' | 'normal';
   type: string;
   category?: string;
   property_category?: 'residential' | 'commercial' | null;
@@ -57,6 +59,13 @@ const TIER_STYLES = {
     badge: 'bg-blue-600 text-white',
     icon: Star,
     label: 'PREMIUM',
+  },
+  basic: {
+    bg: 'bg-gradient-to-r from-emerald-50 to-green-50',
+    border: 'border-emerald-300',
+    badge: 'bg-emerald-600 text-white',
+    icon: Star,
+    label: 'BASIC',
   },
   normal: {
     bg: 'bg-white',
@@ -91,7 +100,7 @@ const STATUS_CONFIG = {
 };
 
 export default function EmployerDashboardPage() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [applicationCounts, setApplicationCounts] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -101,8 +110,17 @@ export default function EmployerDashboardPage() {
     totalApplications: 0,
     totalViews: 0,
   });
+  const [tierExpiry, setTierExpiry] = useState<Record<string, { tier: string; expires_at: string; paid_at: string }>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [upgradeJobId, setUpgradeJobId] = useState<string | null>(null);
+  const [isUpgrading, setIsUpgrading] = useState(false);
+
+  const UPGRADE_TIERS = [
+    { value: 'basic' as const, label: 'BASIC', price: 4900, duration: '5일', color: 'from-emerald-500 to-green-500', icon: Star },
+    { value: 'premium' as const, label: 'PREMIUM', price: 9900, duration: '1주일', color: 'from-blue-500 to-indigo-500', icon: Star },
+    { value: 'vip' as const, label: 'VIP', price: 24900, duration: '1주일', color: 'from-amber-500 to-yellow-500', icon: Crown },
+  ];
 
   useEffect(() => {
     async function loadData() {
@@ -119,6 +137,19 @@ export default function EmployerDashboardPage() {
           const jobIds = myJobs.map((job: JobPosting) => job.id);
           const counts = await fetchApplicationCounts(jobIds);
           setApplicationCounts(counts);
+        }
+
+        // 결제 만료일 가져오기
+        if (session?.access_token) {
+          try {
+            const payRes = await fetch('/api/payments/my', {
+              headers: { 'Authorization': `Bearer ${session.access_token}` },
+            });
+            if (payRes.ok) {
+              const payData = await payRes.json();
+              setTierExpiry(payData);
+            }
+          } catch {}
         }
       } catch (error) {
         console.error('Error loading employer data:', error);
@@ -164,24 +195,81 @@ export default function EmployerDashboardPage() {
     return diff;
   };
 
+  const authHeaders = session?.access_token
+    ? { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' }
+    : undefined;
+
   const handleToggleActive = async (jobId: string, currentActive: boolean) => {
-    const success = await toggleJobActive(jobId, !currentActive);
-    if (success) {
-      setJobs(prev => prev.map(j => j.id === jobId ? { ...j, is_active: !currentActive } : j));
+    if (!authHeaders) return;
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: 'PATCH',
+        headers: authHeaders,
+        body: JSON.stringify({ is_active: !currentActive }),
+      });
+      if (res.ok) {
+        setJobs(prev => prev.map(j => j.id === jobId ? { ...j, is_active: !currentActive } : j));
+      }
+    } catch (error) {
+      console.error('Toggle active error:', error);
     }
     setOpenMenuId(null);
   };
 
   const handleDeleteJob = async (jobId: string) => {
-    const success = await deleteJob(jobId);
-    if (success) {
-      setJobs(prev => prev.filter(j => j.id !== jobId));
-      const newCounts = { ...applicationCounts };
-      delete newCounts[jobId];
-      setApplicationCounts(newCounts);
+    if (!authHeaders) return;
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: 'DELETE',
+        headers: authHeaders,
+      });
+      if (res.ok) {
+        setJobs(prev => prev.filter(j => j.id !== jobId));
+        const newCounts = { ...applicationCounts };
+        delete newCounts[jobId];
+        setApplicationCounts(newCounts);
+      }
+    } catch (error) {
+      console.error('Delete job error:', error);
     }
     setDeleteConfirmId(null);
     setOpenMenuId(null);
+  };
+
+  const handleUpgradeTier = async (jobId: string, newTier: string) => {
+    if (!authHeaders) return;
+    setIsUpgrading(true);
+    try {
+      // TODO: 실제 결제 연동 시 여기서 포트원 결제 처리 후 /api/payment/verify 호출
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: 'PATCH',
+        headers: authHeaders,
+        body: JSON.stringify({ tier: newTier }),
+      });
+      if (res.ok) {
+        setJobs(prev => prev.map(j => j.id === jobId ? { ...j, tier: newTier as JobPosting['tier'] } : j));
+
+        // 결제 만료일 업데이트 (임시: 티어별 기간 계산)
+        const now = new Date();
+        const expiresAt = new Date(now);
+        if (newTier === 'basic') expiresAt.setDate(expiresAt.getDate() + 5);
+        else expiresAt.setDate(expiresAt.getDate() + 7); // premium, vip
+        setTierExpiry(prev => ({
+          ...prev,
+          [jobId]: { tier: newTier, expires_at: expiresAt.toISOString(), paid_at: now.toISOString() },
+        }));
+
+        alert('결제가 완료되었습니다!');
+        setUpgradeJobId(null);
+      } else {
+        alert('결제에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('오류가 발생했습니다.');
+    } finally {
+      setIsUpgrading(false);
+    }
   };
 
   if (!user) {
@@ -317,7 +405,7 @@ export default function EmployerDashboardPage() {
               {jobs.map((job) => {
                 const status = getJobStatus(job);
                 const statusConfig = STATUS_CONFIG[status];
-                const tierStyle = TIER_STYLES[job.tier || 'normal'];
+                const tierStyle = TIER_STYLES[job.tier as keyof typeof TIER_STYLES] || TIER_STYLES['normal'];
                 const TierIcon = tierStyle.icon;
                 const StatusIcon = statusConfig.icon;
                 const applicationCount = applicationCounts[job.id] || 0;
@@ -332,7 +420,8 @@ export default function EmployerDashboardPage() {
                       {/* 회사 아이콘 */}
                       <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${
                         job.tier === 'vip' ? 'bg-gradient-to-br from-amber-400 to-yellow-500' :
-                        job.tier === 'premium' ? 'bg-blue-600' : 'bg-gray-100'
+                        job.tier === 'premium' ? 'bg-blue-600' :
+                        job.tier === 'basic' ? 'bg-emerald-600' : 'bg-gray-100'
                       }`}>
                         <TierIcon className={`w-6 h-6 ${
                           job.tier === 'normal' ? 'text-gray-500' : 'text-white'
@@ -375,16 +464,42 @@ export default function EmployerDashboardPage() {
                             <Calendar className="w-3 h-3" />
                             {formatDate(job.created_at)}
                           </span>
+                          {tierExpiry[job.id] && (() => {
+                            const exp = new Date(tierExpiry[job.id].expires_at);
+                            const now = new Date();
+                            const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                            const isExpired = diffDays <= 0;
+                            return (
+                              <span className={`flex items-center gap-1 ${
+                                isExpired ? 'text-gray-400 line-through' : diffDays <= 2 ? 'text-red-500 font-medium' : 'text-amber-500'
+                              }`}>
+                                <Zap className="w-3 h-3" />
+                                {isExpired ? '결제 만료' : `결제 ~${formatDate(tierExpiry[job.id].expires_at)} (D-${diffDays})`}
+                              </span>
+                            );
+                          })()}
                           <span className="flex items-center gap-1">
                             <Eye className="w-3 h-3" />
                             {job.views || 0}회
                           </span>
-                          {daysRemaining !== null && (
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs">
+                          {job.deadline ? (
                             <span className={`flex items-center gap-1 ${
-                              daysRemaining <= 3 ? 'text-red-500' : 'text-gray-400'
+                              daysRemaining !== null && daysRemaining <= 3 ? 'text-red-500 font-medium' : 'text-gray-400'
                             }`}>
                               <Clock className="w-3 h-3" />
-                              {daysRemaining > 0 ? `D-${daysRemaining}` : '마감'}
+                              마감 {formatDate(job.deadline)}
+                              {daysRemaining !== null && (
+                                <span className="ml-1">
+                                  ({daysRemaining > 0 ? `D-${daysRemaining}` : '마감됨'})
+                                </span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-green-500">
+                              <Clock className="w-3 h-3" />
+                              상시채용
                             </span>
                           )}
                         </div>
@@ -401,6 +516,15 @@ export default function EmployerDashboardPage() {
                             <span className="font-bold">{applicationCount}</span>
                             <span className="text-sm hidden sm:inline">지원자</span>
                           </Link>
+
+                          {/* 결제 버튼 */}
+                          <button
+                            onClick={() => setUpgradeJobId(job.id)}
+                            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all text-sm font-medium shadow-sm"
+                          >
+                            <Zap className="w-3.5 h-3.5" />
+                            <span className="hidden sm:inline">결제</span>
+                          </button>
 
                           {/* 더보기 메뉴 */}
                           <div className="relative">
@@ -507,6 +631,82 @@ export default function EmployerDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* 유료 결제 모달 */}
+      {upgradeJobId && (() => {
+        const currentJob = jobs.find(j => j.id === upgradeJobId);
+        const currentTierLabel = currentJob ? (TIER_STYLES[currentJob.tier as keyof typeof TIER_STYLES] || TIER_STYLES['normal']).label : '일반';
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50">
+            <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full max-w-md p-6 max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-5">
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900">유료 결제</h3>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    현재 등급: <span className="font-medium text-gray-700">{currentTierLabel}</span>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setUpgradeJobId(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {UPGRADE_TIERS.map((tier) => {
+                  const isCurrentTier = currentJob?.tier === tier.value;
+                  const isLowerTier = currentJob?.tier === 'vip' || (currentJob?.tier === 'premium' && tier.value === 'basic');
+                  const TierOptionIcon = tier.icon;
+
+                  return (
+                    <button
+                      key={tier.value}
+                      disabled={isCurrentTier || isLowerTier || isUpgrading}
+                      onClick={() => handleUpgradeTier(upgradeJobId, tier.value)}
+                      className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                        isCurrentTier
+                          ? 'border-green-300 bg-green-50'
+                          : isLowerTier
+                            ? 'border-gray-200 bg-gray-50 opacity-40 cursor-not-allowed'
+                            : 'border-gray-200 hover:border-blue-400 hover:shadow-md cursor-pointer'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-r ${tier.color} flex items-center justify-center`}>
+                          <TierOptionIcon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900">{tier.label}</span>
+                            {isCurrentTier && (
+                              <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">결제완료</span>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">{tier.duration} 동안 상위 노출</p>
+                        </div>
+                        <div className="text-right">
+                          {isCurrentTier ? (
+                            <p className="text-sm font-medium text-green-600">이용중</p>
+                          ) : (
+                            <p className="font-bold text-blue-600">{tier.price.toLocaleString()}원</p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <p className="mt-4 text-xs text-gray-400 text-center">
+                결제 완료 후 즉시 상위 노출이 적용됩니다
+              </p>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

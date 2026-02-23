@@ -22,7 +22,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
-import { signUpWithEmail } from '@/lib/auth';
+import { signUpWithEmail, supabase, updateUserMetadata, getSession } from '@/lib/auth';
 import type { BrokerOfficeInfo } from '@/app/api/broker/route';
 
 interface SignUpFormData {
@@ -32,6 +32,7 @@ interface SignUpFormData {
   name: string;
   nickname: string;
   phone: string;
+  businessNo: string;
   role: UserRole;
   // 중개사무소 정보 (구직자용)
   brokerRegNo: string;
@@ -52,6 +53,7 @@ const INITIAL_FORM: SignUpFormData = {
   name: '',
   nickname: '',
   phone: '',
+  businessNo: '',
   role: 'seeker',
   brokerRegNo: '',
   brokerOfficeName: '',
@@ -67,6 +69,7 @@ function SignUpPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [form, setForm] = useState<SignUpFormData>(INITIAL_FORM);
+  const isSocialSignup = searchParams.get('social') === 'true';
 
   // URL ?role= 파라미터로 초기 역할 설정
   useEffect(() => {
@@ -75,6 +78,24 @@ function SignUpPageContent() {
       setForm(prev => ({ ...prev, role: roleParam }));
     }
   }, [searchParams]);
+
+  // 소셜 로그인 모드: 세션에서 이메일/이름 자동 기입
+  useEffect(() => {
+    if (!isSocialSignup) return;
+    const initSocialForm = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setForm(prev => ({
+          ...prev,
+          email: user.email || '',
+          name: user.user_metadata?.name || user.user_metadata?.full_name || '',
+        }));
+        setEmailChecked(true);
+        setEmailAvailable(true);
+      }
+    };
+    initSocialForm();
+  }, [isSocialSignup]);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpFormData, string>>>({});
@@ -171,6 +192,14 @@ function SignUpPageContent() {
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
   };
 
+  // 사업자번호 포맷 (000-00-00000)
+  const formatBusinessNo = (value: string) => {
+    const numbers = value.replace(/[^\d]/g, '');
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 5) return `${numbers.slice(0, 3)}-${numbers.slice(3)}`;
+    return `${numbers.slice(0, 3)}-${numbers.slice(3, 5)}-${numbers.slice(5, 10)}`;
+  };
+
   // 개설등록번호 포맷 (제11710-2022-00250호 → 11710-2022-00250)
   const formatBrokerRegNo = (value: string) => {
     // "제", "호" 제거하고 숫자와 하이픈만 추출
@@ -190,22 +219,24 @@ function SignUpPageContent() {
       newErrors.email = '이메일을 입력해주세요';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       newErrors.email = '올바른 이메일 형식이 아닙니다';
-    } else if (!emailChecked || !emailAvailable) {
+    } else if (!isSocialSignup && (!emailChecked || !emailAvailable)) {
       newErrors.email = '이메일 중복확인을 해주세요';
     }
 
-    if (!form.password) {
-      newErrors.password = '비밀번호를 입력해주세요';
-    } else if (form.password.length < 8) {
-      newErrors.password = '비밀번호는 8자 이상이어야 합니다';
-    } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(form.password)) {
-      newErrors.password = '영문과 숫자를 포함해야 합니다';
-    }
+    if (!isSocialSignup) {
+      if (!form.password) {
+        newErrors.password = '비밀번호를 입력해주세요';
+      } else if (form.password.length < 8) {
+        newErrors.password = '비밀번호는 8자 이상이어야 합니다';
+      } else if (!/(?=.*[a-zA-Z])(?=.*[0-9])/.test(form.password)) {
+        newErrors.password = '영문과 숫자를 포함해야 합니다';
+      }
 
-    if (!form.passwordConfirm) {
-      newErrors.passwordConfirm = '비밀번호 확인을 입력해주세요';
-    } else if (form.password !== form.passwordConfirm) {
-      newErrors.passwordConfirm = '비밀번호가 일치하지 않습니다';
+      if (!form.passwordConfirm) {
+        newErrors.passwordConfirm = '비밀번호 확인을 입력해주세요';
+      } else if (form.password !== form.passwordConfirm) {
+        newErrors.passwordConfirm = '비밀번호가 일치하지 않습니다';
+      }
     }
 
     if (!form.name) {
@@ -247,24 +278,62 @@ function SignUpPageContent() {
     setErrors({});
 
     try {
-      const result = await signUpWithEmail(form.email, form.password, {
-        name: form.name,
-        nickname: form.nickname,
-        phone: form.phone,
-        role: form.role,
-        userType: 'agent',
-        // 중개사무소 정보 (기업회원이고 인증된 경우)
-        ...(form.role === 'employer' && brokerVerified && {
-          brokerRegNo: form.brokerRegNo,
-          brokerOfficeName: form.brokerOfficeName,
-          brokerAddress: form.brokerAddress,
-          brokerRegDate: form.brokerRegDate,
-        }),
-      });
+      if (isSocialSignup) {
+        // 소셜 로그인 유저: 메타데이터 + users 테이블 업데이트
+        await updateUserMetadata({
+          name: form.name,
+          nickname: form.nickname,
+          phone: form.phone,
+          role: form.role,
+          userType: 'agent',
+          profile_completed: true,
+          ...(form.role === 'employer' && brokerVerified && {
+            brokerRegNo: form.brokerRegNo,
+            brokerOfficeName: form.brokerOfficeName,
+            brokerAddress: form.brokerAddress,
+            brokerRegDate: form.brokerRegDate,
+          }),
+        });
 
-      // 이메일 인증 필요 여부 체크 (session이 null이면 인증 필요)
-      setNeedsEmailConfirm(!result.session);
-      setStep('success');
+        const session = await getSession();
+        if (session) {
+          await fetch('/api/auth/complete-profile', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              name: form.name,
+              nickname: form.nickname,
+              phone: form.phone,
+              role: form.role,
+              brokerOfficeName: form.role === 'employer' && brokerVerified ? form.brokerOfficeName : null,
+            }),
+          });
+        }
+
+        setNeedsEmailConfirm(false);
+        setStep('success');
+      } else {
+        // 이메일 회원가입
+        const result = await signUpWithEmail(form.email, form.password, {
+          name: form.name,
+          nickname: form.nickname,
+          phone: form.phone,
+          role: form.role,
+          userType: 'agent',
+          ...(form.role === 'employer' && brokerVerified && {
+            brokerRegNo: form.brokerRegNo,
+            brokerOfficeName: form.brokerOfficeName,
+            brokerAddress: form.brokerAddress,
+            brokerRegDate: form.brokerRegDate,
+          }),
+        });
+
+        setNeedsEmailConfirm(!result.session);
+        setStep('success');
+      }
     } catch (err: any) {
       if (err.message?.includes('already registered')) {
         setErrors({ email: '이미 가입된 이메일입니다' });
@@ -322,24 +391,28 @@ function SignUpPageContent() {
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-10 h-10 text-green-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">가입이 완료되었습니다!</h1>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {isSocialSignup ? '프로필 등록 완료!' : '가입이 완료되었습니다!'}
+              </h1>
               <p className="text-gray-600 mb-8">
                 부동산인의 회원이 되신 것을 환영합니다.<br />
                 이제 다양한 채용 공고를 확인해보세요.
               </p>
               <div className="space-y-3">
                 <Link
-                  href="/agent/jobs"
+                  href={form.role === 'employer' ? '/agent/employer' : '/agent/jobs'}
                   className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
                 >
-                  채용공고 둘러보기
+                  {form.role === 'employer' ? '구인 시작하기' : '채용공고 둘러보기'}
                 </Link>
-                <Link
-                  href="/agent/mypage/resume"
-                  className="block w-full py-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                >
-                  이력서 등록하기
-                </Link>
+                {form.role === 'seeker' && (
+                  <Link
+                    href="/agent/mypage/resume"
+                    className="block w-full py-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    이력서 등록하기
+                  </Link>
+                )}
               </div>
             </>
           )}
@@ -360,7 +433,7 @@ function SignUpPageContent() {
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="font-bold text-gray-900">회원가입</h1>
+            <h1 className="font-bold text-gray-900">{isSocialSignup ? '추가 정보 입력' : '회원가입'}</h1>
             <div className="w-5" />
           </div>
         </div>
@@ -395,11 +468,21 @@ function SignUpPageContent() {
           </button>
         </div>
 
+        {/* 소셜 로그인 안내 */}
+        {isSocialSignup && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <p className="text-sm text-blue-700">
+              소셜 계정으로 로그인되었습니다. 서비스 이용을 위해 아래 추가 정보를 입력해주세요.
+            </p>
+          </div>
+        )}
+
         {/* 회원가입 폼 */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               이메일 <span className="text-red-500">*</span>
+              {isSocialSignup && <span className="text-gray-400 font-normal ml-2">소셜 계정 이메일</span>}
             </label>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -408,29 +491,35 @@ function SignUpPageContent() {
                   type="email"
                   value={form.email || ''}
                   onChange={(e) => {
-                    setForm({ ...form, email: e.target.value });
-                    setEmailChecked(false);
-                    setEmailAvailable(false);
+                    if (!isSocialSignup) {
+                      setForm({ ...form, email: e.target.value });
+                      setEmailChecked(false);
+                      setEmailAvailable(false);
+                    }
                   }}
+                  readOnly={isSocialSignup}
                   placeholder="이메일을 입력하세요"
                   className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    isSocialSignup ? 'bg-gray-50 text-gray-600 cursor-not-allowed' :
                     errors.email ? 'border-red-300' : emailChecked && emailAvailable ? 'border-green-400' : 'border-gray-200'
                   }`}
                 />
               </div>
-              <button
-                type="button"
-                onClick={checkEmailDuplicate}
-                disabled={isCheckingEmail || !form.email}
-                className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
-              >
-                {isCheckingEmail ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : emailChecked && emailAvailable ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-400" />
-                ) : null}
-                중복확인
-              </button>
+              {!isSocialSignup && (
+                <button
+                  type="button"
+                  onClick={checkEmailDuplicate}
+                  disabled={isCheckingEmail || !form.email}
+                  className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
+                >
+                  {isCheckingEmail ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : emailChecked && emailAvailable ? (
+                    <CheckCircle2 className="w-4 h-4 text-green-400" />
+                  ) : null}
+                  중복확인
+                </button>
+              )}
             </div>
             {errors.email && (
               <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -438,7 +527,7 @@ function SignUpPageContent() {
                 {errors.email}
               </p>
             )}
-            {emailChecked && emailAvailable && (
+            {!isSocialSignup && emailChecked && emailAvailable && (
               <p className="text-green-600 text-sm mt-1 flex items-center gap-1">
                 <CheckCircle2 className="w-4 h-4" />
                 사용 가능한 이메일입니다
@@ -446,71 +535,75 @@ function SignUpPageContent() {
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              비밀번호 <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={form.password || ''}
-                onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="영문, 숫자 포함 8자 이상"
-                className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.password ? 'border-red-300' : 'border-gray-200'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.password}
-              </p>
-            )}
-          </div>
+          {!isSocialSignup && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  비밀번호 <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password || ''}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })}
+                    placeholder="영문, 숫자 포함 8자 이상"
+                    className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.password ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  비밀번호 확인 <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type={showPasswordConfirm ? 'text' : 'password'}
+                    value={form.passwordConfirm || ''}
+                    onChange={(e) => setForm({ ...form, passwordConfirm: e.target.value })}
+                    placeholder="비밀번호를 다시 입력하세요"
+                    className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.passwordConfirm ? 'border-red-300' : 'border-gray-200'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPasswordConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+                {errors.passwordConfirm && (
+                  <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
+                    <AlertCircle className="w-4 h-4" />
+                    {errors.passwordConfirm}
+                  </p>
+                )}
+              </div>
+            </>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              비밀번호 확인 <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type={showPasswordConfirm ? 'text' : 'password'}
-                value={form.passwordConfirm || ''}
-                onChange={(e) => setForm({ ...form, passwordConfirm: e.target.value })}
-                placeholder="비밀번호를 다시 입력하세요"
-                className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.passwordConfirm ? 'border-red-300' : 'border-gray-200'
-                }`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPasswordConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-              </button>
-            </div>
-            {errors.passwordConfirm && (
-              <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                {errors.passwordConfirm}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              이름 <span className="text-red-500">*</span>
+              {form.role === 'employer' ? '이름(기업명)' : '이름'} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -518,7 +611,7 @@ function SignUpPageContent() {
                 type="text"
                 value={form.name || ''}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="이름을 입력하세요"
+                placeholder={form.role === 'employer' ? '이름 또는 기업명을 입력하세요' : '이름을 입력하세요'}
                 className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   errors.name ? 'border-red-300' : 'border-gray-200'
                 }`}
@@ -580,6 +673,24 @@ function SignUpPageContent() {
                 {errors.phone}
               </p>
             )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              사업자번호 <span className="text-gray-400 font-normal ml-1">선택</span>
+            </label>
+            <div className="relative">
+              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <input
+                type="text"
+                value={form.businessNo || ''}
+                onChange={(e) => setForm({ ...form, businessNo: formatBusinessNo(e.target.value) })}
+                placeholder="000-00-00000"
+                maxLength={12}
+                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-1">나중에 마이페이지에서도 등록할 수 있습니다</p>
           </div>
 
           {/* 중개사무소 정보 (기업회원만) */}
@@ -767,10 +878,10 @@ function SignUpPageContent() {
             {isLoading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                가입 중...
+                {isSocialSignup ? '등록 중...' : '가입 중...'}
               </>
             ) : (
-              '가입하기'
+              isSocialSignup ? '프로필 등록하기' : '가입하기'
             )}
           </button>
         </form>

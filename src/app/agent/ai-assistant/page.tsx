@@ -336,7 +336,36 @@ export default function AiAssistantPage() {
     );
   }
 
-  const isLoggedIn = !!user && !!session?.access_token;
+  // 로그인 필수
+  if (!user || !session?.access_token) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
+        <div className="bg-slate-800 rounded-2xl p-8 max-w-md w-full text-center border border-slate-700/50">
+          <div className="w-16 h-16 bg-cyan-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LogIn className="w-8 h-8 text-cyan-400" />
+          </div>
+          <h1 className="text-xl font-bold text-white mb-2">로그인이 필요합니다</h1>
+          <p className="text-slate-400 text-sm mb-6">AI 부동산인 비서를 이용하려면 로그인해주세요.</p>
+          <div className="space-y-3">
+            <Link
+              href="/agent/auth/login"
+              className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white rounded-xl font-semibold hover:from-cyan-600 hover:to-emerald-600 transition-all"
+            >
+              로그인하기
+            </Link>
+            <Link
+              href="/agent/auth/signup"
+              className="block w-full py-3 bg-slate-700 text-slate-300 rounded-xl font-medium hover:bg-slate-600 transition-colors"
+            >
+              회원가입
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isLoggedIn = true;
 
   return (
     <div className="min-h-screen bg-slate-900 flex">

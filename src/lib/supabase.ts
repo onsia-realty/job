@@ -1,25 +1,8 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+// auth.ts와 동일한 Supabase 클라이언트를 공유하여
+// 로그인 세션(auth.uid())이 데이터 쿼리에도 적용되도록 함
+import { supabase } from '@/lib/auth';
+export { supabase };
 import type { SalesJobListing, AgentResume, AgentCareer, CompanyProfile } from '@/types';
-
-let _supabase: SupabaseClient | null = null;
-
-function getSupabase(): SupabaseClient {
-  if (!_supabase) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error('Missing Supabase environment variables');
-    }
-    _supabase = createClient(supabaseUrl, supabaseAnonKey);
-  }
-  return _supabase;
-}
-
-export const supabase = new Proxy({} as SupabaseClient, {
-  get(_target, prop) {
-    return (getSupabase() as unknown as Record<string, unknown>)[prop as string];
-  },
-});
 
 // DB 데이터를 SalesJobListing 타입으로 변환
 export function mapDbJobToListing(job: any): SalesJobListing {
@@ -73,15 +56,14 @@ export async function fetchJobById(id: string) {
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
-    .eq('id', id)
-    .single();
+    .eq('id', id);
 
   if (error) {
     console.error('Error fetching job:', error);
     return null;
   }
 
-  return mapDbJobToListing(data);
+  return data?.[0] ? mapDbJobToListing(data[0]) : null;
 }
 
 // ========== 이력서 관련 함수 ==========
@@ -148,19 +130,14 @@ export async function fetchMyResume(userId: string): Promise<AgentResume | null>
   const { data, error } = await supabase
     .from('resumes')
     .select('*')
-    .eq('user_id', userId)
-    .single();
+    .eq('user_id', userId);
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      // 이력서 없음 (정상)
-      return null;
-    }
     console.error('Error fetching resume:', error);
     return null;
   }
 
-  return mapDbResumeToResume(data);
+  return data?.[0] ? mapDbResumeToResume(data[0]) : null;
 }
 
 // 이력서 저장 (upsert)
@@ -170,15 +147,14 @@ export async function saveResume(resume: Partial<AgentResume>, userId: string): 
   const { data, error } = await supabase
     .from('resumes')
     .upsert(dbData, { onConflict: 'user_id' })
-    .select()
-    .single();
+    .select();
 
   if (error) {
     console.error('Error saving resume:', error);
     return null;
   }
 
-  return mapDbResumeToResume(data);
+  return data?.[0] ? mapDbResumeToResume(data[0]) : null;
 }
 
 // 이력서 삭제
@@ -242,15 +218,14 @@ export async function fetchResumeById(resumeId: string): Promise<AgentResume | n
   const { data, error } = await supabase
     .from('resumes')
     .select('*')
-    .eq('id', resumeId)
-    .single();
+    .eq('id', resumeId);
 
   if (error) {
     console.error('Error fetching resume by id:', error);
     return null;
   }
 
-  return mapDbResumeToResume(data);
+  return data?.[0] ? mapDbResumeToResume(data[0]) : null;
 }
 
 // ========== 지원 관련 함수 ==========
@@ -468,18 +443,14 @@ export async function fetchMyCompanyProfile(userId: string): Promise<CompanyProf
   const { data, error } = await supabase
     .from('company_profiles')
     .select('*')
-    .eq('user_id', userId)
-    .single();
+    .eq('user_id', userId);
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      return null; // 프로필 없음 (정상)
-    }
     console.error('Error fetching company profile:', error);
     return null;
   }
 
-  return mapDbCompanyProfile(data);
+  return data?.[0] ? mapDbCompanyProfile(data[0]) : null;
 }
 
 // 기업 프로필 저장 (upsert)
@@ -492,15 +463,14 @@ export async function saveCompanyProfile(
   const { data, error } = await supabase
     .from('company_profiles')
     .upsert(dbData, { onConflict: 'user_id' })
-    .select()
-    .single();
+    .select();
 
   if (error) {
     console.error('Error saving company profile:', error);
     return null;
   }
 
-  return mapDbCompanyProfile(data);
+  return data?.[0] ? mapDbCompanyProfile(data[0]) : null;
 }
 
 // 타입 정의 (추후 Supabase 스키마와 연동)

@@ -55,13 +55,9 @@ export default function PremiumLandingPage() {
               <Sparkles className="w-3.5 h-3.5" />
               AI 실무비서
             </Link>
-            <Link href="/agent/premium" className="hidden sm:inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
-              <Building2 className="w-3.5 h-3.5" />
-              공인중개사 상품
-            </Link>
-            <Link href="/sales/premium" className="hidden sm:inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
-              <Briefcase className="w-3.5 h-3.5" />
-              분양상담사 상품
+            <Link href="/premium" className="hidden sm:inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors">
+              <Star className="w-3.5 h-3.5" />
+              광고 상품안내
             </Link>
           </div>
           {!isLoading && user ? (

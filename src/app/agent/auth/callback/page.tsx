@@ -6,14 +6,16 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
-async function ensureUserRecord(accessToken: string) {
+async function ensureUserRecord(accessToken: string): Promise<{ created?: boolean; exists?: boolean }> {
   try {
-    await fetch('/api/auth/ensure-user', {
+    const res = await fetch('/api/auth/ensure-user', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${accessToken}` },
     });
+    return await res.json();
   } catch (err) {
     console.error('Ensure user record error:', err);
+    return {};
   }
 }
 
@@ -45,9 +47,15 @@ function AuthCallbackContent() {
           }
 
           if (data.session) {
-            // users 테이블에 레코드 자동 생성
-            await ensureUserRecord(data.session.access_token);
-            router.replace('/agent/mypage');
+            // users 테이블에 레코드 자동 생성 + 신규/기존 판별
+            const result = await ensureUserRecord(data.session.access_token);
+            if (result.created) {
+              const role = localStorage.getItem('social_login_role') || 'seeker';
+              localStorage.removeItem('social_login_role');
+              router.replace(`/agent/auth/signup?role=${role}&social=true`);
+            } else {
+              router.replace('/agent/mypage');
+            }
             return;
           }
         }
@@ -56,8 +64,14 @@ function AuthCallbackContent() {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
-          await ensureUserRecord(session.access_token);
-          router.replace('/agent/mypage');
+          const result = await ensureUserRecord(session.access_token);
+          if (result.created) {
+            const role = localStorage.getItem('social_login_role') || 'seeker';
+            localStorage.removeItem('social_login_role');
+            router.replace(`/agent/auth/signup?role=${role}&social=true`);
+          } else {
+            router.replace('/agent/mypage');
+          }
         } else {
           router.replace('/agent/auth/login');
         }

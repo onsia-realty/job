@@ -40,6 +40,7 @@ type LoginRole = 'seeker' | 'employer';
 export default function LoginPage() {
   const router = useRouter();
   const googleBtnRef = useRef<HTMLDivElement>(null);
+  const activeRoleRef = useRef<LoginRole>('seeker');
   const [activeRole, setActiveRole] = useState<LoginRole>('seeker');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,11 +52,16 @@ export default function LoginPage() {
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
+  const handleSetActiveRole = (role: LoginRole) => {
+    setActiveRole(role);
+    activeRoleRef.current = role;
+  };
+
   const redirectByRole = (role: LoginRole) => {
     router.replace(role === 'employer' ? '/agent/employer' : '/agent/jobs');
   };
 
-  // GIS 콜백 → Supabase signInWithIdToken
+  // GIS 콜백 → Supabase signInWithIdToken (ref 사용으로 재초기화 방지)
   const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
     setError('');
     try {
@@ -65,13 +71,25 @@ export default function LoginPage() {
       });
       if (authError) throw authError;
       if (data.session) {
-        const role = data.session.user?.user_metadata?.role as LoginRole | undefined;
-        redirectByRole(role || activeRole);
+        const currentRole = activeRoleRef.current;
+        localStorage.setItem('social_login_role', currentRole);
+        // 신규/기존 유저 판별
+        const res = await fetch('/api/auth/ensure-user', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${data.session.access_token}` },
+        });
+        const result = await res.json();
+        if (result.created) {
+          router.replace(`/agent/auth/signup?role=${currentRole}&social=true`);
+        } else {
+          const role = data.session.user?.user_metadata?.role as LoginRole | undefined;
+          redirectByRole(role || currentRole);
+        }
       }
     } catch (err: any) {
       setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
     }
-  }, [router, activeRole]);
+  }, [router]);
 
   // GIS 초기화
   useEffect(() => {
@@ -174,6 +192,7 @@ export default function LoginPage() {
     setLoadingProvider(provider);
 
     try {
+      localStorage.setItem('social_login_role', activeRole);
       await signInWithProvider(provider);
     } catch (err: any) {
       setError(err.message || '소셜 로그인 중 오류가 발생했습니다.');
@@ -213,7 +232,7 @@ export default function LoginPage() {
         <div className="flex bg-slate-100 rounded-xl p-1 mb-8">
           <button
             type="button"
-            onClick={() => setActiveRole('seeker')}
+            onClick={() => handleSetActiveRole('seeker')}
             className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
               activeRole === 'seeker'
                 ? 'bg-white text-emerald-600 shadow-sm'
@@ -224,7 +243,7 @@ export default function LoginPage() {
           </button>
           <button
             type="button"
-            onClick={() => setActiveRole('employer')}
+            onClick={() => handleSetActiveRole('employer')}
             className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
               activeRole === 'employer'
                 ? 'bg-white text-emerald-600 shadow-sm'

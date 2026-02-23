@@ -27,6 +27,7 @@ export default function Footer({ variant = 'full' }: FooterProps) {
           <div className="flex items-center gap-6 text-sm text-gray-400">
             <Link href="/terms" className="hover:text-white transition-colors">이용약관</Link>
             <Link href="/privacy" className="hover:text-white transition-colors font-medium text-gray-300">개인정보처리방침</Link>
+            <Link href="/refund" className="hover:text-white transition-colors">환불정책</Link>
             <Link href="/contact" className="hover:text-white transition-colors">문의하기</Link>
           </div>
         </div>

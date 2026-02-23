@@ -9,7 +9,6 @@ import {
   DollarSign, Phone, FileText, Image as ImageIcon,
   ShieldAlert, Loader2,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { uploadImage } from '@/lib/upload';
 import { useAuth } from '@/contexts/AuthContext';
 import FormSection from '@/components/shared/FormSection';
@@ -82,7 +81,7 @@ const maxDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(
 
 export default function NewJobPage() {
   const router = useRouter();
-  const { user: authUser, isLoading: authLoading } = useAuth();
+  const { user: authUser, session, isLoading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
@@ -138,16 +137,29 @@ export default function NewJobPage() {
     setFormData(prev => ({ ...prev, phone: value }));
   };
 
-  // 회사 전화번호 포맷팅 핸들러 (02-XXXX-XXXX / 031-XXX-XXXX)
+  // 회사 전화번호 포맷팅 핸들러
+  // 서울: 02-XXX-XXXX(9자리) / 02-XXXX-XXXX(10자리)
+  // 기타: 0XX-XXX-XXXX(10자리) / 0XX-XXXX-XXXX(11자리)
   const handleOfficePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let value = e.target.value.replace(/[^0-9]/g, '');
-    if (value.length > 12) value = value.slice(0, 12);
     if (value.startsWith('02')) {
-      if (value.length > 6) value = `${value.slice(0,2)}-${value.slice(2,6)}-${value.slice(6)}`;
-      else if (value.length > 2) value = `${value.slice(0,2)}-${value.slice(2)}`;
+      if (value.length > 10) value = value.slice(0, 10);
+      if (value.length >= 10) {
+        value = `${value.slice(0,2)}-${value.slice(2,6)}-${value.slice(6)}`;
+      } else if (value.length >= 6) {
+        value = `${value.slice(0,2)}-${value.slice(2,5)}-${value.slice(5)}`;
+      } else if (value.length > 2) {
+        value = `${value.slice(0,2)}-${value.slice(2)}`;
+      }
     } else {
-      if (value.length > 7) value = `${value.slice(0,3)}-${value.slice(3,7)}-${value.slice(7)}`;
-      else if (value.length > 3) value = `${value.slice(0,3)}-${value.slice(3)}`;
+      if (value.length > 11) value = value.slice(0, 11);
+      if (value.length >= 11) {
+        value = `${value.slice(0,3)}-${value.slice(3,7)}-${value.slice(7)}`;
+      } else if (value.length >= 7) {
+        value = `${value.slice(0,3)}-${value.slice(3,6)}-${value.slice(6)}`;
+      } else if (value.length > 3) {
+        value = `${value.slice(0,3)}-${value.slice(3)}`;
+      }
     }
     setFormData(prev => ({ ...prev, office_phone: value }));
   };
@@ -220,10 +232,14 @@ export default function NewJobPage() {
         }
       }
 
-      // 2. 공고 데이터 저장
-      const { error } = await supabase
-        .from('jobs')
-        .insert({
+      // 2. 공고 데이터 저장 — API 라우트로 등록 (서버에서 service role 사용)
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session!.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           title: formData.title,
           description: formData.description,
           html_content: formData.html_content || null,
@@ -247,13 +263,13 @@ export default function NewJobPage() {
           deadline: formData.deadline || null,
           is_active: true,
           is_approved: true,
-        })
-        .select()
-        .single();
+        }),
+      });
 
-      if (error) {
-        console.error('Insert error:', error);
-        alert('공고 등록에 실패했습니다: ' + error.message);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        console.error('Insert error:', err);
+        alert('공고 등록에 실패했습니다: ' + (err.error || '알 수 없는 오류'));
         setIsSubmitting(false);
         return;
       }
