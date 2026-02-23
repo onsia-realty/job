@@ -143,7 +143,7 @@ function NewAgentJobContent() {
         .select('*')
         .eq('id', editId)
         .eq('user_id', authUser.id)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         alert('공고를 불러올 수 없습니다.');

@@ -11,41 +11,63 @@ export async function GET(request: NextRequest) {
   }
 
   if (!VWORLD_KEY) {
+    console.error('Geocode: VWorld API key not configured');
     return NextResponse.json({ error: 'VWorld API key not configured' }, { status: 500 });
   }
 
   // 도로명 주소로 먼저 시도
   try {
-    const roadRes = await fetch(
+    const roadUrl =
       `https://api.vworld.kr/req/address?service=address&request=getcoord` +
-      `&address=${encodeURIComponent(address)}&type=road&format=json&key=${VWORLD_KEY}`
-    );
-    const roadData = await roadRes.json();
+      `&address=${encodeURIComponent(address)}&type=road&format=json&key=${VWORLD_KEY}`;
 
-    if (roadData.response?.result?.point) {
-      return NextResponse.json({
-        lat: parseFloat(roadData.response.result.point.y),
-        lng: parseFloat(roadData.response.result.point.x),
-      });
+    const roadRes = await fetch(roadUrl, { signal: AbortSignal.timeout(5000) });
+
+    if (!roadRes.ok) {
+      console.error('Geocode road API error:', roadRes.status, roadRes.statusText);
+    } else {
+      const roadData = await roadRes.json();
+
+      if (roadData.response?.result?.point) {
+        return NextResponse.json({
+          lat: parseFloat(roadData.response.result.point.y),
+          lng: parseFloat(roadData.response.result.point.x),
+        });
+      }
+
+      if (roadData.response?.status === 'ERROR') {
+        console.error('Geocode road API returned error:', roadData.response.error);
+      }
     }
 
     // 지번 주소로 재시도
-    const parcelRes = await fetch(
+    const parcelUrl =
       `https://api.vworld.kr/req/address?service=address&request=getcoord` +
-      `&address=${encodeURIComponent(address)}&type=parcel&format=json&key=${VWORLD_KEY}`
-    );
-    const parcelData = await parcelRes.json();
+      `&address=${encodeURIComponent(address)}&type=parcel&format=json&key=${VWORLD_KEY}`;
 
-    if (parcelData.response?.result?.point) {
-      return NextResponse.json({
-        lat: parseFloat(parcelData.response.result.point.y),
-        lng: parseFloat(parcelData.response.result.point.x),
-      });
+    const parcelRes = await fetch(parcelUrl, { signal: AbortSignal.timeout(5000) });
+
+    if (!parcelRes.ok) {
+      console.error('Geocode parcel API error:', parcelRes.status, parcelRes.statusText);
+    } else {
+      const parcelData = await parcelRes.json();
+
+      if (parcelData.response?.result?.point) {
+        return NextResponse.json({
+          lat: parseFloat(parcelData.response.result.point.y),
+          lng: parseFloat(parcelData.response.result.point.x),
+        });
+      }
+
+      if (parcelData.response?.status === 'ERROR') {
+        console.error('Geocode parcel API returned error:', parcelData.response.error);
+      }
     }
 
-    return NextResponse.json({ error: 'Address not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Address not found', address }, { status: 404 });
   } catch (err) {
-    console.error('Geocode error:', err);
-    return NextResponse.json({ error: 'Geocode failed' }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Geocode error:', message, '| address:', address);
+    return NextResponse.json({ error: 'Geocode failed', detail: message }, { status: 500 });
   }
 }
