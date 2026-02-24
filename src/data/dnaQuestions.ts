@@ -691,9 +691,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 고객 미팅이 없는 조용한 오후 2시, 사무실에서 무엇을 하시겠습니까?',
       options: [
-        { id: 'A', text: '밀린 서류 정리와 장부 기장 (행정형)', label: '꼼꼼', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '블로그 포스팅이나 유튜브 편집 (홍보형)', label: '마케터', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '심심한데 옆 부동산 놀러 가서 수다 (마실형)', label: '인싸', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '밀린 서류 정리와 장부 기장 (행정형)', label: '꼼꼼', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '블로그 포스팅이나 유튜브 편집 (홍보형)', label: '마케터', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '심심한데 옆 부동산 놀러 가서 수다 (마실형)', label: '인싸', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -702,9 +702,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 모델하우스 조직원들이 다 같이 "으쌰으쌰" 구호 외치고 조회 시작합니다.',
       options: [
-        { id: 'A', text: '기 빨린다... 조용히 뒤에 서 있는다.', label: '개인주의', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '적당히 박수 치며 분위기 맞춘다.', label: '사회생활', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '목소리 제일 크게! 에너지 뿜뿜!', label: '분위기메이커', scores: { risk: undefined, social: 3, logic: 0, resilience: 1 } },
+        { id: 'A', text: '기 빨린다... 조용히 뒤에 서 있는다.', label: '개인주의', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '적당히 박수 치며 분위기 맞춘다.', label: '사회생활', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '목소리 제일 크게! 에너지 뿜뿜!', label: '분위기메이커', scores: { risk: 0, social: 3, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -713,9 +713,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 업무용 복장(Dress Code), 당신의 선택은?',
       options: [
-        { id: 'A', text: '신뢰의 상징! 풀 정장 & 넥타이/구두', label: '클래식', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '깔끔한 세미 캐주얼, 활동성 중요', label: '실용파', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '개성 있는 스타일! 명품이나 화려한 액세서리', label: '스타', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '신뢰의 상징! 풀 정장 & 넥타이/구두', label: '클래식', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '깔끔한 세미 캐주얼, 활동성 중요', label: '실용파', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '개성 있는 스타일! 명품이나 화려한 액세서리', label: '스타', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -724,9 +724,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 청소 당번 정하기 애매합니다. 어떻게 할까요?',
       options: [
-        { id: 'A', text: '돈 걷어서 청소 업체 부르자.', label: '자본주의', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '막내가 해야지! (혹은 내가 막내면 군말 없이 함)', label: '위계질서', scores: { risk: undefined, social: -1, logic: 0, resilience: 1 } },
-        { id: 'C', text: '보이는 사람이 치우자. 내가 먼저 빗자루 든다.', label: '솔선수범', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '돈 걷어서 청소 업체 부르자.', label: '자본주의', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '막내가 해야지! (혹은 내가 막내면 군말 없이 함)', label: '위계질서', scores: { risk: 0, social: -1, logic: 0, resilience: 1 } },
+        { id: 'C', text: '보이는 사람이 치우자. 내가 먼저 빗자루 든다.', label: '솔선수범', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -735,9 +735,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 손님이 차(Car)로 모시러 오라고 합니다. 내 차는?',
       options: [
-        { id: 'A', text: '기름값 아끼고 기동성 좋은 경차/소형차', label: '실속형', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '무난하고 깔끔한 국산 세단 (그랜저급)', label: '표준형', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '성공한 느낌 주는 외제차/고급 세단', label: '과시형', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '기름값 아끼고 기동성 좋은 경차/소형차', label: '실속형', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '무난하고 깔끔한 국산 세단 (그랜저급)', label: '표준형', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '성공한 느낌 주는 외제차/고급 세단', label: '과시형', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -746,9 +746,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 현장 근무라 컨테이너 사무실을 써야 합니다. 여름에 덥고 겨울에 춥습니다.',
       options: [
-        { id: 'A', text: '환경 열악하면 일 못 해. 다른 현장 알아본다.', label: '쾌적추구', scores: { risk: undefined, social: 0, logic: 0, resilience: -2 } },
-        { id: 'B', text: '개인 냉난방기 챙겨서 내 자리만 세팅.', label: '생존형', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'C', text: '돈만 벌리면 길바닥도 OK. 상관없다.', label: '야생형', scores: { risk: undefined, social: 0, logic: 0, resilience: 3 } },
+        { id: 'A', text: '환경 열악하면 일 못 해. 다른 현장 알아본다.', label: '쾌적추구', scores: { risk: 0, social: 0, logic: 0, resilience: -2 } },
+        { id: 'B', text: '개인 냉난방기 챙겨서 내 자리만 세팅.', label: '생존형', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'C', text: '돈만 벌리면 길바닥도 OK. 상관없다.', label: '야생형', scores: { risk: 0, social: 0, logic: 0, resilience: 3 } },
       ],
     },
     {
@@ -757,9 +757,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 매물 임장(답사) 갈 때 선호하는 방식은?',
       options: [
-        { id: 'A', text: '지도와 로드뷰로 사전 분석 완벽히 하고 동선 최소화', label: '디지털', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'B', text: '손님 없어도 매일 동네 한 바퀴 돌며 변화 체크', label: '성실파', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
-        { id: 'C', text: '부녀회장님이나 경비 아저씨 만나서 정보 캐기', label: '마당발', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '지도와 로드뷰로 사전 분석 완벽히 하고 동선 최소화', label: '디지털', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'B', text: '손님 없어도 매일 동네 한 바퀴 돌며 변화 체크', label: '성실파', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
+        { id: 'C', text: '부녀회장님이나 경비 아저씨 만나서 정보 캐기', label: '마당발', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -768,9 +768,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 점심시간, 다들 짜장면 시켜 먹자고 하는데 나는 짬뽕이 먹고 싶습니다.',
       options: [
-        { id: 'A', text: '통일해야 빨리 오니까 짜장면 먹는다.', label: '융화형', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"전 짬뽕이요!" 당당하게 시킨다.', label: '주관뚜렷', scores: { risk: undefined, social: -1, logic: 0, resilience: 1 } },
-        { id: 'C', text: '난 도시락 싸 왔다/혼자 먹고 오겠다.', label: '독고다이', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '통일해야 빨리 오니까 짜장면 먹는다.', label: '융화형', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"전 짬뽕이요!" 당당하게 시킨다.', label: '주관뚜렷', scores: { risk: 0, social: -1, logic: 0, resilience: 1 } },
+        { id: 'C', text: '난 도시락 싸 왔다/혼자 먹고 오겠다.', label: '독고다이', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -779,9 +779,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 라디오나 음악을 틀어놓는다면?',
       options: [
-        { id: 'A', text: '집중 안 된다. 무조건 정적.', label: '고요형', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
-        { id: 'B', text: '잔잔한 클래식이나 재즈로 고급스럽게.', label: '분위기', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '활기찬 최신 가요나 트로트! (손님 취향)', label: '흥부자', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '집중 안 된다. 무조건 정적.', label: '고요형', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
+        { id: 'B', text: '잔잔한 클래식이나 재즈로 고급스럽게.', label: '분위기', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '활기찬 최신 가요나 트로트! (손님 취향)', label: '흥부자', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -790,9 +790,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 계약서 특약 작성 시 선호하는 도구는?',
       options: [
-        { id: 'A', text: '기존에 잘 만들어둔 폼 복사해서 수정', label: '효율형', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '매번 상황에 맞춰 새로 꼼꼼히 타이핑', label: '신중형', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '요즘은 AI가 써주지 않나? 챗GPT 활용', label: '얼리어답터', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '기존에 잘 만들어둔 폼 복사해서 수정', label: '효율형', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '매번 상황에 맞춰 새로 꼼꼼히 타이핑', label: '신중형', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '요즘은 AI가 써주지 않나? 챗GPT 활용', label: '얼리어답터', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -801,9 +801,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 주말도 없이 2주 연속 출근 중입니다. 체력이 바닥납니다.',
       options: [
-        { id: 'A', text: '하루는 무조건 쉰다. 쉬어야 일한다.', label: '워라밸', scores: { risk: undefined, social: 0, logic: 1, resilience: -1 } },
-        { id: 'B', text: '영양제와 커피로 버티며 출근 도장 찍는다.', label: '근성가', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
-        { id: 'C', text: '계약 하나 쓰면 피로가 싹 풀린다. 정신력!', label: '멘탈갑', scores: { risk: undefined, social: 0, logic: 0, resilience: 3 } },
+        { id: 'A', text: '하루는 무조건 쉰다. 쉬어야 일한다.', label: '워라밸', scores: { risk: 0, social: 0, logic: 1, resilience: -1 } },
+        { id: 'B', text: '영양제와 커피로 버티며 출근 도장 찍는다.', label: '근성가', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
+        { id: 'C', text: '계약 하나 쓰면 피로가 싹 풀린다. 정신력!', label: '멘탈갑', scores: { risk: 0, social: 0, logic: 0, resilience: 3 } },
       ],
     },
     {
@@ -812,9 +812,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 공동 사무실(쉐어) 제안이 들어왔습니다. 월세는 반값.',
       options: [
-        { id: 'A', text: '불편하다. 돈 더 내고 혼자 쓴다.', label: '독립형', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
-        { id: 'B', text: '파티션 확실히 나누고 OK.', label: '구분형', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '좋다! 서로 물건도 공유하고 윈윈.', label: '협력형', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '불편하다. 돈 더 내고 혼자 쓴다.', label: '독립형', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
+        { id: 'B', text: '파티션 확실히 나누고 OK.', label: '구분형', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '좋다! 서로 물건도 공유하고 윈윈.', label: '협력형', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -823,9 +823,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 고객 브리핑용 모니터, 어떤 걸 쓰시나요?',
       options: [
-        { id: 'A', text: '책상 위 듀얼 모니터로 같이 본다.', label: '기본형', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '벽걸이 대형 TV 연결해서 시원하게.', label: '프리젠터', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '태블릿이나 노트북 들고 옆에 앉아서.', label: '밀착형', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '책상 위 듀얼 모니터로 같이 본다.', label: '기본형', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '벽걸이 대형 TV 연결해서 시원하게.', label: '프리젠터', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '태블릿이나 노트북 들고 옆에 앉아서.', label: '밀착형', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -834,9 +834,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 팀 분위기가 실적 못 내면 엄청 쪼는 분위기(압박)입니다.',
       options: [
-        { id: 'A', text: '스트레스 받아서 퇴사 고민.', label: '평화주의', scores: { risk: undefined, social: 0, logic: 0, resilience: -2 } },
-        { id: 'B', text: '한 귀로 듣고 한 귀로 흘린다. 마이웨이.', label: '무던함', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
-        { id: 'C', text: '오히려 자극돼서 더 열심히 한다.', label: '전투형', scores: { risk: undefined, social: 0, logic: 0, resilience: 3 } },
+        { id: 'A', text: '스트레스 받아서 퇴사 고민.', label: '평화주의', scores: { risk: 0, social: 0, logic: 0, resilience: -2 } },
+        { id: 'B', text: '한 귀로 듣고 한 귀로 흘린다. 마이웨이.', label: '무던함', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
+        { id: 'C', text: '오히려 자극돼서 더 열심히 한다.', label: '전투형', scores: { risk: 0, social: 0, logic: 0, resilience: 3 } },
       ],
     },
     {
@@ -845,9 +845,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 위치, 유동인구 많은 시장통 vs 한적하고 주차 편한 곳.',
       options: [
-        { id: 'A', text: '시끄러워도 사람 많은 시장통 (워킹 손님)', label: '영업중시', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
-        { id: 'B', text: '주차 편하고 예약 손님 위주인 곳', label: '고객편의', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '집 가깝고 월세 싼 곳이 최고', label: '가성비', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
+        { id: 'A', text: '시끄러워도 사람 많은 시장통 (워킹 손님)', label: '영업중시', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
+        { id: 'B', text: '주차 편하고 예약 손님 위주인 곳', label: '고객편의', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '집 가깝고 월세 싼 곳이 최고', label: '가성비', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -856,9 +856,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 일할 때 전화벨 소리가 너무 많이 울려서 업무가 끊깁니다.',
       options: [
-        { id: 'A', text: '착신 전환해두고 집중 업무 시간에는 안 받음.', label: '차단형', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
-        { id: 'B', text: '직원 뽑아서 전화 응대 시킨다.', label: '위임형', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '전화가 곧 돈이다! 멀티태스킹으로 다 받음.', label: '능력자', scores: { risk: undefined, social: 2, logic: 0, resilience: 2 } },
+        { id: 'A', text: '착신 전환해두고 집중 업무 시간에는 안 받음.', label: '차단형', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
+        { id: 'B', text: '직원 뽑아서 전화 응대 시킨다.', label: '위임형', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '전화가 곧 돈이다! 멀티태스킹으로 다 받음.', label: '능력자', scores: { risk: 0, social: 2, logic: 0, resilience: 2 } },
       ],
     },
     {
@@ -867,9 +867,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 비가 와서 현수막 작업도 못 하고 손님도 없습니다.',
       options: [
-        { id: 'A', text: '이런 날은 사우나 가서 쉰다.', label: '휴식형', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '사무실 앉아서 전화(TM)라도 돌린다.', label: '성실형', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'C', text: '비 오는 날 감성 문자 고객에게 쫙 돌린다.', label: '감성형', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '이런 날은 사우나 가서 쉰다.', label: '휴식형', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '사무실 앉아서 전화(TM)라도 돌린다.', label: '성실형', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'C', text: '비 오는 날 감성 문자 고객에게 쫙 돌린다.', label: '감성형', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -878,9 +878,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 화분이 너무 많아 관리가 힘듭니다. (개업 선물 등)',
       options: [
-        { id: 'A', text: '다 갖다 버리거나 남 준다. 깔끔한 게 최고.', label: '미니멀', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '시들지 않게 매일 물 주고 정성껏 관리.', label: '세심함', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '화분 많으면 복 들어온다. 정글처럼 둔다.', label: '자연주의', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '다 갖다 버리거나 남 준다. 깔끔한 게 최고.', label: '미니멀', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '시들지 않게 매일 물 주고 정성껏 관리.', label: '세심함', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '화분 많으면 복 들어온다. 정글처럼 둔다.', label: '자연주의', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -889,9 +889,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 책상 위 상태는?',
       options: [
-        { id: 'A', text: '서류 하나 없이 칼각 정리.', label: '결벽형', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '자주 보는 지도는 펴져 있고 적당히 어수선.', label: '실무형', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '서류 산더미, 하지만 뭐가 어딨는지는 다 암.', label: '혼돈형', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
+        { id: 'A', text: '서류 하나 없이 칼각 정리.', label: '결벽형', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '자주 보는 지도는 펴져 있고 적당히 어수선.', label: '실무형', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '서류 산더미, 하지만 뭐가 어딨는지는 다 암.', label: '혼돈형', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -900,9 +900,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 사내 연애(커플)에 대한 생각은?',
       options: [
-        { id: 'A', text: '일하는데 방해된다. 절대 반대.', label: '엄격형', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '걸리지만 않으면 상관없다.', label: '방임형', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '힘든 일 서로 의지하고 좋지! 찬성.', label: '낭만형', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '일하는데 방해된다. 절대 반대.', label: '엄격형', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '걸리지만 않으면 상관없다.', label: '방임형', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '힘든 일 서로 의지하고 좋지! 찬성.', label: '낭만형', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -911,9 +911,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 컴퓨터 타자 속도는?',
       options: [
-        { id: 'A', text: '독수리 타법이지만 계약서는 잘 쓴다.', label: '아날로그', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'B', text: '보통 수준 (300~400타)', label: '평범형', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '보지도 않고 침. 단축키 마스터.', label: 'IT형', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '독수리 타법이지만 계약서는 잘 쓴다.', label: '아날로그', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'B', text: '보통 수준 (300~400타)', label: '평범형', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '보지도 않고 침. 단축키 마스터.', label: 'IT형', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -922,9 +922,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 모델하우스 내 자리가 입구 쪽이라 겨울에 문 열릴 때마다 춥습니다.',
       options: [
-        { id: 'A', text: '자리 바꿔달라고 강력 항의.', label: '권리형', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '핫팩 붙이고 담요 덮고 버틴다.', label: '인내형', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
-        { id: 'C', text: '오히려 손님 맞이하기 좋다며 긍정 회로.', label: '긍정왕', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
+        { id: 'A', text: '자리 바꿔달라고 강력 항의.', label: '권리형', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '핫팩 붙이고 담요 덮고 버틴다.', label: '인내형', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
+        { id: 'C', text: '오히려 손님 맞이하기 좋다며 긍정 회로.', label: '긍정왕', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -933,9 +933,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 계약이 겹쳐서 일요일에 출근해야 합니다.',
       options: [
-        { id: 'A', text: '일요일은 교회/절 가야 함. 절대 불가.', label: '종교형', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '손님이 원하면 나가야지. (속으론 투덜)', label: '수동적', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '일요일 계약? 감사합니다! 룰루랄라 출근.', label: '워크홀릭', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
+        { id: 'A', text: '일요일은 교회/절 가야 함. 절대 불가.', label: '종교형', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '손님이 원하면 나가야지. (속으론 투덜)', label: '수동적', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '일요일 계약? 감사합니다! 룰루랄라 출근.', label: '워크홀릭', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
       ],
     },
     {
@@ -944,9 +944,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 간식(탕비실) 채워 넣기.',
       options: [
-        { id: 'A', text: '믹스커피랑 녹차면 충분.', label: '기본형', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '캡슐 커피, 과자, 음료수 다양하게.', label: '카페형', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '내 돈 아깝다. 손님 오면 사 온다.', label: '짠돌이', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '믹스커피랑 녹차면 충분.', label: '기본형', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '캡슐 커피, 과자, 음료수 다양하게.', label: '카페형', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '내 돈 아깝다. 손님 오면 사 온다.', label: '짠돌이', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -955,9 +955,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 옆 부동산 사장님이 맨날 와서 커피 마시고 시간 때우다 갑니다.',
       options: [
-        { id: 'A', text: '눈치 줘서 보낸다. 일 방해됨.', label: '철벽형', scores: { risk: undefined, social: -2, logic: 1, resilience: 0 } },
-        { id: 'B', text: '적당히 대꾸해주며 정보 캔다.', label: '실속형', scores: { risk: undefined, social: 1, logic: 0, resilience: 1 } },
-        { id: 'C', text: '환영! 같이 수다 떨며 논다.', label: '사랑방', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '눈치 줘서 보낸다. 일 방해됨.', label: '철벽형', scores: { risk: 0, social: -2, logic: 1, resilience: 0 } },
+        { id: 'B', text: '적당히 대꾸해주며 정보 캔다.', label: '실속형', scores: { risk: 0, social: 1, logic: 0, resilience: 1 } },
+        { id: 'C', text: '환영! 같이 수다 떨며 논다.', label: '사랑방', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -966,9 +966,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 숙소 생활(합숙)을 해야 하는 지방 현장입니다.',
       options: [
-        { id: 'A', text: '합숙 절대 못 함. 출퇴근하거나 안 감.', label: '개인주의', scores: { risk: undefined, social: -2, logic: 0, resilience: -1 } },
-        { id: 'B', text: '잠만 자는 곳이라 생각하고 지냄.', label: '적응형', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '밤마다 술 파티! 재밌겠다.', label: '놀자판', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '합숙 절대 못 함. 출퇴근하거나 안 감.', label: '개인주의', scores: { risk: 0, social: -2, logic: 0, resilience: -1 } },
+        { id: 'B', text: '잠만 자는 곳이라 생각하고 지냄.', label: '적응형', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '밤마다 술 파티! 재밌겠다.', label: '놀자판', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -977,9 +977,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 업무용 휴대폰과 개인 휴대폰을 분리하나요?',
       options: [
-        { id: 'A', text: '무조건 폰 2개. 투폰 쓴다.', label: '분리형', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '폰 하나에 듀얼 넘버 서비스.', label: '스마트', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '귀찮다. 그냥 폰 하나로 다 함.', label: '통합형', scores: { risk: undefined, social: 1, logic: -1, resilience: 0 } },
+        { id: 'A', text: '무조건 폰 2개. 투폰 쓴다.', label: '분리형', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '폰 하나에 듀얼 넘버 서비스.', label: '스마트', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '귀찮다. 그냥 폰 하나로 다 함.', label: '통합형', scores: { risk: 0, social: 1, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -988,9 +988,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 손님 방문 시 슬리퍼로 갈아 신게 하나요?',
       options: [
-        { id: 'A', text: '신발 신고 들어오게 함 (청소 내가 함).', label: '편의형', scores: { risk: undefined, social: 1, logic: 0, resilience: 1 } },
-        { id: 'B', text: '슬리퍼 필수. 바닥 더러워지는 거 싫음.', label: '청결형', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '고급 털 실내화 준비해 둠.', label: '대접형', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '신발 신고 들어오게 함 (청소 내가 함).', label: '편의형', scores: { risk: 0, social: 1, logic: 0, resilience: 1 } },
+        { id: 'B', text: '슬리퍼 필수. 바닥 더러워지는 거 싫음.', label: '청결형', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '고급 털 실내화 준비해 둠.', label: '대접형', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -999,9 +999,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 가장 선호하는 고객 연령대는?',
       options: [
-        { id: 'A', text: '말 잘 통하는 2030 젊은 층', label: '영타겟', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '구매력 확실한 4050 중장년층', label: '실속타겟', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '인정 많고 쿨한 60대 이상 어르신', label: '어르신픽', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
+        { id: 'A', text: '말 잘 통하는 2030 젊은 층', label: '영타겟', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '구매력 확실한 4050 중장년층', label: '실속타겟', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '인정 많고 쿨한 60대 이상 어르신', label: '어르신픽', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -1010,9 +1010,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 명당 자리(상석)는 누구 것?',
       options: [
-        { id: 'A', text: '당연히 대표(사장) 자리.', label: '권위형', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '손님 잘 보이는 입구 쪽이 명당.', label: '영업형', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '구석진 곳이 맘 편하고 명당.', label: '은둔형', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '당연히 대표(사장) 자리.', label: '권위형', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '손님 잘 보이는 입구 쪽이 명당.', label: '영업형', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '구석진 곳이 맘 편하고 명당.', label: '은둔형', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1021,9 +1021,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 삐끼(호객 행위) 이모님들을 고용해서 전단지를 돌릴까요?',
       options: [
-        { id: 'A', text: '이미지 안 좋아진다. 안 함.', label: '고급화', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '효율 따져보고 가끔 쓴다.', label: '계산적', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '사람 물어오면 장땡! 풀가동.', label: '공격적', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
+        { id: 'A', text: '이미지 안 좋아진다. 안 함.', label: '고급화', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '효율 따져보고 가끔 쓴다.', label: '계산적', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '사람 물어오면 장땡! 풀가동.', label: '공격적', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -1032,9 +1032,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 애완동물(강아지/고양이)을 데려와도 될까요?',
       options: [
-        { id: 'A', text: '털 날리고 손님 싫어함. 절대 금지.', label: '엄격형', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '얌전하면 괜찮다.', label: '허용형', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '마스코트로 키우자! 손님들이 좋아함.', label: '애견인', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '털 날리고 손님 싫어함. 절대 금지.', label: '엄격형', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '얌전하면 괜찮다.', label: '허용형', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '마스코트로 키우자! 손님들이 좋아함.', label: '애견인', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1043,9 +1043,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 계약이 성사되면 종을 치거나 박수를 치는 세레머니.',
       options: [
-        { id: 'A', text: '촌스럽고 부끄럽다. 조용히 함.', label: '진지형', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
-        { id: 'B', text: '분위기 띄우게 적당히 박수.', label: '호응형', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '징이라도 울려라! 동네방네 자랑.', label: '쇼맨십', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '촌스럽고 부끄럽다. 조용히 함.', label: '진지형', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
+        { id: 'B', text: '분위기 띄우게 적당히 박수.', label: '호응형', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '징이라도 울려라! 동네방네 자랑.', label: '쇼맨십', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1054,9 +1054,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 점심 먹고 나른한 시간, 낮잠을 잔다면?',
       options: [
-        { id: 'A', text: '정신력 해이! 세수하고 온다.', label: 'FM', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'B', text: '의자에 기대서 10분 쪽잠.', label: '현실형', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '소파나 탕비실 가서 푹 잔다.', label: '자유인', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
+        { id: 'A', text: '정신력 해이! 세수하고 온다.', label: 'FM', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'B', text: '의자에 기대서 10분 쪽잠.', label: '현실형', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '소파나 탕비실 가서 푹 잔다.', label: '자유인', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
       ],
     },
     {
@@ -1065,9 +1065,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 현장이 너무 멀어서 출퇴근 왕복 4시간입니다.',
       options: [
-        { id: 'A', text: '길에 버리는 시간 아깝다. 못 다님.', label: '효율형', scores: { risk: undefined, social: 0, logic: 2, resilience: -1 } },
-        { id: 'B', text: '유튜브나 강의 들으면서 다님.', label: '자기계발', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'C', text: '현장 근처 찜질방/모텔 달방 잡음.', label: '적응력', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
+        { id: 'A', text: '길에 버리는 시간 아깝다. 못 다님.', label: '효율형', scores: { risk: 0, social: 0, logic: 2, resilience: -1 } },
+        { id: 'B', text: '유튜브나 강의 들으면서 다님.', label: '자기계발', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'C', text: '현장 근처 찜질방/모텔 달방 잡음.', label: '적응력', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
       ],
     },
     {
@@ -1076,9 +1076,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 우리 사무실 유리창(썬팅) 광고 스타일은?',
       options: [
-        { id: 'A', text: '매물 종이 덕지덕지 붙여서 정보 제공.', label: '정보형', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '내부 보이게 깔끔하게 로고만.', label: '개방형', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '내 얼굴 사진 대문짝만하게.', label: '자신감', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '매물 종이 덕지덕지 붙여서 정보 제공.', label: '정보형', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '내부 보이게 깔끔하게 로고만.', label: '개방형', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '내 얼굴 사진 대문짝만하게.', label: '자신감', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1087,9 +1087,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 고객 응대 시 선호하는 음료 제공 방식.',
       options: [
-        { id: 'A', text: '냉장고에서 비타500/쥬스 꺼내 줌.', label: '스피드', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '직접 내린 원두커피/차 대접.', label: '정성', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '셀프입니다. (종이컵 배치)', label: '쿨내', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '냉장고에서 비타500/쥬스 꺼내 줌.', label: '스피드', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '직접 내린 원두커피/차 대접.', label: '정성', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '셀프입니다. (종이컵 배치)', label: '쿨내', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1098,9 +1098,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 비흡연자인데 사무실 소장님이 골초라 담배 냄새가 쩝니다.',
       options: [
-        { id: 'A', text: '건강 해친다. 그만둔다.', label: '건강형', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '공기청정기 내 돈으로 사서 튼다.', label: '방어형', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '끊으라고 잔소리하거나 같이 피러 나감(?).', label: '적극형', scores: { risk: undefined, social: 1, logic: 0, resilience: 1 } },
+        { id: 'A', text: '건강 해친다. 그만둔다.', label: '건강형', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '공기청정기 내 돈으로 사서 튼다.', label: '방어형', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '끊으라고 잔소리하거나 같이 피러 나감(?).', label: '적극형', scores: { risk: 0, social: 1, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -1109,9 +1109,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 회식 메뉴 정할 때.',
       options: [
-        { id: 'A', text: '삼겹살에 소주가 국룰.', label: '서민형', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '깔끔한 일식이나 뷔페.', label: '깔끔형', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '계약 썼으면 소고기! 아니면 국밥.', label: '성과형', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '삼겹살에 소주가 국룰.', label: '서민형', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '깔끔한 일식이나 뷔페.', label: '깔끔형', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '계약 썼으면 소고기! 아니면 국밥.', label: '성과형', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1120,9 +1120,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 CCTV를 설치할까요?',
       options: [
-        { id: 'A', text: '감시당하는 기분이라 싫음.', label: '자유형', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '방범 및 사고 예방용으로 필수.', label: '보안형', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '손님과의 대화 녹음용으로도 씀.', label: '증거형', scores: { risk: undefined, social: -1, logic: 3, resilience: 0 } },
+        { id: 'A', text: '감시당하는 기분이라 싫음.', label: '자유형', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '방범 및 사고 예방용으로 필수.', label: '보안형', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '손님과의 대화 녹음용으로도 씀.', label: '증거형', scores: { risk: 0, social: -1, logic: 3, resilience: 0 } },
       ],
     },
     {
@@ -1131,9 +1131,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 PC 바탕화면 상태는?',
       options: [
-        { id: 'A', text: '아이콘 5개 미만. 초깔끔.', label: '정리왕', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '폴더별로 정리되어 있음.', label: '체계적', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '화면 가득 파일로 덮임. (어디 있는지 찾느라 시간 걸림)', label: '혼돈', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
+        { id: 'A', text: '아이콘 5개 미만. 초깔끔.', label: '정리왕', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '폴더별로 정리되어 있음.', label: '체계적', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '화면 가득 파일로 덮임. (어디 있는지 찾느라 시간 걸림)', label: '혼돈', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
       ],
     },
     {
@@ -1142,9 +1142,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 모델하우스 유니트(샘플하우스) 내에서 손님이 몰래 사진을 찍습니다. (원칙은 금지)',
       options: [
-        { id: 'A', text: '"고객님 사진 촬영 금지입니다" 칼같이 제지.', label: 'FM', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '못 본 척 넘어간다.', label: '유연함', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"예쁘게 찍어서 홍보 좀 해주세요~" 권장한다.', label: '홍보형', scores: { risk: undefined, social: 2, logic: -1, resilience: 0 } },
+        { id: 'A', text: '"고객님 사진 촬영 금지입니다" 칼같이 제지.', label: 'FM', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '못 본 척 넘어간다.', label: '유연함', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"예쁘게 찍어서 홍보 좀 해주세요~" 권장한다.', label: '홍보형', scores: { risk: 0, social: 2, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -1153,9 +1153,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 임대료가 올라서 이사를 가야 합니다. 어디로 갈까요?',
       options: [
-        { id: 'A', text: '월세 싼 지하나 2층으로 축소.', label: '긴축형', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '비슷한 조건의 옆 동네.', label: '유지형', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '무리해서라도 더 좋은 목으로 확장 이전.', label: '공격형', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
+        { id: 'A', text: '월세 싼 지하나 2층으로 축소.', label: '긴축형', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '비슷한 조건의 옆 동네.', label: '유지형', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '무리해서라도 더 좋은 목으로 확장 이전.', label: '공격형', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
       ],
     },
     {
@@ -1164,9 +1164,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 안마의자를 렌탈할까요?',
       options: [
-        { id: 'A', text: '일하는 곳이다. 사치다.', label: '근검', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '직원 복지 차원에서 OK.', label: '복지', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '손님 대기용으로 최고! 무조건 함.', label: '서비스', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '일하는 곳이다. 사치다.', label: '근검', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '직원 복지 차원에서 OK.', label: '복지', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '손님 대기용으로 최고! 무조건 함.', label: '서비스', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1175,9 +1175,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 계약금 입금하러 은행에 가야 하는데 현금이 1억입니다.',
       options: [
-        { id: 'A', text: '청원경찰 부르거나 지인과 같이 간다.', label: '안전', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '가방에 넣고 아무렇지 않게 간다.', label: '대범', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '계좌이체하지 왜 현금을... 질색함.', label: '디지털', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '청원경찰 부르거나 지인과 같이 간다.', label: '안전', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '가방에 넣고 아무렇지 않게 간다.', label: '대범', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '계좌이체하지 왜 현금을... 질색함.', label: '디지털', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1186,9 +1186,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 내 책상 의자 스타일은?',
       options: [
-        { id: 'A', text: '허리 건강 위한 기능성 메쉬 의자.', label: '건강', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '중후한 사장님표 가죽 의자.', label: '권위', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '게이밍 의자 (뒤로 젖혀서 자기 좋음).', label: '실용', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '허리 건강 위한 기능성 메쉬 의자.', label: '건강', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '중후한 사장님표 가죽 의자.', label: '권위', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '게이밍 의자 (뒤로 젖혀서 자기 좋음).', label: '실용', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1197,9 +1197,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 땡볕에서 파라솔 영업 중, 경쟁사 직원이 옆에 자리를 폅니다.',
       options: [
-        { id: 'A', text: '싸우기 싫어서 내가 딴 데로 옮긴다.', label: '평화', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '"여기 제 자리인데요?" 따진다.', label: '영토', scores: { risk: undefined, social: -1, logic: 0, resilience: 1 } },
-        { id: 'C', text: '음료수 건네며 같이 손님 쉐어하자고 꼬신다.', label: '친화', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '싸우기 싫어서 내가 딴 데로 옮긴다.', label: '평화', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '"여기 제 자리인데요?" 따진다.', label: '영토', scores: { risk: 0, social: -1, logic: 0, resilience: 1 } },
+        { id: 'C', text: '음료수 건네며 같이 손님 쉐어하자고 꼬신다.', label: '친화', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1208,9 +1208,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 컴퓨터가 고장 났습니다. 수리는?',
       options: [
-        { id: 'A', text: 'AS 기사님 바로 부른다.', label: '위임', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '내가 뜯어서 고친다 (램 뺐다 끼기 등).', label: '맥가이버', scores: { risk: undefined, social: 0, logic: 2, resilience: 1 } },
-        { id: 'C', text: '이참에 최신형으로 새로 산다.', label: '소비', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: 'AS 기사님 바로 부른다.', label: '위임', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '내가 뜯어서 고친다 (램 뺐다 끼기 등).', label: '맥가이버', scores: { risk: 0, social: 0, logic: 2, resilience: 1 } },
+        { id: 'C', text: '이참에 최신형으로 새로 산다.', label: '소비', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1219,9 +1219,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 방향제 향기는?',
       options: [
-        { id: 'A', text: '아무 냄새 안 나는 무취/소취.', label: '깔끔', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '은은한 라벤더/숲 향기.', label: '힐링', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '달콤한 과일향이나 강한 디퓨저.', label: '강렬', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '아무 냄새 안 나는 무취/소취.', label: '깔끔', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '은은한 라벤더/숲 향기.', label: '힐링', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '달콤한 과일향이나 강한 디퓨저.', label: '강렬', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1230,9 +1230,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 손님이 신발 벗고 들어왔는데 발 냄새가 심합니다.',
       options: [
-        { id: 'A', text: '숨참고 티 안 내며 브리핑.', label: '인내', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
-        { id: 'B', text: '슬그머니 공기청정기 파워를 올린다.', label: '센스', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '"환기 좀 시킬게요~" 대놓고 창문 연다.', label: '직구', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '숨참고 티 안 내며 브리핑.', label: '인내', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
+        { id: 'B', text: '슬그머니 공기청정기 파워를 올린다.', label: '센스', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '"환기 좀 시킬게요~" 대놓고 창문 연다.', label: '직구', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1241,9 +1241,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 매물 장부(공동중개망) 비번을 주기적으로 바꾸시나요?',
       options: [
-        { id: 'A', text: '한 달에 한 번 필수 변경.', label: '보안', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '가끔 생각나면 바꿈.', label: '보통', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '귀찮다. 1234로 통일.', label: '귀차니즘', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
+        { id: 'A', text: '한 달에 한 번 필수 변경.', label: '보안', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '가끔 생각나면 바꿈.', label: '보통', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '귀찮다. 1234로 통일.', label: '귀차니즘', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
       ],
     },
     {
@@ -1252,9 +1252,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 현장 식당(함바집) 밥이 너무 맛없습니다.',
       options: [
-        { id: 'A', text: '살기 위해 그냥 먹는다.', label: '생존', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'B', text: '도시락 싸 다닌다.', label: '알뜰', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '매일 밖에서 맛집 찾아 사 먹는다.', label: '미식가', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '살기 위해 그냥 먹는다.', label: '생존', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'B', text: '도시락 싸 다닌다.', label: '알뜰', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '매일 밖에서 맛집 찾아 사 먹는다.', label: '미식가', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1263,9 +1263,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 TV 뉴스를 틀어놓나요?',
       options: [
-        { id: 'A', text: '경제 채널(YTN, 연합) 24시간 가동.', label: '정보', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '손님 올 때만 튼다.', label: '절약', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '시끄러워서 안 튼다.', label: '정숙', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '경제 채널(YTN, 연합) 24시간 가동.', label: '정보', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '손님 올 때만 튼다.', label: '절약', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '시끄러워서 안 튼다.', label: '정숙', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1274,9 +1274,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 비 오는 날 임장(답사) 가자는 손님.',
       options: [
-        { id: 'A', text: '"비 오면 집 제대로 못 봐요" 미룬다.', label: '합리', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '누수 확인하기 딱 좋다며 모시고 간다.', label: '전문가', scores: { risk: undefined, social: 0, logic: 2, resilience: 1 } },
-        { id: 'C', text: '싫은 티 내면서 억지로 간다.', label: '수동', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
+        { id: 'A', text: '"비 오면 집 제대로 못 봐요" 미룬다.', label: '합리', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '누수 확인하기 딱 좋다며 모시고 간다.', label: '전문가', scores: { risk: 0, social: 0, logic: 2, resilience: 1 } },
+        { id: 'C', text: '싫은 티 내면서 억지로 간다.', label: '수동', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
       ],
     },
     {
@@ -1285,9 +1285,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 간판(LED)을 밤새 켜두시나요?',
       options: [
-        { id: 'A', text: '전기세 아깝다. 퇴근할 때 끈다.', label: '절약', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '타이머 맞춰서 12시까지만.', label: '효율', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '24시간 풀가동! 홍보 효과.', label: '홍보', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '전기세 아깝다. 퇴근할 때 끈다.', label: '절약', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '타이머 맞춰서 12시까지만.', label: '효율', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '24시간 풀가동! 홍보 효과.', label: '홍보', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1296,9 +1296,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 모델하우스 화장실에서 양치질을 하는데 손님과 마주쳤습니다.',
       options: [
-        { id: 'A', text: '민망해서 황급히 숨긴다.', label: '부끄럼', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '입에 거품 문 채로 눈인사.', label: '뻔뻔', scores: { risk: undefined, social: 1, logic: 0, resilience: 1 } },
-        { id: 'C', text: '"안녕하세요~ 상담받으러 오셨나요?" 말 건다.', label: '영업왕', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '민망해서 황급히 숨긴다.', label: '부끄럼', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '입에 거품 문 채로 눈인사.', label: '뻔뻔', scores: { risk: 0, social: 1, logic: 0, resilience: 1 } },
+        { id: 'C', text: '"안녕하세요~ 상담받으러 오셨나요?" 말 건다.', label: '영업왕', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1307,9 +1307,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 벽시계 스타일은?',
       options: [
-        { id: 'A', text: '은행/보험사에서 준 숫자 큰 달력 시계.', label: '실용', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '디자인 예쁜 인테리어 시계.', label: '감각', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '세계 지도 그려진 시계 (글로벌 느낌).', label: '야망', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '은행/보험사에서 준 숫자 큰 달력 시계.', label: '실용', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '디자인 예쁜 인테리어 시계.', label: '감각', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '세계 지도 그려진 시계 (글로벌 느낌).', label: '야망', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1318,9 +1318,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 키보드 소리가 너무 큰 직원 (타닥타닥!)',
       options: [
-        { id: 'A', text: '일 열심히 하는 것 같아 보기 좋다.', label: '긍정', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '조용히 키스킨 사다 준다.', label: '우회', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"조용히 좀 해" 직설적으로 말함.', label: '직설', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '일 열심히 하는 것 같아 보기 좋다.', label: '긍정', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '조용히 키스킨 사다 준다.', label: '우회', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"조용히 좀 해" 직설적으로 말함.', label: '직설', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1329,9 +1329,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 출근 시간 9시. 당신의 도착 시간은?',
       options: [
-        { id: 'A', text: '8시 30분 도착해서 청소하고 커피 한잔.', label: '얼리버드', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'B', text: '8시 55분 세이프.', label: '정각', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '9시 10분... 코리안 타임.', label: '지각', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
+        { id: 'A', text: '8시 30분 도착해서 청소하고 커피 한잔.', label: '얼리버드', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'B', text: '8시 55분 세이프.', label: '정각', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '9시 10분... 코리안 타임.', label: '지각', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
       ],
     },
     {
@@ -1340,9 +1340,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 난방 온도.',
       options: [
-        { id: 'A', text: '후끈후끈하게. 추운 거 딱 질색.', label: '열대야', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '적정 온도 20~22도 유지.', label: '표준', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '난방비 아껴! 춥게 지낸다.', label: '알뜰', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
+        { id: 'A', text: '후끈후끈하게. 추운 거 딱 질색.', label: '열대야', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '적정 온도 20~22도 유지.', label: '표준', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '난방비 아껴! 춥게 지낸다.', label: '알뜰', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
       ],
     },
     {
@@ -1351,9 +1351,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 매물 광고 사진 찍으러 갈 때.',
       options: [
-        { id: 'A', text: 'DSLR/미러리스 카메라 챙김.', label: '고퀄', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '최신형 스마트폰이면 충분.', label: '편리', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '안 찍음. 로드뷰나 평면도로 대체.', label: '귀찮', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
+        { id: 'A', text: 'DSLR/미러리스 카메라 챙김.', label: '고퀄', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '최신형 스마트폰이면 충분.', label: '편리', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '안 찍음. 로드뷰나 평면도로 대체.', label: '귀찮', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -1362,9 +1362,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 고객에게 줄 판촉물(사은품) 선정.',
       options: [
-        { id: 'A', text: '휴지, 물티슈 같은 생필품 (실용성).', label: '주부픽', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '라면, 쌀 같은 먹거리.', label: '먹거리', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '고급 우산이나 와인.', label: '고급', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '휴지, 물티슈 같은 생필품 (실용성).', label: '주부픽', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '라면, 쌀 같은 먹거리.', label: '먹거리', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '고급 우산이나 와인.', label: '고급', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1373,9 +1373,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 계약 서류 보관 방식.',
       options: [
-        { id: 'A', text: '연도별/월별 파일철에 꼼꼼히 라벨링.', label: '아카이브', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'B', text: '대충 박스에 넣어둠.', label: '방치', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
-        { id: 'C', text: '스캔 떠서 파일로 저장하고 종이는 최소화.', label: '디지털', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '연도별/월별 파일철에 꼼꼼히 라벨링.', label: '아카이브', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'B', text: '대충 박스에 넣어둠.', label: '방치', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
+        { id: 'C', text: '스캔 떠서 파일로 저장하고 종이는 최소화.', label: '디지털', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1384,9 +1384,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 슬리퍼(실내화) 디자인.',
       options: [
-        { id: 'A', text: '삼선 슬리퍼.', label: '국룰', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '지압 슬리퍼 (건강 챙김).', label: '건강', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '푹신한 캐릭터 슬리퍼.', label: '귀염', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '삼선 슬리퍼.', label: '국룰', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '지압 슬리퍼 (건강 챙김).', label: '건강', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '푹신한 캐릭터 슬리퍼.', label: '귀염', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1395,9 +1395,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 점심시간에 손님이 오면?',
       options: [
-        { id: 'A', text: '밥 먹다 말고 상담한다.', label: '고객우선', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
-        { id: 'B', text: '"식사 중이라 10분만 기다려주세요" 양해 구함.', label: '밥심', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '문 잠그고 밥 먹으러 나감 (브레이크 타임).', label: '워라밸', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '밥 먹다 말고 상담한다.', label: '고객우선', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
+        { id: 'B', text: '"식사 중이라 10분만 기다려주세요" 양해 구함.', label: '밥심', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '문 잠그고 밥 먹으러 나감 (브레이크 타임).', label: '워라밸', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1406,9 +1406,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 현장 홍보관 BGM(배경음악) 선곡.',
       options: [
-        { id: 'A', text: '신나는 댄스곡으로 분위기 UP.', label: '클럽', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '고급스러운 클래식/재즈.', label: '호텔', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: 'CM송 무한 반복 (세뇌).', label: '세뇌', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '신나는 댄스곡으로 분위기 UP.', label: '클럽', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '고급스러운 클래식/재즈.', label: '호텔', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: 'CM송 무한 반복 (세뇌).', label: '세뇌', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1417,9 +1417,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 거울은 어디에?',
       options: [
-        { id: 'A', text: '내 책상 앞에 (수시로 용모 체크).', label: '나르시즘', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '입구 쪽에 전신 거울 (손님용).', label: '센스', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '화장실에만 있으면 됨.', label: '무관심', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '내 책상 앞에 (수시로 용모 체크).', label: '나르시즘', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '입구 쪽에 전신 거울 (손님용).', label: '센스', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '화장실에만 있으면 됨.', label: '무관심', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1428,9 +1428,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 여름철 에어컨 가동 기준.',
       options: [
-        { id: 'A', text: '문 열어놓고 빵빵하게 (손님 들어오라고).', label: '개방', scores: { risk: undefined, social: 2, logic: -1, resilience: 0 } },
-        { id: 'B', text: '문 닫고 적정 온도.', label: '준법', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '선풍기로 버틴다.', label: '절약', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
+        { id: 'A', text: '문 열어놓고 빵빵하게 (손님 들어오라고).', label: '개방', scores: { risk: 0, social: 2, logic: -1, resilience: 0 } },
+        { id: 'B', text: '문 닫고 적정 온도.', label: '준법', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '선풍기로 버틴다.', label: '절약', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -1439,9 +1439,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 개인 명함 디자인.',
       options: [
-        { id: 'A', text: '협회에서 주는 기본 디자인.', label: '무난', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '금박 번쩍번쩍 고급지게.', label: '부자', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '캐리커처 넣어서 친근하게.', label: '친근', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '협회에서 주는 기본 디자인.', label: '무난', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '금박 번쩍번쩍 고급지게.', label: '부자', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '캐리커처 넣어서 친근하게.', label: '친근', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1450,9 +1450,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 책상 배치.',
       options: [
-        { id: 'A', text: '서로 마주 보게 (소통 원활).', label: '대면', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '벽 보고 앉게 (집중).', label: '독서실', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '사장님 바라보게 (감시?).', label: '교실', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '서로 마주 보게 (소통 원활).', label: '대면', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '벽 보고 앉게 (집중).', label: '독서실', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '사장님 바라보게 (감시?).', label: '교실', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1461,9 +1461,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 떴다방 천막 안에서 대기 중. 심심할 때?',
       options: [
-        { id: 'A', text: '옆 사람들과 고스톱/카드놀이.', label: '친목', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'B', text: '핸드폰 게임.', label: '겜돌이', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '부동산 뉴스 검색 및 시세 파악.', label: '학구파', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '옆 사람들과 고스톱/카드놀이.', label: '친목', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'B', text: '핸드폰 게임.', label: '겜돌이', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '부동산 뉴스 검색 및 시세 파악.', label: '학구파', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1472,9 +1472,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 퇴근할 때 책상 정리.',
       options: [
-        { id: 'A', text: '내일 바로 일할 수 있게 세팅해두고 감.', label: '준비성', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '그냥 몸만 빠져나감.', label: '칼퇴', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'C', text: '보안 서류 금고에 넣고 잠금장치 확인.', label: '철저', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '내일 바로 일할 수 있게 세팅해두고 감.', label: '준비성', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '그냥 몸만 빠져나감.', label: '칼퇴', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'C', text: '보안 서류 금고에 넣고 잠금장치 확인.', label: '철저', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1483,9 +1483,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 정수기 옆에 믹스커피가 떨어졌습니다.',
       options: [
-        { id: 'A', text: '내 사비로 사 온다.', label: '희생', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '총무/경리에게 사달라고 말함.', label: '절차', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '없으면 안 마심.', label: '무관심', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '내 사비로 사 온다.', label: '희생', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '총무/경리에게 사달라고 말함.', label: '절차', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '없으면 안 마심.', label: '무관심', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1494,9 +1494,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 계약 잘 되는 "징크스"나 "미신"이 있나요?',
       options: [
-        { id: 'A', text: '현관에 소금 뿌리기/해바라기 그림.', label: '미신', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'B', text: '그런 거 안 믿음. 실력이지.', label: '이성', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '머리 안 감고 오면 계약 잘 됨.', label: '징크스', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '현관에 소금 뿌리기/해바라기 그림.', label: '미신', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'B', text: '그런 거 안 믿음. 실력이지.', label: '이성', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '머리 안 감고 오면 계약 잘 됨.', label: '징크스', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1505,9 +1505,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 손님이 화장실 좀 쓰자고 합니다. (상가 공용 화장실 열쇠 줘야 함)',
       options: [
-        { id: 'A', text: '열쇠 주며 위치 친절히 설명.', label: '친절', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"고장 났어요" 거짓말 (청소 귀찮).', label: '방어', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '비번 알려주고 다녀오시라 함.', label: '보통', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '열쇠 주며 위치 친절히 설명.', label: '친절', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"고장 났어요" 거짓말 (청소 귀찮).', label: '방어', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '비번 알려주고 다녀오시라 함.', label: '보통', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1516,9 +1516,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 모델하우스 주차장이 만차라 고객이 짜증 냅니다.',
       options: [
-        { id: 'A', text: '발렛파킹 직접 해드림.', label: '서비스', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
-        { id: 'B', text: '주차 요원 무전 쳐서 해결 요청.', label: '관리', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '알아서 대고 오라고 함 (배짱).', label: '배짱', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '발렛파킹 직접 해드림.', label: '서비스', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
+        { id: 'B', text: '주차 요원 무전 쳐서 해결 요청.', label: '관리', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '알아서 대고 오라고 함 (배짱).', label: '배짱', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1527,9 +1527,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 의자가 삐걱거립니다.',
       options: [
-        { id: 'A', text: '기름칠해서 쓴다.', label: '수리', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '새로 하나 산다.', label: '교체', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '그냥 쓴다. 소리 나도 상관없음.', label: '무던', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
+        { id: 'A', text: '기름칠해서 쓴다.', label: '수리', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '새로 하나 산다.', label: '교체', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '그냥 쓴다. 소리 나도 상관없음.', label: '무던', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -1538,9 +1538,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 듀얼 모니터 중 한쪽이 고장 났습니다.',
       options: [
-        { id: 'A', text: '답답해 미침. 당장 사 온다.', label: '장비빨', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '하나로도 충분하다. 미니멀리즘.', label: '적응', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'C', text: '남는 노트북 연결해서 씀.', label: '임기응변', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '답답해 미침. 당장 사 온다.', label: '장비빨', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '하나로도 충분하다. 미니멀리즘.', label: '적응', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'C', text: '남는 노트북 연결해서 씀.', label: '임기응변', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1549,9 +1549,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실에 손님용 사탕/초콜릿 비치.',
       options: [
-        { id: 'A', text: '박하사탕 국룰.', label: '아재', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '고급 수입 초콜릿.', label: '고급', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '내가 먹고 싶은 마이쮸/젤리.', label: '취존', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '박하사탕 국룰.', label: '아재', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '고급 수입 초콜릿.', label: '고급', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '내가 먹고 싶은 마이쮸/젤리.', label: '취존', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1560,9 +1560,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 가장 일하기 싫은 날씨는?',
       options: [
-        { id: 'A', text: '폭염 (땀나서 불쾌지수 폭발).', label: '더위', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '혹한 (추워서 임장 불가).', label: '추위', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'C', text: '태풍 (비바람 몰아칠 때).', label: '악천후', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
+        { id: 'A', text: '폭염 (땀나서 불쾌지수 폭발).', label: '더위', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '혹한 (추워서 임장 불가).', label: '추위', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'C', text: '태풍 (비바람 몰아칠 때).', label: '악천후', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
       ],
     },
     {
@@ -1571,9 +1571,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 열쇠(키) 관리.',
       options: [
-        { id: 'A', text: '도어락이라 키 없음.', label: '디지털', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '화분 밑에 숨겨둠.', label: '고전', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'C', text: '항상 몸에 지니고 다님.', label: '책임', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '도어락이라 키 없음.', label: '디지털', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '화분 밑에 숨겨둠.', label: '고전', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'C', text: '항상 몸에 지니고 다님.', label: '책임', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1582,9 +1582,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 계약서 도장 찍을 때 인주 상태.',
       options: [
-        { id: 'A', text: '항상 촉촉하게 관리된 최고급 인주.', label: '프로', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '말라 비틀어져서 꾹 눌러야 함.', label: '무심', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'C', text: '스탬프형 도장이라 인주 필요 없음.', label: '신식', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '항상 촉촉하게 관리된 최고급 인주.', label: '프로', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '말라 비틀어져서 꾹 눌러야 함.', label: '무심', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'C', text: '스탬프형 도장이라 인주 필요 없음.', label: '신식', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1593,9 +1593,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 모델하우스 오픈 행사 도우미 복장.',
       options: [
-        { id: 'A', text: '단정한 유니폼.', label: '단정', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '화려한 드레스/코스튬.', label: '시선강탈', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '활동 편한 티셔츠.', label: '실용', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '단정한 유니폼.', label: '단정', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '화려한 드레스/코스튬.', label: '시선강탈', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '활동 편한 티셔츠.', label: '실용', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1604,9 +1604,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 와이파이 비번.',
       options: [
-        { id: 'A', text: '공개용 비번 벽에 크게 써 붙임.', label: '공유', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '물어보면 알려줌.', label: '수동', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '보안상 안 알려줌 (테더링 쓰세요).', label: '보안', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '공개용 비번 벽에 크게 써 붙임.', label: '공유', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '물어보면 알려줌.', label: '수동', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '보안상 안 알려줌 (테더링 쓰세요).', label: '보안', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1615,9 +1615,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 손님이 쓰레기를 버려달라고 주고 갑니다.',
       options: [
-        { id: 'A', text: '네~ 하고 받아서 버림.', label: '친절', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '쓰레기통 위치 가리킴.', label: '지시', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '표정 굳음. (내가 쓰레기통이냐)', label: '자존심', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '네~ 하고 받아서 버림.', label: '친절', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '쓰레기통 위치 가리킴.', label: '지시', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '표정 굳음. (내가 쓰레기통이냐)', label: '자존심', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1626,9 +1626,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 내 책상 서랍 정리 상태.',
       options: [
-        { id: 'A', text: '칸막이로 문구류 완벽 정리.', label: '정리', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '잡동사니 다 쑤셔 박음.', label: '창고', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'C', text: '비상금 숨겨두는 곳.', label: '비밀', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '칸막이로 문구류 완벽 정리.', label: '정리', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '잡동사니 다 쑤셔 박음.', label: '창고', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'C', text: '비상금 숨겨두는 곳.', label: '비밀', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1637,9 +1637,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[분양] 현장에서 지급된 노트북이 너무 느립니다.',
       options: [
-        { id: 'A', text: '내 개인 노트북 가져와서 쓴다.', label: '답답', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '느린 대로 쓴다 (월급루팡).', label: '태만', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'C', text: '포맷하고 최적화해서 씀.', label: '기술', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '내 개인 노트북 가져와서 쓴다.', label: '답답', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '느린 대로 쓴다 (월급루팡).', label: '태만', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'C', text: '포맷하고 최적화해서 씀.', label: '기술', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1648,9 +1648,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 사무실 조명 밝기.',
       options: [
-        { id: 'A', text: '대낮처럼 환하게 (LED 형광등).', label: '밝음', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '따뜻한 노란색 조명 (카페 느낌).', label: '감성', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '전기세 아까워 필요한 곳만 킴.', label: '어둠', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '대낮처럼 환하게 (LED 형광등).', label: '밝음', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '따뜻한 노란색 조명 (카페 느낌).', label: '감성', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '전기세 아까워 필요한 곳만 킴.', label: '어둠', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1659,9 +1659,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[중개] 팩스(FAX) 기기.',
       options: [
-        { id: 'A', text: '복합기 렌탈해서 씀.', label: '장비', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '모바일 팩스 앱 사용.', label: '스마트', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '옆 부동산 가서 한 장만 보냄.', label: '민폐', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '복합기 렌탈해서 씀.', label: '장비', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '모바일 팩스 앱 사용.', label: '스마트', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '옆 부동산 가서 한 장만 보냄.', label: '민폐', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1670,9 +1670,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'environment',
       question: '[공통] 가장 이상적인 근무 시간은?',
       options: [
-        { id: 'A', text: '9 to 6 칼퇴근.', label: '직장인', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '10시 출근 ~ 5시 퇴근 (워라밸).', label: '꿀빨러', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'C', text: '손님 있을 때까지 무제한.', label: '자영업', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
+        { id: 'A', text: '9 to 6 칼퇴근.', label: '직장인', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '10시 출근 ~ 5시 퇴근 (워라밸).', label: '꿀빨러', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'C', text: '손님 있을 때까지 무제한.', label: '자영업', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
       ],
     },
   ],
@@ -1796,9 +1796,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "500만 원만 깎아주면 계약할게요"라고 마지막 카드를 던집니다. 매도인은 절대 불가 입장.',
       options: [
-        { id: 'A', text: '매도인에게 "500 안 깎아주면 계약 깨진다"고 강하게 압박. (공포 소구)', label: '압박', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '매수인에게 "이 물건 놓치면 후회한다"고 배짱 영업. (희소성)', label: '배짱', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '양쪽에게 250만 원씩 양보하자고 중재안 제시. (타협)', label: '중재', scores: { risk: undefined, social: 1, logic: 2, resilience: 0 } },
+        { id: 'A', text: '매도인에게 "500 안 깎아주면 계약 깨진다"고 강하게 압박. (공포 소구)', label: '압박', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '매수인에게 "이 물건 놓치면 후회한다"고 배짱 영업. (희소성)', label: '배짱', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '양쪽에게 250만 원씩 양보하자고 중재안 제시. (타협)', label: '중재', scores: { risk: 0, social: 1, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1807,9 +1807,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 모델하우스 방문객이 "좀 더 생각해보고 올게요"라며 일어나려 합니다. (나가면 안 온다)',
       options: [
-        { id: 'A', text: '"네, 조심히 가세요." 쿨하게 보낸다. (여유)', label: '방임', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"오늘까지만 이 혜택 드리는 거예요!" 긴급성 강조. (클로징)', label: '긴급', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '자료 챙겨주며 "궁금한 거 생기면 바로 전화 주세요" 끈 잇기. (후속)', label: '관리', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"네, 조심히 가세요." 쿨하게 보낸다. (여유)', label: '방임', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"오늘까지만 이 혜택 드리는 거예요!" 긴급성 강조. (클로징)', label: '긴급', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '자료 챙겨주며 "궁금한 거 생기면 바로 전화 주세요" 끈 잇기. (후속)', label: '관리', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1818,9 +1818,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 집은 마음에 들어 하는데, "대출 이자가 너무 비싸서..."라며 망설이는 신혼부부.',
       options: [
-        { id: 'A', text: '현재 금리와 미래 가치 상승분을 비교하는 엑셀 표 제시. (논리)', label: '분석', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'B', text: '"두 분의 첫 보금자리잖아요, 행복한 미래를 상상해보세요." (감성)', label: '감성', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
-        { id: 'C', text: '정부 지원 저금리 상품(특례 등)을 찾아서 해결책 제시. (솔루션)', label: '해결', scores: { risk: undefined, social: 1, logic: 2, resilience: 0 } },
+        { id: 'A', text: '현재 금리와 미래 가치 상승분을 비교하는 엑셀 표 제시. (논리)', label: '분석', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'B', text: '"두 분의 첫 보금자리잖아요, 행복한 미래를 상상해보세요." (감성)', label: '감성', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
+        { id: 'C', text: '정부 지원 저금리 상품(특례 등)을 찾아서 해결책 제시. (솔루션)', label: '해결', scores: { risk: 0, social: 1, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1829,9 +1829,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] "다른 부동산에도 내놨어요"라는 집주인에게 전속 중개(독점)를 따내려면?',
       options: [
-        { id: 'A', text: '"저한테만 주시면 광고비 2배로 써서 1달 내에 뺍니다." (확신)', label: '자신감', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'B', text: '"여기저기 내놓으면 집값만 떨어져요." (리스크 경고)', label: '경고', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
-        { id: 'C', text: '자주 연락하며 친분 쌓아서 자연스럽게 유도. (관계)', label: '친화', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"저한테만 주시면 광고비 2배로 써서 1달 내에 뺍니다." (확신)', label: '자신감', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'B', text: '"여기저기 내놓으면 집값만 떨어져요." (리스크 경고)', label: '경고', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
+        { id: 'C', text: '자주 연락하며 친분 쌓아서 자연스럽게 유도. (관계)', label: '친화', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1840,9 +1840,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] TM(전화 영업) 중 고객이 "바빠요, 끊으세요"라고 합니다.',
       options: [
-        { id: 'A', text: '"네 알겠습니다." 바로 끊고 다음 콜. (회전율)', label: '쿨', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'B', text: '"사장님 딱 1분만요! 돈 되는 정보라 그래요!" (매달리기)', label: '끈기', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
-        { id: 'C', text: '"문자로 핵심 자료만 보내드릴게요." (우회)', label: '센스', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '"네 알겠습니다." 바로 끊고 다음 콜. (회전율)', label: '쿨', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'B', text: '"사장님 딱 1분만요! 돈 되는 정보라 그래요!" (매달리기)', label: '끈기', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
+        { id: 'C', text: '"문자로 핵심 자료만 보내드릴게요." (우회)', label: '센스', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1851,9 +1851,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 세입자가 집 보여주는 걸 너무 싫어하고 협조를 안 해줍니다.',
       options: [
-        { id: 'A', text: '집주인에게 전화해서 세입자 좀 구슬려 달라고 함. (우회)', label: '요청', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '세입자에게 "이사비나 복비 좀 챙겨드릴게" 딜을 함. (보상)', label: '협상', scores: { risk: undefined, social: 1, logic: 2, resilience: 0 } },
-        { id: 'C', text: '법적으로 보여줘야 할 의무가 있다고 강하게 말함. (원칙)', label: '강경', scores: { risk: undefined, social: -2, logic: 2, resilience: 0 } },
+        { id: 'A', text: '집주인에게 전화해서 세입자 좀 구슬려 달라고 함. (우회)', label: '요청', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '세입자에게 "이사비나 복비 좀 챙겨드릴게" 딜을 함. (보상)', label: '협상', scores: { risk: 0, social: 1, logic: 2, resilience: 0 } },
+        { id: 'C', text: '법적으로 보여줘야 할 의무가 있다고 강하게 말함. (원칙)', label: '강경', scores: { risk: 0, social: -2, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1862,9 +1862,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 투자자가 "향후 2년 뒤 수익률 보장할 수 있어요?"라고 묻습니다.',
       options: [
-        { id: 'A', text: '"신도 아니고 어떻게 보장합니까? 판단은 본인이." (팩트폭격)', label: '직설', scores: { risk: undefined, social: -2, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"무조건 됩니다! 저 믿고 하세요!" (일단 지르기)', label: '허세', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
-        { id: 'C', text: '주변 개발 호재와 데이터를 근거로 가능성 설명. (논리적 설득)', label: '설명', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
+        { id: 'A', text: '"신도 아니고 어떻게 보장합니까? 판단은 본인이." (팩트폭격)', label: '직설', scores: { risk: 0, social: -2, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"무조건 됩니다! 저 믿고 하세요!" (일단 지르기)', label: '허세', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
+        { id: 'C', text: '주변 개발 호재와 데이터를 근거로 가능성 설명. (논리적 설득)', label: '설명', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
       ],
     },
     {
@@ -1873,9 +1873,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 고객이 "남편(아내)이랑 상의해보고 결정할게요"라고 합니다. (가장 흔한 거절)',
       options: [
-        { id: 'A', text: '"네, 상의 잘 하시고 연락 주세요." (순응)', label: '순수', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"배우자분 오시면 늦어요. 지금 동호수 지정 먼저 하세요." (선점 유도)', label: '푸쉬', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"지금 전화 연결 해보세요. 제가 직접 설명드릴게요." (정면돌파)', label: '적극', scores: { risk: undefined, social: 1, logic: 0, resilience: 1 } },
+        { id: 'A', text: '"네, 상의 잘 하시고 연락 주세요." (순응)', label: '순수', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"배우자분 오시면 늦어요. 지금 동호수 지정 먼저 하세요." (선점 유도)', label: '푸쉬', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"지금 전화 연결 해보세요. 제가 직접 설명드릴게요." (정면돌파)', label: '적극', scores: { risk: 0, social: 1, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -1884,9 +1884,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 오래된 빌라라 수리할 곳이 많은데 매도인이 "현 상태 대로 매매"를 고집합니다.',
       options: [
-        { id: 'A', text: '매수인에게 "수리비만큼 깎아달라"고 대신 싸워줌. (대리전)', label: '투사', scores: { risk: undefined, social: 1, logic: 0, resilience: 1 } },
-        { id: 'B', text: '매수인에게 "집값이 싸니까 고쳐서 쓰면 이득"이라고 설득. (가치전환)', label: '전환', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '그냥 양쪽 말 전달만 함. (메신저 역할)', label: '소극', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '매수인에게 "수리비만큼 깎아달라"고 대신 싸워줌. (대리전)', label: '투사', scores: { risk: 0, social: 1, logic: 0, resilience: 1 } },
+        { id: 'B', text: '매수인에게 "집값이 싸니까 고쳐서 쓰면 이득"이라고 설득. (가치전환)', label: '전환', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '그냥 양쪽 말 전달만 함. (메신저 역할)', label: '소극', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1895,9 +1895,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 상가 임대차, 권리금이 너무 비싸서 거래가 안 됩니다.',
       options: [
-        { id: 'A', text: '현 임차인에게 "이대로면 권리금 다 날린다"고 팩트 전달. (현실자각)', label: '냉철', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
-        { id: 'B', text: '새 임차인의 장점을 어필하며 조금만 깎아주자고 호소. (감정)', label: '호소', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '될 때까지 계속 손님 붙여본다. (물량공세)', label: '노력', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
+        { id: 'A', text: '현 임차인에게 "이대로면 권리금 다 날린다"고 팩트 전달. (현실자각)', label: '냉철', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
+        { id: 'B', text: '새 임차인의 장점을 어필하며 조금만 깎아주자고 호소. (감정)', label: '호소', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '될 때까지 계속 손님 붙여본다. (물량공세)', label: '노력', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
       ],
     },
     {
@@ -1906,9 +1906,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "브랜드가 별로라..." 망설이는 고객.',
       options: [
-        { id: 'A', text: '"브랜드값 빠져서 저렴한 게 장점입니다." (가성비 어필)', label: '실속', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"요즘은 브랜드보다 입지입니다." (입지 강조)', label: '전환', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"시공능력평가 순위 보여주며 튼튼하다 강조." (데이터)', label: '신뢰', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '"브랜드값 빠져서 저렴한 게 장점입니다." (가성비 어필)', label: '실속', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"요즘은 브랜드보다 입지입니다." (입지 강조)', label: '전환', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"시공능력평가 순위 보여주며 튼튼하다 강조." (데이터)', label: '신뢰', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1917,9 +1917,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 공동중개 상대방 부동산이 내 손님에게 몰래 명함을 줬습니다. (상도덕 위반)',
       options: [
-        { id: 'A', text: '바로 전화해서 쌍욕 박고 따진다. (응징)', label: '파이터', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
-        { id: 'B', text: '내 손님에게 "저 사람 조심하라"고 이간질. (차단)', label: '방어', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '증거 확보 후 지역 부동산 모임에 공론화. (사회적 매장)', label: '정치', scores: { risk: undefined, social: 2, logic: 2, resilience: 0 } },
+        { id: 'A', text: '바로 전화해서 쌍욕 박고 따진다. (응징)', label: '파이터', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
+        { id: 'B', text: '내 손님에게 "저 사람 조심하라"고 이간질. (차단)', label: '방어', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '증거 확보 후 지역 부동산 모임에 공론화. (사회적 매장)', label: '정치', scores: { risk: 0, social: 2, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1928,9 +1928,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 계약 쓴다고 오라고 했는데, 막상 만나니 "계약금 100만 원밖에 없다"고 합니다. (원래 1,000만 원 필요)',
       options: [
-        { id: 'A', text: '"장난하세요?" 화내고 돌려보낸다. (단호)', label: '원칙', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '100만 원이라도 일단 입금시키고 영수증 쓴다. (가계약)', label: '실속', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '나머지 돈 언제까지 줄 건지 차용증/각서 받음. (문서)', label: '꼼꼼', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '"장난하세요?" 화내고 돌려보낸다. (단호)', label: '원칙', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '100만 원이라도 일단 입금시키고 영수증 쓴다. (가계약)', label: '실속', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '나머지 돈 언제까지 줄 건지 차용증/각서 받음. (문서)', label: '꼼꼼', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -1939,9 +1939,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 고객이 "인터넷 보니 여기 미분양 엄청날 거라던데?"라고 부정적 글을 보여줍니다.',
       options: [
-        { id: 'A', text: '"경쟁 업체 알바들이 쓴 글입니다." (음모론)', label: '반박', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"그건 옛날 자료고요, 최신 데이터 보세요." (팩트체크)', label: '정정', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"그래서 혜택이 좋은 겁니다. 남들 다 알 때 사면 늦어요." (역발상)', label: '기회', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '"경쟁 업체 알바들이 쓴 글입니다." (음모론)', label: '반박', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"그건 옛날 자료고요, 최신 데이터 보세요." (팩트체크)', label: '정정', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"그래서 혜택이 좋은 겁니다. 남들 다 알 때 사면 늦어요." (역발상)', label: '기회', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -1950,9 +1950,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 집주인이 전세금을 터무니없이 높게 내놨습니다. 깎아야 나갑니다.',
       options: [
-        { id: 'A', text: '주변 시세 비교표 만들어서 정중히 브리핑. (데이터)', label: '자료', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'B', text: '"사장님, 이 가격엔 절대 안 나가요. 3달 공실 각오하세요." (공포)', label: '충격', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"일단 올려놓고 손님 반응 보시죠." (순응)', label: '시간끌기', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '주변 시세 비교표 만들어서 정중히 브리핑. (데이터)', label: '자료', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'B', text: '"사장님, 이 가격엔 절대 안 나가요. 3달 공실 각오하세요." (공포)', label: '충격', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"일단 올려놓고 손님 반응 보시죠." (순응)', label: '시간끌기', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1961,9 +1961,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "복비(중개보수) 너무 비싸다. 반만 주겠다"고 합니다.',
       options: [
-        { id: 'A', text: '"법정 요율입니다." 딱 자른다. (FM)', label: '원칙', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"제가 깎아드린 금액이 얼마입니까~ 챙겨주세요~" (생색)', label: '능청', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"그럼 부가세는 빼드릴게요." 적당히 타협. (협상)', label: '유연', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"법정 요율입니다." 딱 자른다. (FM)', label: '원칙', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"제가 깎아드린 금액이 얼마입니까~ 챙겨주세요~" (생색)', label: '능청', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"그럼 부가세는 빼드릴게요." 적당히 타협. (협상)', label: '유연', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1972,9 +1972,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "친구랑 같이 살지 말지 고민 중"이라는 고객.',
       options: [
-        { id: 'A', text: '"친구분 데려오시면 소개비(MGM) 챙겨드릴게." (리베이트)', label: '유혹', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"좋은 층 두 개 연달아 잡으려면 지금 하셔야 해요." (동시계약 유도)', label: '욕심', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '친구랑 상의하고 오라고 보냄. (방관)', label: '수동', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"친구분 데려오시면 소개비(MGM) 챙겨드릴게." (리베이트)', label: '유혹', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"좋은 층 두 개 연달아 잡으려면 지금 하셔야 해요." (동시계약 유도)', label: '욕심', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '친구랑 상의하고 오라고 보냄. (방관)', label: '수동', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1983,9 +1983,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 정말 좋은 급매물이 나왔는데, 내 단골 투자자가 전화를 안 받습니다.',
       options: [
-        { id: 'A', text: '문자 남겨놓고 기다린다. (예의)', label: '대기', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '받을 때까지 계속 전화한다. (집착)', label: '집요', scores: { risk: undefined, social: -1, logic: 0, resilience: 1 } },
-        { id: 'C', text: '"지금 안 받으면 다른 사람한테 넘깁니다" 톡 보냄. (협박성)', label: '승부', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '문자 남겨놓고 기다린다. (예의)', label: '대기', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '받을 때까지 계속 전화한다. (집착)', label: '집요', scores: { risk: 0, social: -1, logic: 0, resilience: 1 } },
+        { id: 'C', text: '"지금 안 받으면 다른 사람한테 넘깁니다" 톡 보냄. (협박성)', label: '승부', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -1994,9 +1994,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 고객이 브리핑 듣다가 "말이 너무 빠르다/어렵다"고 지적합니다.',
       options: [
-        { id: 'A', text: '"아 죄송합니다." 하고 천천히 다시 설명. (수용)', label: '겸손', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
-        { id: 'B', text: '그림/지도 그려가며 시각적으로 설명. (도구활용)', label: '센스', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '핵심만 요약해서 3줄로 끝냄. (요약)', label: '핵심', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '"아 죄송합니다." 하고 천천히 다시 설명. (수용)', label: '겸손', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
+        { id: 'B', text: '그림/지도 그려가며 시각적으로 설명. (도구활용)', label: '센스', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '핵심만 요약해서 3줄로 끝냄. (요약)', label: '핵심', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2005,9 +2005,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매도인이 집을 안 보여주고 "사진만 보고 계약하라"고 합니다.',
       options: [
-        { id: 'A', text: '그런 계약은 사고 난다. 거절.', label: '안전', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '매수인에게 상황 설명하고 특약(하자 책임) 빵빵하게 넣음.', label: '절충', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '매도인에게 "집 안 보여주면 500 깎아야 한다"고 딜. (역이용)', label: '공격', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '그런 계약은 사고 난다. 거절.', label: '안전', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '매수인에게 상황 설명하고 특약(하자 책임) 빵빵하게 넣음.', label: '절충', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '매도인에게 "집 안 보여주면 500 깎아야 한다"고 딜. (역이용)', label: '공격', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2016,9 +2016,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "전단지 보고 왔는데 선물이나 주세요"라는 체리피커(얌체) 고객.',
       options: [
-        { id: 'A', text: '선물만 주고 빨리 보낸다. (시간절약)', label: '손절', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"상담 받으셔야 드려요" 하고 앉힌 뒤 어떻게든 영업. (오기)', label: '집념', scores: { risk: undefined, social: 0, logic: 0, resilience: 2 } },
-        { id: 'C', text: '기분 좋게 선물 주고 주변에 소문 내달라고 함. (잠재고객)', label: '여유', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '선물만 주고 빨리 보낸다. (시간절약)', label: '손절', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"상담 받으셔야 드려요" 하고 앉힌 뒤 어떻게든 영업. (오기)', label: '집념', scores: { risk: 0, social: 0, logic: 0, resilience: 2 } },
+        { id: 'C', text: '기분 좋게 선물 주고 주변에 소문 내달라고 함. (잠재고객)', label: '여유', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2027,9 +2027,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 계약 파기 위기. 양쪽이 50만 원 차이로 자존심 싸움 중입니다.',
       options: [
-        { id: 'A', text: '지쳐서 "제가 50만 원 덜 받을게요" 하고 끝냄. (자기희생)', label: '해결', scores: { risk: undefined, social: 1, logic: 0, resilience: -1 } },
-        { id: 'B', text: '가위바위보나 사다리 타기 제안. (유머)', label: '재치', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
-        { id: 'C', text: '둘 다 집에 가라고 함. (강수)', label: '배짱', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '지쳐서 "제가 50만 원 덜 받을게요" 하고 끝냄. (자기희생)', label: '해결', scores: { risk: 0, social: 1, logic: 0, resilience: -1 } },
+        { id: 'B', text: '가위바위보나 사다리 타기 제안. (유머)', label: '재치', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
+        { id: 'C', text: '둘 다 집에 가라고 함. (강수)', label: '배짱', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2038,9 +2038,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 "이 집 기운이 안 좋은 것 같아"라며 비과학적인 이유로 거절.',
       options: [
-        { id: 'A', text: '"무슨 말씀이세요, 남향에 해가 잘 드는데!" (논리반박)', label: '답답', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"아 그래요? 그럼 기운 좋은 다른 집 보여드릴게요." (공감)', label: '맞춤', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"여기 살던 분 로또 돼서 나갔어요." (선의의 거짓말?)', label: '스토리', scores: { risk: undefined, social: 1, logic: -1, resilience: 0 } },
+        { id: 'A', text: '"무슨 말씀이세요, 남향에 해가 잘 드는데!" (논리반박)', label: '답답', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"아 그래요? 그럼 기운 좋은 다른 집 보여드릴게요." (공감)', label: '맞춤', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"여기 살던 분 로또 돼서 나갔어요." (선의의 거짓말?)', label: '스토리', scores: { risk: 0, social: 1, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -2049,9 +2049,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 건물주가 월세를 너무 자주 올립니다. 임차인들이 힘들어합니다.',
       options: [
-        { id: 'A', text: '건물주 편든다. 물주니까.', label: '현실', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '임대차보호법(5% 상한) 설명하며 건물주 자제시킴.', label: '조율', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'C', text: '임차인들에게 다른 싼 건물 소개하고 건물주 압박.', label: '전략', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '건물주 편든다. 물주니까.', label: '현실', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '임대차보호법(5% 상한) 설명하며 건물주 자제시킴.', label: '조율', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'C', text: '임차인들에게 다른 싼 건물 소개하고 건물주 압박.', label: '전략', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2060,9 +2060,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 고객이 "너무 비싸다"고 불평할 때 응대법.',
       options: [
-        { id: 'A', text: '"비싼 만큼 값어치를 합니다." (품질강조)', label: '정공법', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"주변 시세 보시면 이게 싼 겁니다." (비교)', label: '비교', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"오늘 계약하시면 제가 특별 사은품 챙겨드릴게요." (혜택)', label: '회유', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"비싼 만큼 값어치를 합니다." (품질강조)', label: '정공법', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"주변 시세 보시면 이게 싼 겁니다." (비교)', label: '비교', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"오늘 계약하시면 제가 특별 사은품 챙겨드릴게요." (혜택)', label: '회유', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2071,9 +2071,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 고객이 내 설명은 안 믿고 유튜브 보고 온 내용만 믿습니다.',
       options: [
-        { id: 'A', text: '유튜버 욕하면서 답답해한다.', label: '감정', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '그 유튜버 논리의 허점을 찾아 팩트로 깸.', label: '논쟁', scores: { risk: undefined, social: -1, logic: 3, resilience: 0 } },
-        { id: 'C', text: '"오 공부 많이 하셨네요!" 칭찬해주고 내 의견 얹음.', label: '포용', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
+        { id: 'A', text: '유튜버 욕하면서 답답해한다.', label: '감정', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '그 유튜버 논리의 허점을 찾아 팩트로 깸.', label: '논쟁', scores: { risk: 0, social: -1, logic: 3, resilience: 0 } },
+        { id: 'C', text: '"오 공부 많이 하셨네요!" 칭찬해주고 내 의견 얹음.', label: '포용', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -2082,9 +2082,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 집 보러 갔는데 세입자가 집을 돼지우리처럼 쓰고 있습니다. (냄새남)',
       options: [
-        { id: 'A', text: '"청소 좀 하고 삽시다" 세입자에게 한소리 함.', label: '잔소리', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
-        { id: 'B', text: '손님에게 "도배장판 싹 하면 새집 됩니다" 상상력 자극.', label: '비전', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '창문 활짝 열고 "구조만 보세요 구조만" 강조.', label: '회피', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '"청소 좀 하고 삽시다" 세입자에게 한소리 함.', label: '잔소리', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
+        { id: 'B', text: '손님에게 "도배장판 싹 하면 새집 됩니다" 상상력 자극.', label: '비전', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '창문 활짝 열고 "구조만 보세요 구조만" 강조.', label: '회피', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2093,9 +2093,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 권리 분석 중 경매 위험이 약간 있는데, 수익률은 대박입니다.',
       options: [
-        { id: 'A', text: '위험하니까 하지 말라고 말림. (보수)', label: '보호', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '모든 위험성을 서면으로 고지하고 선택은 고객에게. (중립)', label: '객관', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"인생 뭐 있습니까? 지르시죠!" (부추김)', label: '도박', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
+        { id: 'A', text: '위험하니까 하지 말라고 말림. (보수)', label: '보호', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '모든 위험성을 서면으로 고지하고 선택은 고객에게. (중립)', label: '객관', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"인생 뭐 있습니까? 지르시죠!" (부추김)', label: '도박', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
       ],
     },
     {
@@ -2104,9 +2104,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "실거주는 아니고 투자용인데..."라는 고객.',
       options: [
-        { id: 'A', text: '전매 제한, 세금 문제 꼼꼼히 체크해 줌.', label: '세무', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'B', text: '"피(프리미엄) 5천은 무조건 붙어요." 수익성 강조.', label: '수익', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"나중에 임대 놓기도 좋아요." 안정성 강조.', label: '안정', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '전매 제한, 세금 문제 꼼꼼히 체크해 줌.', label: '세무', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'B', text: '"피(프리미엄) 5천은 무조건 붙어요." 수익성 강조.', label: '수익', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"나중에 임대 놓기도 좋아요." 안정성 강조.', label: '안정', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2115,9 +2115,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 말주변이 별로 없는 편입니다. 어떻게 극복하나요?',
       options: [
-        { id: 'A', text: '말보다는 꼼꼼한 자료와 문서로 승부.', label: '문서', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
-        { id: 'B', text: '경청 위주로 고객이 말하게 만듦.', label: '경청', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '스크립트 달달 외워서 앵무새처럼 함.', label: '암기', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
+        { id: 'A', text: '말보다는 꼼꼼한 자료와 문서로 승부.', label: '문서', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
+        { id: 'B', text: '경청 위주로 고객이 말하게 만듦.', label: '경청', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '스크립트 달달 외워서 앵무새처럼 함.', label: '암기', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -2126,9 +2126,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 고객이 "사장님 관상이 좋으시네"라며 사적인 수다를 1시간째 합니다.',
       options: [
-        { id: 'A', text: '일해야 하니 적당히 끊는다.', label: '업무', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '맞장구치며 끝까지 들어준다. (친밀감)', label: '인내', scores: { risk: undefined, social: 3, logic: 0, resilience: 2 } },
-        { id: 'C', text: '자연스럽게 부동산 얘기로 화제 전환.', label: '스킬', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '일해야 하니 적당히 끊는다.', label: '업무', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '맞장구치며 끝까지 들어준다. (친밀감)', label: '인내', scores: { risk: 0, social: 3, logic: 0, resilience: 2 } },
+        { id: 'C', text: '자연스럽게 부동산 얘기로 화제 전환.', label: '스킬', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2137,9 +2137,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매도인이 "우리 집 인테리어 비용 5천 들었다"며 가격을 안 깎아줍니다. (근데 인테리어 구림)',
       options: [
-        { id: 'A', text: '"솔직히 요즘 스타일 아니에요." 팩폭.', label: '돌직구', scores: { risk: undefined, social: -2, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"인테리어는 감가상각 되는 거 아시죠?" 논리적 설득.', label: '이성', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"너무 고급져서 맞는 주인이 따로 있겠네요~" 띄워주며 기다림.', label: '우회', scores: { risk: undefined, social: 2, logic: 0, resilience: 1 } },
+        { id: 'A', text: '"솔직히 요즘 스타일 아니에요." 팩폭.', label: '돌직구', scores: { risk: 0, social: -2, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"인테리어는 감가상각 되는 거 아시죠?" 논리적 설득.', label: '이성', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"너무 고급져서 맞는 주인이 따로 있겠네요~" 띄워주며 기다림.', label: '우회', scores: { risk: 0, social: 2, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -2148,9 +2148,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "지금 돈이 없어서..." 거절하는 고객.',
       options: [
-        { id: 'A', text: '"계약금 10%만 있으면 중도금 무이자예요." 금융 혜택 설명.', label: '금융', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '"신용대출 상담사 연결해드릴까요?" 적극 알선.', label: '알선', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"돈 생기시면 오세요." 보냄.', label: '포기', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"계약금 10%만 있으면 중도금 무이자예요." 금융 혜택 설명.', label: '금융', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '"신용대출 상담사 연결해드릴까요?" 적극 알선.', label: '알선', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"돈 생기시면 오세요." 보냄.', label: '포기', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2159,9 +2159,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 임대인이 반려동물 절대 금지라고 합니다. 임차인은 고양이 1마리 키움.',
       options: [
-        { id: 'A', text: '다른 집 알아본다. (포기)', label: '빠른포기', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"고양이는 짖지도 않고 깨끗해요. 벽지 훼손 시 원상복구 특약 넣죠." 설득.', label: '특약', scores: { risk: undefined, social: 1, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"몰래 키우시죠. 안 들키면 됨." (위험한 제안)', label: '편법', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
+        { id: 'A', text: '다른 집 알아본다. (포기)', label: '빠른포기', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"고양이는 짖지도 않고 깨끗해요. 벽지 훼손 시 원상복구 특약 넣죠." 설득.', label: '특약', scores: { risk: 0, social: 1, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"몰래 키우시죠. 안 들키면 됨." (위험한 제안)', label: '편법', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -2170,9 +2170,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 내가 보여준 물건을 보고 "별로다"라고 무시합니다. (내가 보기엔 A급)',
       options: [
-        { id: 'A', text: '자존심 상해서 "그럼 직접 찾아보세요"라고 하고 싶음.', label: '욱함', scores: { risk: undefined, social: -1, logic: 0, resilience: -1 } },
-        { id: 'B', text: '손님의 취향이 나랑 다른가 보다. 니즈 파악 다시.', label: '분석', scores: { risk: undefined, social: 0, logic: 2, resilience: 1 } },
-        { id: 'C', text: '"이 가격에 이런 물건 없어요. 나중에 후회하십니다." 강하게 나감.', label: '주관', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '자존심 상해서 "그럼 직접 찾아보세요"라고 하고 싶음.', label: '욱함', scores: { risk: 0, social: -1, logic: 0, resilience: -1 } },
+        { id: 'B', text: '손님의 취향이 나랑 다른가 보다. 니즈 파악 다시.', label: '분석', scores: { risk: 0, social: 0, logic: 2, resilience: 1 } },
+        { id: 'C', text: '"이 가격에 이런 물건 없어요. 나중에 후회하십니다." 강하게 나감.', label: '주관', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2181,9 +2181,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 젊은 신혼부부 vs 노부부, 누구에게 브리핑하는 게 편한가요?',
       options: [
-        { id: 'A', text: '논리적인 젊은 층.', label: '논리파', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '정 많은 어르신.', label: '감성파', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '상관없다. 맞춤형으로 변신 가능.', label: '카멜레온', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '논리적인 젊은 층.', label: '논리파', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '정 많은 어르신.', label: '감성파', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '상관없다. 맞춤형으로 변신 가능.', label: '카멜레온', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2192,9 +2192,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 모델하우스 유니트 관람 중, 고객이 "방이 너무 작네"라고 합니다.',
       options: [
-        { id: 'A', text: '"요즘은 다 이렇게 나와요." (일반화)', label: '방어', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"대신 거실이랑 팬트리가 넓게 빠졌어요." (장점 전환)', label: '전환', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '"확장형이라 가구 배치하면 충분해요." 줄자 들고 시연.', label: '시연', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '"요즘은 다 이렇게 나와요." (일반화)', label: '방어', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"대신 거실이랑 팬트리가 넓게 빠졌어요." (장점 전환)', label: '전환', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '"확장형이라 가구 배치하면 충분해요." 줄자 들고 시연.', label: '시연', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2203,9 +2203,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 전화 상담 시, 목소리 톤은?',
       options: [
-        { id: 'A', text: '차분하고 낮은 톤 (신뢰감).', label: '아나운서', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '솔톤 이상 높고 밝게 (친절함).', label: '서비스', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '평소 내 목소리 그대로 (자연스러움).', label: '내추럴', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '차분하고 낮은 톤 (신뢰감).', label: '아나운서', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '솔톤 이상 높고 밝게 (친절함).', label: '서비스', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '평소 내 목소리 그대로 (자연스러움).', label: '내추럴', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2214,9 +2214,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 "생각 좀 해보고 연락 줄게요"라고 하고 나갑니다. 후속 조치는?',
       options: [
-        { id: 'A', text: '부담 줄까 봐 연락 올 때까지 기다림.', label: '소극', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '1시간 뒤에 "잘 들어가셨나요?" 안부 문자.', label: '터치', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '내일 아침에 "다른 분이 보고 가셨어요" 압박 전화.', label: '압박', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '부담 줄까 봐 연락 올 때까지 기다림.', label: '소극', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '1시간 뒤에 "잘 들어가셨나요?" 안부 문자.', label: '터치', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '내일 아침에 "다른 분이 보고 가셨어요" 압박 전화.', label: '압박', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2225,9 +2225,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 계약서 작성 중 분위기가 냉랭합니다. 분위기 전환법은?',
       options: [
-        { id: 'A', text: '농담을 던져서 분위기를 푼다.', label: '유머', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'B', text: '묵묵히 서류 설명에만 집중한다.', label: '진지', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '음료수나 간식을 권하며 환기시킨다.', label: '케어', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '농담을 던져서 분위기를 푼다.', label: '유머', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'B', text: '묵묵히 서류 설명에만 집중한다.', label: '진지', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '음료수나 간식을 권하며 환기시킨다.', label: '케어', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2236,9 +2236,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 내가 추천한 물건 말고 엉뚱한(안 좋은) 물건을 고르려 합니다.',
       options: [
-        { id: 'A', text: '손님 선택이니 존중하고 계약 진행. (수수료만 받으면 됨)', label: '방관', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '도시락 싸들고 말린다. "그거 사면 후회해요!" (진심)', label: '오지랖', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '장단점 객관적으로 비교해주고 다시 생각하게 함.', label: '가이드', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '손님 선택이니 존중하고 계약 진행. (수수료만 받으면 됨)', label: '방관', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '도시락 싸들고 말린다. "그거 사면 후회해요!" (진심)', label: '오지랖', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '장단점 객관적으로 비교해주고 다시 생각하게 함.', label: '가이드', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2247,9 +2247,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 고객이 "입주 때 전세 놓으면 잔금 치를 수 있죠?"라고 묻습니다. (공급 과잉 우려됨)',
       options: [
-        { id: 'A', text: '"네 무조건 맞춰집니다 걱정 마세요." (무책임)', label: '회피', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
-        { id: 'B', text: '"입주장 때는 전세가 낮아질 수 있으니 자금 여유 두셔야 합니다." (솔직)', label: '신뢰', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"제가 책임지고 전세 세입자 구해드릴게요." (자신감)', label: '책임', scores: { risk: undefined, social: 1, logic: 0, resilience: 1 } },
+        { id: 'A', text: '"네 무조건 맞춰집니다 걱정 마세요." (무책임)', label: '회피', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
+        { id: 'B', text: '"입주장 때는 전세가 낮아질 수 있으니 자금 여유 두셔야 합니다." (솔직)', label: '신뢰', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"제가 책임지고 전세 세입자 구해드릴게요." (자신감)', label: '책임', scores: { risk: 0, social: 1, logic: 0, resilience: 1 } },
       ],
     },
     {
@@ -2258,9 +2258,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "가구(장롱, 소파) 다 주고 가면 계약하겠다"고 억지 부립니다.',
       options: [
-        { id: 'A', text: '매도인에게 "버리는 셈 치고 주고 가시죠" 설득.', label: '설득', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '매수인에게 "그건 별도 거래입니다" 선 긋기.', label: '구분', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '중고나라 시세 보여주며 가격 협상 유도.', label: '합리', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '매도인에게 "버리는 셈 치고 주고 가시죠" 설득.', label: '설득', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '매수인에게 "그건 별도 거래입니다" 선 긋기.', label: '구분', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '중고나라 시세 보여주며 가격 협상 유도.', label: '합리', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2269,9 +2269,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 계약 썼는데, 손님(매수인)이 나중에 와서 "속아서 샀다"고 화냅니다.',
       options: [
-        { id: 'A', text: '"계약서에 도장 찍으셨잖아요." 법적 책임 없음 강조.', label: '방어', scores: { risk: undefined, social: -2, logic: 2, resilience: 0 } },
-        { id: 'B', text: '커피 한잔 주며 1시간 동안 하소연 들어줌.', label: '경청', scores: { risk: undefined, social: 3, logic: 0, resilience: 2 } },
-        { id: 'C', text: '"지금 파셔도 이득이에요." 데이터로 안심시킴.', label: '데이터', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '"계약서에 도장 찍으셨잖아요." 법적 책임 없음 강조.', label: '방어', scores: { risk: 0, social: -2, logic: 2, resilience: 0 } },
+        { id: 'B', text: '커피 한잔 주며 1시간 동안 하소연 들어줌.', label: '경청', scores: { risk: 0, social: 3, logic: 0, resilience: 2 } },
+        { id: 'C', text: '"지금 파셔도 이득이에요." 데이터로 안심시킴.', label: '데이터', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2280,9 +2280,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "사은품 자전거 주면 계약할게요." (회사 지급품 없음, 내 돈 써야 함)',
       options: [
-        { id: 'A', text: '수당 계산해보고 남으면 사준다.', label: '계산', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '"제 마음입니다" 하며 사주고 단골 만듦.', label: '투자', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"불법 리베이트라 안 됩니다." 거절.', label: '원칙', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '수당 계산해보고 남으면 사준다.', label: '계산', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '"제 마음입니다" 하며 사주고 단골 만듦.', label: '투자', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"불법 리베이트라 안 됩니다." 거절.', label: '원칙', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2291,9 +2291,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 집 보여줄 때 나의 멘트 스타일은?',
       options: [
-        { id: 'A', text: '침묵. 손님이 편하게 보게 둠.', label: '무묵', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '따라다니며 장점만 쉴 새 없이 설명.', label: '다변', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '질문할 때만 핵심 답변.', label: '적절', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '침묵. 손님이 편하게 보게 둠.', label: '무묵', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '따라다니며 장점만 쉴 새 없이 설명.', label: '다변', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '질문할 때만 핵심 답변.', label: '적절', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2302,9 +2302,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] "복비 줄 테니 세금 신고는 하지 마세요" (현금영수증 미발행 요구)',
       options: [
-        { id: 'A', text: '탈세는 안 됩니다. 거절.', label: '준법', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '알겠습니다. (조용히 처리)', label: '유들', scores: { risk: undefined, social: 1, logic: -1, resilience: 0 } },
-        { id: 'C', text: '부가세 별도라고 설명하고 발행 유도.', label: '정석', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '탈세는 안 됩니다. 거절.', label: '준법', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '알겠습니다. (조용히 처리)', label: '유들', scores: { risk: 0, social: 1, logic: -1, resilience: 0 } },
+        { id: 'C', text: '부가세 별도라고 설명하고 발행 유도.', label: '정석', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2313,9 +2313,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매도인이 집값을 1억 올려달라고 합니다. (시세보다 비쌈)',
       options: [
-        { id: 'A', text: '"그 가격엔 절대 안 팔려요." 면전에서 자름.', label: '직설', scores: { risk: undefined, social: -2, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"일단 올려보죠." 하고 광고만 냄. (문의 없음을 보여줌)', label: '체험', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'C', text: '"5천만 더 쓰시죠. 대신 빨리 빼드릴게요." 절충안.', label: '협상', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '"그 가격엔 절대 안 팔려요." 면전에서 자름.', label: '직설', scores: { risk: 0, social: -2, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"일단 올려보죠." 하고 광고만 냄. (문의 없음을 보여줌)', label: '체험', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'C', text: '"5천만 더 쓰시죠. 대신 빨리 빼드릴게요." 절충안.', label: '협상', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2324,9 +2324,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "저는 000 팀장한테 상담받았는데..."라며 내게 온 고객. (상도덕 문제)',
       options: [
-        { id: 'A', text: '"그럼 그 팀장님한테 가세요." 돌려보냄.', label: '양심', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"제가 더 잘해드릴게요." 뺏어옴.', label: '약탈', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '상담은 내가 하고 계약은 반반(5:5) 나누자고 팀장과 협의.', label: '공생', scores: { risk: undefined, social: 2, logic: 2, resilience: 0 } },
+        { id: 'A', text: '"그럼 그 팀장님한테 가세요." 돌려보냄.', label: '양심', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"제가 더 잘해드릴게요." 뺏어옴.', label: '약탈', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '상담은 내가 하고 계약은 반반(5:5) 나누자고 팀장과 협의.', label: '공생', scores: { risk: 0, social: 2, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2335,9 +2335,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 집주인이 비밀번호를 알려주며 "알아서 보여주고 가세요"라고 함.',
       options: [
-        { id: 'A', text: '편하고 좋다. 내 세상처럼 브리핑.', label: '자유', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '물건 분실 등 책임질까 봐 주인 있을 때 감.', label: '신중', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '손님과 더 깊은 대화를 나눌 기회로 활용.', label: '기회', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '편하고 좋다. 내 세상처럼 브리핑.', label: '자유', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '물건 분실 등 책임질까 봐 주인 있을 때 감.', label: '신중', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '손님과 더 깊은 대화를 나눌 기회로 활용.', label: '기회', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2346,9 +2346,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 내 브리핑을 듣고 손님이 웁니다. (신세 한탄)',
       options: [
-        { id: 'A', text: '당황스럽다. 휴지 주고 가만히 있음.', label: '당황', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '같이 울어준다. (공감 능력 폭발)', label: '동화', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
-        { id: 'C', text: '진정시키고 다시 계약 얘기로 돌아감. (프로)', label: '냉정', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
+        { id: 'A', text: '당황스럽다. 휴지 주고 가만히 있음.', label: '당황', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '같이 울어준다. (공감 능력 폭발)', label: '동화', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
+        { id: 'C', text: '진정시키고 다시 계약 얘기로 돌아감. (프로)', label: '냉정', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2357,9 +2357,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 투자 고수가 와서 나보다 지역 분석을 더 잘합니다.',
       options: [
-        { id: 'A', text: '기가 죽어서 "아, 네네..." 듣기만 함.', label: '위축', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'B', text: '인정하고 "한 수 가르쳐주세요" 태세 전환.', label: '학습', scores: { risk: undefined, social: 2, logic: 1, resilience: 0 } },
-        { id: 'C', text: '그래도 내가 현지 전문가다. 내 의견 피력.', label: '자존', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '기가 죽어서 "아, 네네..." 듣기만 함.', label: '위축', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'B', text: '인정하고 "한 수 가르쳐주세요" 태세 전환.', label: '학습', scores: { risk: 0, social: 2, logic: 1, resilience: 0 } },
+        { id: 'C', text: '그래도 내가 현지 전문가다. 내 의견 피력.', label: '자존', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2368,9 +2368,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "남은 호실 중에 제일 좋은 거 빼주세요." (사실 다 안 좋음)',
       options: [
-        { id: 'A', text: '솔직히 좋은 건 다 나갔다고 말함.', label: '정직', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '남은 것 중 그나마 나은 것의 장점을 극대화 포장.', label: '포장', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '"이게 회사 보유분 로얄층인데 특별히 풉니다." (거짓말)', label: '사기', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
+        { id: 'A', text: '솔직히 좋은 건 다 나갔다고 말함.', label: '정직', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '남은 것 중 그나마 나은 것의 장점을 극대화 포장.', label: '포장', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '"이게 회사 보유분 로얄층인데 특별히 풉니다." (거짓말)', label: '사기', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
       ],
     },
     {
@@ -2379,9 +2379,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 계약금 입금 직전, "화장실 방향이 맘에 안 든다"며 취소하려 함.',
       options: [
-        { id: 'A', text: '풍수지리까지 들먹이며 좋은 방향이라고 우김.', label: '임기응변', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '어쩔 수 없죠. 인연이 아닌가 봅니다. (포기)', label: '체념', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '방향 빼고 모든 조건이 완벽함을 다시 상기시킴. (환기)', label: '설득', scores: { risk: undefined, social: 0, logic: 2, resilience: 1 } },
+        { id: 'A', text: '풍수지리까지 들먹이며 좋은 방향이라고 우김.', label: '임기응변', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '어쩔 수 없죠. 인연이 아닌가 봅니다. (포기)', label: '체념', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '방향 빼고 모든 조건이 완벽함을 다시 상기시킴. (환기)', label: '설득', scores: { risk: 0, social: 0, logic: 2, resilience: 1 } },
       ],
     },
     {
@@ -2390,9 +2390,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] "수수료 줄 테니 계약서 대필만 해달라" (직거래)',
       options: [
-        { id: 'A', text: '책임 문제 생기니 절대 안 함.', label: '회피', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '대필료 10~20만 원 받고 해줌.', label: '소소', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '권리 분석 제대로 해주고 정상 수수료의 50% 받음.', label: '영업', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '책임 문제 생기니 절대 안 함.', label: '회피', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '대필료 10~20만 원 받고 해줌.', label: '소소', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '권리 분석 제대로 해주고 정상 수수료의 50% 받음.', label: '영업', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2401,9 +2401,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 나이가 훨씬 어린 손님이 반말을 섞어가며 거들먹거립니다.',
       options: [
-        { id: 'A', text: '기분 나빠서 응대 대충 함.', label: '감정', scores: { risk: undefined, social: -1, logic: 0, resilience: -1 } },
-        { id: 'B', text: '프로니까 친절하게 존댓말로 응대.', label: '프로', scores: { risk: undefined, social: 1, logic: 0, resilience: 2 } },
-        { id: 'C', text: '같이 반말 까거나 은근히 무시함.', label: '맞대응', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '기분 나빠서 응대 대충 함.', label: '감정', scores: { risk: 0, social: -1, logic: 0, resilience: -1 } },
+        { id: 'B', text: '프로니까 친절하게 존댓말로 응대.', label: '프로', scores: { risk: 0, social: 1, logic: 0, resilience: 2 } },
+        { id: 'C', text: '같이 반말 까거나 은근히 무시함.', label: '맞대응', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2412,9 +2412,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 마감 임박 문자(LMS)를 보낼 때 문구 스타일.',
       options: [
-        { id: 'A', text: '팩트 위주: "잔여 세대 3실, 3시 마감."', label: '간결', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '감성 위주: "고객님의 마지막 기회를 놓치지 마세요~"', label: '감성', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '자극 위주: "🔴긴급🔴 1억 버는 기회! 클릭!"', label: '자극', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '팩트 위주: "잔여 세대 3실, 3시 마감."', label: '간결', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '감성 위주: "고객님의 마지막 기회를 놓치지 마세요~"', label: '감성', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '자극 위주: "🔴긴급🔴 1억 버는 기회! 클릭!"', label: '자극', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2423,9 +2423,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 "이 동네 부동산들 다 담합하는 거 아니냐"고 의심.',
       options: [
-        { id: 'A', text: '"절대 아닙니다." 정색하고 부인.', label: '부인', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"시세가 형성된 원리"를 설명.', label: '교육', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"담합이면 제가 싸게 못 드리죠." 농담으로 넘김.', label: '유머', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"절대 아닙니다." 정색하고 부인.', label: '부인', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"시세가 형성된 원리"를 설명.', label: '교육', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"담합이면 제가 싸게 못 드리죠." 농담으로 넘김.', label: '유머', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2434,9 +2434,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 아주 깐깐한 "진상" 손님이 왔습니다. 다른 부동산에선 다 쫓겨남.',
       options: [
-        { id: 'A', text: '나도 바쁘다며 보냄.', label: '거절', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '이 사람만 잡으면 충성 고객 된다. 도전.', label: '도전', scores: { risk: undefined, social: 1, logic: 0, resilience: 2 } },
-        { id: 'C', text: '최대한 맞춰주되, 선을 넘으면 자름.', label: '조절', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
+        { id: 'A', text: '나도 바쁘다며 보냄.', label: '거절', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '이 사람만 잡으면 충성 고객 된다. 도전.', label: '도전', scores: { risk: 0, social: 1, logic: 0, resilience: 2 } },
+        { id: 'C', text: '최대한 맞춰주되, 선을 넘으면 자름.', label: '조절', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
       ],
     },
     {
@@ -2445,9 +2445,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "계약금 넣을 테니 계좌번호 주세요" 했는데 30분째 입금이 안 됨.',
       options: [
-        { id: 'A', text: '불안해서 5분마다 전화 확인.', label: '초조', scores: { risk: undefined, social: -1, logic: 0, resilience: -1 } },
-        { id: 'B', text: '믿고 기다린다.', label: '신뢰', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"다른 분이 대기 중이라 10분 내 안 들어오면 넘깁니다" 문자.', label: '촉진', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '불안해서 5분마다 전화 확인.', label: '초조', scores: { risk: 0, social: -1, logic: 0, resilience: -1 } },
+        { id: 'B', text: '믿고 기다린다.', label: '신뢰', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"다른 분이 대기 중이라 10분 내 안 들어오면 넘깁니다" 문자.', label: '촉진', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2456,9 +2456,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 슬리퍼에 추리닝 차림으로 벤츠 S클래스 타고 옴.',
       options: [
-        { id: 'A', text: '차 보고 태세 전환, 급 친절.', label: '속물', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '원래 모든 손님에게 똑같음.', label: '평등', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '"동네 찐부자다!" 직감하고 VIP 모드 가동.', label: '눈치', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '차 보고 태세 전환, 급 친절.', label: '속물', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '원래 모든 손님에게 똑같음.', label: '평등', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '"동네 찐부자다!" 직감하고 VIP 모드 가동.', label: '눈치', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2467,9 +2467,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "서울 사람은 지방 투자 안 해요."라는 서울 손님.',
       options: [
-        { id: 'A', text: '지방의 성장 가능성과 규제 완화 혜택 강조. (논리)', label: '논리', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '"강남 사모님들도 여기 계약하고 가셨어요." (군중심리)', label: '심리', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"그럼 서울 가셔서 비싼 거 사세요." (자존심 긁기)', label: '도발', scores: { risk: undefined, social: -2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '지방의 성장 가능성과 규제 완화 혜택 강조. (논리)', label: '논리', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '"강남 사모님들도 여기 계약하고 가셨어요." (군중심리)', label: '심리', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"그럼 서울 가셔서 비싼 거 사세요." (자존심 긁기)', label: '도발', scores: { risk: 0, social: -2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2478,9 +2478,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 다자녀 가구라 층간소음 걱정 때문에 1층만 찾는 손님. (1층 매물 없음)',
       options: [
-        { id: 'A', text: '1층 나올 때까지 대기 명단에 올림.', label: '대기', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '필로티 2층이나 매트 시공 조건으로 다른 층 설득.', label: '대안', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '단독주택이나 빌라로 아예 방향을 돌림.', label: '전환', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '1층 나올 때까지 대기 명단에 올림.', label: '대기', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '필로티 2층이나 매트 시공 조건으로 다른 층 설득.', label: '대안', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '단독주택이나 빌라로 아예 방향을 돌림.', label: '전환', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2489,9 +2489,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 말 많은 아주머니 손님들이 우르르 몰려와서 정신없게 함.',
       options: [
-        { id: 'A', text: '기 빨려서 조용히 계시라고 함.', label: '통제', scores: { risk: undefined, social: -1, logic: 0, resilience: -1 } },
-        { id: 'B', text: '그중 리더(대장) 한 명만 공략해서 설득.', label: '전략', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
-        { id: 'C', text: '다 같이 커피 마시며 수다 판 벌임.', label: '융화', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '기 빨려서 조용히 계시라고 함.', label: '통제', scores: { risk: 0, social: -1, logic: 0, resilience: -1 } },
+        { id: 'B', text: '그중 리더(대장) 한 명만 공략해서 설득.', label: '전략', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
+        { id: 'C', text: '다 같이 커피 마시며 수다 판 벌임.', label: '융화', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2500,9 +2500,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 계약하려는데 손님이 "등기권리증(집문서) 꼭 확인해야겠다"고 고집.',
       options: [
-        { id: 'A', text: '요즘 누가 집문서 들고 다니냐고 설득.', label: '현실', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '매도인에게 부탁해서 가져오게 함. (고객안심)', label: '서비스', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '등기부등본이랑 신분증이면 충분하다고 법적 효력 설명.', label: '설명', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '요즘 누가 집문서 들고 다니냐고 설득.', label: '현실', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '매도인에게 부탁해서 가져오게 함. (고객안심)', label: '서비스', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '등기부등본이랑 신분증이면 충분하다고 법적 효력 설명.', label: '설명', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2511,9 +2511,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "전화 좀 그만하세요!" 화내는 고객에게.',
       options: [
-        { id: 'A', text: '"죄송합니다. 번호 지우겠습니다." (포기)', label: '삭제', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"너무 좋은 정보라 알려드리고 싶어서 그랬습니다." (감성팔이)', label: '호소', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '일주일 뒤에 번호 바꿔서 다시 건다. (불굴)', label: '근성', scores: { risk: undefined, social: -1, logic: 0, resilience: 2 } },
+        { id: 'A', text: '"죄송합니다. 번호 지우겠습니다." (포기)', label: '삭제', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"너무 좋은 정보라 알려드리고 싶어서 그랬습니다." (감성팔이)', label: '호소', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '일주일 뒤에 번호 바꿔서 다시 건다. (불굴)', label: '근성', scores: { risk: 0, social: -1, logic: 0, resilience: 2 } },
       ],
     },
     {
@@ -2522,9 +2522,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "잔금 치르기 전에 인테리어 공사 먼저 하게 해 달라" 요청.',
       options: [
-        { id: 'A', text: '절대 불가. 잔금 안 들어오면 골치 아픔.', label: '차단', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '관리비/공과금 정산 및 원상복구 각서 쓰고 허용.', label: '안전장치', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '매도인에게 잘 말해서 허락받아줌.', label: '중재', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '절대 불가. 잔금 안 들어오면 골치 아픔.', label: '차단', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '관리비/공과금 정산 및 원상복구 각서 쓰고 허용.', label: '안전장치', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '매도인에게 잘 말해서 허락받아줌.', label: '중재', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2533,9 +2533,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 집 주인이 외국에 있어 대리인과 계약해야 합니다.',
       options: [
-        { id: 'A', text: '영사관 위임장, 인감증명서 완벽 확인 전엔 진행 안 함.', label: '철저', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'B', text: '영상통화로 본인 확인하고 진행.', label: '스마트', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '대리인 믿고 일단 계약금 입금.', label: '위험', scores: { risk: undefined, social: 1, logic: -2, resilience: 0 } },
+        { id: 'A', text: '영사관 위임장, 인감증명서 완벽 확인 전엔 진행 안 함.', label: '철저', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'B', text: '영상통화로 본인 확인하고 진행.', label: '스마트', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '대리인 믿고 일단 계약금 입금.', label: '위험', scores: { risk: 0, social: 1, logic: -2, resilience: 0 } },
       ],
     },
     {
@@ -2544,9 +2544,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 "이 집은 뷰가 막혀서 답답하다" 단점만 지적.',
       options: [
-        { id: 'A', text: '"대신 남향이라 따뜻하고 난방비 적게 나와요." 장점으로 커버.', label: '반론', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"네 좀 답답하죠?" 인정하고 다른 집 보여줌.', label: '인정', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"커텐 치고 살면 똑같아요." (무논리)', label: '아무말', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
+        { id: 'A', text: '"대신 남향이라 따뜻하고 난방비 적게 나와요." 장점으로 커버.', label: '반론', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"네 좀 답답하죠?" 인정하고 다른 집 보여줌.', label: '인정', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"커텐 치고 살면 똑같아요." (무논리)', label: '아무말', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
       ],
     },
     {
@@ -2555,9 +2555,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 계약 후 잔금일까지 3개월. 손님 관리는?',
       options: [
-        { id: 'A', text: '연락 안 함. 무소식이 희소식.', label: '방치', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '가끔 안부 문자 및 대출 금리 정보 제공.', label: '관리', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '이사 업체, 인테리어 업체 소개하며 추가 수익 창출.', label: '사업', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '연락 안 함. 무소식이 희소식.', label: '방치', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '가끔 안부 문자 및 대출 금리 정보 제공.', label: '관리', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '이사 업체, 인테리어 업체 소개하며 추가 수익 창출.', label: '사업', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2566,9 +2566,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "000(경쟁 현장)이랑 여기랑 어디가 좋아요?" 비교 질문.',
       options: [
-        { id: 'A', text: '"거기는 구조가 별로고 비싸요." 경쟁사 까내리기.', label: '비방', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '객관적인 비교표 보여주며 우리 장점 부각.', label: '비교', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'C', text: '"거기도 좋죠. 근데 손님한텐 여기가 맞아요." (인정 후 제안)', label: '자신감', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"거기는 구조가 별로고 비싸요." 경쟁사 까내리기.', label: '비방', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '객관적인 비교표 보여주며 우리 장점 부각.', label: '비교', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'C', text: '"거기도 좋죠. 근데 손님한텐 여기가 맞아요." (인정 후 제안)', label: '자신감', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2577,9 +2577,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "계좌 주세요" 했는데, 갑자기 매도인이 "안 팔겠다" 계좌 안 줌. (배액배상 전)',
       options: [
-        { id: 'A', text: '매도인 설득하러 집으로 찾아감.', label: '행동', scores: { risk: undefined, social: 0, logic: 0, resilience: 1 } },
-        { id: 'B', text: '매수인에게 "죄송합니다" 하고 다른 물건 찾음.', label: '수습', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '가계약금이라도 억지로 넣게 만듦. (성립 주장)', label: '강수', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '매도인 설득하러 집으로 찾아감.', label: '행동', scores: { risk: 0, social: 0, logic: 0, resilience: 1 } },
+        { id: 'B', text: '매수인에게 "죄송합니다" 하고 다른 물건 찾음.', label: '수습', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '가계약금이라도 억지로 넣게 만듦. (성립 주장)', label: '강수', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2588,9 +2588,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 고객이 내 나이가 너무 어리다고(또는 많다고) 못 미더워함.',
       options: [
-        { id: 'A', text: '전문적인 지식과 자격증으로 실력 증명.', label: '실력', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '"나이는 숫자에 불과하죠~" 너스레 떰.', label: '친화', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '기분 나쁨. 다른 직원에게 토스.', label: '회피', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
+        { id: 'A', text: '전문적인 지식과 자격증으로 실력 증명.', label: '실력', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '"나이는 숫자에 불과하죠~" 너스레 떰.', label: '친화', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '기분 나쁨. 다른 직원에게 토스.', label: '회피', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
       ],
     },
     {
@@ -2599,9 +2599,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 전세입자가 "강아지 3마리 키우는데 집 좀 구해주세요" (거절 100%)',
       options: [
-        { id: 'A', text: '"힘듭니다" 바로 거절.', label: '포기', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '노후 주택이나 1층 위주로 집주인 설득.', label: '틈새', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'C', text: '웃돈(월세 더 냄) 얹어주겠다고 제안.', label: '금전', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"힘듭니다" 바로 거절.', label: '포기', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '노후 주택이나 1층 위주로 집주인 설득.', label: '틈새', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'C', text: '웃돈(월세 더 냄) 얹어주겠다고 제안.', label: '금전', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2610,9 +2610,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] "저희 집 빨리 좀 빼주세요" 닥달하는 집주인.',
       options: [
-        { id: 'A', text: '"그럼 가격을 낮추세요" 직언.', label: '직언', scores: { risk: undefined, social: -1, logic: 1, resilience: 0 } },
-        { id: 'B', text: '네이버 상단 노출 광고비 더 씀.', label: '투자', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"최선 다하고 있습니다" 말로만 안심.', label: '응대', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"그럼 가격을 낮추세요" 직언.', label: '직언', scores: { risk: 0, social: -1, logic: 1, resilience: 0 } },
+        { id: 'B', text: '네이버 상단 노출 광고비 더 씀.', label: '투자', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"최선 다하고 있습니다" 말로만 안심.', label: '응대', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2621,9 +2621,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "수익률 10% 확정"이라고 광고했는데, 고객이 보장증서 써달라고 함.',
       options: [
-        { id: 'A', text: '써준다. (나중에 문제 되든 말든)', label: '위험', scores: { risk: undefined, social: 0, logic: -2, resilience: 0 } },
-        { id: 'B', text: '"시행사에서 보증하는 거지 제가 쓰는 게 아닙니다." 발뺌.', label: '회피', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '예상 수익률표 다시 보여주며 "확정"이란 단어 정정.', label: '수습', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
+        { id: 'A', text: '써준다. (나중에 문제 되든 말든)', label: '위험', scores: { risk: 0, social: 0, logic: -2, resilience: 0 } },
+        { id: 'B', text: '"시행사에서 보증하는 거지 제가 쓰는 게 아닙니다." 발뺌.', label: '회피', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '예상 수익률표 다시 보여주며 "확정"이란 단어 정정.', label: '수습', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
       ],
     },
     {
@@ -2632,9 +2632,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 "이 집 살 테니 복비 무료로 해줘요" 딜.',
       options: [
-        { id: 'A', text: '"땅 파서 장사합니까?" 거절.', label: '거절', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '계약 성사가 먼저니 OK 함.', label: '굴복', scores: { risk: undefined, social: 0, logic: 0, resilience: -1 } },
-        { id: 'C', text: '"무료는 어렵고 법정 한도 내에서 할인해드릴게요." 협상.', label: '타협', scores: { risk: undefined, social: 1, logic: 1, resilience: 0 } },
+        { id: 'A', text: '"땅 파서 장사합니까?" 거절.', label: '거절', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '계약 성사가 먼저니 OK 함.', label: '굴복', scores: { risk: 0, social: 0, logic: 0, resilience: -1 } },
+        { id: 'C', text: '"무료는 어렵고 법정 한도 내에서 할인해드릴게요." 협상.', label: '타협', scores: { risk: 0, social: 1, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2643,9 +2643,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "집값 깎아주면 사장님께 수수료 더블로 드릴게" (뒷돈 제안)',
       options: [
-        { id: 'A', text: '매도인에게 가서 "내가 깎아볼게" 하고 작업.', label: '작업', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '그런 식의 거래는 안 합니다. 정직하게 중개.', label: '정직', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '가능한 선에서 조율해봄.', label: '조율', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '매도인에게 가서 "내가 깎아볼게" 하고 작업.', label: '작업', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '그런 식의 거래는 안 합니다. 정직하게 중개.', label: '정직', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '가능한 선에서 조율해봄.', label: '조율', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2654,9 +2654,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 집 보러 갔는데 비밀번호가 틀림. 주인 연락 두절. 손님은 기다림.',
       options: [
-        { id: 'A', text: '"다음에 다시 오시죠" 보냄.', label: '포기', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '경비실, 관리실 다 뒤져서 비번 알아냄.', label: '해결', scores: { risk: undefined, social: 0, logic: 1, resilience: 1 } },
-        { id: 'C', text: '문 앞에서 집의 장점에 대해 10분간 썰 풂. (시간벌기)', label: '임기응변', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"다음에 다시 오시죠" 보냄.', label: '포기', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '경비실, 관리실 다 뒤져서 비번 알아냄.', label: '해결', scores: { risk: 0, social: 0, logic: 1, resilience: 1 } },
+        { id: 'C', text: '문 앞에서 집의 장점에 대해 10분간 썰 풂. (시간벌기)', label: '임기응변', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2665,9 +2665,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 내가 브리핑만 하면 손님이 졸려 함.',
       options: [
-        { id: 'A', text: '내 목소리가 좋은가 보다 생각.', label: '착각', scores: { risk: undefined, social: 0, logic: -1, resilience: 0 } },
-        { id: 'B', text: '스피치 학원이나 유튜브 보며 화법 연구.', label: '노력', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '질문을 많이 던져서 참여 유도.', label: '스킬', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '내 목소리가 좋은가 보다 생각.', label: '착각', scores: { risk: 0, social: 0, logic: -1, resilience: 0 } },
+        { id: 'B', text: '스피치 학원이나 유튜브 보며 화법 연구.', label: '노력', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '질문을 많이 던져서 참여 유도.', label: '스킬', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2676,9 +2676,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] "팜플렛만 받고 갈게요" 하는 행인 잡는 법.',
       options: [
-        { id: 'A', text: '그냥 보낸다. 가망고객 아님.', label: '선별', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'B', text: '"물티슈도 받아 가세요!" 하며 일단 멈춰 세움.', label: '미끼', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"지금 들어가시면 경품 추첨권 드려요!" 꼬심.', label: '유인', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '그냥 보낸다. 가망고객 아님.', label: '선별', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'B', text: '"물티슈도 받아 가세요!" 하며 일단 멈춰 세움.', label: '미끼', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"지금 들어가시면 경품 추첨권 드려요!" 꼬심.', label: '유인', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2687,9 +2687,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 매수인이 "풍수지리사가 이 집 안 좋대요"라며 깸.',
       options: [
-        { id: 'A', text: '풍수지리사 욕함. (비과학적)', label: '비판', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
-        { id: 'B', text: '"그럼 풍수 좋은 집 찾아드릴게요." 인정.', label: '수용', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"제가 아는 지관은 여기가 명당이라던데?" (맞불)', label: '재치', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '풍수지리사 욕함. (비과학적)', label: '비판', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
+        { id: 'B', text: '"그럼 풍수 좋은 집 찾아드릴게요." 인정.', label: '수용', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"제가 아는 지관은 여기가 명당이라던데?" (맞불)', label: '재치', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2698,9 +2698,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 "이 집 냄새나서 싫어요" (사실 방향제 냄새임)',
       options: [
-        { id: 'A', text: '환기하면 된다고 설득.', label: '설득', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '냄새 민감하신 분은 새집 가야죠. 신축 추천.', label: '전환', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '주인한테 전화해서 방향제 치우라고 함.', label: '조치', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '환기하면 된다고 설득.', label: '설득', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '냄새 민감하신 분은 새집 가야죠. 신축 추천.', label: '전환', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '주인한테 전화해서 방향제 치우라고 함.', label: '조치', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2709,9 +2709,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 계약금 쏠 타이밍. 손가락이 떨리는 손님에게 한 마디.',
       options: [
-        { id: 'A', text: '"축하드립니다. 부자 되실 거예요." (확신)', label: '확신', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"천천히 하세요." (부담 덜기)', label: '배려', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'C', text: '"지금 안 넣으면 다른 사람이 챕니다." (재촉)', label: '재촉', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"축하드립니다. 부자 되실 거예요." (확신)', label: '확신', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"천천히 하세요." (부담 덜기)', label: '배려', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'C', text: '"지금 안 넣으면 다른 사람이 챕니다." (재촉)', label: '재촉', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2720,9 +2720,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] "수리 싹 된 집"이라고 해서 갔는데 엉망임. 손님 표정 썩음.',
       options: [
-        { id: 'A', text: '같이 집주인 욕하며 손님 편 들어줌.', label: '공감', scores: { risk: undefined, social: 2, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"주인분이 수리 개념을 잘 모르시나 봐요." 둘러댐.', label: '변명', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '바로 데리고 나옴. "여긴 보지 맙시다."', label: '결단', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '같이 집주인 욕하며 손님 편 들어줌.', label: '공감', scores: { risk: 0, social: 2, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"주인분이 수리 개념을 잘 모르시나 봐요." 둘러댐.', label: '변명', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '바로 데리고 나옴. "여긴 보지 맙시다."', label: '결단', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2731,9 +2731,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[분양] 고객이 "너무 멀어서 못 가겠어요" 방문 거절.',
       options: [
-        { id: 'A', text: '"멀리서도 오실 만큼 가치 있습니다." 가치 어필.', label: '가치', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'B', text: '"근처 오실 일 있으면 들르세요." 여지 남김.', label: '여유', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'C', text: '기프티콘 보내주며 유인.', label: '선물', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '"멀리서도 오실 만큼 가치 있습니다." 가치 어필.', label: '가치', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'B', text: '"근처 오실 일 있으면 들르세요." 여지 남김.', label: '여유', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'C', text: '기프티콘 보내주며 유인.', label: '선물', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2742,9 +2742,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 세입자가 집 보여줄 때마다 옆에서 "이 집 춥고 결로 있어요" 방해함.',
       options: [
-        { id: 'A', text: '세입자 내보내고(이사 후) 보여준다.', label: '전략', scores: { risk: undefined, social: 0, logic: 2, resilience: 0 } },
-        { id: 'B', text: '세입자 없을 때 몰래 보여줌.', label: '기지', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
-        { id: 'C', text: '손님에게 "세입자가 나가기 싫어서 저러는 거다"라고 역공.', label: '모략', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
+        { id: 'A', text: '세입자 내보내고(이사 후) 보여준다.', label: '전략', scores: { risk: 0, social: 0, logic: 2, resilience: 0 } },
+        { id: 'B', text: '세입자 없을 때 몰래 보여줌.', label: '기지', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
+        { id: 'C', text: '손님에게 "세입자가 나가기 싫어서 저러는 거다"라고 역공.', label: '모략', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2753,9 +2753,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 중개보수 "현금 말고 카드로 낼게요" (카드 단말기 없음)',
       options: [
-        { id: 'A', text: '카드 안 됩니다. 현금 주세요.', label: '배짱', scores: { risk: undefined, social: -1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '단말기 있는 옆 부동산 가서 긁고 수수료 떼줌.', label: '융통', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
-        { id: 'C', text: '계좌이체 해주시면 소득공제 해드립니다.', label: '설득', scores: { risk: undefined, social: 0, logic: 1, resilience: 0 } },
+        { id: 'A', text: '카드 안 됩니다. 현금 주세요.', label: '배짱', scores: { risk: 0, social: -1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '단말기 있는 옆 부동산 가서 긁고 수수료 떼줌.', label: '융통', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
+        { id: 'C', text: '계좌이체 해주시면 소득공제 해드립니다.', label: '설득', scores: { risk: 0, social: 0, logic: 1, resilience: 0 } },
       ],
     },
     {
@@ -2764,9 +2764,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[중개] 손님이 "계약서 쓰기 전에 등기부등본 카톡으로 보내줘" 요청.',
       options: [
-        { id: 'A', text: '바로 보내줌. (투명성)', label: '오픈', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '주소 가리고 보냄. (직거래 방지)', label: '보안', scores: { risk: undefined, social: -1, logic: 2, resilience: 0 } },
-        { id: 'C', text: '와서 보시라고 함.', label: '유인', scores: { risk: undefined, social: 0, logic: 0, resilience: 0 } },
+        { id: 'A', text: '바로 보내줌. (투명성)', label: '오픈', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '주소 가리고 보냄. (직거래 방지)', label: '보안', scores: { risk: 0, social: -1, logic: 2, resilience: 0 } },
+        { id: 'C', text: '와서 보시라고 함.', label: '유인', scores: { risk: 0, social: 0, logic: 0, resilience: 0 } },
       ],
     },
     {
@@ -2775,9 +2775,9 @@ const QUESTION_POOL: Record<string, any[]> = {
       categoryKey: 'persuasion',
       question: '[공통] 당신의 영업 필살기는?',
       options: [
-        { id: 'A', text: '화려한 언변과 스토리텔링.', label: '언변', scores: { risk: undefined, social: 1, logic: 0, resilience: 0 } },
-        { id: 'B', text: '완벽한 데이터 분석과 브리핑.', label: '분석', scores: { risk: undefined, social: 0, logic: 3, resilience: 0 } },
-        { id: 'C', text: '고객의 마음을 얻는 경청과 공감.', label: '공감', scores: { risk: undefined, social: 3, logic: 0, resilience: 0 } },
+        { id: 'A', text: '화려한 언변과 스토리텔링.', label: '언변', scores: { risk: 0, social: 1, logic: 0, resilience: 0 } },
+        { id: 'B', text: '완벽한 데이터 분석과 브리핑.', label: '분석', scores: { risk: 0, social: 0, logic: 3, resilience: 0 } },
+        { id: 'C', text: '고객의 마음을 얻는 경청과 공감.', label: '공감', scores: { risk: 0, social: 3, logic: 0, resilience: 0 } },
       ],
     },
   ],

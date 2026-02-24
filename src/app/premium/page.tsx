@@ -249,6 +249,7 @@ function PremiumPricingContent() {
     }
 
     setPayingTier(tier);
+    document.body.style.overflow = 'hidden';
 
     try {
       const PortOne = await import('@portone/browser-sdk/v2');
@@ -265,7 +266,7 @@ function PremiumPricingContent() {
         customer: {
           fullName: user.user_metadata?.name || '사용자',
           email: user.email || undefined,
-          phoneNumber: user.user_metadata?.phone || undefined,
+          phoneNumber: user.user_metadata?.phone || '01000000000',
         },
         redirectUrl: `${window.location.origin}/premium`,
       };
@@ -316,6 +317,7 @@ function PremiumPricingContent() {
       const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
       alert(`결제 중 오류가 발생했습니다: ${errMsg}`);
     } finally {
+      document.body.style.overflow = '';
       setPayingTier(null);
     }
   };
@@ -357,7 +359,7 @@ function PremiumPricingContent() {
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 text-white">
       {/* 헤더 */}
       <header className="border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2">
               <ChevronLeft className="w-5 h-5" />
@@ -663,15 +665,43 @@ function PremiumPricingContent() {
           </div>
         </div>
 
+        {/* 취소·환불 규정 */}
+        <div className="mb-16 bg-slate-800/30 rounded-2xl p-8 border border-slate-700">
+          <h2 className="text-xl font-bold text-center mb-6">취소·환불 규정</h2>
+          <div className="space-y-4 max-w-3xl mx-auto text-sm text-gray-400">
+            <div className="flex items-start gap-3">
+              <span className="text-cyan-400 font-bold mt-0.5">01</span>
+              <p><strong className="text-gray-200">서비스 개시 전 전액 환불</strong> — 결제 후 유료서비스가 적용되지 않은 경우, 구매일로부터 7일 이내 전액 환불 가능</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-cyan-400 font-bold mt-0.5">02</span>
+              <p><strong className="text-gray-200">이용 중 부분 환불</strong> — 각 서비스 환불 안내에 따라 상품 정가 기준으로 서비스 제공 기간에 해당하는 요금을 차감한 잔액을 환불</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-cyan-400 font-bold mt-0.5">03</span>
+              <p><strong className="text-gray-200">환불 불가</strong> — 서비스 기간이 모두 경과한 경우, 이용자 귀책사유(약관 위반 등)로 이용 제한된 경우</p>
+            </div>
+            <div className="flex items-start gap-3">
+              <span className="text-cyan-400 font-bold mt-0.5">04</span>
+              <p><strong className="text-gray-200">환불 절차</strong> — 고객센터(onsia777@gmail.com) 요청 → 3영업일 내 검토 → 3영업일 내 원결제수단 환불</p>
+            </div>
+          </div>
+          <div className="text-center mt-6">
+            <Link href="/refund" className="text-cyan-400 text-sm hover:underline">
+              환불 정책 전문 보기 →
+            </Link>
+          </div>
+        </div>
+
         {/* CTA */}
         <div className="text-center bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-2xl p-8 border border-cyan-500/20">
           <Shield className="w-12 h-12 mx-auto mb-4 text-cyan-400" />
           <h2 className="text-2xl font-bold mb-2">광고 상담이 필요하신가요?</h2>
           <p className="text-gray-400 mb-6">전문 상담사가 최적의 광고 상품을 추천해 드립니다.</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="tel:1660-0464" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold hover:opacity-90 transition-all">
+            <a href="tel:1555-1245" className="inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold hover:opacity-90 transition-all">
               <MessageCircle className="w-5 h-5" />
-              전화 상담 1660-0464
+              전화 상담 1555-1245
             </a>
           </div>
         </div>

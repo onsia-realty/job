@@ -34,11 +34,11 @@ const adBanners = [
   },
   {
     id: 2,
-    label: 'PROMOTION',
-    title: 'AI 매칭 서비스 오픈',
-    description: '나에게 딱 맞는 현장을 추천받으세요',
+    label: 'COMING SOON',
+    title: 'AI 매칭 서비스 준비중',
+    description: '나에게 딱 맞는 현장 추천, 곧 찾아옵니다!',
     gradient: 'from-orange-500 to-pink-500',
-    link: '/ads',
+    link: '',
   },
 ];
 
@@ -510,19 +510,33 @@ export default function LandingPage() {
             {/* 광고 배너 (1/3) - 모바일 숨김 */}
             <div className="hidden md:flex flex-col gap-4">
               {/* SPONSORED / PROMOTION 배너 */}
-              {adBanners.map((banner) => (
-                <Link
-                  key={banner.id}
-                  href={banner.link}
-                  className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 flex flex-col justify-between min-h-[140px] hover:opacity-90 transition-opacity`}
-                >
-                  <span className="text-xs text-white/70 font-medium">{banner.label}</span>
-                  <div>
-                    <h4 className="text-lg font-bold text-white mb-1">{banner.title}</h4>
-                    <p className="text-sm text-white/80">{banner.description}</p>
+              {adBanners.map((banner) => {
+                const content = (
+                  <>
+                    <span className="text-xs text-white/70 font-medium">{banner.label}</span>
+                    <div>
+                      <h4 className="text-lg font-bold text-white mb-1">{banner.title}</h4>
+                      <p className="text-sm text-white/80">{banner.description}</p>
+                    </div>
+                  </>
+                );
+                return banner.link ? (
+                  <Link
+                    key={banner.id}
+                    href={banner.link}
+                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 flex flex-col justify-between min-h-[140px] hover:opacity-90 transition-opacity`}
+                  >
+                    {content}
+                  </Link>
+                ) : (
+                  <div
+                    key={banner.id}
+                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 flex flex-col justify-between min-h-[140px] opacity-80`}
+                  >
+                    {content}
                   </div>
-                </Link>
-              ))}
+                );
+              })}
             </div>
           </div>
         </section>

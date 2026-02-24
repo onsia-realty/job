@@ -189,18 +189,18 @@ function DNAQuizContent() {
     if (prevAnswer) {
       const prevOption = questions[questionIndex].options.find(o => o.id === prevAnswer);
       if (prevOption) {
-        newScores.risk -= prevOption.scores.risk;
-        newScores.social -= prevOption.scores.social;
-        newScores.logic -= prevOption.scores.logic;
-        newScores.resilience -= prevOption.scores.resilience;
+        newScores.risk -= (prevOption.scores.risk || 0);
+        newScores.social -= (prevOption.scores.social || 0);
+        newScores.logic -= (prevOption.scores.logic || 0);
+        newScores.resilience -= (prevOption.scores.resilience || 0);
       }
     }
 
-    // 새 답변 점수 추가
-    newScores.risk += optionScores.risk;
-    newScores.social += optionScores.social;
-    newScores.logic += optionScores.logic;
-    newScores.resilience += optionScores.resilience;
+    // 새 답변 점수 추가 (undefined 방어)
+    newScores.risk += (optionScores.risk || 0);
+    newScores.social += (optionScores.social || 0);
+    newScores.logic += (optionScores.logic || 0);
+    newScores.resilience += (optionScores.resilience || 0);
 
     setScores(newScores);
     setAnswers({ ...answers, [questionIndex]: optionId });

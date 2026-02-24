@@ -108,7 +108,8 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <Link href="/agent" className="text-gray-700 hover:text-blue-600 font-medium">
                     홈
                   </Link>
-                  <Link href="/agent/jobs" className="text-gray-500 hover:text-blue-600">
+                  <Link href="/agent/jobs" className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-1">
+                    <ClipboardList className="w-3.5 h-3.5" />
                     구인공고
                   </Link>
                   <Link href="/agent/ai-assistant" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">

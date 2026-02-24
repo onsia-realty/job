@@ -1011,9 +1011,10 @@ export default function AgentJobsPage() {
                   const isBookmarked = bookmarkedJobs.includes(job.id);
 
                   return (
-                    <div
+                    <Link
                       key={job.id}
-                      className="group bg-white rounded-xl border-2 border-amber-300 hover:border-amber-400 hover:shadow-xl transition-all overflow-hidden"
+                      href={`/agent/jobs/${job.id}`}
+                      className="group bg-white rounded-xl border-2 border-amber-300 hover:border-amber-400 hover:shadow-xl transition-all overflow-hidden block"
                       style={{ boxShadow: '0 0 12px rgba(245, 158, 11, 0.08)' }}
                     >
                       {/* 썸네일 */}
@@ -1035,7 +1036,7 @@ export default function AgentJobsPage() {
                           </span>
                         </div>
                         <button
-                          onClick={() => toggleBookmark(job.id)}
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBookmark(job.id); }}
                           className={`absolute top-2 right-2 p-1 rounded-full backdrop-blur-sm transition-colors ${
                             isBookmarked ? 'bg-emerald-500/90 text-white' : 'bg-white/80 text-slate-400 hover:text-emerald-600'
                           }`}
@@ -1057,11 +1058,9 @@ export default function AgentJobsPage() {
                           <span className="text-xs text-slate-500 truncate">{job.company}</span>
                         </div>
 
-                        <Link href={`/agent/jobs/${job.id}`} className="block">
-                          <h3 className="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition-colors mb-1.5 line-clamp-2 leading-tight">
-                            {job.title}
-                          </h3>
-                        </Link>
+                        <h3 className="font-bold text-slate-800 text-sm group-hover:text-amber-600 transition-colors mb-1.5 line-clamp-2 leading-tight">
+                          {job.title}
+                        </h3>
 
                         <div className="flex items-center gap-1 text-xs text-slate-400 mb-1.5">
                           <MapPin className="w-3 h-3" />
@@ -1070,7 +1069,7 @@ export default function AgentJobsPage() {
 
                         <p className="text-sm font-bold text-amber-600">{job.salary.amount}</p>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
 
@@ -1112,9 +1111,10 @@ export default function AgentJobsPage() {
                   const isBookmarked = bookmarkedJobs.includes(job.id);
 
                   return (
-                    <div
+                    <Link
                       key={job.id}
-                      className="group bg-white rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all p-3 relative overflow-hidden"
+                      href={`/agent/jobs/${job.id}`}
+                      className="group bg-white rounded-lg border-2 border-blue-200 hover:border-blue-400 hover:shadow-lg transition-all p-3 relative overflow-hidden block"
                     >
                       <div className="absolute top-0 right-0 w-12 h-12 bg-gradient-to-bl from-blue-50 to-transparent rounded-bl-full"></div>
 
@@ -1130,7 +1130,7 @@ export default function AgentJobsPage() {
                             </span>
                           </div>
                           <button
-                            onClick={() => toggleBookmark(job.id)}
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleBookmark(job.id); }}
                             className={`p-1 rounded transition-colors ${
                               isBookmarked ? 'text-emerald-600' : 'text-slate-300 hover:text-emerald-600'
                             }`}
@@ -1152,11 +1152,9 @@ export default function AgentJobsPage() {
                         </div>
 
                         {/* 제목 */}
-                        <Link href={`/agent/jobs/${job.id}`}>
-                          <h3 className="font-semibold text-slate-800 text-xs group-hover:text-blue-600 transition-colors mb-2 line-clamp-2 leading-snug">
-                            {job.title}
-                          </h3>
-                        </Link>
+                        <h3 className="font-semibold text-slate-800 text-xs group-hover:text-blue-600 transition-colors mb-2 line-clamp-2 leading-snug">
+                          {job.title}
+                        </h3>
 
                         {/* 지역 + 급여 */}
                         <div className="flex items-center gap-1 text-[11px] text-slate-400 mb-1.5">
@@ -1165,7 +1163,7 @@ export default function AgentJobsPage() {
                         </div>
                         <p className="text-xs font-bold text-blue-600">{job.salary.amount}</p>
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
 
