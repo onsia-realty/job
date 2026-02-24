@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
         article_html: result.article.article_html,
         article_summary: result.article.article_summary,
         panels: result.panels,
+        toon_image_url: result.toon_image_url,
         status: 'draft',
       })
       .select()

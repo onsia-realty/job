@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
     const { data: episodes, error, count } = await supabaseAdmin
       .from('news_toon_episodes')
-      .select('id, episode_number, title, subtitle, slug, category, article_summary, thumbnail_url, view_count, published_at, created_at', { count: 'exact' })
+      .select('id, episode_number, title, subtitle, slug, category, article_summary, thumbnail_url, toon_image_url, view_count, published_at, created_at', { count: 'exact' })
       .eq('status', status)
       .order('published_at', { ascending: false, nullsFirst: false })
       .range(offset, offset + limit - 1);

@@ -94,7 +94,7 @@ export default function TermsPage() {
               <ul className="list-disc pl-6 mt-1 space-y-1">
                 <li>공인중개사·분양상담사 구인공고 등록 및 열람 서비스</li>
                 <li>이력서 등록 및 관리, 구인구직 매칭 서비스</li>
-                <li>AI 기반 부동산 뉴스·콘텐츠(NEWS TOON, AI 실무비서 등) 서비스</li>
+                <li>AI 기반 부동산 뉴스·콘텐츠(BOOIN NEWS TOON, AI 실무비서 등) 서비스</li>
                 <li>AI 프로필 사진 생성 서비스</li>
                 <li>프리미엄 공고 노출 등 유료 부가서비스</li>
                 <li>커뮤니티 및 네트워킹 서비스</li>

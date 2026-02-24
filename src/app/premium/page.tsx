@@ -11,10 +11,34 @@ import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
   ChevronLeft, ChevronRight, MapPin, Briefcase, Tag, User, Loader2,
+  X, FileText, Plus,
 } from 'lucide-react';
+import { fetchMyJobs } from '@/lib/supabase';
 
 // 카테고리 타입
 type CategoryType = 'agent' | 'sales';
+
+// 티어 우선순위 (높을수록 상위)
+const TIER_RANK: Record<string, number> = {
+  normal: 0, basic: 1, premium: 2, superior: 2, vip: 3, unique: 3,
+};
+
+// Job 타입
+interface MyJob {
+  id: string;
+  title: string;
+  tier: string;
+  category: string;
+  created_at: string;
+  [key: string]: unknown;
+}
+
+// 공고별 결제 정보 타입
+interface JobPaymentInfo {
+  tier: string;
+  expires_at: string;
+  paid_at: string;
+}
 
 // VIP 슬라이드 데이터 (공인중개사)
 const AGENT_VIP_JOBS = [
@@ -220,6 +244,12 @@ function PremiumPricingContent() {
   const [slideIndex, setSlideIndex] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
   const [payingTier, setPayingTier] = useState<string | null>(null);
+  const [showJobModal, setShowJobModal] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<string | null>(null);
+  const [myJobs, setMyJobs] = useState<MyJob[]>([]);
+  const [jobPayments, setJobPayments] = useState<Record<string, JobPaymentInfo>>({});
+  const [jobsLoading, setJobsLoading] = useState(false);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
@@ -227,8 +257,8 @@ function PremiumPricingContent() {
   const slideJobs = selectedCategory === 'agent' ? AGENT_VIP_JOBS : SALES_UNIQUE_JOBS;
   const currentSlide = slideJobs[slideIndex];
 
-  // 결제 처리
-  const handlePayment = async (tier: string) => {
+  // 공고 선택 모달 열기 (유료 티어만)
+  const handleSelectJob = async (tier: string) => {
     if (tier === 'normal') {
       // 무료 공고는 바로 작성 페이지로
       window.location.href = selectedCategory === 'agent' ? '/agent/jobs/new' : '/sales/jobs/new';
@@ -241,6 +271,75 @@ function PremiumPricingContent() {
       return;
     }
 
+    setSelectedTier(tier);
+    setSelectedJobId(null);
+    setJobsLoading(true);
+    setShowJobModal(true);
+
+    try {
+      // 내 공고 목록 + 결제 내역 동시 조회
+      const [jobs, paymentsRes] = await Promise.all([
+        fetchMyJobs(user.id),
+        session?.access_token
+          ? fetch('/api/payments/my', {
+              headers: { Authorization: `Bearer ${session.access_token}` },
+            }).then(r => r.json())
+          : Promise.resolve({}),
+      ]);
+
+      // 현재 카테고리의 공고만 필터
+      const filteredJobs = (jobs as MyJob[]).filter(
+        (j) => j.category === selectedCategory
+      );
+      setMyJobs(filteredJobs);
+      setJobPayments(paymentsRes || {});
+    } catch (err) {
+      console.error('공고 목록 조회 실패:', err);
+      setMyJobs([]);
+    } finally {
+      setJobsLoading(false);
+    }
+  };
+
+  // 모달 닫기
+  const closeJobModal = () => {
+    setShowJobModal(false);
+    setSelectedTier(null);
+    setSelectedJobId(null);
+  };
+
+  // 공고가 해당 티어로 업그레이드 가능한지 확인
+  const canUpgrade = (currentTier: string, targetTier: string): boolean => {
+    return (TIER_RANK[targetTier] ?? 0) > (TIER_RANK[currentTier] ?? 0);
+  };
+
+  // 티어 표시명
+  const getTierLabel = (tier: string): string => {
+    const labels: Record<string, string> = {
+      normal: '일반', basic: 'BASIC', premium: '프리미엄',
+      superior: '슈페리어', vip: 'VIP', unique: '유니크',
+    };
+    return labels[tier] || tier;
+  };
+
+  // D-day 계산
+  const getDday = (expiresAt: string): string => {
+    const now = new Date();
+    const exp = new Date(expiresAt);
+    const diff = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    if (diff <= 0) return '만료됨';
+    return `D-${diff}`;
+  };
+
+  // 결제 처리
+  const handlePayment = async (tier: string, targetJobId?: string) => {
+    if (!user) {
+      alert('결제를 진행하려면 로그인이 필요합니다.');
+      window.location.href = '/agent/auth/login';
+      return;
+    }
+
+    const effectiveJobId = targetJobId || jobId;
     const productKey = `${selectedCategory}-${tier}`;
     const product = PAYMENT_PRODUCTS[productKey];
     if (!product) {
@@ -249,6 +348,7 @@ function PremiumPricingContent() {
     }
 
     setPayingTier(tier);
+    closeJobModal();
     document.body.style.overflow = 'hidden';
 
     try {
@@ -277,7 +377,6 @@ function PremiumPricingContent() {
       console.log('PortOne 응답:', response);
 
       if (response?.code) {
-        // 사용자가 결제를 취소한 경우
         if (response.code === 'FAILURE_TYPE_PG' || response.message?.includes('취소')) {
           setPayingTier(null);
           return;
@@ -294,15 +393,15 @@ function PremiumPricingContent() {
           'Content-Type': 'application/json',
           ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
-        body: JSON.stringify({ paymentId, productKey, jobId }),
+        body: JSON.stringify({ paymentId, productKey, jobId: effectiveJobId }),
       });
 
       const result = await verifyRes.json();
 
       if (result.success) {
         alert(`${product.name} 결제가 완료되었습니다!\n${product.duration}간 광고가 노출됩니다.`);
-        // 공고가 연결된 경우 → 공고 목록으로, 아니면 공고 작성으로
-        if (jobId) {
+        // 공고가 연결된 경우 → 공고 관리로, 아니면 공고 작성으로
+        if (effectiveJobId) {
           window.location.href = selectedCategory === 'agent' ? '/agent/employer' : '/sales/jobs';
         } else {
           window.location.href = selectedCategory === 'agent'
@@ -597,7 +696,7 @@ function PremiumPricingContent() {
 
                     {/* CTA 버튼 */}
                     <button
-                      onClick={() => handlePayment(plan.tier)}
+                      onClick={() => handleSelectJob(plan.tier)}
                       disabled={payingTier !== null}
                       className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm disabled:opacity-50 ${
                       plan.tier === 'normal'
@@ -708,6 +807,160 @@ function PremiumPricingContent() {
       </main>
 
       <Footer variant="simple" />
+
+      {/* 공고 선택 모달 */}
+      {showJobModal && selectedTier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* 오버레이 */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={closeJobModal} />
+
+          {/* 모달 */}
+          <div className="relative bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between p-5 border-b border-slate-700">
+              <h3 className="text-lg font-bold">광고를 적용할 공고 선택</h3>
+              <button onClick={closeJobModal} className="p-1 hover:bg-slate-700 rounded-lg transition-colors">
+                <X className="w-5 h-5 text-gray-400" />
+              </button>
+            </div>
+
+            {/* 본문 */}
+            <div className="flex-1 overflow-y-auto p-5">
+              {jobsLoading ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mb-3" />
+                  <p className="text-gray-400 text-sm">공고 목록을 불러오는 중...</p>
+                </div>
+              ) : myJobs.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <FileText className="w-12 h-12 text-gray-600 mb-3" />
+                  <p className="text-gray-400 mb-1">등록된 공고가 없습니다</p>
+                  <p className="text-gray-500 text-sm mb-6">공고를 먼저 작성한 후 프리미엄을 적용하세요.</p>
+                  <button
+                    onClick={() => {
+                      closeJobModal();
+                      window.location.href = selectedCategory === 'agent'
+                        ? `/agent/jobs/new?tier=${selectedTier}`
+                        : `/sales/jobs/new?tier=${selectedTier}`;
+                    }}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-sm hover:opacity-90 transition-all"
+                  >
+                    <Plus className="w-4 h-4" />
+                    새 공고 작성하기
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {myJobs.map((job) => {
+                    const payment = jobPayments[job.id];
+                    const currentTier = payment?.tier || job.tier || 'normal';
+                    const isExpired = payment?.expires_at ? new Date(payment.expires_at) < new Date() : true;
+                    const effectiveTier = isExpired ? 'normal' : currentTier;
+                    const upgradeable = canUpgrade(effectiveTier, selectedTier!);
+
+                    return (
+                      <label
+                        key={job.id}
+                        className={`flex items-start gap-3 p-4 rounded-xl border transition-all cursor-pointer ${
+                          !upgradeable
+                            ? 'border-slate-700/50 opacity-50 cursor-not-allowed'
+                            : selectedJobId === job.id
+                            ? 'border-cyan-400 bg-cyan-500/10'
+                            : 'border-slate-700 hover:border-slate-600 hover:bg-slate-700/30'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="selected-job"
+                          value={job.id}
+                          checked={selectedJobId === job.id}
+                          disabled={!upgradeable}
+                          onChange={() => setSelectedJobId(job.id)}
+                          className="mt-1 accent-cyan-400"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{job.title}</p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                              effectiveTier === 'normal'
+                                ? 'bg-slate-600 text-gray-300'
+                                : effectiveTier === 'basic'
+                                ? 'bg-amber-500/20 text-amber-400'
+                                : effectiveTier === 'premium'
+                                ? selectedCategory === 'agent'
+                                  ? 'bg-blue-500/20 text-blue-400'
+                                  : 'bg-cyan-500/20 text-cyan-400'
+                                : effectiveTier === 'superior'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : effectiveTier === 'vip'
+                                ? 'bg-amber-500/20 text-amber-300'
+                                : 'bg-purple-500/20 text-purple-400'
+                            }`}>
+                              {getTierLabel(effectiveTier)}
+                            </span>
+                            {payment && !isExpired ? (
+                              <span className="text-xs text-gray-500">{getDday(payment.expires_at)}</span>
+                            ) : (
+                              <span className="text-xs text-gray-600">
+                                {new Date(job.created_at).toLocaleDateString('ko-KR')}
+                              </span>
+                            )}
+                            {!upgradeable && (
+                              <span className="text-xs text-orange-400">이미 동급 이상</span>
+                            )}
+                          </div>
+                        </div>
+                      </label>
+                    );
+                  })}
+
+                  {/* 새 공고 작성 링크 */}
+                  <button
+                    onClick={() => {
+                      closeJobModal();
+                      window.location.href = selectedCategory === 'agent'
+                        ? `/agent/jobs/new?tier=${selectedTier}`
+                        : `/sales/jobs/new?tier=${selectedTier}`;
+                    }}
+                    className="flex items-center gap-2 w-full p-4 rounded-xl border border-dashed border-slate-600 text-gray-400 hover:text-white hover:border-slate-500 transition-all text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    새 공고 작성 후 적용
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 푸터 (공고가 있을 때만) */}
+            {!jobsLoading && myJobs.length > 0 && (
+              <div className="p-5 border-t border-slate-700">
+                {(() => {
+                  const product = PAYMENT_PRODUCTS[`${selectedCategory}-${selectedTier}`];
+                  return (
+                    <button
+                      onClick={() => {
+                        if (selectedJobId) {
+                          handlePayment(selectedTier!, selectedJobId);
+                        }
+                      }}
+                      disabled={!selectedJobId}
+                      className={`w-full py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 text-sm ${
+                        selectedJobId
+                          ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:opacity-90'
+                          : 'bg-slate-700 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {product
+                        ? `프리미엄 결제하기 ${product.price.toLocaleString()}원`
+                        : '결제하기'}
+                    </button>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

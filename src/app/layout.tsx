@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Black_Han_Sans, Gaegu } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import Providers from "@/components/providers/Providers";
@@ -14,6 +14,18 @@ const inter = Inter({
 
 const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+});
+
+const blackHanSans = Black_Han_Sans({
+  variable: "--font-black-han-sans",
+  weight: "400",
+  subsets: ["latin"],
+});
+
+const gaegu = Gaegu({
+  variable: "--font-gaegu",
+  weight: ["400", "700"],
   subsets: ["latin"],
 });
 
@@ -151,7 +163,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} ${blackHanSans.variable} ${gaegu.variable} antialiased`}
       >
         <Providers>
           <SecurityShield />
