@@ -146,9 +146,16 @@ export async function POST(request: NextRequest) {
           );
         } catch (error: any) {
           console.error('AI stream error:', error);
+
+          // Gemini API rate limit 에러 처리
+          const isRateLimited = error?.message === 'AI_RATE_LIMITED' || error?.status === 429;
+          const errorMessage = isRateLimited
+            ? '현재 AI 서비스 요청이 많습니다. 잠시 후(1~2분) 다시 시도해주세요.'
+            : 'AI 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.';
+
           const errorData = JSON.stringify({
             type: 'error',
-            content: 'AI 응답 생성 중 오류가 발생했습니다. 다시 시도해주세요.',
+            content: errorMessage,
           });
           controller.enqueue(encoder.encode(`data: ${errorData}\n\n`));
         } finally {

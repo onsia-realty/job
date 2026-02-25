@@ -1510,6 +1510,24 @@ export default function AgentJobsPage() {
         <span className="font-semibold text-sm">구인글 작성</span>
       </Link>
 
+      {/* 푸터 사업자 정보 */}
+      <footer className="border-t border-gray-200 bg-gray-50 mt-12">
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
+            <Link href="/terms" className="hover:text-emerald-600">이용약관</Link>
+            <Link href="/privacy" className="hover:text-emerald-600 font-medium text-gray-600">개인정보처리방침</Link>
+            <Link href="/refund" className="hover:text-emerald-600">환불정책</Link>
+            <a href="mailto:onsia777@gmail.com" className="hover:text-emerald-600">문의하기</a>
+          </div>
+          <div className="text-xs text-gray-400 space-y-1">
+            <p>온시아 공인중개사ㅣ대표이사: 연대겸ㅣ사업자등록번호: 846-23-01501</p>
+            <p>주소: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동)ㅣ대표전화: <a href="tel:1555-1245" className="text-gray-500 hover:text-emerald-600">1555-1245</a></p>
+            <p>업태: 정보통신업ㅣ종목: 소프트웨어 개발 및 공급업, 포털 및 인터넷 정보 매개 서비스업</p>
+            <p className="mt-2">© {new Date().getFullYear()} BOOIN Corp. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+
       <MobileNav variant="agent" />
     </div>
   );

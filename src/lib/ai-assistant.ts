@@ -113,17 +113,27 @@ export async function streamChatResponse(
     parts: [{ text: msg.content }],
   }));
 
-  const response = await ai.models.generateContentStream({
-    model: 'gemini-2.5-flash',
-    contents,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature: 0.7,
-      maxOutputTokens: 4096,
-    },
-  });
+  try {
+    const response = await ai.models.generateContentStream({
+      model: 'gemini-2.5-flash',
+      contents,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0.7,
+        maxOutputTokens: 4096,
+      },
+    });
 
-  return response;
+    return response;
+  } catch (error: any) {
+    // Gemini API rate limit (429) 처리
+    if (error?.status === 429 || error?.message?.includes('429') || error?.message?.includes('Too Many Requests') || error?.message?.includes('RESOURCE_EXHAUSTED')) {
+      const retryError = new Error('AI_RATE_LIMITED');
+      (retryError as any).status = 429;
+      throw retryError;
+    }
+    throw error;
+  }
 }
 
 // Rate limit: Supabase DB 기반, 한국시간(KST) 자정 리셋

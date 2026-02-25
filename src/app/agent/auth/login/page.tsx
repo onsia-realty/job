@@ -147,6 +147,12 @@ export default function LoginPage() {
       return;
     }
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('올바른 이메일 형식을 입력해주세요.');
+      return;
+    }
+
     setIsLoading(true);
 
     try {

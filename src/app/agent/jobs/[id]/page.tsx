@@ -50,56 +50,7 @@ function formatDate(dateStr: string) {
   return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}(${days[d.getDay()]})`;
 }
 
-// 더미 데이터
-const MOCK_JOB: AgentJobListing = {
-  id: '1',
-  title: '강남 아파트 전문 공인중개사 모집 (경력우대)',
-  description: `## 회사 소개\n강남부동산은 20년 전통의 강남권 아파트 전문 중개사무소입니다.\n\n## 담당 업무\n- 아파트 매매/전세/월세 중개\n- 고객 상담 및 매물 안내\n- 계약서 작성 및 잔금 업무\n- 매물 발굴 및 관리\n\n## 자격 요건\n- 공인중개사 자격증 소지자\n- 부동산 중개 경력 1년 이상 (우대)\n- 강남권 지역 거주자 우대\n\n## 우대 사항\n- 아파트 전문 중개 경험자\n- 자차 소유자\n- 장기 근무 가능자`,
-  htmlContent: `<div style="padding:10px;">
-  <img src="https://i.imgur.com/my5E6G7.jpeg" style="width:100%; max-width:800px; height:auto; display:block; margin:0 auto; border-radius:8px;">
-</div>
-<div style="padding:20px; max-width:800px; margin:0 auto;">
-  <h2 style="font-size:22px; font-weight:bold; color:#1a1a1a; margin-bottom:16px; border-bottom:2px solid #2563eb; padding-bottom:8px;">🏢 회사 소개</h2>
-  <p style="font-size:15px; line-height:1.8; color:#333;">강남부동산은 <b>20년 전통</b>의 강남권 아파트 전문 중개사무소입니다. 강남, 서초, 송파 지역의 아파트 매매/전세를 전문으로 하며, 연간 거래건수 200건 이상의 실적을 보유하고 있습니다.</p>
-  <br/>
-  <h2 style="font-size:22px; font-weight:bold; color:#1a1a1a; margin-bottom:16px; border-bottom:2px solid #2563eb; padding-bottom:8px;">📋 담당 업무</h2>
-  <ul style="font-size:15px; line-height:2; color:#333; padding-left:20px;">
-    <li>아파트 매매/전세/월세 중개</li>
-    <li>고객 상담 및 매물 안내</li>
-    <li>계약서 작성 및 잔금 업무</li>
-    <li>매물 발굴 및 관리</li>
-  </ul>
-  <br/>
-  <h2 style="font-size:22px; font-weight:bold; color:#1a1a1a; margin-bottom:16px; border-bottom:2px solid #2563eb; padding-bottom:8px;">✅ 자격 요건</h2>
-  <ul style="font-size:15px; line-height:2; color:#333; padding-left:20px;">
-    <li>공인중개사 자격증 소지자</li>
-    <li>부동산 중개 경력 1년 이상 (우대)</li>
-    <li>강남권 지역 거주자 우대</li>
-  </ul>
-  <br/>
-  <h2 style="font-size:22px; font-weight:bold; color:#1a1a1a; margin-bottom:16px; border-bottom:2px solid #059669; padding-bottom:8px;">🎁 우대 사항</h2>
-  <ul style="font-size:15px; line-height:2; color:#333; padding-left:20px;">
-    <li>아파트 전문 중개 경험자</li>
-    <li>자차 소유자</li>
-    <li>장기 근무 가능자</li>
-  </ul>
-</div>`,
-  type: 'apartment', tier: 'premium', badges: ['hot', 'urgent'],
-  salary: { type: 'mixed', amount: '월 300만원 + 인센티브', min: 300, max: 800 },
-  experience: '1년 이상', experienceLevel: '1year',
-  company: '강남부동산공인중개사사무소', region: '서울 강남구',
-  address: '서울특별시 강남구 테헤란로 123', detailAddress: '5층 501호',
-  views: 1523, applicants: 24, createdAt: '2025-01-20',
-  deadline: '2025-01-31', isAlwaysRecruiting: false,
-  benefits: [], workHours: '09:00 ~ 18:00 (협의가능)', workDays: '주 5일 (토요일 협의)',
-  contactName: '김대표', contactPhone: '02-1234-5678', isBookmarked: false,
-};
-
-const RELATED_JOBS: AgentJobListing[] = [
-  { id: '2', title: '분당 오피스텔 전문 중개사 급구', description: '', type: 'office', tier: 'normal', badges: ['new'], salary: { type: 'commission', amount: '수수료 50%' }, experience: '경력무관', company: '분당공인중개사', region: '경기 성남시', views: 856, createdAt: '2025-01-19', deadline: '2025-02-15', benefits: [] },
-  { id: '3', title: '송파구 빌라 전문 중개사 모집', description: '', type: 'villa', tier: 'normal', badges: ['hot'], salary: { type: 'monthly', amount: '월 250만원' }, experience: '6개월 이상', company: '송파부동산', region: '서울 송파구', views: 623, applicants: 12, createdAt: '2025-01-18', isAlwaysRecruiting: true, benefits: [] },
-  { id: '4', title: '강동구 원룸/투룸 전문 중개사', description: '', type: 'villa', tier: 'premium', badges: ['new', 'hot'], salary: { type: 'mixed', amount: '월 200만원 + α' }, experience: '경력무관', company: '강동부동산', region: '서울 강동구', views: 412, createdAt: '2025-01-21', deadline: '2025-02-28', benefits: [] },
-];
+// Mock 데이터 제거 — DB 데이터만 사용
 
 const SALARY_LABELS: Record<string, string> = { monthly: '월급', commission: '수수료', mixed: '기본급+인센티브' };
 const BADGE_CONFIG: Record<string, { label: string; icon: React.ElementType; color: string }> = {
@@ -135,13 +86,16 @@ export default function JobDetailPage() {
   // 기업 프로필
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [jobUserId, setJobUserId] = useState<string | null>(null);
+  // 추천공고 (DB에서 가져오기)
+  const [relatedJobs, setRelatedJobs] = useState<AgentJobListing[]>([]);
 
   useEffect(() => {
     const fetchJob = async () => {
       setIsLoading(true);
-      const { data: rows, error } = await supabase.from('jobs').select('*').eq('id', params.id);
-      const data = rows?.[0] ?? null;
-      if (data && !error) {
+      try {
+      const res = await fetch(`/api/jobs/${params.id}`);
+      const data = res.ok ? await res.json() : null;
+      if (data && !data.error) {
         const dbJob: AgentJobListing = {
           id: data.id, title: data.title, description: data.description || '',
           type: (data.type || 'apartment') as AgentJobType,
@@ -172,7 +126,10 @@ export default function JobDetailPage() {
         // 조회수 증가 (fire-and-forget)
         fetch(`/api/jobs/${params.id}/view`, { method: 'POST' }).catch(() => {});
       } else {
-        setJob(MOCK_JOB);
+        setJob(null);
+      }
+      } catch {
+        setJob(null);
       }
       const bookmarks = JSON.parse(localStorage.getItem('agent_bookmarks') || '[]');
       setIsBookmarked(bookmarks.some((b: { jobId: string }) => b.jobId === params.id));
@@ -189,6 +146,41 @@ export default function JobDetailPage() {
       .then(data => { if (data.lat && data.lng) setMapCoord({ lat: data.lat, lng: data.lng }); })
       .catch(() => {});
   }, [job?.address]);
+
+  // 추천공고 DB에서 가져오기
+  useEffect(() => {
+    if (!job) return;
+    const fetchRelated = async () => {
+      try {
+        const { data } = await supabase
+          .from('jobs')
+          .select('*')
+          .eq('category', 'agent')
+          .neq('id', job.id)
+          .order('created_at', { ascending: false })
+          .limit(4);
+        if (data) {
+          setRelatedJobs(data.map((d: any) => ({
+            id: d.id, title: d.title, description: d.description || '',
+            type: (d.type || 'apartment') as AgentJobType,
+            tier: (d.tier || 'normal') as AgentJobListing['tier'],
+            badges: d.badges || [],
+            salary: { type: (d.salary_type || 'monthly') as AgentSalaryType, amount: d.salary_amount || undefined },
+            experience: AGENT_EXPERIENCE_LABELS[d.experience as AgentExperience] || d.experience || '경력무관',
+            experienceLevel: (d.experience || 'none') as AgentExperience,
+            company: d.company || '', region: d.region || '',
+            thumbnail: d.thumbnail || undefined,
+            views: d.views || 0,
+            createdAt: new Date(d.created_at).toLocaleDateString('ko-KR', {
+              year: 'numeric', month: '2-digit', day: '2-digit',
+            }).replace(/\. /g, '.').replace(/\.$/, ''),
+            deadline: d.deadline || undefined, benefits: d.benefits || [],
+          })));
+        }
+      } catch {}
+    };
+    fetchRelated();
+  }, [job]);
 
   // 기업 프로필 불러오기
   useEffect(() => {
@@ -839,7 +831,13 @@ export default function JobDetailPage() {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {RELATED_JOBS.map((rj) => <AgentJobCard key={rj.id} job={rj} variant="card" />)}
+            {relatedJobs.length > 0 ? (
+              relatedJobs.map((rj) => <AgentJobCard key={rj.id} job={rj} variant="card" />)
+            ) : (
+              <div className="col-span-full text-center py-8 text-gray-400">
+                추천 공고가 없습니다
+              </div>
+            )}
           </div>
         </section>
       </main>

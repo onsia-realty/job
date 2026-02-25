@@ -11,23 +11,47 @@ async function verifyUser(req: NextRequest) {
   return user;
 }
 
-// GET /api/jobs/[id] - 내 공고 가져오기 (수정 페이지용)
+// GET /api/jobs/[id] - 공고 조회
+// 인증 있으면: 내 공고만 (수정 페이지용, ?mine=true)
+// 인증 없으면: 공개 공고 상세 조회
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const user = await verifyUser(req);
-  if (!user) {
-    return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+  const { id } = await params;
+  const isMine = req.nextUrl.searchParams.get('mine') === 'true';
+
+  if (isMine) {
+    // 수정 페이지용: 인증 + 소유권 확인
+    const user = await verifyUser(req);
+    if (!user) {
+      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('jobs')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Job fetch error:', error);
+      return NextResponse.json({ error: '공고를 불러올 수 없습니다' }, { status: 500 });
+    }
+
+    if (!data) {
+      return NextResponse.json({ error: '공고를 찾을 수 없거나 권한이 없습니다' }, { status: 404 });
+    }
+
+    return NextResponse.json(data);
   }
 
-  const { id } = await params;
-
+  // 공개 조회: 인증 불필요 (공고 상세 페이지용)
   const { data, error } = await supabaseAdmin
     .from('jobs')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
     .maybeSingle();
 
   if (error) {
@@ -36,7 +60,29 @@ export async function GET(
   }
 
   if (!data) {
-    return NextResponse.json({ error: '공고를 찾을 수 없거나 권한이 없습니다' }, { status: 404 });
+    return NextResponse.json({ error: '공고를 찾을 수 없습니다' }, { status: 404 });
+  }
+
+  // 만료 체크: 비활성화된 공고 또는 만료된 공고
+  if (!data.is_active) {
+    return NextResponse.json({ error: '마감된 공고입니다', expired: true }, { status: 410 });
+  }
+
+  // 무료 공고 24시간 만료 체크
+  if ((data.tier === 'normal' || !data.tier)) {
+    const createdAt = new Date(data.created_at);
+    const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+    if (new Date() > expiresAt) {
+      return NextResponse.json({ error: '마감된 공고입니다 (무료 공고는 24시간 노출)', expired: true }, { status: 410 });
+    }
+  }
+
+  // 유료 공고 deadline 만료 체크
+  if (data.deadline && data.tier && data.tier !== 'normal') {
+    const deadline = new Date(data.deadline + 'T23:59:59+09:00');
+    if (new Date() > deadline) {
+      return NextResponse.json({ error: '마감된 공고입니다', expired: true }, { status: 410 });
+    }
   }
 
   return NextResponse.json(data);

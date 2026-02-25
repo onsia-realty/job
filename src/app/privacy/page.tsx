@@ -47,7 +47,7 @@ export default function PrivacyPage() {
         <div className="prose prose-gray max-w-none text-[15px] leading-relaxed">
 
           <p className="text-gray-600 mb-6">
-            온시아 주식회사(이하 &quot;회사&quot;)는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립·공개합니다.
+            온시아 공인중개사(이하 &quot;회사&quot;)는 「개인정보 보호법」 제30조에 따라 정보주체의 개인정보를 보호하고, 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립·공개합니다.
           </p>
 
           {/* 1. 처리 목적 */}
@@ -343,7 +343,7 @@ export default function PrivacyPage() {
 
         {/* 사업자 정보 */}
         <div className="mt-16 pt-8 border-t border-gray-200 text-xs text-gray-400 space-y-1">
-          <p><strong className="text-gray-500">온시아 주식회사</strong> | 대표이사: 연대겸 | 사업자등록번호: 243-88-01749</p>
+          <p><strong className="text-gray-500">온시아 공인중개사</strong> | 대표이사: 연대겸 | 사업자등록번호: 846-23-01501</p>
           <p>주소: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동)</p>
           <p>고객센터: onsia777@gmail.com | 업태: 정보통신업 | 종목: 소프트웨어 개발 및 공급업</p>
         </div>

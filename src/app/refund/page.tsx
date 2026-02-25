@@ -166,9 +166,9 @@ export default function RefundPage() {
               <p><strong className="text-blue-900">이메일</strong>: onsia777@gmail.com</p>
               <p><strong className="text-blue-900">대표전화</strong>: 1555-1245</p>
               <p><strong className="text-blue-900">운영시간</strong>: 평일 09:00 ~ 18:00 (주말·공휴일 휴무)</p>
-              <p><strong className="text-blue-900">회사명</strong>: 온시아 주식회사</p>
+              <p><strong className="text-blue-900">회사명</strong>: 온시아 공인중개사</p>
               <p><strong className="text-blue-900">대표</strong>: 연대겸</p>
-              <p><strong className="text-blue-900">사업자등록번호</strong>: 243-88-01749</p>
+              <p><strong className="text-blue-900">사업자등록번호</strong>: 846-23-01501</p>
               <p><strong className="text-blue-900">주소</strong>: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동)</p>
             </div>
           </div>
@@ -176,7 +176,7 @@ export default function RefundPage() {
 
         {/* 사업자 정보 */}
         <div className="mt-16 pt-8 border-t border-gray-200 text-xs text-gray-400 space-y-1">
-          <p><strong className="text-gray-500">온시아 주식회사</strong> | 대표이사: 연대겸 | 사업자등록번호: 243-88-01749</p>
+          <p><strong className="text-gray-500">온시아 공인중개사</strong> | 대표이사: 연대겸 | 사업자등록번호: 846-23-01501</p>
           <p>주소: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동)</p>
           <p>고객센터: onsia777@gmail.com | 업태: 정보통신업 | 종목: 소프트웨어 개발 및 공급업</p>
         </div>

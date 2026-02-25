@@ -8,15 +8,38 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// 고정 캐릭터 설정 (동물 캐릭터)
-const CHARACTERS = {
-  cat: { name: '고양이 기자', role: '부동산 뉴스 진행자', desc: 'white cat with round glasses and a microphone, wearing a press vest' },
-  dog: { name: '영끌남', role: '실수요자/일반 시민', desc: 'beige puppy holding loan documents, wearing casual clothes, worried expression' },
-  fox: { name: '여우 관료', role: '정부 관료/정책 발표자', desc: 'orange fox in a black business suit with red tie, stern expression' },
-  horse: { name: '말 소장', role: '부동산 소장/중개사', desc: 'brown horse wearing a dress shirt and tie, friendly professional look' },
-  squirrel: { name: '다람쥐 아내', role: '잔소리 마누라/현실주의', desc: 'brown squirrel in a yellow hoodie holding house keys, nagging expression' },
-  owl: { name: '올빼미 교수', role: '전문가/분석가', desc: 'owl with round glasses holding a clipboard, scholarly and calm' },
+// 3종 테마별 캐릭터 풀
+const THEME_CHARACTERS = {
+  animal: {
+    cat: { name: '고양이 기자', role: '진행자/기자', desc: 'white cat with round glasses and a microphone, wearing a press vest' },
+    dog: { name: '영끌남', role: '실수요자(영끌)', desc: 'beige puppy holding loan documents, wearing casual clothes, worried expression' },
+    fox: { name: '여우 관료', role: '정책 발표자', desc: 'orange fox in a black business suit with red tie, stern expression' },
+    horse: { name: '말 소장', role: '부동산 소장', desc: 'brown horse wearing a dress shirt and tie, friendly professional look' },
+    squirrel: { name: '다람쥐 아내', role: '현실주의/아내', desc: 'brown squirrel in a yellow hoodie holding house keys, nagging expression' },
+    owl: { name: '올빼미 교수', role: '전문가/분석가', desc: 'owl with round glasses holding a clipboard, scholarly and calm' },
+  },
+  human: {
+    reporter: { name: '앵커', role: '진행자/기자', desc: 'neat 30s Korean male news anchor in a dark suit holding a microphone, trustworthy expression' },
+    buyer: { name: '영끌남', role: '실수요자(영끌)', desc: 'tired 30s Korean man in hoodie with deep dark circles under eyes, holding mortgage papers' },
+    gov: { name: '고위 관료', role: '정책 발표자', desc: 'silver-haired 50s Korean government official in suit with horn-rimmed glasses, stern and strict' },
+    broker: { name: '부동산 소장', role: '부동산 소장', desc: '50s Korean man/woman in hiking vest, friendly warm smile, neighborhood real estate agent look' },
+    spouse: { name: '현실주의 아내', role: '현실주의/아내', desc: '30s Korean woman with arms crossed sighing, realistic brake role stopping the husband' },
+    expert: { name: '교수', role: '전문가/교수', desc: 'sharp Korean scholar in neat suit holding tablet, calm and analytical eyes' },
+  },
+  joseon: {
+    storyteller: { name: '전기수', role: '진행자(전기수)', desc: 'Joseon era storyteller wearing gat hat holding a folding fan, charismatic speaker at a market' },
+    peasant: { name: '평민', role: '실수요자(평민)', desc: 'sweating Joseon commoner in straw sandals dreaming of owning a thatched-roof house' },
+    minister: { name: '호조판서', role: '정책(호조판서)', desc: 'Joseon minister in elaborate official robes stroking his beard, pompous expression' },
+    middleman: { name: '거간꾼', role: '부동산 소장(거간꾼)', desc: 'sly Joseon middleman merchant holding a pouch of brass coins, cunning smile' },
+    wife: { name: '아낙네', role: '현실주의(아낙네)', desc: 'fierce Joseon housewife holding a ladle ready to smack her dreaming husband on the back' },
+    scholar: { name: '실학자', role: '전문가(실학자)', desc: 'strict Joseon scholar with thick old books and magnifying glass, worldly-wise expression' },
+  },
 };
+
+// 하위 호환용 (기존 코드 참조)
+const CHARACTERS = THEME_CHARACTERS.animal;
+
+type ThemeType = 'animal' | 'human' | 'joseon';
 
 // ── 1단계: 뉴스 분석 → 해설 기사 생성 ──
 const ARTICLE_PROMPT = `당신은 "부동산인 온비스" AI 해설가입니다. 부동산 전문 해설 기사를 작성합니다.
@@ -43,19 +66,33 @@ const ARTICLE_PROMPT = `당신은 "부동산인 온비스" AI 해설가입니다
 - 원문 복사 금지, 독자적 시각으로 재해석
 - 800~1200자 분량`;
 
-// ── 2단계: 해설 기사 → 웹툰 스크립트 (6~8컷) ──
-const TOON_PROMPT = `당신은 부동산 풍자 웹툰 작가입니다.
+// ── 2단계: 테마별 웹툰 스크립트 프롬프트 생성 ──
+function buildToonPrompt(theme: ThemeType): string {
+  const chars = THEME_CHARACTERS[theme];
+  const charList = Object.values(chars)
+    .map(c => `- "${c.name}" — ${c.role}`)
+    .join('\n');
+
+  const themeStyle: Record<ThemeType, string> = {
+    animal: '동물 캐릭터 — 부드럽고 귀여운 풍자',
+    human: '현대인 캐릭터 — 현실적이고 드라마틱한 시트콤',
+    joseon: '조선시대 캐릭터 — 해학적 사극 풍자 (현대 부동산 용어를 조선시대식으로 비틀 것: 주택담보대출→고리대금, 아파트 청약→한양 기와집 추첨, 금리 인상→소작료 폭등)',
+  };
+
+  const bgStyle: Record<ThemeType, string> = {
+    animal: '한국 도시 느낌 (아파트, 건설현장, 부동산 사무실 등)',
+    human: '현실적인 한국 도시 배경 (아파트 단지, 은행, 부동산 사무실, 재개발 현장 등)',
+    joseon: '조선시대 배경 (한양 저잣거리, 관아, 기와집 마을, 논밭 등)',
+  };
+
+  return `당신은 부동산 풍자 웹툰 작가입니다.
+테마: ${themeStyle[theme]}
 
 해설 기사를 바탕으로 웹툰 시나리오를 JSON 배열로 생성하세요.
-**6컷~8컷**으로 제작하세요. 최소 6컷 이상이어야 합니다.
+**반드시 6컷 또는 8컷**으로 제작하세요. 짝수만 허용됩니다 (7컷 금지).
 
-## 사용 가능 캐릭터 (동물 캐릭터)
-- "고양이 기자" — 부동산 뉴스 진행자 (안경 쓴 하얀 고양이 + 마이크)
-- "영끌남" — 실수요자/일반 시민 (서류 든 베이지 강아지)
-- "여우 관료" — 정부 관료/정책 발표자 (검은 정장 오렌지 여우)
-- "말 소장" — 부동산 소장/중개사 (셔츠+넥타이 갈색 말)
-- "다람쥐 아내" — 잔소리 마누라/현실주의 (노란 후드 다람쥐 + 열쇠)
-- "올빼미 교수" — 전문가/분석가 (안경+클립보드 올빼미)
+## 사용 가능 캐릭터
+${charList}
 
 ## 출력 형식 (반드시 순수 JSON 배열만 출력)
 [
@@ -66,8 +103,7 @@ const TOON_PROMPT = `당신은 부동산 풍자 웹툰 작가입니다.
     "scene": "장면 상세 묘사 (배경, 소품, 분위기 포함)",
     "mood": "happy|angry|sad|shocked|smug|neutral",
     "props": ["확성기", "서류", "간판 등 소품 목록"],
-    "text_overlay": "패널 위에 표시할 텍스트 (없으면 null)",
-    "sfx": "효과음 텍스트 (없으면 null)"
+    "text_overlay": "패널 위에 표시할 텍스트 (없으면 null)"
   }
 ]
 
@@ -78,22 +114,35 @@ const TOON_PROMPT = `당신은 부동산 풍자 웹툰 작가입니다.
 - 이모지 활용 가능
 - 캐릭터 2~4명을 사용 (한 패널에 1~2명)
 - 장면 묘사를 상세하게 (이미지 생성에 사용됨)
-- 시간 경과 표현 가능 (예: "3년 후", "5년 후")
-- 배경에 한국 도시 느낌 반영 (아파트, 건설현장, 부동산 사무실 등)`;
+- 배경: ${bgStyle[theme]}
+- **반드시 6컷 또는 8컷만 생성 (홀수 금지)**`;
+}
 
-// ── 3단계: 이미지 생성 프롬프트 구성 (묘사형 Narrative 방식) ──
-function buildImagePrompt(title: string, panels: ToonPanel[]): string {
+// ── 3단계: 이미지 생성 프롬프트 구성 (테마별) ──
+function buildImagePrompt(title: string, panels: ToonPanel[], theme: ThemeType = 'animal'): string {
   const panelCount = panels.length;
   const cols = 2;
   const rows = Math.ceil(panelCount / cols);
+  const chars = THEME_CHARACTERS[theme];
 
-  // 각 패널: 장면 + 캐릭터 + 대사를 하나의 서술로 결합
+  const styleMap: Record<ThemeType, string> = {
+    animal: 'cute chibi animal characters, clean thick outlines, soft pastel colors, Korean webtoon style, warm color palette',
+    human: 'semi-realistic Korean webtoon characters, clean art style, expressive faces, modern Korean urban setting, sitcom-like comedic tone',
+    joseon: 'traditional Korean sageuk art style with comedic chibi proportions, Joseon dynasty clothing and architecture, ink-wash inspired coloring with vibrant accents',
+  };
+
+  const bgMap: Record<ThemeType, string> = {
+    animal: 'Urban Korean city backgrounds (apartments, construction sites, real estate offices)',
+    human: 'Realistic modern Korean city backgrounds (apartment complexes, banks, redevelopment areas)',
+    joseon: 'Joseon dynasty backgrounds (Hanyang marketplace, government offices, tiled-roof villages, rice paddies)',
+  };
+
   const panelDescriptions = panels.map((p, i) => {
     const charParts = p.characters.map(name => {
-      const key = Object.keys(CHARACTERS).find(k =>
-        CHARACTERS[k as keyof typeof CHARACTERS].name === name
-      ) as keyof typeof CHARACTERS | undefined;
-      const charInfo = key ? CHARACTERS[key] : null;
+      const key = Object.keys(chars).find(k =>
+        chars[k as keyof typeof chars].name === name
+      ) as string | undefined;
+      const charInfo = key ? chars[key as keyof typeof chars] : null;
       const desc = charInfo?.desc || name;
       const dialogue = p.dialogue[name];
       return dialogue
@@ -102,21 +151,22 @@ function buildImagePrompt(title: string, panels: ToonPanel[]): string {
     }).join(' and ');
 
     const propsStr = p.props?.length ? `, props: ${p.props.join(', ')}` : '';
-    const sfxStr = p.sfx ? `, bold SFX text: "${p.sfx}"` : '';
     const overlayStr = p.text_overlay ? `, text overlay: "${p.text_overlay}"` : '';
 
-    return `Panel ${i + 1}: ${charParts}. Scene: ${p.scene}${propsStr}${sfxStr}${overlayStr}`;
+    return `Panel ${i + 1}: ${charParts}. Scene: ${p.scene}${propsStr}${overlayStr}`;
   }).join('\n');
 
   return `A ${panelCount}-panel Korean webtoon BOOIN NEWS TOON comic strip in a ${cols}x${rows} grid layout.
 
 Title banner at top: "BOOIN NEWS TOON — ${title}" in bold Korean text, dark navy background with white text.
 
-Style: cute chibi animal characters, clean thick outlines, soft pastel colors, Korean webtoon style, professional news infographic feel, high resolution, consistent character design across all panels, warm color palette. Each panel has a distinct pastel background color (light yellow, light blue, light pink, light green, light purple, light orange). Korean text in clean speech bubbles with tails. Urban Korean city backgrounds. Panel numbers in small circles at top-left.
+Style: ${styleMap[theme]}, professional news infographic feel, high resolution, consistent character design across all panels. Each panel has a distinct pastel background color. Korean text in clean speech bubbles with tails. ${bgMap[theme]}. Panel numbers in small circles at top-left.
+
+IMPORTANT BRANDING: Every panel must have a small subtle "BOOIN" text watermark in the bottom-right corner. Semi-transparent (30-40% opacity), light gray, small font — visible but not distracting.
 
 ${panelDescriptions}
 
-High-fidelity Korean text rendering. All speech bubbles must contain Korean text clearly readable with bold weight. Characters should be expressive with exaggerated emotions. Include relevant real estate themed background elements. Professional webtoon quality, high detail. Vertical layout optimized for mobile viewing.`;
+High-fidelity Korean text rendering. All speech bubbles must contain Korean text clearly readable with bold weight. Characters should be expressive with exaggerated emotions. Professional webtoon quality, high detail. Each panel has "BOOIN" watermark in bottom-right corner.`;
 }
 
 export interface ToonPanel {
@@ -127,7 +177,6 @@ export interface ToonPanel {
   mood: string;
   props: string[] | null;
   text_overlay: string | null;
-  sfx: string | null;
 }
 
 export interface ToonArticle {
@@ -153,9 +202,9 @@ function extractJSON(text: string): string {
 }
 
 // ── 이미지 생성 (Gemini) ──
-async function generateToonImage(title: string, panels: ToonPanel[]): Promise<string | null> {
+async function generateToonImage(title: string, panels: ToonPanel[], theme: ThemeType = 'animal'): Promise<string | null> {
   try {
-    const prompt = buildImagePrompt(title, panels);
+    const prompt = buildImagePrompt(title, panels, theme);
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-image-preview',
@@ -212,7 +261,8 @@ async function generateToonImage(title: string, panels: ToonPanel[]): Promise<st
 export async function generateToonFromNews(
   newsTitle: string,
   newsContent?: string,
-  newsUrl?: string
+  newsUrl?: string,
+  theme: ThemeType = 'animal'
 ): Promise<GeneratedToon> {
   const newsInfo = [
     `제목: ${newsTitle}`,
@@ -238,12 +288,13 @@ export async function generateToonFromNews(
     throw new Error(`해설 기사 생성 실패: JSON 파싱 오류 - ${(e as Error).message}`);
   }
 
-  // 2단계: 웹툰 스크립트 생성 (4~8컷 유동)
+  // 2단계: 웹툰 스크립트 생성 (테마별, 짝수 컷)
   const toonInput = `제목: ${article.title}\n부제: ${article.subtitle}\n\n해설 기사:\n${article.article_html}`;
+  const toonPrompt = buildToonPrompt(theme);
 
   const toonResponse = await ai.models.generateContent({
     model: 'gemini-2.5-flash',
-    contents: [{ role: 'user', parts: [{ text: `${TOON_PROMPT}\n\n---\n\n${toonInput}` }] }],
+    contents: [{ role: 'user', parts: [{ text: `${toonPrompt}\n\n---\n\n${toonInput}` }] }],
     config: {
       temperature: 0.9,
       maxOutputTokens: 4096,
@@ -258,13 +309,17 @@ export async function generateToonFromNews(
     throw new Error(`웹툰 스크립트 생성 실패: JSON 파싱 오류 - ${(e as Error).message}`);
   }
 
-  // 패널 유효성 검사: 6~8컷
+  // 패널 유효성 검사: 짝수만 (6 또는 8컷)
   if (!Array.isArray(panels) || panels.length < 6 || panels.length > 8) {
-    throw new Error(`웹툰 패널 수 오류: ${panels?.length ?? 0}컷 (6~8컷 필요)`);
+    throw new Error(`웹툰 패널 수 오류: ${panels?.length ?? 0}컷 (6 또는 8컷 필요)`);
+  }
+  // 홀수면 마지막 패널 제거해서 짝수로 맞춤 (2xN 그리드 빈칸 방지)
+  if (panels.length % 2 !== 0) {
+    panels = panels.slice(0, panels.length - 1);
   }
 
   // 3단계: 웹툰 이미지 생성
-  const toon_image_url = await generateToonImage(article.title, panels);
+  const toon_image_url = await generateToonImage(article.title, panels, theme);
 
   return { article, panels, toon_image_url };
 }
@@ -279,4 +334,5 @@ export function generateSlug(episodeNumber: number, title: string): string {
   return `ep${String(episodeNumber).padStart(3, '0')}-${sanitized}`;
 }
 
-export { CHARACTERS };
+export { CHARACTERS, THEME_CHARACTERS };
+export type { ThemeType };

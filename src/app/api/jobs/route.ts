@@ -20,12 +20,18 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
 
+  // 무료(normal) 공고: deadline을 24시간 후로 자동 설정
+  const jobData = { ...body, user_id: user.id };
+  if (!jobData.tier || jobData.tier === 'normal') {
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    // KST 기준 날짜
+    const kstExpires = new Date(expires.getTime() + 9 * 60 * 60 * 1000);
+    jobData.deadline = kstExpires.toISOString().slice(0, 10);
+  }
+
   const { data, error } = await supabaseAdmin
     .from('jobs')
-    .insert({
-      ...body,
-      user_id: user.id,
-    })
+    .insert(jobData)
     .select()
     .maybeSingle();
 

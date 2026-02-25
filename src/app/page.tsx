@@ -6,7 +6,7 @@ import Image from 'next/image';
 import {
   Building2, HardHat, Newspaper,
   ArrowRight, ChevronLeft, ChevronRight,
-  Sparkles, TrendingUp, User
+  Sparkles, TrendingUp, User, Eye
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/shared/Footer';
@@ -22,6 +22,22 @@ interface NewsItem {
   thumbnail: string;
 }
 
+// 웹툰 에피소드 타입 정의
+interface ToonEpisode {
+  id: string;
+  episode_number: number;
+  title: string;
+  subtitle: string;
+  slug: string;
+  category: string;
+  article_summary: string;
+  thumbnail_url: string | null;
+  toon_image_url: string | null;
+  view_count: number;
+  published_at: string | null;
+  created_at: string;
+}
+
 // 광고 배너 데이터
 const adBanners = [
   {
@@ -30,6 +46,7 @@ const adBanners = [
     title: 'AI 부동산인 실무비서',
     description: '중개실무, AI에게 물어보세요',
     gradient: 'from-cyan-600 to-emerald-600',
+    image: '/ai-assistant-banner.png',
     link: '/event/ai-assistant',
   },
   {
@@ -78,6 +95,21 @@ export default function LandingPage() {
   const { user, isLoading: authLoading } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
+  const [toonEpisodes, setToonEpisodes] = useState<ToonEpisode[]>([]);
+
+  // 웹툰 에피소드 가져오기
+  useEffect(() => {
+    async function fetchToon() {
+      try {
+        const res = await fetch('/api/toon?limit=2');
+        const data = await res.json();
+        if (data.episodes) setToonEpisodes(data.episodes);
+      } catch (error) {
+        console.error('웹툰 로딩 실패:', error);
+      }
+    }
+    fetchToon();
+  }, []);
 
   // 자동 슬라이드
   useEffect(() => {
@@ -87,13 +119,20 @@ export default function LandingPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // RSS 뉴스 가져오기
+  // RSS 뉴스 가져오기 (sessionStorage 캐싱으로 뒤로가기 깜빡임 방지)
   useEffect(() => {
+    const cached = sessionStorage.getItem('booin_news_cache');
+    if (cached) {
+      try {
+        setNewsItems(JSON.parse(cached));
+      } catch {}
+    }
     async function fetchNews() {
       try {
         const res = await fetch('/api/news');
         const data = await res.json();
         setNewsItems(data.news);
+        sessionStorage.setItem('booin_news_cache', JSON.stringify(data.news));
       } catch (error) {
         console.error('뉴스 로딩 실패:', error);
       }
@@ -128,12 +167,12 @@ export default function LandingPage() {
                 <Link href="/event/ai-assistant" className="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
                   AI 실무비서
                 </Link>
-                <Link href="/news" className="text-gray-300 hover:text-white transition-colors">
-                  뉴스
+                <Link href="/toon" className="text-gray-300 hover:text-white transition-colors">
+                  BOOIN AI 웹툰
                 </Link>
-                <Link href="/community" className="text-gray-300 hover:text-white transition-colors">
+                <button onClick={() => alert('커뮤니티 기능은 준비 중입니다.')} className="text-gray-300 hover:text-white transition-colors">
                   커뮤니티
-                </Link>
+                </button>
               </nav>
             </div>
             <div className="flex items-center gap-4">
@@ -466,44 +505,94 @@ export default function LandingPage() {
         {/* 부동산 뉴스 + 광고 배너 */}
         <section className="mb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* 부동산 뉴스 (2/3) */}
-            <div className="md:col-span-2 bg-[#1C1D1F] rounded-2xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Newspaper className="w-5 h-5 text-blue-400" />
-                <h3 className="text-lg font-medium">부동산 뉴스</h3>
-              </div>
-              <div className="space-y-3">
-                {newsItems.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">뉴스를 불러오는 중...</div>
-                ) : (
-                  newsItems.map((news) => (
-                    <a
-                      key={news.id}
-                      href={news.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex gap-4 p-3 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
-                    >
-                      {/* 썸네일 */}
-                      <div className="w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700 relative">
-                        <Image
-                          src={news.thumbnail || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop'}
-                          alt=""
-                          fill
-                          sizes="96px"
-                          className="object-cover"
-                          loading="lazy"
-                          unoptimized
-                        />
-                      </div>
-                      {/* 콘텐츠 */}
-                      <div className="flex-1 min-w-0 flex flex-col justify-center">
-                        <span className="inline-block text-xs text-blue-400 mb-1 w-fit">{news.category}</span>
-                        <h4 className="font-medium text-white line-clamp-2 text-sm leading-tight">{news.title}</h4>
-                      </div>
-                    </a>
-                  ))
-                )}
+            {/* BOOIN AI 웹툰 + 부동산 뉴스 (2/3) */}
+            <div className="md:col-span-2 space-y-6">
+              {/* 상단: BOOIN AI 웹툰 */}
+              {toonEpisodes.length > 0 && (
+                <div className="bg-[#1C1D1F] rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🦀</span>
+                      <h3 className="text-lg font-bold">BOOIN NEWS TOON</h3>
+                    </div>
+                    <Link href="/toon" className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors">
+                      전체보기 <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    {toonEpisodes.map((ep) => (
+                      <Link
+                        key={ep.id}
+                        href={`/toon/${ep.slug}`}
+                        className="rounded-xl overflow-hidden bg-[#252628] hover:bg-[#2a2b2d] transition-colors group"
+                      >
+                        {ep.toon_image_url && (
+                          <div className="relative w-full h-[140px] overflow-hidden">
+                            <Image
+                              src={ep.toon_image_url}
+                              alt={ep.title}
+                              fill
+                              sizes="(max-width: 768px) 50vw, 33vw"
+                              className="object-cover object-top group-hover:scale-105 transition-transform duration-300"
+                              loading="lazy"
+                              unoptimized
+                            />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <h4 className="font-medium text-white text-sm line-clamp-1 mb-1.5">{ep.title}</h4>
+                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                            <span className="text-cyan-400 font-medium">EP.{String(ep.episode_number).padStart(2, '0')}</span>
+                            <span>{ep.category}</span>
+                            <span className="flex items-center gap-1">
+                              <Eye className="w-3 h-3" />
+                              {ep.view_count.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 하단: 부동산 뉴스 (기존 UI) */}
+              <div className="bg-[#1C1D1F] rounded-2xl p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <Newspaper className="w-5 h-5 text-blue-400" />
+                  <h3 className="text-lg font-medium">부동산 뉴스</h3>
+                </div>
+                <div className="space-y-3">
+                  {newsItems.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">뉴스를 불러오는 중...</div>
+                  ) : (
+                    newsItems.slice(0, 3).map((news) => (
+                      <a
+                        key={news.id}
+                        href={news.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex gap-4 p-3 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
+                      >
+                        <div className="w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700 relative">
+                          <Image
+                            src={news.thumbnail || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop'}
+                            alt=""
+                            fill
+                            sizes="96px"
+                            className="object-cover"
+                            loading="lazy"
+                            unoptimized
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0 flex flex-col justify-center">
+                          <span className="inline-block text-xs text-blue-400 mb-1 w-fit">{news.category}</span>
+                          <h4 className="font-medium text-white line-clamp-2 text-sm leading-tight">{news.title}</h4>
+                        </div>
+                      </a>
+                    ))
+                  )}
+                </div>
               </div>
             </div>
 
@@ -511,29 +600,51 @@ export default function LandingPage() {
             <div className="hidden md:flex flex-col gap-4">
               {/* SPONSORED / PROMOTION 배너 */}
               {adBanners.map((banner) => {
-                const content = (
-                  <>
-                    <span className="text-xs text-white/70 font-medium">{banner.label}</span>
-                    <div>
-                      <h4 className="text-lg font-bold text-white mb-1">{banner.title}</h4>
-                      <p className="text-sm text-white/80">{banner.description}</p>
-                    </div>
-                  </>
+                const inner = (
+                  <div className="h-full flex flex-col">
+                    {banner.image ? (
+                      <>
+                        <div className="relative flex-1 min-h-[80px] -mx-6 -mt-6 mb-3">
+                          <Image
+                            src={banner.image}
+                            alt=""
+                            fill
+                            sizes="33vw"
+                            className="object-cover object-top rounded-t-2xl"
+                            loading="lazy"
+                          />
+                        </div>
+                        <div className="mt-auto">
+                          <span className="text-xs text-white/70 font-medium">{banner.label}</span>
+                          <h4 className="text-base font-bold text-white mt-1">{banner.title}</h4>
+                          <p className="text-xs text-white/80 mt-0.5">{banner.description}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="h-full flex flex-col justify-between">
+                        <span className="text-xs text-white/70 font-medium">{banner.label}</span>
+                        <div>
+                          <h4 className="text-lg font-bold text-white mb-1">{banner.title}</h4>
+                          <p className="text-sm text-white/80">{banner.description}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
                 return banner.link ? (
                   <Link
                     key={banner.id}
                     href={banner.link}
-                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 flex flex-col justify-between min-h-[140px] hover:opacity-90 transition-opacity`}
+                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 min-h-[140px] hover:opacity-90 transition-opacity overflow-hidden`}
                   >
-                    {content}
+                    {inner}
                   </Link>
                 ) : (
                   <div
                     key={banner.id}
-                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 flex flex-col justify-between min-h-[140px] opacity-80`}
+                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 min-h-[140px] opacity-80 overflow-hidden`}
                   >
-                    {content}
+                    {inner}
                   </div>
                 );
               })}

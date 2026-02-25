@@ -16,12 +16,12 @@ const honeypotBlacklist = new Set<string>();
 // ─── Rate Limiting ───
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW = 60_000; // 1분
-const RATE_MAX = 120; // 1분에 120회
+const RATE_MAX = 600; // 1분에 600회 (페이지 로드 시 리소스 요청 포함)
 
 // ─── 빠른 요청 감지 (봇 행동 패턴) ───
 const requestTimestamps = new Map<string, number[]>();
-const BURST_WINDOW = 5_000; // 5초
-const BURST_MAX = 20; // 5초에 20회 이상 = 봇
+const BURST_WINDOW = 3_000; // 3초
+const BURST_MAX = 60; // 3초에 60회 이상 = 봇
 
 function getIP(request: NextRequest): string {
   return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim()

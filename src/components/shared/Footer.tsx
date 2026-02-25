@@ -22,11 +22,11 @@ export default function Footer({ variant = 'full' }: FooterProps) {
           <div className="border-t border-white/5 pt-5">
             <div className="text-xs text-gray-600 leading-relaxed space-y-1">
               <p>
-                <span className="text-gray-500">온시아 주식회사</span>
+                <span className="text-gray-500">온시아 공인중개사</span>
                 <span className="mx-2">|</span>
                 대표이사: 연대겸
                 <span className="mx-2">|</span>
-                사업자등록번호: 243-88-01749
+                사업자등록번호: 846-23-01501
               </p>
               <p>
                 주소: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동)
@@ -55,7 +55,7 @@ export default function Footer({ variant = 'full' }: FooterProps) {
             <Link href="/terms" className="hover:text-white transition-colors">이용약관</Link>
             <Link href="/privacy" className="hover:text-white transition-colors font-medium text-gray-300">개인정보처리방침</Link>
             <Link href="/refund" className="hover:text-white transition-colors">환불정책</Link>
-            <Link href="/contact" className="hover:text-white transition-colors">문의하기</Link>
+            <a href="mailto:onsia777@gmail.com" className="hover:text-white transition-colors">문의하기</a>
           </div>
         </div>
 
@@ -63,11 +63,11 @@ export default function Footer({ variant = 'full' }: FooterProps) {
         <div className="border-t border-white/5 pt-6">
           <div className="text-xs text-gray-600 leading-relaxed space-y-1">
             <p>
-              <span className="text-gray-500">온시아 주식회사</span>
+              <span className="text-gray-500">온시아 공인중개사</span>
               <span className="mx-2">|</span>
               대표이사: 연대겸
               <span className="mx-2">|</span>
-              사업자등록번호: 243-88-01749
+              사업자등록번호: 846-23-01501
             </p>
             <p>
               주소: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동)

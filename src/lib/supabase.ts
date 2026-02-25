@@ -33,6 +33,26 @@ export function mapDbJobToListing(job: any): SalesJobListing {
   };
 }
 
+// 공고 만료 여부 체크
+function isJobExpired(job: any): boolean {
+  const now = new Date();
+
+  // 무료(normal) 공고: 등록 후 24시간 만료
+  if (job.tier === 'normal' || !job.tier) {
+    const createdAt = new Date(job.created_at);
+    const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
+    return now > expiresAt;
+  }
+
+  // 유료 공고: deadline 기준 만료 (상시채용이면 만료 없음)
+  if (job.deadline) {
+    const deadline = new Date(job.deadline + 'T23:59:59+09:00'); // KST 자정까지
+    return now > deadline;
+  }
+
+  return false; // deadline 없으면 (상시채용) 만료 안 됨
+}
+
 // 공고 목록 가져오기
 export async function fetchJobs(category: 'sales' | 'agent' = 'sales') {
   const { data, error } = await supabase
@@ -48,7 +68,9 @@ export async function fetchJobs(category: 'sales' | 'agent' = 'sales') {
     return [];
   }
 
-  return (data || []).map(mapDbJobToListing);
+  // 만료된 공고 필터링
+  const activeJobs = (data || []).filter(job => !isJobExpired(job));
+  return activeJobs.map(mapDbJobToListing);
 }
 
 // 단일 공고 가져오기

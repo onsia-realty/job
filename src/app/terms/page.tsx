@@ -31,7 +31,7 @@ export default function TermsPage() {
           <h2 className="text-lg font-black text-blue-900 mt-12 mb-6 pb-2 border-b-2 border-blue-600">제1장 총칙</h2>
 
           <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200">제1조 (목적)</h3>
-          <p>본 약관은 온시아 주식회사(이하 &quot;회사&quot;)가 운영하는 부동산인 온라인 웹사이트 및 앱을 통하여 부동산 전문가 구인/구직, AI 콘텐츠 및 관련 제반 &quot;서비스&quot;를 제공함에 있어 이용 고객(이하 &quot;회원&quot;)과 &quot;회사&quot; 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
+          <p>본 약관은 온시아 공인중개사(이하 &quot;회사&quot;)가 운영하는 부동산인 온라인 웹사이트 및 앱을 통하여 부동산 전문가 구인/구직, AI 콘텐츠 및 관련 제반 &quot;서비스&quot;를 제공함에 있어 이용 고객(이하 &quot;회원&quot;)과 &quot;회사&quot; 간의 권리, 의무 및 책임사항, 기타 필요한 사항을 규정함을 목적으로 합니다.</p>
 
           <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200">제2조 (용어의 정의)</h3>
           <p>본 약관에서 사용하는 용어의 정의는 아래와 같습니다.</p>
@@ -346,7 +346,7 @@ export default function TermsPage() {
 
         {/* 사업자 정보 */}
         <div className="mt-16 pt-8 border-t border-gray-200 text-xs text-gray-400 space-y-1">
-          <p><strong className="text-gray-500">온시아 주식회사</strong> | 대표이사: 연대겸 | 사업자등록번호: 243-88-01749</p>
+          <p><strong className="text-gray-500">온시아 공인중개사</strong> | 대표이사: 연대겸 | 사업자등록번호: 846-23-01501</p>
           <p>주소: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동) | 대표전화: <a href="tel:1555-1245" className="hover:text-gray-600">1555-1245</a></p>
           <p>업태: 정보통신업 | 종목: 소프트웨어 개발 및 공급업, 포털 및 인터넷 정보 매개 서비스업</p>
           <p>고객센터: onsia777@gmail.com</p>

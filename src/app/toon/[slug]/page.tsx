@@ -17,7 +17,6 @@ interface ToonPanel {
   mood: string;
   props: string[] | null;
   text_overlay: string | null;
-  sfx: string | null;
   // 이전 형식 호환
   character?: string;
   thought?: string | null;
@@ -318,22 +317,6 @@ export default function ToonDetailPage() {
                         <div className="absolute top-2 left-10 z-10 bg-[#1a1a2e] text-white text-xs font-bold px-3 py-1 rounded-lg">
                           {panel.text_overlay}
                         </div>
-                      )}
-
-                      {/* SFX */}
-                      {panel.sfx && (
-                        <span
-                          className="absolute top-2 right-3 z-[5] pointer-events-none select-none"
-                          style={{
-                            fontFamily: "var(--font-black-han-sans), 'Black Han Sans', sans-serif",
-                            fontSize: '22px',
-                            color: '#e94560',
-                            transform: 'rotate(-8deg)',
-                            opacity: 0.7,
-                          }}
-                        >
-                          {panel.sfx}
-                        </span>
                       )}
 
                       {/* 패널 컨텐츠 */}
