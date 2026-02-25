@@ -175,6 +175,7 @@ Body: { "newsTitle": "...", "newsContent": "..." }
 
 ### 실행 순서
 
+0. **컨텍스트 확인**: `PROGRESS.md` 읽기 → 마지막 에피소드 번호, 미해결 이슈 파악
 1. **기사 전처리**: 제목에서 특수문자(`"`, `…`, `'`, `"`, `"`) 제거 — JSON 파싱 오류 방지
 2. **스크립트 생성**: `scripts/generate-toons.ts` 파일을 직접 작성 (Write 도구 사용)
    - NEWS_ARTICLES 배열에 기사 제목 + 본문 추가
@@ -185,6 +186,11 @@ Body: { "newsTitle": "...", "newsContent": "..." }
 5. **published_at 보정**: null이면 현재 시간으로 직접 업데이트
 6. **정리**: 임시 스크립트 삭제 (`rm scripts/generate-toons.ts`)
 7. **사용자에게 결과 보고**: EP 번호, 제목, 이미지 여부, 상태를 테이블로 출력
+8. **PROGRESS.md 업데이트**: 생성된 에피소드 정보, 성공/실패 여부 기록
+
+### 컨텍스트 연동 (memory-skill.md)
+- **시작 전 확인**: PROGRESS.md에서 마지막 EP 번호, 미해결 생성 오류 확인
+- **완료 후 기록**: 생성된 EP 번호/제목/이미지 여부, 에러 발생 시 상세 내용
 
 ---
 
