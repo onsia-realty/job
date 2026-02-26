@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/shared/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { PORTONE_CONFIG, PAYMENT_PRODUCTS, generatePaymentId } from '@/lib/portone';
+import { PAYMENT_PRODUCTS } from '@/lib/toss';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
@@ -257,48 +257,14 @@ function PremiumPricingContent() {
   const slideJobs = selectedCategory === 'agent' ? AGENT_VIP_JOBS : SALES_UNIQUE_JOBS;
   const currentSlide = slideJobs[slideIndex];
 
-  // 공고 선택 모달 열기 (유료 티어만)
-  const handleSelectJob = async (tier: string) => {
+  // 티어 선택 시 바로 결제 (공고 선택 생략 - PG 테스트용)
+  // TODO: 공고 선택 모달 복원 시 claudedocs/결제창.md 참고
+  const handleSelectJob = (tier: string) => {
     if (tier === 'normal') {
-      // 무료 공고는 바로 작성 페이지로
       window.location.href = selectedCategory === 'agent' ? '/agent/jobs/new' : '/sales/jobs/new';
       return;
     }
-
-    if (!user) {
-      alert('결제를 진행하려면 로그인이 필요합니다.');
-      window.location.href = '/agent/auth/login';
-      return;
-    }
-
-    setSelectedTier(tier);
-    setSelectedJobId(null);
-    setJobsLoading(true);
-    setShowJobModal(true);
-
-    try {
-      // 내 공고 목록 + 결제 내역 동시 조회
-      const [jobs, paymentsRes] = await Promise.all([
-        fetchMyJobs(user.id),
-        session?.access_token
-          ? fetch('/api/payments/my', {
-              headers: { Authorization: `Bearer ${session.access_token}` },
-            }).then(r => r.json())
-          : Promise.resolve({}),
-      ]);
-
-      // 현재 카테고리의 공고만 필터
-      const filteredJobs = (jobs as MyJob[]).filter(
-        (j) => j.category === selectedCategory
-      );
-      setMyJobs(filteredJobs);
-      setJobPayments(paymentsRes || {});
-    } catch (err) {
-      console.error('공고 목록 조회 실패:', err);
-      setMyJobs([]);
-    } finally {
-      setJobsLoading(false);
-    }
+    handlePayment(tier);
   };
 
   // 모달 닫기
@@ -331,7 +297,7 @@ function PremiumPricingContent() {
     return `D-${diff}`;
   };
 
-  // 결제 처리
+  // 결제 처리 (토스페이먼츠 위젯 → 체크아웃 페이지 이동)
   const handlePayment = async (tier: string, targetJobId?: string) => {
     if (!user) {
       alert('결제를 진행하려면 로그인이 필요합니다.');
@@ -349,76 +315,12 @@ function PremiumPricingContent() {
 
     setPayingTier(tier);
     closeJobModal();
-    document.body.style.overflow = 'hidden';
 
-    try {
-      const PortOne = await import('@portone/browser-sdk/v2');
-      const paymentId = generatePaymentId();
-
-      const paymentRequest = {
-        storeId: PORTONE_CONFIG.storeId,
-        channelKey: PORTONE_CONFIG.channelKey,
-        paymentId,
-        orderName: product.name,
-        totalAmount: product.price,
-        currency: 'CURRENCY_KRW' as const,
-        payMethod: 'CARD' as const,
-        customer: {
-          fullName: user.user_metadata?.name || '사용자',
-          email: user.email || undefined,
-          phoneNumber: user.user_metadata?.phone || '01000000000',
-        },
-        redirectUrl: `${window.location.origin}/premium`,
-      };
-      console.log('결제 요청:', paymentRequest);
-
-      const response = await PortOne.requestPayment(paymentRequest);
-
-      console.log('PortOne 응답:', response);
-
-      if (response?.code) {
-        if (response.code === 'FAILURE_TYPE_PG' || response.message?.includes('취소')) {
-          setPayingTier(null);
-          return;
-        }
-        alert(`결제 실패: ${response.code} - ${response.message}`);
-        setPayingTier(null);
-        return;
-      }
-
-      // 서버에서 결제 검증
-      const verifyRes = await fetch('/api/payment/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
-        },
-        body: JSON.stringify({ paymentId, productKey, jobId: effectiveJobId }),
-      });
-
-      const result = await verifyRes.json();
-
-      if (result.success) {
-        alert(`${product.name} 결제가 완료되었습니다!\n${product.duration}간 광고가 노출됩니다.`);
-        // 공고가 연결된 경우 → 공고 관리로, 아니면 공고 작성으로
-        if (effectiveJobId) {
-          window.location.href = selectedCategory === 'agent' ? '/agent/employer' : '/sales/jobs';
-        } else {
-          window.location.href = selectedCategory === 'agent'
-            ? `/agent/jobs/new?tier=${tier}`
-            : `/sales/jobs/new?tier=${tier}`;
-        }
-      } else {
-        alert(`결제 검증 실패: ${result.message}`);
-      }
-    } catch (error: unknown) {
-      console.error('결제 오류 상세:', JSON.stringify(error, null, 2), error);
-      const errMsg = error instanceof Error ? error.message : JSON.stringify(error);
-      alert(`결제 중 오류가 발생했습니다: ${errMsg}`);
-    } finally {
-      document.body.style.overflow = '';
-      setPayingTier(null);
-    }
+    // 체크아웃 페이지로 이동 (토스 위젯 렌더링)
+    const checkoutUrl = new URL('/checkout', window.location.origin);
+    checkoutUrl.searchParams.set('productKey', productKey);
+    if (effectiveJobId) checkoutUrl.searchParams.set('jobId', effectiveJobId);
+    window.location.href = checkoutUrl.toString();
   };
 
   // 탭 변경 시 슬라이드 리셋

@@ -114,7 +114,10 @@ export async function getSession() {
   const { data: { session }, error } = await supabase.auth.getSession();
 
   if (error) {
-    console.error('Get session error:', error);
+    // 만료된 리프레시 토큰 → localStorage 정리
+    if (error.message?.includes('Refresh Token') || error.message?.includes('refresh_token')) {
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+    }
     return null;
   }
 

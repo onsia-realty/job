@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PAYMENT_PRODUCTS } from '@/lib/portone';
+import { PAYMENT_PRODUCTS } from '@/lib/toss';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { paymentId, productKey, jobId } = await req.json();
+    const { paymentKey, orderId, amount, productKey, jobId } = await req.json();
 
-    if (!paymentId || !productKey) {
+    if (!paymentKey || !orderId || !amount || !productKey) {
       return NextResponse.json(
         { success: false, message: '결제 정보가 누락되었습니다.' },
         { status: 400 }
@@ -21,44 +21,49 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 포트원 API로 결제 정보 조회
-    const apiSecret = process.env.PORTONE_API_SECRET;
-    if (!apiSecret) {
+    // 금액 검증
+    if (amount !== product.price) {
+      return NextResponse.json(
+        { success: false, message: '결제 금액이 일치하지 않습니다.' },
+        { status: 400 }
+      );
+    }
+
+    // 토스페이먼츠 결제 승인 API 호출
+    const secretKey = process.env.TOSS_SECRET_KEY;
+    if (!secretKey) {
       return NextResponse.json(
         { success: false, message: '서버 설정 오류' },
         { status: 500 }
       );
     }
 
-    const paymentResponse = await fetch(
-      `https://api.portone.io/payments/${encodeURIComponent(paymentId)}`,
+    const auth = Buffer.from(`${secretKey}:`).toString('base64');
+
+    const confirmResponse = await fetch(
+      'https://api.tosspayments.com/v1/payments/confirm',
       {
+        method: 'POST',
         headers: {
-          Authorization: `PortOne ${apiSecret}`,
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ orderId, paymentKey, amount }),
       }
     );
 
-    if (!paymentResponse.ok) {
+    const payment = await confirmResponse.json();
+
+    if (!confirmResponse.ok) {
       return NextResponse.json(
-        { success: false, message: '결제 정보를 조회할 수 없습니다.' },
+        { success: false, message: payment.message || '결제 승인에 실패했습니다.' },
         { status: 400 }
       );
     }
 
-    const payment = await paymentResponse.json();
-
-    // 결제 상태 & 금액 검증
-    if (payment.status !== 'PAID') {
+    if (payment.status !== 'DONE') {
       return NextResponse.json(
         { success: false, message: `결제가 완료되지 않았습니다. (상태: ${payment.status})` },
-        { status: 400 }
-      );
-    }
-
-    if (payment.amount.total !== product.price) {
-      return NextResponse.json(
-        { success: false, message: '결제 금액이 일치하지 않습니다.' },
         { status: 400 }
       );
     }
@@ -74,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 만료일 계산
-    const paidAt = payment.paidAt ? new Date(payment.paidAt) : new Date();
+    const paidAt = payment.approvedAt ? new Date(payment.approvedAt) : new Date();
     const expiresAt = new Date(paidAt);
     if (product.duration === '24시간') expiresAt.setHours(expiresAt.getHours() + 24);
     else if (product.duration === '5일') expiresAt.setDate(expiresAt.getDate() + 5);
@@ -84,18 +89,18 @@ export async function POST(req: NextRequest) {
     const { error: insertError } = await supabaseAdmin
       .from('payments')
       .insert({
-        payment_id: paymentId,
+        payment_id: paymentKey,
         user_id: userId,
         product_key: productKey,
         product_name: product.name,
         amount: product.price,
         currency: 'KRW',
         payment_status: 'completed',
-        payment_method: payment.payMethod || 'CARD',
+        payment_method: payment.method || 'CARD',
         tier: product.tier,
         category: product.category,
         duration: product.duration,
-        pg_provider: payment.pgProvider || 'kcp_v2',
+        pg_provider: 'tosspayments',
         paid_at: paidAt.toISOString(),
         start_date: paidAt.toISOString(),
         end_date: expiresAt.toISOString(),
@@ -123,7 +128,8 @@ export async function POST(req: NextRequest) {
       success: true,
       message: '결제가 완료되었습니다.',
       data: {
-        paymentId,
+        paymentKey,
+        orderId,
         productName: product.name,
         amount: product.price,
         tier: product.tier,
@@ -131,7 +137,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('결제 검증 오류:', error);
+    console.error('결제 승인 오류:', error);
     return NextResponse.json(
       { success: false, message: '서버 오류가 발생했습니다.' },
       { status: 500 }

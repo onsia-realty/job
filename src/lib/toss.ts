@@ -1,8 +1,7 @@
-// PortOne 결제 관련 유틸리티
+// 토스페이먼츠 결제 관련 유틸리티
 
-export const PORTONE_CONFIG = {
-  storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
-  channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY!,
+export const TOSS_CONFIG = {
+  clientKey: process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!,
 } as const;
 
 // 결제 상품 정보 타입
@@ -26,9 +25,9 @@ export const PAYMENT_PRODUCTS: Record<string, PaymentProduct> = {
   'sales-unique': { tier: 'unique', name: '분양상담사 유니크', price: 24900, duration: '1주일', category: 'sales' },
 };
 
-// 고유 결제 ID 생성
-export function generatePaymentId(): string {
+// 고유 주문 ID 생성
+export function generateOrderId(): string {
   const timestamp = Date.now();
   const random = Math.random().toString(36).substring(2, 8);
-  return `payment-${timestamp}-${random}`;
+  return `order-${timestamp}-${random}`;
 }

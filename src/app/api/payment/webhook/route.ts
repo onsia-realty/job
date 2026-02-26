@@ -4,23 +4,26 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { paymentId } = body;
+    const { eventType, data } = body;
 
-    if (!paymentId) {
+    // 토스페이먼츠 웹훅 이벤트 처리
+    if (!data?.paymentKey) {
       return NextResponse.json({ success: false }, { status: 400 });
     }
 
-    // 포트원 API로 결제 상태 재확인
-    const apiSecret = process.env.PORTONE_API_SECRET;
-    if (!apiSecret) {
+    // 토스페이먼츠 API로 결제 상태 재확인
+    const secretKey = process.env.TOSS_SECRET_KEY;
+    if (!secretKey) {
       return NextResponse.json({ success: false }, { status: 500 });
     }
 
+    const auth = Buffer.from(`${secretKey}:`).toString('base64');
+
     const paymentResponse = await fetch(
-      `https://api.portone.io/payments/${encodeURIComponent(paymentId)}`,
+      `https://api.tosspayments.com/v1/payments/${data.paymentKey}`,
       {
         headers: {
-          Authorization: `PortOne ${apiSecret}`,
+          Authorization: `Basic ${auth}`,
         },
       }
     );
@@ -31,13 +34,14 @@ export async function POST(req: NextRequest) {
 
     const payment = await paymentResponse.json();
 
-    // 포트원 상태 → DB 상태 매핑
+    // 토스 상태 → DB 상태 매핑
     const statusMap: Record<string, string> = {
-      PAID: 'completed',
-      CANCELLED: 'refunded',
-      FAILED: 'failed',
-      READY: 'pending',
-      VIRTUAL_ACCOUNT_ISSUED: 'pending',
+      DONE: 'completed',
+      CANCELED: 'refunded',
+      ABORTED: 'failed',
+      EXPIRED: 'failed',
+      WAITING_FOR_DEPOSIT: 'pending',
+      IN_PROGRESS: 'pending',
     };
     const dbStatus = statusMap[payment.status] || 'pending';
 
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
     const { error } = await supabaseAdmin
       .from('payments')
       .update({ payment_status: dbStatus })
-      .eq('payment_id', paymentId);
+      .eq('payment_id', data.paymentKey);
 
     if (error) {
       console.error('웹훅 결제 상태 업데이트 실패:', error);

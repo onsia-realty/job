@@ -138,11 +138,10 @@ function buildImagePrompt(title: string, panels: ToonPanel[], theme: ThemeType =
   };
 
   const panelDescriptions = panels.map((p, i) => {
+    const charsMap = chars as Record<string, { name: string; role: string; desc: string }>;
     const charParts = p.characters.map(name => {
-      const key = Object.keys(chars).find(k =>
-        chars[k as keyof typeof chars].name === name
-      ) as string | undefined;
-      const charInfo = key ? chars[key as keyof typeof chars] : null;
+      const key = Object.keys(charsMap).find(k => charsMap[k].name === name);
+      const charInfo = key ? charsMap[key] : null;
       const desc = charInfo?.desc || name;
       const dialogue = p.dialogue[name];
       return dialogue
