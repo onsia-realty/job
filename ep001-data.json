@@ -1,0 +1,38 @@
+{
+  "article_html": "<h3>🎯 핵심 요약: 세금 대신 대출로 조인다</h3>\r\n<p>문재인 정부가 세금(보유세·양도세)으로 정면 돌파했다면, 이재명 정부는 <strong>대출과 허가</strong>로 측면 포위를 택했습니다. 결과는? 시장이 받아들이는 메시지는 동일합니다 — \"정부가 거래 방식을 결정하겠다\"는 것.</p>\r\n\r\n<div class=\"highlight-box\">\r\n💡 <strong>부동산인 포인트</strong><br>\r\n정부가 칼을 휘두를수록, 시장은 칼을 피하는 법부터 배웁니다. 대출이 막히면 현금거래가 늘고, 허가가 걸리면 대기가 늘고, 규제지역이 늘면 비규제지역으로 수요가 이동합니다.\r\n</div>\r\n\r\n<h3>📋 이재명 정부의 3대 카드</h3>\r\n<p><strong>① 6·27 대출 차단</strong> — 주담대 한도 6억 원 제한, 다주택자 대출 사실상 금지. \"돈이 없어서 못 사는 게 아니라, 제도가 못 사게 한다\"는 수요자들의 하소연이 쏟아졌습니다.</p>\r\n<p><strong>② 9·7 공급 약속</strong> — 2030년까지 수도권 135만 호 착공 목표. 하지만 시장은 \"착공 숫자\"가 아니라 \"내가 이사할 집\"을 원합니다.</p>\r\n<p><strong>③ 10·15 토허제 올인</strong> — 서울 전역 + 경기 12곳을 토지거래허가구역으로 묶었습니다. 시가 25억 초과 주택은 대출 한도 2억 원.</p>\r\n\r\n<div class=\"timeline\">\r\n<div class=\"timeline-item\"><span class=\"timeline-dot\">1Y</span><div class=\"timeline-label\">1년 뒤</div><div class=\"timeline-desc\">거래 절벽, 양극화</div></div>\r\n<div class=\"timeline-item\"><span class=\"timeline-dot\">3Y</span><div class=\"timeline-label\">3년 뒤</div><div class=\"timeline-desc\">공급 병목, 전세난</div></div>\r\n<div class=\"timeline-item\"><span class=\"timeline-dot\">5Y</span><div class=\"timeline-label\">5년 뒤</div><div class=\"timeline-desc\">정상화 or 데자뷔</div></div>\r\n</div>\r\n\r\n<h3>🔮 1년 뒤 — 서울은 \"두 개의 시장\"으로 갈라진다</h3>\r\n<p>상급지(한강벨트·역세권 대단지)는 대출 없이 현금으로 거래되면서 호가가 버팁니다. 반면 중하급지(노원·도봉·강북)는 대출 의존도가 높아 거래가 먼저 얼어붙습니다.</p>\r\n\r\n<h3>🔮 3년 뒤 — 공급은 어디에? 전세는 또 불안</h3>\r\n<p>정비사업의 인허가·이주·철거·착공 과정에서 병목이 생기면 공급은 늦어지고, 그 사이 갭투자 차단으로 임대 공급도 위축됩니다. 문재인 정부 때 겪었던 \"전세난 → 전셋값 상승 → 매맷값 상승\" 고리가 돌아올 수 있습니다.</p>\r\n\r\n<h3>🔮 5년 뒤 — 정상화인가, 데자뷔인가</h3>\r\n<p>공급이 실물로 나타나고 규제가 순차적으로 풀리면 정상화됩니다. 하지만 공급이 지연되고 규제만 남으면? 상급지 쏠림 고착, 경매·특수거래 같은 \"경로 변경\"이 늘어나는 최악의 시나리오가 됩니다.</p>\r\n\r\n<div class=\"highlight-box\">\r\n🏠 <strong>부동산인 결론</strong><br>\r\n핵심은 \"집값이 오르냐 내리냐\"가 아닙니다. <strong>\"누가, 어떤 방식으로, 어느 지역의 주택을 살 수 있는가\"</strong>가 진짜 질문입니다. 규제로 집값을 잡지 못한다는 건 이미 증명된 사실. 신속한 공급과 적절한 대출 완화가 없으면 시장은 더 악화될 가능성이 높습니다.\r\n</div>",
+  "panels": [
+    {
+      "sfx": "번쩍!",
+      "panel": 1,
+      "scene": "자신만만하게 칼을 들고 선포하는 관료",
+      "thought": null,
+      "dialogue": "대출 막고! 허가제 걸고!\n이번엔 집값 잡는다! 💪",
+      "character": "정부 관료"
+    },
+    {
+      "sfx": null,
+      "panel": 2,
+      "scene": "좌절하며 울상짓는 실수요자",
+      "thought": "(대출 6억 한도... 어쩌라고...)",
+      "dialogue": "돈이 없어서 못 사는 게 아니라\n**제도가 못 사게 합니다** 😭",
+      "character": "실수요자"
+    },
+    {
+      "sfx": "찰칵!",
+      "panel": 3,
+      "scene": "여유롭게 돈다발 들고 웃는 현금부자",
+      "thought": null,
+      "dialogue": "대출? 그게 뭐죠? 😎\n**강남 하나 더 줍줍~**",
+      "character": "현금부자"
+    },
+    {
+      "sfx": null,
+      "panel": 4,
+      "scene": "당황하여 안경이 비뚤어진 관료",
+      "thought": "(문재인 정부 때도 이랬는데...)",
+      "dialogue": "거래만 죽고 집값은 그대로?!\n**시장이 칼 피하는 법을 배워버렸다...** 🫠",
+      "character": "정부 관료"
+    }
+  ],
+  "title": "규제로 집값 잡겠다? 시장은 칼 피하는 법부터 배운다"
+}
