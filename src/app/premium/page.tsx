@@ -257,14 +257,73 @@ function PremiumPricingContent() {
   const slideJobs = selectedCategory === 'agent' ? AGENT_VIP_JOBS : SALES_UNIQUE_JOBS;
   const currentSlide = slideJobs[slideIndex];
 
-  // 티어 선택 시 바로 결제 (공고 선택 생략 - PG 테스트용)
-  // TODO: 공고 선택 모달 복원 시 claudedocs/결제창.md 참고
-  const handleSelectJob = (tier: string) => {
+  // Mock 테스트 공고 (DB에 공고가 없을 때 테스트용)
+  const MOCK_JOBS: MyJob[] = [
+    {
+      id: 'mock-agent-1',
+      title: '[테스트] 강남역 초역세권 공인중개사 모집',
+      tier: 'normal',
+      category: 'agent',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'mock-agent-2',
+      title: '[테스트] 판교 상업용 부동산 전문 중개사',
+      tier: 'normal',
+      category: 'agent',
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+    },
+    {
+      id: 'mock-sales-1',
+      title: '[테스트] 힐스테이트 광교 분양상담사 모집',
+      tier: 'normal',
+      category: 'sales',
+      created_at: new Date().toISOString(),
+    },
+    {
+      id: 'mock-sales-2',
+      title: '[테스트] 세종시 지식산업센터 분양팀 급구',
+      tier: 'normal',
+      category: 'sales',
+      created_at: new Date(Date.now() - 86400000).toISOString(),
+    },
+  ];
+
+  // 티어 선택 → 공고 선택 모달 열기
+  const handleSelectJob = async (tier: string) => {
     if (tier === 'normal') {
       window.location.href = selectedCategory === 'agent' ? '/agent/jobs/new' : '/sales/jobs/new';
       return;
     }
-    handlePayment(tier);
+
+    setSelectedTier(tier);
+    setSelectedJobId(null);
+    setShowJobModal(true);
+    setJobsLoading(true);
+
+    try {
+      if (user) {
+        const jobs = await fetchMyJobs(user.id);
+        const categoryJobs = jobs.filter((j: MyJob) =>
+          selectedCategory === 'agent'
+            ? !j.category || j.category === 'agent'
+            : j.category === 'sales'
+        );
+        // DB 공고가 있으면 사용, 없으면 mock 데이터
+        if (categoryJobs.length > 0) {
+          setMyJobs(categoryJobs);
+        } else {
+          setMyJobs(MOCK_JOBS.filter(j => j.category === selectedCategory));
+        }
+      } else {
+        // 비로그인 시 mock 데이터
+        setMyJobs(MOCK_JOBS.filter(j => j.category === selectedCategory));
+      }
+    } catch {
+      setMyJobs(MOCK_JOBS.filter(j => j.category === selectedCategory));
+    } finally {
+      setJobsLoading(false);
+    }
   };
 
   // 모달 닫기

@@ -39,13 +39,16 @@ function CheckoutContent() {
           value: product.price,
         });
 
-        await widgetInstance.renderPaymentMethods({
-          selector: '#payment-method',
-        });
-
-        await widgetInstance.renderAgreement({
-          selector: '#agreement',
-        });
+        await Promise.all([
+          widgetInstance.renderPaymentMethods({
+            selector: '#payment-method',
+            variantKey: 'DEFAULT',
+          }),
+          widgetInstance.renderAgreement({
+            selector: '#agreement',
+            variantKey: 'AGREEMENT',
+          }),
+        ]);
 
         setWidgets(widgetInstance);
       } catch (err) {
