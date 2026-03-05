@@ -340,7 +340,7 @@ export default function MyPage() {
                         <CreditCard className={`w-4.5 h-4.5 ${m?.cardVerified ? 'text-green-600' : 'text-gray-400'}`} />
                       </div>
                       <div className="min-w-0">
-                        <span className="text-sm font-semibold text-gray-900 block">명함 인증</span>
+                        <span className="text-sm font-semibold text-gray-900 block">분양상담사 (명함인증)</span>
                         {m?.cardVerified && m?.cardProject ? (
                           <span className="text-xs text-gray-500 truncate block">{m.cardCompany} · {m.cardProject}</span>
                         ) : (

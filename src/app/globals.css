@@ -376,6 +376,15 @@ body {
   margin: 0;
 }
 
+/* 스크롤바 숨기기 유틸리티 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Premium 랜딩 페이지 애니메이션 */
 @keyframes shimmer {
   0% { transform: translateX(-100%); }

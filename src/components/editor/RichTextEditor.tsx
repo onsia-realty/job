@@ -93,7 +93,7 @@ export default function RichTextEditor({
     },
     editorProps: {
       attributes: {
-        class: 'tiptap prose prose-sm max-w-none focus:outline-none min-h-[200px] px-4 py-3',
+        class: 'tiptap prose prose-sm max-w-none focus:outline-none min-h-[180px] px-4 py-3 text-[15px] leading-relaxed',
       },
     },
   });
@@ -234,35 +234,20 @@ export default function RichTextEditor({
   ];
 
   return (
-    <div className="border border-gray-300 rounded-lg overflow-hidden bg-white">
+    <div className="border border-gray-300 rounded-xl overflow-hidden bg-white shadow-sm">
       {/* Mode Tabs + Template Builder Button */}
-      <div className="flex items-center border-b border-gray-200 bg-white">
-        {/* Template Builder Button (leftmost, prominent) */}
-        <div className="pl-2 pr-1">
-          <button
-            type="button"
-            onClick={() => setShowBannerBuilder(true)}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 rounded-lg transition-all shadow-sm"
-          >
-            <Wand2 size={14} />
-            템플릿제작
-          </button>
-        </div>
-
-        {/* Separator */}
-        <div className="w-px h-6 bg-gray-200 mx-1" />
-
-        {/* Mode Tabs */}
-        <div className="flex">
+      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-2 py-1.5 gap-2">
+        {/* Mode Tabs (pill style) */}
+        <div className="flex bg-gray-100 rounded-lg p-0.5 flex-shrink-0">
           {modeButtons.map((btn) => (
             <button
               key={btn.mode}
               type="button"
               onClick={() => handleModeChange(btn.mode)}
-              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-medium rounded-md transition-all whitespace-nowrap ${
                 mode === btn.mode
-                  ? 'text-blue-600 border-blue-600 bg-blue-50/50'
-                  : 'text-gray-500 border-transparent hover:text-gray-700 hover:bg-gray-50'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               {btn.icon}
@@ -270,6 +255,16 @@ export default function RichTextEditor({
             </button>
           ))}
         </div>
+
+        {/* Template Builder Button */}
+        <button
+          type="button"
+          onClick={() => setShowBannerBuilder(true)}
+          className="flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-bold text-white bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 rounded-lg transition-all shadow-sm whitespace-nowrap flex-shrink-0"
+        >
+          <Wand2 size={12} />
+          템플릿
+        </button>
       </div>
 
       {/* Toolbar - only in visual mode */}

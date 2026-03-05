@@ -392,7 +392,7 @@ export default function LandingPage() {
             {/* 영상 (2/3) */}
             <div className="md:col-span-2 relative rounded-lg overflow-hidden h-[400px]">
               <video
-                src="/intro.mp4"
+                src="/수정자막2.mp4"
                 autoPlay
                 muted
                 loop

@@ -33,6 +33,16 @@ export interface SalesJobListing {
   thumbnail?: string;
   views: number;
   createdAt: string;
+  // sangga114 스타일 상세 필드
+  phone?: string;
+  address?: string;
+  contactName?: string;
+  detailContent?: string;
+  ageRange?: string;
+  gender?: string;
+  requirements?: string;
+  headcount?: string;
+  recruitPeriod?: string;
 }
 
 // 공인중개사 구인공고 타입 (부동산 카테고리 확장)

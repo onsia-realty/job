@@ -38,6 +38,9 @@ export default function Footer({ variant = 'full' }: FooterProps) {
                 <span className="mx-2">|</span>
                 종목: 소프트웨어 개발 및 공급업, 포털 및 인터넷 정보 매개 서비스업
               </p>
+              <p>
+                통신판매업 신고번호: 제 2026-서울송파-0723호
+              </p>
             </div>
           </div>
         </div>
@@ -78,6 +81,9 @@ export default function Footer({ variant = 'full' }: FooterProps) {
               업태: 정보통신업
               <span className="mx-2">|</span>
               종목: 소프트웨어 개발 및 공급업, 포털 및 인터넷 정보 매개 서비스업
+            </p>
+            <p>
+              통신판매업 신고번호: 제 2026-서울송파-0723호
             </p>
           </div>
         </div>

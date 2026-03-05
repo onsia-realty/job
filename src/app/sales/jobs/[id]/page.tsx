@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,11 +13,71 @@ import MobileNav from '@/components/shared/MobileNav';
 import JobCard from '@/components/sales/JobCard';
 import dynamic from 'next/dynamic';
 import type { SalesJobListing } from '@/types';
+import { allJobs } from '../page';
 
 const VWorldMap = dynamic(() => import('@/components/shared/VWorldMap'), { ssr: false });
 
-// 임시 상세 데이터
-const jobDetail = {
+const TYPE_LABELS_KR: Record<string, string> = {
+  apartment: '아파트', officetel: '오피스텔', store: '상가', industrial: '지식산업센터',
+};
+
+function generateHtmlContent(job: SalesJobListing): string {
+  const rows = [
+    ['현장명', job.title],
+    ['분류', TYPE_LABELS_KR[job.type] || job.type],
+    ['인사 담당', job.contactName || '-'],
+    ['소재지', job.address || '-'],
+    ['전화', job.phone || '-'],
+    ['나이', job.ageRange || '-'],
+    ['성별', job.gender || '-'],
+    ['응시요건', job.requirements || '-'],
+    ['모집인원', job.headcount || '-'],
+    ['등록일자', job.createdAt || '-'],
+    ['모집기간', job.recruitPeriod || '채용시까지'],
+  ];
+
+  const tableRows = rows.map(([label, value]) =>
+    `<tr style="border-bottom:1px solid #E5E7EB;">
+      <td style="padding:12px;background:#F9FAFB;width:120px;font-weight:600;color:#374151;">${label}</td>
+      <td style="padding:12px;color:#374151;">${value}</td>
+    </tr>`
+  ).join('');
+
+  const detailBlock = job.detailContent
+    ? `<div style="margin-bottom:24px;">
+        <h3 style="font-size:18px;font-weight:bold;color:#333;margin-bottom:12px;">📋 상세요건</h3>
+        <div style="background:#F9FAFB;padding:20px;border-radius:12px;color:#374151;line-height:1.8;">
+          ${job.detailContent}
+        </div>
+      </div>`
+    : '';
+
+  return `
+    <div class="job-content">
+      <h2 style="font-size:24px;font-weight:bold;color:#333;margin-bottom:20px;border-bottom:2px solid #8B5CF6;padding-bottom:10px;">
+        🏠 ${job.title}
+      </h2>
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:18px;font-weight:bold;color:#333;margin-bottom:12px;">📋 모집 내용</h3>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+          ${tableRows}
+        </table>
+      </div>
+      ${detailBlock}
+      <div style="margin-bottom:24px;">
+        <h3 style="font-size:18px;font-weight:bold;color:#333;margin-bottom:12px;">📞 지원 방법</h3>
+        <div style="background:linear-gradient(135deg,#8B5CF6 0%,#6366F1 100%);padding:20px;border-radius:12px;color:white;">
+          <p style="margin-bottom:8px;font-size:14px;">인사 담당: <strong>${job.contactName || '-'}</strong></p>
+          <p style="margin-bottom:12px;font-size:16px;">지원 문의: <strong style="font-size:20px;">${job.phone || '-'}</strong></p>
+          <p style="font-size:14px;opacity:0.9;">* 전화 또는 문자로 연락 주시면 상담 도와드립니다.</p>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 폴백 상세 데이터 (allJobs에 없는 id용)
+const FALLBACK_DETAIL = {
   id: '1',
   title: '엘리프 검단 포레듀 - 첫 조직투입',
   description: '인천권 신규분상제 최대 수수료/ 주단위 지급',
@@ -42,9 +102,6 @@ const jobDetail = {
   deadline: '2026.02.28',
   phone: '010-1234-5678',
   htmlContent: `
-    <div style="padding:10px;">
-      <img src="https://i.imgur.com/my5E6G7.jpeg" style="width:100%; max-width:800px; height:auto; display:block; margin:0 auto; border-radius:8px;">
-    </div>
     <div class="job-content">
       <h2 style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px; border-bottom: 2px solid #8B5CF6; padding-bottom: 10px;">
         🏠 엘리프 검단 포레듀 - 분양상담사 모집
@@ -134,22 +191,6 @@ const jobDetail = {
   `,
 };
 
-// 관련 공고 임시 데이터
-const relatedJobs: SalesJobListing[] = [
-  {
-    id: '2', title: '여주성원 민간임대 아파트', description: '계약조건 바꿨습니다 페이백도 있음',
-    type: 'apartment', tier: 'unique', badges: [], position: 'teamLead',
-    salary: { type: 'commission' }, benefits: ['일비'], experience: 'none',
-    company: '주) 피앤피', region: '경기 여주', views: 2156, createdAt: '2026.01.16',
-  },
-  {
-    id: '3', title: '조건변경!! 과천 효성해링턴 초역세권!!', description: '지하철 4호선 초역세권!! 현장 직통연결!!',
-    type: 'officetel', tier: 'unique', badges: ['new', 'hot'], position: 'headTeam',
-    salary: { type: 'commission' }, benefits: [], experience: 'none',
-    company: '국진하우징', region: '경기 과천', views: 1823, createdAt: '2026.01.16',
-  },
-];
-
 // 전화번호 마스킹 (가운데 4자리)
 function maskPhone(phone: string): string {
   const digits = phone.replace(/[^\d]/g, '');
@@ -183,13 +224,57 @@ export default function JobDetailPage() {
   const [activeTab, setActiveTab] = useState('details');
   const [mapCoord, setMapCoord] = useState<{ lat: number; lng: number } | null>(null);
 
+  const id = params.id as string;
+  const foundJob = allJobs.find(j => j.id === id);
+
+  const jobDetail = useMemo(() => {
+    if (!foundJob) return FALLBACK_DETAIL;
+    return {
+      id: foundJob.id,
+      title: foundJob.title,
+      description: foundJob.description,
+      type: foundJob.type,
+      tier: foundJob.tier,
+      badges: foundJob.badges,
+      position: foundJob.position,
+      salary: { type: foundJob.salary.type, amount: foundJob.salary.amount || '' },
+      benefits: foundJob.benefits,
+      experience: foundJob.experience,
+      company: foundJob.company,
+      companyInfo: {
+        representative: foundJob.contactName || '-',
+        employees: '-',
+        founded: '-',
+        address: foundJob.address || '-',
+      },
+      region: foundJob.region,
+      address: foundJob.address || '',
+      views: foundJob.views,
+      createdAt: foundJob.createdAt,
+      deadline: foundJob.recruitPeriod || '채용시까지',
+      phone: foundJob.phone || '',
+      htmlContent: generateHtmlContent(foundJob),
+    };
+  }, [id, foundJob]);
+
+  const relatedJobs = useMemo(() =>
+    allJobs.filter(j => j.id !== id).slice(0, 2),
+  [id]);
+
+  // id 변경 시 이전 지도 좌표 초기화 (Leaflet DOM 충돌 방지)
+  useEffect(() => {
+    setMapCoord(null);
+  }, [id]);
+
   useEffect(() => {
     if (!jobDetail.address) return;
+    let cancelled = false;
     fetch(`/api/geocode?address=${encodeURIComponent(jobDetail.address)}`)
       .then(r => r.json())
-      .then(data => { if (data.lat && data.lng) setMapCoord({ lat: data.lat, lng: data.lng }); })
+      .then(data => { if (!cancelled && data.lat && data.lng) setMapCoord({ lat: data.lat, lng: data.lng }); })
       .catch(() => {});
-  }, []);
+    return () => { cancelled = true; };
+  }, [jobDetail.address]);
 
   const colors = TIER_COLORS[jobDetail.tier];
 
@@ -477,7 +562,7 @@ export default function JobDetailPage() {
               {/* VWorld 지도 */}
               {mapCoord && (
                 <div id="company-map" className="mt-4">
-                  <VWorldMap lat={mapCoord.lat} lng={mapCoord.lng} label={jobDetail.company} height="280px" />
+                  <VWorldMap key={id} lat={mapCoord.lat} lng={mapCoord.lng} label={jobDetail.company} height="280px" />
                 </div>
               )}
             </section>

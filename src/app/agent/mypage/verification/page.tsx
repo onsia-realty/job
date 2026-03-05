@@ -73,9 +73,11 @@ export default function VerificationPage() {
 
   // 명함 인증 상태
   const [cardName, setCardName] = useState('');           // 이름
-  const [cardCompany, setCardCompany] = useState('');     // 소속회사
+  const [cardCompany, setCardCompany] = useState('');     // 대행사
   const [cardProject, setCardProject] = useState('');     // 분양현장명
   const [cardPhone, setCardPhone] = useState('');         // 연락처
+  const [cardPhoneDuplicate, setCardPhoneDuplicate] = useState<boolean | null>(null);
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
   const [cardImageFile, setCardImageFile] = useState<File | null>(null);
   const [cardImagePreview, setCardImagePreview] = useState<string | null>(null);
   const [cardError, setCardError] = useState('');
@@ -262,6 +264,23 @@ export default function VerificationPage() {
     }
   };
 
+  // 연락처 중복 확인
+  const checkPhoneDuplicate = async (phone: string) => {
+    const normalized = phone.replace(/[^0-9]/g, '');
+    if (normalized.length < 10) return;
+    setIsCheckingPhone(true);
+    setCardPhoneDuplicate(null);
+    try {
+      const res = await fetch(`/api/check-phone?phone=${encodeURIComponent(normalized)}`);
+      const data = await res.json();
+      setCardPhoneDuplicate(data.duplicate ?? null);
+    } catch {
+      // 체크 실패 시 무시
+    } finally {
+      setIsCheckingPhone(false);
+    }
+  };
+
   // 명함 이미지 선택
   const handleCardImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -285,7 +304,11 @@ export default function VerificationPage() {
       return;
     }
     if (!cardCompany.trim()) {
-      setCardError('소속회사를 입력해주세요');
+      setCardError('대행사를 입력해주세요');
+      return;
+    }
+    if (cardPhoneDuplicate) {
+      setCardError('이미 등록된 연락처입니다');
       return;
     }
     if (!cardProject.trim()) {
@@ -545,7 +568,7 @@ export default function VerificationPage() {
                 )}
                 {meta?.cardCompany && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">소속회사</span>
+                    <span className="text-gray-500">대행사</span>
                     <span className="font-medium text-gray-900">{meta.cardCompany}</span>
                   </div>
                 )}
@@ -1101,13 +1124,13 @@ export default function VerificationPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    소속회사 <span className="text-red-500">*</span>
+                    대행사 <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={cardCompany}
                     onChange={(e) => setCardCompany(e.target.value)}
-                    placeholder="예: (주)온시아분양대행"
+                    placeholder="예: OOO 분양대행"
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
@@ -1129,20 +1152,44 @@ export default function VerificationPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     연락처
                   </label>
-                  <input
-                    type="tel"
-                    value={cardPhone}
-                    onChange={(e) => {
-                      let v = e.target.value.replace(/[^0-9]/g, '');
-                      if (v.length > 11) v = v.slice(0, 11);
-                      if (v.length > 7) v = `${v.slice(0,3)}-${v.slice(3,7)}-${v.slice(7)}`;
-                      else if (v.length > 3) v = `${v.slice(0,3)}-${v.slice(3)}`;
-                      setCardPhone(v);
-                    }}
-                    placeholder="010-0000-0000"
-                    maxLength={13}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="tel"
+                      value={cardPhone}
+                      onChange={(e) => {
+                        let v = e.target.value.replace(/[^0-9]/g, '');
+                        if (v.length > 11) v = v.slice(0, 11);
+                        if (v.length > 7) v = `${v.slice(0,3)}-${v.slice(3,7)}-${v.slice(7)}`;
+                        else if (v.length > 3) v = `${v.slice(0,3)}-${v.slice(3)}`;
+                        setCardPhone(v);
+                        setCardPhoneDuplicate(null);
+                      }}
+                      placeholder="010-0000-0000"
+                      maxLength={13}
+                      className={`flex-1 px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 ${
+                        cardPhoneDuplicate === true ? 'border-red-300' : cardPhoneDuplicate === false ? 'border-green-300' : 'border-gray-200'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => checkPhoneDuplicate(cardPhone)}
+                      disabled={isCheckingPhone || cardPhone.replace(/[^0-9]/g, '').length < 10}
+                      className="px-4 py-3 bg-teal-600 text-white rounded-xl text-sm font-medium hover:bg-teal-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors whitespace-nowrap flex items-center gap-1.5"
+                    >
+                      {isCheckingPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      중복체크
+                    </button>
+                  </div>
+                  {cardPhoneDuplicate === true && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> 이미 등록된 연락처입니다
+                    </p>
+                  )}
+                  {cardPhoneDuplicate === false && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> 확인 완료
+                    </p>
+                  )}
                 </div>
               </div>
 

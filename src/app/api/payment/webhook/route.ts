@@ -6,12 +6,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { eventType, data } = body;
 
+    console.log(`웹훅 수신: ${eventType}`, data?.paymentKey);
+
     // 토스페이먼츠 웹훅 이벤트 처리
     if (!data?.paymentKey) {
       return NextResponse.json({ success: false }, { status: 400 });
     }
 
-    // 토스페이먼츠 API로 결제 상태 재확인
+    // 토스페이먼츠 API로 결제 상태 재확인 (서명 대신 API 검증으로 보안 확보)
     const secretKey = process.env.TOSS_SECRET_KEY;
     if (!secretKey) {
       return NextResponse.json({ success: false }, { status: 500 });
@@ -38,6 +40,7 @@ export async function POST(req: NextRequest) {
     const statusMap: Record<string, string> = {
       DONE: 'completed',
       CANCELED: 'refunded',
+      PARTIAL_CANCELED: 'refunded',
       ABORTED: 'failed',
       EXPIRED: 'failed',
       WAITING_FOR_DEPOSIT: 'pending',
