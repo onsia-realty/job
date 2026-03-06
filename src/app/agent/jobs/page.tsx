@@ -799,7 +799,7 @@ export default function AgentJobsPage() {
         {/* 상단 정보바 */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-slate-800">채용공고</h1>
+            <h1 className="text-xl font-bold text-slate-800">공인중개사 채용공고</h1>
             <span className="text-sm text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full font-medium">
               {totalJobCount}건
             </span>

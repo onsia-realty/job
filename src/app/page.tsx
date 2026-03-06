@@ -150,10 +150,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
-              <Link href="/" className="text-xl font-bold">
-                <span className="text-white">부동산</span>
-                <span className="text-cyan-400 font-bold">인</span>
-              </Link>
+              <h1>
+                <Link href="/" className="text-xl font-bold">
+                  <span className="text-white">부동산</span>
+                  <span className="text-cyan-400 font-bold">인</span>
+                  <span className="sr-only"> - 부동산 전문가 구인구직 플랫폼</span>
+                </Link>
+              </h1>
               <nav className="hidden md:flex items-center gap-6">
                 <Link href="/agent" className="text-gray-300 hover:text-white transition-colors">
                   공인중개사
@@ -392,12 +395,12 @@ export default function LandingPage() {
             {/* 영상 (2/3) */}
             <div className="md:col-span-2 relative rounded-lg overflow-hidden h-[400px]">
               <video
-                src="/수정자막2.mp4"
+                src="https://pkbnudkbkhzqjhwffkbj.supabase.co/storage/v1/object/public/job-images/videos/intro-main.mp4"
                 autoPlay
                 muted
                 loop
                 playsInline
-                preload="none"
+                preload="metadata"
                 className="w-full h-full object-cover"
               />
             </div>

@@ -1086,7 +1086,7 @@ export default function SalesMainPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-purple-400 text-[10px] font-bold tracking-wider mb-0.5">BOOIN PLATFORM</p>
-              <p className="text-white font-bold text-sm">알바가 아닙니다. 부동산 전문가입니다.</p>
+              <h1 className="text-white font-bold text-sm">분양상담사 구인구직 - 부동산 전문가 채용 플랫폼</h1>
               <p className="text-gray-400 text-xs mt-0.5 truncate">AI 매칭 · 부동산 전문가 Only · 90% 저렴한 광고비</p>
             </div>
             <ChevronRight className="w-5 h-5 text-purple-400 flex-shrink-0" />

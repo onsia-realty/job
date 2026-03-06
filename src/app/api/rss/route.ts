@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { XMLParser } from 'fast-xml-parser';
 
 const RSS_URL = 'https://news.google.com/rss/search?q=%EB%B6%80%EB%8F%99%EC%82%B0&hl=ko&gl=KR&ceid=KR:ko';
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://booin.co.kr';
+const SITE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.booin.co.kr').trim();
 const SITE_NAME = '부동산인 - 부동산 뉴스';
 
 export async function GET() {

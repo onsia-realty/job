@@ -29,7 +29,7 @@ const gaegu = Gaegu({
   subsets: ["latin"],
 });
 
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://onsia-job.vercel.app";
+const SITE_URL = (process.env.NEXT_PUBLIC_BASE_URL || "https://www.booin.co.kr").trim();
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -99,9 +99,10 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    // Google Search Console, Naver Webmaster 등록 후 추가
-    // google: "google-site-verification-code",
-    // other: { "naver-site-verification": "naver-code" },
+    google: "dMN0GY609vDS25mC2MRXryNRgTPSgkNSmevS2rlcFn4",
+    other: {
+      "naver-site-verification": "99ec8c3f26a0e0fd023aeac14d6b5238d9ea88f9",
+    },
   },
   category: "부동산",
 };
@@ -127,8 +128,7 @@ export default function RootLayout({
           title="부동산인 - 부동산 뉴스 RSS"
           href="/api/rss"
         />
-        {/* Canonical */}
-        <link rel="canonical" href={SITE_URL} />
+        {/* Canonical은 metadata.alternates.canonical로 관리 */}
         {/* Favicon */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon.svg" type="image/svg+xml" />

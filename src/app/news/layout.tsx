@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { ReactNode } from 'react';
 
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://booin.co.kr';
+const SITE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.booin.co.kr').trim();
 
 export const metadata: Metadata = {
   title: '부동산 뉴스 | 부동산인 - 실시간 부동산 시장 동향',

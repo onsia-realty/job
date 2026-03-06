@@ -351,7 +351,7 @@ export default function AgentMainPage() {
           </div>
 
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-tight">
-            부동산<span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">인</span>
+            공인중개사 <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">구인구직</span>
           </h1>
           <p className="text-slate-300 mb-6">구인구직부터 AI 부동산인 실무비서까지, 중개사에게 필요한 모든 것</p>
 

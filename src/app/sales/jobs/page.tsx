@@ -934,7 +934,7 @@ export default function SalesJobsPage() {
         {/* 결과 헤더 */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h1 className="text-lg font-bold text-gray-900">현장 구인</h1>
+            <h1 className="text-lg font-bold text-gray-900">분양상담사 채용공고</h1>
             <span className="text-sm text-gray-500">
               총 {filteredJobs.length}건
             </span>

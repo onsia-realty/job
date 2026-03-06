@@ -6,7 +6,7 @@ import NewsImage from './NewsImage';
 // 뉴스 데이터 가져오기
 async function getNewsItem(id: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    const baseUrl = (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.booin.co.kr').trim();
     const res = await fetch(`${baseUrl}/api/news?limit=50`, {
       next: { revalidate: 10800 }, // 3시간 캐시
     });
@@ -17,7 +17,7 @@ async function getNewsItem(id: string) {
   }
 }
 
-const SITE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://onsia.city';
+const SITE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.booin.co.kr').trim();
 
 // 동적 메타데이터 생성 (SEO)
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -288,7 +288,7 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
             </div>
           </nav>
 
-          {/* 사이트 홍보 + RSS 구독 */}
+          {/* 사이트 홍보 */}
           <div className="mt-8 bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-xl p-6">
             <h3 className="text-lg font-bold mb-2">부동산인</h3>
             <p className="text-gray-400 text-sm mb-4">
@@ -301,15 +301,6 @@ export default async function NewsDetailPage({ params }: { params: Promise<{ id:
               >
                 지금 시작하기 →
               </Link>
-              <a
-                href="/api/rss"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-orange-500/20 text-orange-400 rounded-lg hover:bg-orange-500/30 transition-colors text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                RSS 구독
-              </a>
             </div>
           </div>
         </main>
