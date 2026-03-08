@@ -91,11 +91,17 @@ const TIME_OPTIONS = [
   '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
 ];
 
-// 마감일 제한: 오늘 ~ 오늘+10일
-const today = new Date().toISOString().split('T')[0];
-const maxDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+// KST 기준 오늘 날짜
+function getKSTDate(offsetDays = 0) {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000 + offsetDays * 24 * 60 * 60 * 1000);
+  return kst.toISOString().split('T')[0];
+}
 
 function NewAgentJobContent() {
+  // 마감일 제한: 오늘 ~ 오늘+10일 (렌더링마다 KST 기준 계산)
+  const today = getKSTDate();
+  const maxDeadline = getKSTDate(10);
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
@@ -138,7 +144,7 @@ function NewAgentJobContent() {
     if (!editId || !authUser || !session?.access_token) return;
     setIsEditLoading(true);
     (async () => {
-      const res = await fetch(`/api/jobs/${editId}`, {
+      const res = await fetch(`/api/jobs/${editId}?mine=true`, {
         headers: { 'Authorization': `Bearer ${session.access_token}` },
       });
       const data = res.ok ? await res.json() : null;
@@ -450,10 +456,16 @@ function NewAgentJobContent() {
         deadline: formData.is_always_recruiting ? null : (formData.deadline || null),
       };
 
+      if (!session?.access_token) {
+        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        setIsSubmitting(false);
+        return;
+      }
+
       let apiError: string | null = null;
       let newJobId: string | null = null;
       const authHeaders = {
-        'Authorization': `Bearer ${session!.access_token}`,
+        'Authorization': `Bearer ${session.access_token}`,
         'Content-Type': 'application/json',
       };
 

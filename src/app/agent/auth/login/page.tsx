@@ -78,10 +78,14 @@ export default function LoginPage() {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${data.session.access_token}` },
         });
+        if (!res.ok) {
+          throw new Error('사용자 정보 처리에 실패했습니다.');
+        }
         const result = await res.json();
         if (result.created) {
           router.replace(`/agent/auth/signup?role=${currentRole}&social=true`);
         } else {
+          localStorage.removeItem('social_login_role');
           const role = data.session.user?.user_metadata?.role as LoginRole | undefined;
           redirectByRole(role || currentRole);
         }

@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false }, { status: 400 });
     }
 
-    // 토스페이먼츠 API로 결제 상태 재확인 (서명 대신 API 검증으로 보안 확보)
+    // 토스페이먼츠 API로 결제 상태 재확인
     const secretKey = process.env.TOSS_SECRET_KEY;
     if (!secretKey) {
       return NextResponse.json({ success: false }, { status: 500 });
@@ -48,7 +48,19 @@ export async function POST(req: NextRequest) {
     };
     const dbStatus = statusMap[payment.status] || 'pending';
 
-    // DB에서 기존 결제 내역 업데이트
+    // DB에서 기존 결제 내역 조회 (job_id 포함)
+    const { data: paymentRecord } = await supabaseAdmin
+      .from('payments')
+      .select('id, job_id, payment_status')
+      .eq('payment_id', data.paymentKey)
+      .maybeSingle();
+
+    if (!paymentRecord) {
+      console.warn('웹훅: 결제 내역 없음:', data.paymentKey);
+      return NextResponse.json({ success: true });
+    }
+
+    // 결제 상태 업데이트
     const { error } = await supabaseAdmin
       .from('payments')
       .update({ payment_status: dbStatus })
@@ -56,6 +68,20 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('웹훅 결제 상태 업데이트 실패:', error);
+    }
+
+    // 환불/취소/실패 시 공고 tier를 normal로 복구
+    if ((dbStatus === 'refunded' || dbStatus === 'failed') && paymentRecord.job_id) {
+      const { error: revertError } = await supabaseAdmin
+        .from('jobs')
+        .update({ tier: 'normal' })
+        .eq('id', paymentRecord.job_id);
+
+      if (revertError) {
+        console.error('웹훅: 공고 tier 복구 실패:', revertError);
+      } else {
+        console.log(`웹훅: 공고 ${paymentRecord.job_id} tier를 normal로 복구`);
+      }
     }
 
     return NextResponse.json({ success: true });

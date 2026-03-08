@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   Building2,
@@ -100,6 +101,7 @@ const STATUS_CONFIG = {
 };
 
 export default function EmployerDashboardPage() {
+  const router = useRouter();
   const { user, session } = useAuth();
   const [jobs, setJobs] = useState<JobPosting[]>([]);
   const [applicationCounts, setApplicationCounts] = useState<Record<string, number>>({});
@@ -236,40 +238,10 @@ export default function EmployerDashboardPage() {
     setOpenMenuId(null);
   };
 
-  const handleUpgradeTier = async (jobId: string, newTier: string) => {
-    if (!authHeaders) return;
-    setIsUpgrading(true);
-    try {
-      // TODO: 실제 결제 연동 시 여기서 포트원 결제 처리 후 /api/payment/verify 호출
-      const res = await fetch(`/api/jobs/${jobId}`, {
-        method: 'PATCH',
-        headers: authHeaders,
-        body: JSON.stringify({ tier: newTier }),
-      });
-      if (res.ok) {
-        setJobs(prev => prev.map(j => j.id === jobId ? { ...j, tier: newTier as JobPosting['tier'] } : j));
-
-        // 결제 만료일 업데이트 (임시: 티어별 기간 계산)
-        const now = new Date();
-        const expiresAt = new Date(now);
-        if (newTier === 'basic') expiresAt.setDate(expiresAt.getDate() + 5);
-        else expiresAt.setDate(expiresAt.getDate() + 7); // premium, vip
-        setTierExpiry(prev => ({
-          ...prev,
-          [jobId]: { tier: newTier, expires_at: expiresAt.toISOString(), paid_at: now.toISOString() },
-        }));
-
-        alert('결제가 완료되었습니다!');
-        setUpgradeJobId(null);
-      } else {
-        alert('결제에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      alert('오류가 발생했습니다.');
-    } finally {
-      setIsUpgrading(false);
-    }
+  const handleUpgradeTier = (jobId: string, newTier: string) => {
+    // 결제 페이지로 이동 (productKey 형식: agent-basic, agent-premium, agent-vip)
+    const productKey = `agent-${newTier}`;
+    router.push(`/checkout?productKey=${productKey}&jobId=${jobId}`);
   };
 
   if (!user) {

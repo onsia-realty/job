@@ -18,16 +18,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
   }
 
-  const body = await req.json();
-
-  // 무료(normal) 공고: deadline을 24시간 후로 자동 설정
-  const jobData = { ...body, user_id: user.id };
-  if (!jobData.tier || jobData.tier === 'normal') {
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    // KST 기준 날짜
-    const kstExpires = new Date(expires.getTime() + 9 * 60 * 60 * 1000);
-    jobData.deadline = kstExpires.toISOString().slice(0, 10);
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다' }, { status: 400 });
   }
+
+  // 서버에서 강제 설정하는 필드 (클라이언트 값 무시)
+  const { tier: _t, is_approved: _a, is_active: _ac, user_id: _u, views: _v, ...safeBody } = body;
+
+  const jobData = {
+    ...safeBody,
+    user_id: user.id,
+    tier: 'normal',       // 무료 등급 강제 (결제 후에만 변경 가능)
+    is_active: true,
+    is_approved: true,
+  };
+
+  // 무료(normal) 공고: deadline을 KST 기준 24시간 후로 자동 설정
+  const now = new Date();
+  const kstNow = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const kstExpires = new Date(kstNow.getTime() + 24 * 60 * 60 * 1000);
+  jobData.deadline = kstExpires.toISOString().slice(0, 10);
 
   const { data, error } = await supabaseAdmin
     .from('jobs')

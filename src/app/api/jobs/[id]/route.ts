@@ -99,7 +99,31 @@ export async function PATCH(
   }
 
   const { id } = await params;
-  const body = await req.json();
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: '잘못된 요청 형식입니다' }, { status: 400 });
+  }
+
+  // 허용된 필드만 업데이트 (tier, is_approved, user_id, views 등 보호)
+  const ALLOWED_FIELDS = [
+    'title', 'description', 'html_content', 'type', 'category',
+    'company', 'region', 'region_detail', 'address',
+    'salary_type', 'salary_amount', 'work_days', 'work_start', 'work_end',
+    'deadline', 'contact_name', 'contact_phone', 'contact_email',
+    'requirements', 'benefits', 'is_active', 'is_always_recruiting',
+    'preferred', 'position',
+  ];
+  const sanitized: Record<string, unknown> = {};
+  for (const key of ALLOWED_FIELDS) {
+    if (key in body) sanitized[key] = body[key];
+  }
+
+  if (Object.keys(sanitized).length === 0) {
+    return NextResponse.json({ error: '수정할 내용이 없습니다' }, { status: 400 });
+  }
 
   // 소유권 확인
   const { data: existing } = await supabaseAdmin
@@ -115,7 +139,7 @@ export async function PATCH(
 
   const { data, error } = await supabaseAdmin
     .from('jobs')
-    .update(body)
+    .update(sanitized)
     .eq('id', id)
     .eq('user_id', user.id)
     .select()

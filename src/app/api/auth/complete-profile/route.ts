@@ -15,10 +15,10 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, nickname, phone, role, brokerOfficeName } = body;
+    const { name, nickname, phone, role, brokerOfficeName, businessNo } = body;
 
-    if (!name || !phone) {
-      return NextResponse.json({ error: '이름과 연락처는 필수입니다' }, { status: 400 });
+    if (!name || !nickname || !phone) {
+      return NextResponse.json({ error: '이름, 닉네임, 연락처는 필수입니다' }, { status: 400 });
     }
 
     const userType = ['employer', 'seeker'].includes(role) ? role : 'seeker';
@@ -29,9 +29,11 @@ export async function POST(req: NextRequest) {
       .update({
         email: user.email,
         name,
+        nickname,
         phone,
         user_type: userType,
         company_name: brokerOfficeName || null,
+        business_no: businessNo || null,
       })
       .eq('id', user.id);
 

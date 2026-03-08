@@ -111,12 +111,12 @@ function SignUpPageContent() {
   // 중개사무소 정보 조회
   const fetchBrokerInfo = async () => {
     if (!form.brokerRegNo) {
-      setErrors({ ...errors, brokerRegNo: '개설등록번호를 입력해주세요' });
+      setErrors(prev => ({ ...prev, brokerRegNo: '개설등록번호를 입력해주세요' }));
       return;
     }
 
     setIsFetchingBroker(true);
-    setErrors({ ...errors, brokerRegNo: undefined });
+    setErrors(prev => ({ ...prev, brokerRegNo: undefined }));
     setBrokerVerified(false);
 
     try {
@@ -124,7 +124,7 @@ function SignUpPageContent() {
       const result = await response.json();
 
       if (!response.ok) {
-        setErrors({ ...errors, brokerRegNo: result.error || '조회에 실패했습니다' });
+        setErrors(prev => ({ ...prev, brokerRegNo: result.error || '조회에 실패했습니다' }));
         return;
       }
 
@@ -139,7 +139,7 @@ function SignUpPageContent() {
       setBrokerVerified(true);
     } catch (error) {
       console.error('Broker fetch error:', error);
-      setErrors({ ...errors, brokerRegNo: '조회 중 오류가 발생했습니다' });
+      setErrors(prev => ({ ...prev, brokerRegNo: '조회 중 오류가 발생했습니다' }));
     } finally {
       setIsFetchingBroker(false);
     }
@@ -148,16 +148,16 @@ function SignUpPageContent() {
   // 이메일 중복 확인
   const checkEmailDuplicate = async () => {
     if (!form.email) {
-      setErrors({ ...errors, email: '이메일을 입력해주세요' });
+      setErrors(prev => ({ ...prev, email: '이메일을 입력해주세요' }));
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-      setErrors({ ...errors, email: '올바른 이메일 형식이 아닙니다' });
+      setErrors(prev => ({ ...prev, email: '올바른 이메일 형식이 아닙니다' }));
       return;
     }
 
     setIsCheckingEmail(true);
-    setErrors({ ...errors, email: undefined });
+    setErrors(prev => ({ ...prev, email: undefined }));
     setEmailChecked(false);
     setEmailAvailable(false);
 
@@ -166,20 +166,20 @@ function SignUpPageContent() {
       const result = await response.json();
 
       if (!response.ok) {
-        setErrors({ ...errors, email: result.error || '확인에 실패했습니다' });
+        setErrors(prev => ({ ...prev, email: result.error || '확인에 실패했습니다' }));
         return;
       }
 
       setEmailChecked(true);
       if (result.exists) {
         setEmailAvailable(false);
-        setErrors({ ...errors, email: '이미 가입된 이메일입니다' });
+        setErrors(prev => ({ ...prev, email: '이미 가입된 이메일입니다' }));
       } else {
         setEmailAvailable(true);
       }
     } catch (error) {
       console.error('Email check error:', error);
-      setErrors({ ...errors, email: '확인 중 오류가 발생했습니다' });
+      setErrors(prev => ({ ...prev, email: '확인 중 오류가 발생했습니다' }));
     } finally {
       setIsCheckingEmail(false);
     }
@@ -253,7 +253,7 @@ function SignUpPageContent() {
 
     if (!form.phone) {
       newErrors.phone = '연락처를 입력해주세요';
-    } else if (!/^01[0-9]-?[0-9]{3,4}-?[0-9]{4}$/.test(form.phone.replace(/-/g, ''))) {
+    } else if (!/^01[016789][0-9]{7,8}$/.test(form.phone.replace(/-/g, ''))) {
       newErrors.phone = '올바른 연락처 형식이 아닙니다';
     }
 
@@ -279,38 +279,36 @@ function SignUpPageContent() {
 
     try {
       if (isSocialSignup) {
-        // 소셜 로그인 유저: 메타데이터 + users 테이블 업데이트
-        await updateUserMetadata({
-          name: form.name,
-          nickname: form.nickname,
-          phone: form.phone,
-          role: form.role,
-          userType: 'agent',
-          profile_completed: true,
-          ...(form.role === 'employer' && brokerVerified && {
-            brokerRegNo: form.brokerRegNo,
-            brokerOfficeName: form.brokerOfficeName,
-            brokerAddress: form.brokerAddress,
-            brokerRegDate: form.brokerRegDate,
+        // 소셜 로그인 유저: 서버 API로 users 테이블 + 메타데이터 업데이트
+        const session = await getSession();
+        if (!session) {
+          throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.');
+        }
+
+        const profileRes = await fetch('/api/auth/complete-profile', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: form.name,
+            nickname: form.nickname,
+            phone: form.phone,
+            role: form.role,
+            businessNo: form.businessNo || null,
+            brokerOfficeName: form.role === 'employer' && brokerVerified ? form.brokerOfficeName : null,
+            ...(form.role === 'employer' && brokerVerified && {
+              brokerRegNo: form.brokerRegNo,
+              brokerAddress: form.brokerAddress,
+              brokerRegDate: form.brokerRegDate,
+            }),
           }),
         });
 
-        const session = await getSession();
-        if (session) {
-          await fetch('/api/auth/complete-profile', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${session.access_token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              name: form.name,
-              nickname: form.nickname,
-              phone: form.phone,
-              role: form.role,
-              brokerOfficeName: form.role === 'employer' && brokerVerified ? form.brokerOfficeName : null,
-            }),
-          });
+        if (!profileRes.ok) {
+          const errorData = await profileRes.json().catch(() => ({}));
+          throw new Error(errorData.error || '프로필 저장에 실패했습니다. 다시 시도해주세요.');
         }
 
         setNeedsEmailConfirm(false);

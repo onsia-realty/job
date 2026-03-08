@@ -75,11 +75,17 @@ const TIERS = [
   { value: 'unique', label: '유니크 (광고대행사)', price: 24900, originalPrice: 249000, duration: '1주일', color: 'bg-purple-600' },
 ];
 
-// 마감일 제한: 오늘 ~ 오늘+10일
-const today = new Date().toISOString().split('T')[0];
-const maxDeadline = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+// KST 기준 오늘 날짜
+function getKSTDate(offsetDays = 0) {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000 + offsetDays * 24 * 60 * 60 * 1000);
+  return kst.toISOString().split('T')[0];
+}
 
 export default function NewJobPage() {
+  // 마감일 제한: 오늘 ~ 오늘+10일 (렌더링마다 KST 기준 계산)
+  const today = getKSTDate();
+  const maxDeadline = getKSTDate(10);
   const router = useRouter();
   const { user: authUser, session, isLoading: authLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -233,10 +239,16 @@ export default function NewJobPage() {
       }
 
       // 2. 공고 데이터 저장 — API 라우트로 등록 (서버에서 service role 사용)
+      if (!session?.access_token) {
+        alert('세션이 만료되었습니다. 다시 로그인해주세요.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const res = await fetch('/api/jobs', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${session!.access_token}`,
+          'Authorization': `Bearer ${session.access_token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

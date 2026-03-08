@@ -6,16 +6,20 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/auth';
 import { Loader2 } from 'lucide-react';
 
-async function ensureUserRecord(accessToken: string): Promise<{ created?: boolean; exists?: boolean }> {
+async function ensureUserRecord(accessToken: string): Promise<{ created?: boolean; exists?: boolean; error?: string }> {
   try {
     const res = await fetch('/api/auth/ensure-user', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${accessToken}` },
     });
+    if (!res.ok) {
+      console.error('Ensure user record failed:', res.status);
+      return { error: '사용자 정보 처리에 실패했습니다.' };
+    }
     return await res.json();
   } catch (err) {
     console.error('Ensure user record error:', err);
-    return {};
+    return { error: '네트워크 오류가 발생했습니다.' };
   }
 }
 
@@ -49,12 +53,18 @@ function AuthCallbackContent() {
           if (data.session) {
             // users 테이블에 레코드 자동 생성 + 신규/기존 판별
             const result = await ensureUserRecord(data.session.access_token);
+            if (result.error) {
+              setError(result.error);
+              return;
+            }
+            const role = localStorage.getItem('social_login_role') || 'seeker';
+            localStorage.removeItem('social_login_role');
             if (result.created) {
-              const role = localStorage.getItem('social_login_role') || 'seeker';
-              localStorage.removeItem('social_login_role');
               router.replace(`/agent/auth/signup?role=${role}&social=true`);
             } else {
-              router.replace('/agent/mypage');
+              // 기존 유저: role 기반 리다이렉트
+              const userRole = data.session.user?.user_metadata?.role;
+              router.replace(userRole === 'employer' ? '/agent/employer' : '/agent/jobs');
             }
             return;
           }
@@ -65,12 +75,17 @@ function AuthCallbackContent() {
 
         if (session) {
           const result = await ensureUserRecord(session.access_token);
+          if (result.error) {
+            setError(result.error);
+            return;
+          }
+          const role = localStorage.getItem('social_login_role') || 'seeker';
+          localStorage.removeItem('social_login_role');
           if (result.created) {
-            const role = localStorage.getItem('social_login_role') || 'seeker';
-            localStorage.removeItem('social_login_role');
             router.replace(`/agent/auth/signup?role=${role}&social=true`);
           } else {
-            router.replace('/agent/mypage');
+            const userRole = session.user?.user_metadata?.role;
+            router.replace(userRole === 'employer' ? '/agent/employer' : '/agent/jobs');
           }
         } else {
           router.replace('/agent/auth/login');

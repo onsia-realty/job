@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { PAYMENT_PRODUCTS } from '@/lib/toss';
@@ -14,6 +14,7 @@ function PaymentSuccessContent() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [productName, setProductName] = useState('');
+  const confirmedRef = useRef(false);
 
   const paymentKey = searchParams.get('paymentKey');
   const orderId = searchParams.get('orderId');
@@ -43,6 +44,10 @@ function PaymentSuccessContent() {
     }
 
     setProductName(product.name);
+
+    // 이미 호출됐으면 중복 실행 방지 (StrictMode, 새로고침)
+    if (confirmedRef.current) return;
+    confirmedRef.current = true;
 
     const confirmPayment = async () => {
       try {
