@@ -41,7 +41,7 @@ export default function AiAssistantLandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a1628]/80 backdrop-blur-md border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link
-            href="/"
+            href="/agent"
             className="inline-flex items-center gap-2.5 text-white/70 hover:text-white transition-colors text-base"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -101,9 +101,7 @@ export default function AiAssistantLandingPage() {
 
               {/* 메인 헤드라인 */}
               <h1 className="text-4xl md:text-5xl lg:text-[3.6rem] font-black mb-6 leading-tight break-keep">
-                <span className="text-white">중개실무, 특약</span>
-                <br />
-                <span className="text-white">분양권 세금</span>
+                <span className="text-white">중개실무,</span>
                 <br />
                 <span className="bg-gradient-to-r from-cyan-400 via-emerald-300 to-cyan-400 bg-clip-text text-transparent">
                   AI에게 물어보세요.
@@ -133,25 +131,14 @@ export default function AiAssistantLandingPage() {
 
               {/* CTA */}
               <div>
-                {user ? (
-                  <Link
-                    href="/agent/ai-assistant"
-                    className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
-                  >
-                    <Bot className="w-5 h-5" />
-                    AI 비서에게 물어보기
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                ) : (
-                  <Link
-                    href="/agent/auth/login"
-                    className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
-                  >
-                    <LogIn className="w-5 h-5" />
-                    로그인하고 AI 비서 사용하기
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                )}
+                <Link
+                  href="/agent/ai-assistant"
+                  className="group inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
+                >
+                  <Bot className="w-5 h-5" />
+                  AI 비서에게 물어보기
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
               </div>
 
               {/* 신뢰 지표 */}
@@ -581,25 +568,14 @@ export default function AiAssistantLandingPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {user ? (
-                  <Link
-                    href="/agent/ai-assistant"
-                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
-                  >
-                    <Bot className="w-5 h-5" />
-                    AI 비서 시작하기
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                ) : (
-                  <Link
-                    href="/agent/auth/login"
-                    className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
-                  >
-                    <LogIn className="w-5 h-5" />
-                    로그인하고 AI 비서 사용하기
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                )}
+                <Link
+                  href="/agent/ai-assistant"
+                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-cyan-500 to-emerald-500 text-white font-bold text-lg rounded-xl hover:from-cyan-400 hover:to-emerald-400 transition-all shadow-lg shadow-cyan-500/25"
+                >
+                  <Bot className="w-5 h-5" />
+                  AI 비서 시작하기
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Link>
                 {!user ? (
                   <Link
                     href="/agent/auth/login"
