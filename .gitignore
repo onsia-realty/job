@@ -25,6 +25,9 @@
 *.pem
 nul
 
+# media (Supabase Storage에 저장)
+*.mp4
+
 # debug
 npm-debug.log*
 yarn-debug.log*
