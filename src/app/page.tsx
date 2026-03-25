@@ -147,17 +147,17 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#141517] text-white">
       {/* 헤더 */}
       <header className="border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               <h1>
-                <Link href="/" className="text-xl font-bold">
+                <Link href="/" className="text-xl lg:text-2xl font-bold">
                   <span className="text-white">부동산</span>
                   <span className="text-cyan-400 font-bold">인</span>
                   <span className="sr-only"> - 부동산 전문가 구인구직 플랫폼</span>
                 </Link>
               </h1>
-              <nav className="hidden md:flex items-center gap-6">
+              <nav className="hidden md:flex items-center gap-6 lg:gap-8">
                 <Link href="/agent" className="text-gray-300 hover:text-white transition-colors">
                   공인중개사
                 </Link>
@@ -205,22 +205,22 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
         {/* 히어로 섹션 - 슬라이더 */}
-        <section className="mb-12">
-          <div className="grid md:grid-cols-2 gap-6 items-center">
+        <section className="mb-12 lg:mb-16">
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-center">
             {/* 좌측: 공지 슬라이더 */}
             <div className="relative">
               {announcements[currentSlide].link !== null ? (
                 <Link
                   href={announcements[currentSlide].link as string}
-                  className={`block bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 min-h-[280px] flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer relative`}
+                  className={`block bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 lg:p-10 min-h-[280px] lg:min-h-[340px] flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer relative`}
                 >
                   <div>
                     <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
                       {announcements[currentSlide].badge}
                     </span>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">
                       {announcements[currentSlide].title}
                     </h2>
                     <p className="text-white/80">
@@ -270,12 +270,12 @@ export default function LandingPage() {
                   </div>
                 </Link>
               ) : (
-                <div className={`bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 min-h-[280px] flex flex-col justify-between`}>
+                <div className={`bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 lg:p-10 min-h-[280px] lg:min-h-[340px] flex flex-col justify-between`}>
                   <div>
                     <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
                       {announcements[currentSlide].badge}
                     </span>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-3">
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">
                       {announcements[currentSlide].title}
                     </h2>
                     <p className="text-white/80">
@@ -390,10 +390,10 @@ export default function LandingPage() {
         </section>
 
         {/* 미디어 섹션 (직방 스타일 - 영상 2/3 + 카테고리 1/3) */}
-        <section className="mb-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <section className="mb-16 lg:mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
             {/* 영상 (2/3) */}
-            <div className="md:col-span-2 relative rounded-lg overflow-hidden h-[400px]">
+            <div className="md:col-span-2 relative rounded-lg overflow-hidden h-[400px] lg:h-[480px]">
               <video
                 src="https://pkbnudkbkhzqjhwffkbj.supabase.co/storage/v1/object/public/job-images/videos/intro-main.mp4"
                 autoPlay
@@ -406,7 +406,7 @@ export default function LandingPage() {
             </div>
 
             {/* 카테고리 카드 (1/3) */}
-            <div className="flex flex-col gap-4 h-[400px]">
+            <div className="flex flex-col gap-4 h-[400px] lg:h-[480px]">
               {/* 공인중개사 - 모바일: /agent/jobs, PC: /agent */}
               <Link
                 href="/agent/jobs"
@@ -423,7 +423,7 @@ export default function LandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                   <Building2 className="w-10 h-10 mb-2" />
-                  <h3 className="text-xl font-bold">공인중개사</h3>
+                  <h3 className="text-xl lg:text-2xl font-bold">공인중개사</h3>
                   <p className="text-sm text-white/80 mt-1">중개사무소 구인구직</p>
                 </div>
               </Link>
@@ -442,7 +442,7 @@ export default function LandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                   <Building2 className="w-10 h-10 mb-2" />
-                  <h3 className="text-xl font-bold">공인중개사</h3>
+                  <h3 className="text-xl lg:text-2xl font-bold">공인중개사</h3>
                   <p className="text-sm text-white/80 mt-1">중개사무소 구인구직</p>
                 </div>
               </Link>
@@ -463,7 +463,7 @@ export default function LandingPage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/40 to-transparent" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
                   <HardHat className="w-10 h-10 mb-2" />
-                  <h3 className="text-xl font-bold">분양상담사</h3>
+                  <h3 className="text-xl lg:text-2xl font-bold">분양상담사</h3>
                   <p className="text-sm text-white/80 mt-1">분양현장 구인구직</p>
                 </div>
               </Link>
@@ -506,13 +506,13 @@ export default function LandingPage() {
         </section>
 
         {/* 부동산 뉴스 + 광고 배너 */}
-        <section className="mb-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="mb-16 lg:mb-20">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {/* BOOIN AI 웹툰 + 부동산 뉴스 (2/3) */}
             <div className="md:col-span-2 space-y-6">
               {/* 상단: BOOIN AI 웹툰 */}
               {toonEpisodes.length > 0 && (
-                <div className="bg-[#1C1D1F] rounded-2xl p-6">
+                <div className="bg-[#1C1D1F] rounded-2xl p-6 lg:p-8">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">🦀</span>
@@ -530,7 +530,7 @@ export default function LandingPage() {
                         className="rounded-xl overflow-hidden bg-[#252628] hover:bg-[#2a2b2d] transition-colors group"
                       >
                         {ep.toon_image_url && (
-                          <div className="relative w-full h-[140px] overflow-hidden">
+                          <div className="relative w-full h-[140px] lg:h-[180px] overflow-hidden">
                             <Image
                               src={ep.toon_image_url}
                               alt={ep.title}
@@ -560,7 +560,7 @@ export default function LandingPage() {
               )}
 
               {/* 하단: 부동산 뉴스 (기존 UI) */}
-              <div className="bg-[#1C1D1F] rounded-2xl p-6">
+              <div className="bg-[#1C1D1F] rounded-2xl p-6 lg:p-8">
                 <div className="flex items-center gap-2 mb-4">
                   <Newspaper className="w-5 h-5 text-blue-400" />
                   <h3 className="text-lg font-medium">부동산 뉴스</h3>
@@ -577,7 +577,7 @@ export default function LandingPage() {
                         rel="noopener noreferrer"
                         className="flex gap-4 p-3 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
                       >
-                        <div className="w-24 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700 relative">
+                        <div className="w-24 h-16 lg:w-32 lg:h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700 relative">
                           <Image
                             src={news.thumbnail || 'https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop'}
                             alt=""
@@ -590,7 +590,7 @@ export default function LandingPage() {
                         </div>
                         <div className="flex-1 min-w-0 flex flex-col justify-center">
                           <span className="inline-block text-xs text-blue-400 mb-1 w-fit">{news.category}</span>
-                          <h4 className="font-medium text-white line-clamp-2 text-sm leading-tight">{news.title}</h4>
+                          <h4 className="font-medium text-white line-clamp-2 text-sm lg:text-base leading-tight">{news.title}</h4>
                         </div>
                       </a>
                     ))
@@ -638,14 +638,14 @@ export default function LandingPage() {
                   <Link
                     key={banner.id}
                     href={banner.link}
-                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 min-h-[140px] hover:opacity-90 transition-opacity overflow-hidden`}
+                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 lg:p-8 min-h-[140px] lg:min-h-[160px] hover:opacity-90 transition-opacity overflow-hidden`}
                   >
                     {inner}
                   </Link>
                 ) : (
                   <div
                     key={banner.id}
-                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 min-h-[140px] opacity-80 overflow-hidden`}
+                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 lg:p-8 min-h-[140px] lg:min-h-[160px] opacity-80 overflow-hidden`}
                   >
                     {inner}
                   </div>
@@ -656,10 +656,10 @@ export default function LandingPage() {
         </section>
 
         {/* 하단 배너 */}
-        <section className="mb-16">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1a1f35] to-[#0f172a] p-8">
+        <section className="mb-16 lg:mb-20">
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1a1f35] to-[#0f172a] p-8 lg:p-10">
             <div className="relative z-10">
-              <h3 className="text-xl font-bold mb-2">
+              <h3 className="text-xl lg:text-2xl font-bold mb-2">
                 함께 성장하는<br className="md:hidden" /> 부동산 전문가 커뮤니티
               </h3>
               <p className="text-gray-400 mb-4">
