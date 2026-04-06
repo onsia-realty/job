@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { TOSS_CONFIG, PAYMENT_PRODUCTS, generateOrderId } from '@/lib/toss';
+import { TOSS_CONFIG, PAYMENT_PRODUCTS, generateOrderId, getVat, getTotalPrice } from '@/lib/toss';
 import { ChevronLeft, Loader2, ShieldCheck } from 'lucide-react';
 import type { TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
 
@@ -36,7 +36,7 @@ function CheckoutContent() {
 
         await widgetInstance.setAmount({
           currency: 'KRW',
-          value: product.price,
+          value: getTotalPrice(product.price),
         });
 
         await Promise.all([
@@ -127,14 +127,28 @@ function CheckoutContent() {
         {/* 상품 정보 */}
         <div className="bg-slate-800/50 rounded-xl border border-slate-700 p-5 mb-6">
           <h1 className="text-lg font-bold mb-3">결제 정보</h1>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div>
               <p className="font-medium">{product.name}</p>
               <p className="text-sm text-gray-400">{product.duration} 이용권</p>
             </div>
-            <p className="text-xl font-bold text-cyan-400">
+            <p className="text-lg font-medium text-gray-300">
               {product.price.toLocaleString()}원
             </p>
+          </div>
+          <div className="border-t border-slate-700 pt-3 space-y-1.5">
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>공급가액</span>
+              <span>{product.price.toLocaleString()}원</span>
+            </div>
+            <div className="flex justify-between text-sm text-gray-400">
+              <span>부가세 (10%)</span>
+              <span>{getVat(product.price).toLocaleString()}원</span>
+            </div>
+            <div className="flex justify-between text-base font-bold pt-2 border-t border-slate-600">
+              <span>총 결제금액</span>
+              <span className="text-cyan-400">{getTotalPrice(product.price).toLocaleString()}원</span>
+            </div>
           </div>
         </div>
 
@@ -175,7 +189,7 @@ function CheckoutContent() {
             ) : (
               <>
                 <ShieldCheck className="w-5 h-5" />
-                {product.price.toLocaleString()}원 결제하기
+                {getTotalPrice(product.price).toLocaleString()}원 결제하기
               </>
             )}
           </button>

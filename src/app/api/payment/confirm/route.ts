@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PAYMENT_PRODUCTS } from '@/lib/toss';
+import { PAYMENT_PRODUCTS, getTotalPrice } from '@/lib/toss';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
@@ -21,8 +21,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 금액 검증 (클라이언트 전송 금액 vs 상품 가격)
-    if (amount !== product.price) {
+    // 금액 검증 (클라이언트 전송 금액 vs 상품 총액 = 공급가액 + 부가세)
+    const totalPrice = getTotalPrice(product.price);
+    if (amount !== totalPrice) {
       return NextResponse.json(
         { success: false, message: '결제 금액이 일치하지 않습니다.' },
         { status: 400 }
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
           paymentKey,
           orderId,
           productName: product.name,
-          amount: product.price,
+          amount: totalPrice,
           tier: product.tier,
           duration: product.duration,
         },
@@ -131,9 +132,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Toss 확인 금액 vs 상품 가격 재검증
-    if (payment.totalAmount !== product.price) {
-      console.error('결제 금액 불일치:', { toss: payment.totalAmount, product: product.price });
+    // Toss 확인 금액 vs 상품 총액(공급가액+부가세) 재검증
+    if (payment.totalAmount !== totalPrice) {
+      console.error('결제 금액 불일치:', { toss: payment.totalAmount, expected: totalPrice });
       return NextResponse.json(
         { success: false, message: '결제 금액 검증에 실패했습니다.' },
         { status: 400 }
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         product_key: productKey,
         product_name: product.name,
-        amount: product.price,
+        amount: totalPrice,
         currency: 'KRW',
         payment_status: 'completed',
         payment_method: payment.method || 'CARD',
@@ -198,7 +199,7 @@ export async function POST(req: NextRequest) {
         paymentKey,
         orderId,
         productName: product.name,
-        amount: product.price,
+        amount: totalPrice,
         tier: product.tier,
         duration: product.duration,
       },

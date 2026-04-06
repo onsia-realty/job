@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/shared/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { PAYMENT_PRODUCTS } from '@/lib/toss';
+import { PAYMENT_PRODUCTS, getTotalPrice } from '@/lib/toss';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
@@ -583,6 +583,9 @@ function PremiumPricingContent() {
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">상품 가격</h2>
             <p className="text-gray-400 text-sm">오픈 기념 특별가! <span className="text-cyan-400 font-bold text-lg">경쟁사 대비 10분의 1 가격</span></p>
+            <p className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium animate-pulse">
+              <span>※</span> 표시 가격은 공급가액이며, <span className="font-bold text-amber-300">부가세(10%) 별도</span>
+            </p>
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -633,7 +636,7 @@ function PremiumPricingContent() {
                             </span>
                             <span className="text-sm text-gray-400 mb-1">원/{plan.duration}</span>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">일 {plan.perDay}</p>
+                          <p className="text-xs text-gray-500 mt-1">일 {plan.perDay} <span className="text-amber-400/80 font-medium animate-pulse">· 부가세(10%) 별도</span></p>
                         </>
                       ) : (
                         <>
@@ -912,7 +915,7 @@ function PremiumPricingContent() {
                       }`}
                     >
                       {product
-                        ? `프리미엄 결제하기 ${product.price.toLocaleString()}원`
+                        ? `프리미엄 결제하기 ${getTotalPrice(product.price).toLocaleString()}원`
                         : '결제하기'}
                     </button>
                   );

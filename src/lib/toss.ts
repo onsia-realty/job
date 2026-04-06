@@ -4,13 +4,26 @@ export const TOSS_CONFIG = {
   clientKey: process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!,
 } as const;
 
+// 부가세율
+const VAT_RATE = 0.1;
+
 // 결제 상품 정보 타입
 export interface PaymentProduct {
   tier: string;
   name: string;
-  price: number;
+  price: number;       // 공급가액 (부가세 미포함)
   duration: string;
   category: 'agent' | 'sales';
+}
+
+// 부가세 계산 유틸
+export function getVat(price: number): number {
+  return Math.round(price * VAT_RATE);
+}
+
+// 결제 총액 (공급가액 + 부가세)
+export function getTotalPrice(price: number): number {
+  return price + getVat(price);
 }
 
 // 결제 가능한 상품 목록 (무료 제외)

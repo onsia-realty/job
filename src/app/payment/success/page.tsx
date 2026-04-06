@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { PAYMENT_PRODUCTS } from '@/lib/toss';
+import { PAYMENT_PRODUCTS, getTotalPrice } from '@/lib/toss';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -45,8 +45,8 @@ function PaymentSuccessContent() {
       return;
     }
 
-    // 금액 검증 (클라이언트 조작 방지)
-    if (parseInt(amount) !== product.price) {
+    // 금액 검증 (클라이언트 조작 방지 — 총액 = 공급가액 + 부가세)
+    if (parseInt(amount) !== getTotalPrice(product.price)) {
       setStatus('error');
       setMessage('결제 금액이 일치하지 않습니다.');
       return;
