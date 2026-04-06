@@ -3,6 +3,16 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
+    // 기본 웹훅 시크릿 검증 (설정된 경우)
+    const webhookSecret = process.env.TOSS_WEBHOOK_SECRET;
+    if (webhookSecret) {
+      const headerSecret = req.headers.get('x-webhook-secret');
+      if (headerSecret && headerSecret !== webhookSecret) {
+        console.warn('웹훅: 시크릿 불일치');
+        return NextResponse.json({ success: false }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const { eventType, data } = body;
 
@@ -13,7 +23,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false }, { status: 400 });
     }
 
-    // 토스페이먼츠 API로 결제 상태 재확인
+    // 토스페이먼츠 API로 결제 상태 재확인 (핵심 보안: 서버 → 토스 직접 검증)
     const secretKey = process.env.TOSS_SECRET_KEY;
     if (!secretKey) {
       return NextResponse.json({ success: false }, { status: 500 });
@@ -31,6 +41,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!paymentResponse.ok) {
+      console.warn('웹훅: 토스 API 결제 조회 실패:', data.paymentKey);
       return NextResponse.json({ success: false }, { status: 400 });
     }
 
@@ -57,6 +68,11 @@ export async function POST(req: NextRequest) {
 
     if (!paymentRecord) {
       console.warn('웹훅: 결제 내역 없음:', data.paymentKey);
+      return NextResponse.json({ success: true });
+    }
+
+    // 이미 같은 상태면 스킵
+    if (paymentRecord.payment_status === dbStatus) {
       return NextResponse.json({ success: true });
     }
 

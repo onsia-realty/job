@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     // 메타데이터에서 사용자 정보 추출
     const meta = user.user_metadata || {};
     const name = meta.name || meta.full_name || meta.nickname || user.email?.split('@')[0] || '사용자';
+    const nickname = meta.nickname || null;
     const userType = meta.role || meta.userType || 'seeker';
 
     // users 테이블에 새 레코드 생성
@@ -38,10 +39,15 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         name: name,
+        nickname: nickname,
         phone: meta.phone || null,
         user_type: ['employer', 'seeker', 'admin'].includes(userType) ? userType : 'seeker',
         avatar_url: meta.avatar_url || meta.picture || null,
         company_name: meta.brokerOfficeName || null,
+        business_no: meta.businessNo || null,
+        broker_reg_no: meta.brokerRegNo || null,
+        broker_address: meta.brokerAddress || null,
+        broker_reg_date: meta.brokerRegDate || null,
       });
 
     if (insertError) {

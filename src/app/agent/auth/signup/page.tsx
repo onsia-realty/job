@@ -107,6 +107,9 @@ function SignUpPageContent() {
   const [emailChecked, setEmailChecked] = useState(false);
   const [emailAvailable, setEmailAvailable] = useState(false);
   const [needsEmailConfirm, setNeedsEmailConfirm] = useState(false);
+  const [isCheckingPhone, setIsCheckingPhone] = useState(false);
+  const [phoneChecked, setPhoneChecked] = useState(false);
+  const [phoneDuplicate, setPhoneDuplicate] = useState(false);
 
   // 중개사무소 정보 조회
   const fetchBrokerInfo = async () => {
@@ -185,6 +188,31 @@ function SignUpPageContent() {
     }
   };
 
+  // 연락처 중복 확인 (blur 시 자동)
+  const checkPhoneDuplicate = async (phoneValue: string) => {
+    const cleaned = phoneValue.replace(/-/g, '');
+    if (!/^01[016789][0-9]{7,8}$/.test(cleaned)) return;
+
+    setIsCheckingPhone(true);
+    setPhoneChecked(false);
+    setPhoneDuplicate(false);
+    setErrors(prev => ({ ...prev, phone: undefined }));
+
+    try {
+      const response = await fetch(`/api/check-phone?phone=${encodeURIComponent(cleaned)}`);
+      const result = await response.json();
+      setPhoneChecked(true);
+      if (result.duplicate) {
+        setPhoneDuplicate(true);
+        setErrors(prev => ({ ...prev, phone: '이미 등록된 연락처입니다' }));
+      }
+    } catch {
+      // 실패 시 무시 — 가입 시 서버에서 다시 검증
+    } finally {
+      setIsCheckingPhone(false);
+    }
+  };
+
   const formatPhoneNumber = (value: string) => {
     const numbers = value.replace(/[^\d]/g, '');
     if (numbers.length <= 3) return numbers;
@@ -255,6 +283,8 @@ function SignUpPageContent() {
       newErrors.phone = '연락처를 입력해주세요';
     } else if (!/^01[016789][0-9]{7,8}$/.test(form.phone.replace(/-/g, ''))) {
       newErrors.phone = '올바른 연락처 형식이 아닙니다';
+    } else if (phoneDuplicate) {
+      newErrors.phone = '이미 등록된 연락처입니다';
     }
 
     if (!form.agreeTerms) {
@@ -334,7 +364,7 @@ function SignUpPageContent() {
       }
     } catch (err: any) {
       if (err.message?.includes('already registered')) {
-        setErrors({ email: '이미 가입된 이메일입니다' });
+        setErrors({ email: '이미 가입된 이메일입니다. 이메일 인증을 완료하지 않았다면 로그인 페이지에서 인증 메일을 재발송해주세요.' });
       } else {
         setErrors({ email: err.message || '회원가입 중 오류가 발생했습니다' });
       }
@@ -356,18 +386,18 @@ function SignUpPageContent() {
   // 가입 완료 화면
   if (step === 'success') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center px-4">
         <div className="w-full max-w-md bg-white rounded-2xl p-8 text-center shadow-lg">
           {needsEmailConfirm ? (
             <>
-              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Mail className="w-10 h-10 text-blue-600" />
+              <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Mail className="w-10 h-10 text-emerald-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">이메일 인증이 필요합니다</h1>
-              <p className="text-gray-600 mb-2">
-                <span className="font-medium text-blue-600">{form.email}</span>
+              <h1 className="text-2xl font-bold text-slate-900 mb-2">이메일 인증이 필요합니다</h1>
+              <p className="text-slate-600 mb-2">
+                <span className="font-medium text-emerald-600">{form.email}</span>
               </p>
-              <p className="text-gray-500 text-sm mb-8">
+              <p className="text-slate-500 text-sm mb-8">
                 위 이메일로 인증 링크를 보내드렸습니다.<br />
                 이메일을 확인하고 링크를 클릭하면 가입이 완료됩니다.
               </p>
@@ -379,7 +409,7 @@ function SignUpPageContent() {
               </div>
               <Link
                 href="/agent/auth/login"
-                className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                className="block w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-500/25"
               >
                 로그인 페이지로 이동
               </Link>
@@ -389,24 +419,24 @@ function SignUpPageContent() {
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-10 h-10 text-green-600" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+              <h1 className="text-2xl font-bold text-slate-900 mb-2">
                 {isSocialSignup ? '프로필 등록 완료!' : '가입이 완료되었습니다!'}
               </h1>
-              <p className="text-gray-600 mb-8">
+              <p className="text-slate-600 mb-8">
                 부동산인의 회원이 되신 것을 환영합니다.<br />
                 이제 다양한 채용 공고를 확인해보세요.
               </p>
               <div className="space-y-3">
                 <Link
                   href={form.role === 'employer' ? '/agent/employer' : '/agent/jobs'}
-                  className="block w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-colors"
+                  className="block w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-500/25"
                 >
                   {form.role === 'employer' ? '구인 시작하기' : '채용공고 둘러보기'}
                 </Link>
                 {form.role === 'seeker' && (
                   <Link
                     href="/agent/mypage/resume"
-                    className="block w-full py-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                    className="block w-full py-4 bg-slate-100 text-slate-700 rounded-xl font-medium hover:bg-slate-200 transition-colors"
                   >
                     이력서 등록하기
                   </Link>
@@ -420,18 +450,18 @@ function SignUpPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-8">
       {/* 헤더 */}
-      <header className="bg-white border-b border-gray-200">
+      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-md mx-auto px-4">
           <div className="flex items-center justify-between h-14">
             <Link
               href="/agent/auth/login"
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
-            <h1 className="font-bold text-gray-900">{isSocialSignup ? '추가 정보 입력' : '회원가입'}</h1>
+            <h1 className="font-bold text-slate-900">{isSocialSignup ? '추가 정보 입력' : '회원가입'}</h1>
             <div className="w-5" />
           </div>
         </div>
@@ -439,37 +469,37 @@ function SignUpPageContent() {
 
       <main className="max-w-md mx-auto px-4 py-6">
         {/* 개인회원 / 기업회원 탭 */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
+        <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
           <button
             type="button"
             onClick={() => setForm({ ...form, role: 'seeker' })}
             className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
               form.role === 'seeker'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white text-emerald-600 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             개인회원
-            <span className="block text-xs font-normal mt-0.5 text-gray-400">일자리를 찾고 있어요</span>
+            <span className="block text-xs font-normal mt-0.5 text-slate-400">일자리를 찾고 있어요</span>
           </button>
           <button
             type="button"
             onClick={() => setForm({ ...form, role: 'employer' })}
             className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
               form.role === 'employer'
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-white text-emerald-600 shadow-sm'
+                : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             기업회원
-            <span className="block text-xs font-normal mt-0.5 text-gray-400">인재를 찾고 있어요</span>
+            <span className="block text-xs font-normal mt-0.5 text-slate-400">인재를 찾고 있어요</span>
           </button>
         </div>
 
         {/* 소셜 로그인 안내 */}
         {isSocialSignup && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <p className="text-sm text-blue-700">
+          <div className="mb-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+            <p className="text-sm text-emerald-700">
               소셜 계정으로 로그인되었습니다. 서비스 이용을 위해 아래 추가 정보를 입력해주세요.
             </p>
           </div>
@@ -478,13 +508,13 @@ function SignUpPageContent() {
         {/* 회원가입 폼 */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               이메일 <span className="text-red-500">*</span>
-              {isSocialSignup && <span className="text-gray-400 font-normal ml-2">소셜 계정 이메일</span>}
+              {isSocialSignup && <span className="text-slate-400 font-normal ml-2">소셜 계정 이메일</span>}
             </label>
             <div className="flex gap-2">
               <div className="relative flex-1">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                 <input
                   type="email"
                   value={form.email || ''}
@@ -497,9 +527,9 @@ function SignUpPageContent() {
                   }}
                   readOnly={isSocialSignup}
                   placeholder="이메일을 입력하세요"
-                  className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    isSocialSignup ? 'bg-gray-50 text-gray-600 cursor-not-allowed' :
-                    errors.email ? 'border-red-300' : emailChecked && emailAvailable ? 'border-green-400' : 'border-gray-200'
+                  className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    isSocialSignup ? 'bg-slate-50 text-slate-600 cursor-not-allowed' :
+                    errors.email ? 'border-red-300' : emailChecked && emailAvailable ? 'border-green-400' : 'border-slate-200'
                   }`}
                 />
               </div>
@@ -508,7 +538,7 @@ function SignUpPageContent() {
                   type="button"
                   onClick={checkEmailDuplicate}
                   disabled={isCheckingEmail || !form.email}
-                  className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
+                  className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
                 >
                   {isCheckingEmail ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -536,24 +566,24 @@ function SignUpPageContent() {
           {!isSocialSignup && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   비밀번호 <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={form.password || ''}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     placeholder="영문, 숫자 포함 8자 이상"
-                    className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.password ? 'border-red-300' : 'border-gray-200'
+                    className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      errors.password ? 'border-red-300' : 'border-slate-200'
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -567,24 +597,24 @@ function SignUpPageContent() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-slate-700 mb-1">
                   비밀번호 확인 <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type={showPasswordConfirm ? 'text' : 'password'}
                     value={form.passwordConfirm || ''}
                     onChange={(e) => setForm({ ...form, passwordConfirm: e.target.value })}
                     placeholder="비밀번호를 다시 입력하세요"
-                    className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.passwordConfirm ? 'border-red-300' : 'border-gray-200'
+                    className={`w-full pl-12 pr-12 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                      errors.passwordConfirm ? 'border-red-300' : 'border-slate-200'
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPasswordConfirm(!showPasswordConfirm)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
                   >
                     {showPasswordConfirm ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -600,18 +630,18 @@ function SignUpPageContent() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               {form.role === 'employer' ? '이름(기업명)' : '이름'} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 value={form.name || ''}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder={form.role === 'employer' ? '이름 또는 기업명을 입력하세요' : '이름을 입력하세요'}
-                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.name ? 'border-red-300' : 'border-gray-200'
+                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                  errors.name ? 'border-red-300' : 'border-slate-200'
                 }`}
               />
             </div>
@@ -624,20 +654,20 @@ function SignUpPageContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               닉네임 <span className="text-red-500">*</span>
-              <span className="text-gray-400 font-normal ml-2">공인중개사 상호명</span>
+              <span className="text-slate-400 font-normal ml-2">공인중개사 상호명</span>
             </label>
             <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">@</span>
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">@</span>
               <input
                 type="text"
                 value={form.nickname || ''}
                 onChange={(e) => setForm({ ...form, nickname: e.target.value })}
                 placeholder="닉네임 (2~12자)"
                 maxLength={12}
-                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.nickname ? 'border-red-300' : 'border-gray-200'
+                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                  errors.nickname ? 'border-red-300' : 'border-slate-200'
                 }`}
               />
             </div>
@@ -650,18 +680,23 @@ function SignUpPageContent() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-slate-700 mb-1">
               연락처 <span className="text-red-500">*</span>
             </label>
             <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="tel"
                 value={form.phone || ''}
-                onChange={(e) => setForm({ ...form, phone: formatPhoneNumber(e.target.value) })}
+                onChange={(e) => {
+                  setForm({ ...form, phone: formatPhoneNumber(e.target.value) });
+                  setPhoneChecked(false);
+                  setPhoneDuplicate(false);
+                }}
+                onBlur={(e) => checkPhoneDuplicate(e.target.value)}
                 placeholder="010-0000-0000"
-                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  errors.phone ? 'border-red-300' : 'border-gray-200'
+                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                  errors.phone ? 'border-red-300' : 'border-slate-200'
                 }`}
               />
             </div>
@@ -671,39 +706,45 @@ function SignUpPageContent() {
                 {errors.phone}
               </p>
             )}
+            {isCheckingPhone && (
+              <p className="text-gray-400 text-sm mt-1 flex items-center gap-1">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                연락처 확인 중...
+              </p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              사업자번호 <span className="text-gray-400 font-normal ml-1">선택</span>
+            <label className="block text-sm font-medium text-slate-700 mb-1">
+              사업자번호 <span className="text-slate-400 font-normal ml-1">선택</span>
             </label>
             <div className="relative">
-              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
               <input
                 type="text"
                 value={form.businessNo || ''}
                 onChange={(e) => setForm({ ...form, businessNo: formatBusinessNo(e.target.value) })}
                 placeholder="000-00-00000"
                 maxLength={12}
-                className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-12 pr-4 py-3.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">나중에 마이페이지에서도 등록할 수 있습니다</p>
+            <p className="text-xs text-slate-400 mt-1">나중에 마이페이지에서도 등록할 수 있습니다</p>
           </div>
 
           {/* 중개사무소 정보 (기업회원만) */}
           {form.role === 'employer' && (
             <div className="pt-4">
-              <div className="p-4 bg-blue-50 rounded-xl space-y-4">
-                <div className="flex items-center gap-2 text-blue-700">
+              <div className="p-4 bg-emerald-50 rounded-xl space-y-4">
+                <div className="flex items-center gap-2 text-emerald-700">
                   <Building2 className="w-5 h-5" />
                   <span className="font-semibold">중개사무소 정보</span>
-                  <span className="text-xs text-blue-500 ml-auto">선택사항</span>
+                  <span className="text-xs text-emerald-500 ml-auto">선택사항</span>
                 </div>
 
                 {/* 개설등록번호 입력 및 조회 */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
                     개설등록번호
                   </label>
                   <div className="flex gap-2">
@@ -717,8 +758,8 @@ function SignUpPageContent() {
                         }}
                         placeholder="예: 11710-2022-00250"
                         maxLength={16}
-                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                          errors.brokerRegNo ? 'border-red-300' : 'border-gray-200'
+                        className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                          errors.brokerRegNo ? 'border-red-300' : 'border-slate-200'
                         }`}
                       />
                     </div>
@@ -726,7 +767,7 @@ function SignUpPageContent() {
                       type="button"
                       onClick={fetchBrokerInfo}
                       disabled={isFetchingBroker || !form.brokerRegNo}
-                      className="px-4 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                      className="px-4 py-3 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                     >
                       {isFetchingBroker ? (
                         <Loader2 className="w-4 h-4 animate-spin" />
@@ -806,16 +847,16 @@ function SignUpPageContent() {
 
           {/* 약관 동의 */}
           <div className="pt-4">
-            <div className="p-4 bg-gray-50 rounded-xl space-y-3">
+            <div className="p-4 bg-slate-50 rounded-xl space-y-3">
               {/* 전체 동의 */}
-              <label className="flex items-center gap-3 cursor-pointer pb-3 border-b border-gray-200">
+              <label className="flex items-center gap-3 cursor-pointer pb-3 border-b border-slate-200">
                 <input
                   type="checkbox"
                   checked={form.agreeTerms && form.agreePrivacy && form.agreeMarketing}
                   onChange={handleAgreeAll}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="font-medium text-gray-900">전체 동의</span>
+                <span className="font-medium text-slate-900">전체 동의</span>
               </label>
 
               <label className="flex items-center gap-3 cursor-pointer">
@@ -823,12 +864,12 @@ function SignUpPageContent() {
                   type="checkbox"
                   checked={form.agreeTerms}
                   onChange={(e) => setForm({ ...form, agreeTerms: e.target.checked })}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-slate-600">
                   <span className="text-red-500">[필수]</span> 이용약관 동의
                 </span>
-                <Link href="/terms" className="ml-auto text-gray-400 hover:text-gray-600">
+                <Link href="/terms" className="ml-auto text-slate-400 hover:text-slate-600">
                   <ChevronDown className="w-5 h-5 rotate-[-90deg]" />
                 </Link>
               </label>
@@ -838,12 +879,12 @@ function SignUpPageContent() {
                   type="checkbox"
                   checked={form.agreePrivacy}
                   onChange={(e) => setForm({ ...form, agreePrivacy: e.target.checked })}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-slate-600">
                   <span className="text-red-500">[필수]</span> 개인정보 처리방침 동의
                 </span>
-                <Link href="/privacy" className="ml-auto text-gray-400 hover:text-gray-600">
+                <Link href="/privacy" className="ml-auto text-slate-400 hover:text-slate-600">
                   <ChevronDown className="w-5 h-5 rotate-[-90deg]" />
                 </Link>
               </label>
@@ -853,9 +894,9 @@ function SignUpPageContent() {
                   type="checkbox"
                   checked={form.agreeMarketing}
                   onChange={(e) => setForm({ ...form, agreeMarketing: e.target.checked })}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                 />
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-slate-600">
                   <span className="text-gray-400">[선택]</span> 마케팅 정보 수신 동의
                 </span>
               </label>
@@ -871,7 +912,7 @@ function SignUpPageContent() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-4 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors mt-6 flex items-center justify-center gap-2"
+            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all mt-6 flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/25"
           >
             {isLoading ? (
               <>
@@ -885,9 +926,9 @@ function SignUpPageContent() {
         </form>
 
         {/* 로그인 링크 */}
-        <p className="text-center text-sm text-gray-500 mt-6">
+        <p className="text-center text-sm text-slate-500 mt-6">
           이미 회원이신가요?{' '}
-          <Link href="/agent/auth/login" className="text-blue-600 font-medium hover:text-blue-700">
+          <Link href="/agent/auth/login" className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors">
             로그인
           </Link>
         </p>
@@ -899,8 +940,8 @@ function SignUpPageContent() {
 export default function SignUpPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
       </div>
     }>
       <SignUpPageContent />

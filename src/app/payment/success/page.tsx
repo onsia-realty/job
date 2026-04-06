@@ -10,7 +10,7 @@ import Link from 'next/link';
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, isLoading: authLoading } = useAuth();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
   const [productName, setProductName] = useState('');
@@ -23,6 +23,15 @@ function PaymentSuccessContent() {
   const jobId = searchParams.get('jobId');
 
   useEffect(() => {
+    // 세션 로딩 중이면 대기
+    if (authLoading) return;
+
+    if (!session?.access_token) {
+      setStatus('error');
+      setMessage('로그인이 필요합니다. 다시 로그인 후 시도해주세요.');
+      return;
+    }
+
     if (!paymentKey || !orderId || !amount || !productKey) {
       setStatus('error');
       setMessage('결제 정보가 누락되었습니다.');
@@ -55,7 +64,7 @@ function PaymentSuccessContent() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+            Authorization: `Bearer ${session.access_token}`,
           },
           body: JSON.stringify({
             paymentKey,
@@ -93,7 +102,7 @@ function PaymentSuccessContent() {
     };
 
     confirmPayment();
-  }, [paymentKey, orderId, amount, productKey, jobId, session, router]);
+  }, [paymentKey, orderId, amount, productKey, jobId, session, authLoading, router]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">

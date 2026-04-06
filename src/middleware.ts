@@ -50,10 +50,25 @@ function checkBurstRequest(ip: string): boolean {
   return recent.length > BURST_MAX;
 }
 
+// 외부 서비스 콜백 경로 (봇 탐지/UA 체크/Referer 체크 면제)
+const EXTERNAL_API_PATHS = [
+  '/api/payment/webhook',  // 토스페이먼츠 웹훅
+  '/api/cron/',            // Vercel Cron
+];
+
+function isExternalApiPath(pathname: string): boolean {
+  return EXTERNAL_API_PATHS.some(p => pathname.startsWith(p));
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const ua = request.headers.get('user-agent') || '';
   const ip = getIP(request);
+
+  // ─── 0. 외부 서비스 콜백 → 보안 체크 스킵 (자체 인증 사용) ───
+  if (isExternalApiPath(pathname)) {
+    return NextResponse.next();
+  }
 
   // ─── 1. Honeypot 트랩 접근 → IP 영구 블랙리스트 ───
   if (pathname === '/api/trap') {

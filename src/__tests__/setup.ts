@@ -1,3 +1,4 @@
+/// <reference types="vitest/globals" />
 import '@testing-library/jest-dom/vitest';
 
 // toss.ts reads process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY at module load time
