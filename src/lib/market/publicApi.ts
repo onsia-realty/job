@@ -13,15 +13,16 @@ const xmlParser = new XMLParser({
 });
 
 export const API_BASE = {
-  MOLIT_APT_TRADE: 'http://openapi.molit.go.kr/OpenAPI_ToolInstall498/service/rest/RTMSDataSvcAptTradeDev',
-  MOLIT_APT_RENT: 'http://openapi.molit.go.kr/OpenAPI_ToolInstall498/service/rest/RTMSDataSvcAptRent',
-  MOLIT_OFFI_TRADE: 'http://openapi.molit.go.kr/OpenAPI_ToolInstall498/service/rest/RTMSDataSvcOffiTrade',
-  MOLIT_OFFI_RENT: 'http://openapi.molit.go.kr/OpenAPI_ToolInstall498/service/rest/RTMSDataSvcOffiRent',
-  MOLIT_NRG_TRADE: 'http://openapi.molit.go.kr/OpenAPI_ToolInstall498/service/rest/RTMSDataSvcNrgTrade', // 상가
-  MOLIT_RH_TRADE: 'http://openapi.molit.go.kr/OpenAPI_ToolInstall498/service/rest/RTMSDataSvcRHTrade', // 연립·다세대
-  MOLIT_SILV_TRADE: 'http://openapi.molit.go.kr/OpenAPI_ToolInstall498/service/rest/RTMSDataSvcSilvTrade', // 분양권 전매
+  // 국토부 실거래가 — HTTPS + apis.data.go.kr (공공데이터포털 공식 엔드포인트)
+  MOLIT_APT_TRADE: 'https://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev',
+  MOLIT_APT_RENT: 'https://apis.data.go.kr/1613000/RTMSDataSvcAptRent/getRTMSDataSvcAptRent',
+  MOLIT_OFFI_TRADE: 'https://apis.data.go.kr/1613000/RTMSDataSvcOffiTrade/getRTMSDataSvcOffiTrade',
+  MOLIT_OFFI_RENT: 'https://apis.data.go.kr/1613000/RTMSDataSvcOffiRent/getRTMSDataSvcOffiRent',
+  MOLIT_NRG_TRADE: 'https://apis.data.go.kr/1613000/RTMSDataSvcNrgTrade/getRTMSDataSvcNrgTrade', // 상가
+  MOLIT_RH_TRADE: 'https://apis.data.go.kr/1613000/RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade', // 연립·다세대
+  MOLIT_SILV_TRADE: 'https://apis.data.go.kr/1613000/RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade', // 분양권 전매
   APPLYHOME: 'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1',
-  BLDG_LEDGER: 'http://apis.data.go.kr/1613000/BldRgstService_v2',
+  BLDG_LEDGER: 'https://apis.data.go.kr/1613000/BldRgstService_v2',
 } as const;
 
 export function parseXmlResponse<T = unknown>(xmlData: string): T {
