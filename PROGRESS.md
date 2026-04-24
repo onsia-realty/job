@@ -58,7 +58,28 @@
 - 수정: `src/app/layout.tsx` (apple-touch-icon 참조 제거)
 
 **검증**: `npx tsc --noEmit` + `npm run build` 둘 다 EXIT=0 통과
-**배포 전 상태**: 코드는 준비됨. Vercel 배포 후 라이브에서 재확인 필요
+**배포 완료**: commit `c24f4d2` + `f442ad2` Vercel 라이브 반영 확인
+
+### 로그인 후 모바일 E2E 추가 fix (2026-04-24)
+
+**발견 이슈**:
+- 🔴 `/agent/jobs/new`, `/sales/jobs/new` 폼 가로 스크롤 37px
+  - 원인 1: `AddressSearch`의 `flex gap-2` 컨테이너에서 input/버튼이 축소 안 됨 (min-w-0 누락)
+  - 원인 2: `EditorToolbar`의 overflow-x-auto가 부모에 의해 밀려남 (min-w-0/max-w-full 누락)
+
+**수정** (commit `f442ad2`):
+- `src/components/shared/AddressSearch.tsx` — flex 컨테이너와 input에 `min-w-0`
+- `src/components/editor/EditorToolbar.tsx` — 최상위 wrapper에 `min-w-0 max-w-full overflow-hidden`, 스크롤 컨테이너에 `max-w-full`
+
+**검증**: 라이브에서 docW 345 / winW 360, horizontalScroll: false ✅
+
+**E2E 결과 최종**:
+- ✅ /agent/mypage — overflow 0
+- ✅ /agent/jobs/new 유형선택 — overflow 0
+- ✅ /agent/jobs/new 폼 — overflow 0 (fix 적용)
+- ✅ /checkout — 토스 위젯 정상, 부가세 정확, overflow 0
+- ✅ /profile/ai-photo — overflow 0
+- 🟡 미미 이슈: /agent/mypage "수 정" 버튼 세로 쪼개짐, /premium "공인중개/사" 세로 쪼개짐 (오픈 후 개선)
 
 ---
 
