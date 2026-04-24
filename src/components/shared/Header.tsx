@@ -83,6 +83,10 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <Link href="/agent" className="text-gray-700 hover:text-blue-600 font-medium">
                     홈
                   </Link>
+                  <Link href="/agent/jobs" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                    <ClipboardList className="w-3.5 h-3.5" />
+                    구인공고
+                  </Link>
                   <Link href="/agent/employer" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <ClipboardList className="w-3.5 h-3.5" />
                     채용관리
@@ -90,7 +94,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <Link href="/agent/talents" className="text-gray-500 hover:text-blue-600">
                     인재정보
                   </Link>
-                  <Link href="/agent/jobs/create" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                  <Link href="/agent/jobs/new" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <PenSquare className="w-3.5 h-3.5" />
                     구인글 작성
                   </Link>
