@@ -1,7 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { User, LogIn, Building2, HardHat, Crown, Sparkles, ClipboardList, PenSquare } from 'lucide-react';
+import { User, LogIn, Building2, HardHat, Crown, Sparkles, ClipboardList, PenSquare, MapPin } from 'lucide-react';
+
+const MARKET_ENABLED = process.env.NEXT_PUBLIC_MARKET_ENABLED === 'true';
 import { useAuth } from '@/contexts/AuthContext';
 import type { UserRole } from '@/types';
 
@@ -109,6 +111,13 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                     <Sparkles className="w-3.5 h-3.5" />
                     AI 실무비서
                   </Link>
+                  {MARKET_ENABLED && (
+                    <Link href="/market" className="relative text-gray-500 hover:text-cyan-600 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      시세지도
+                      <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-cyan-100 text-cyan-700 ml-0.5">NEW</span>
+                    </Link>
+                  )}
                   <Link href="/premium?category=agent" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <Crown className="w-3.5 h-3.5" />
                     상품안내
@@ -134,6 +143,13 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                     <Sparkles className="w-3.5 h-3.5" />
                     AI 실무비서
                   </Link>
+                  {MARKET_ENABLED && (
+                    <Link href="/market" className="relative text-gray-500 hover:text-cyan-600 flex items-center gap-1">
+                      <MapPin className="w-3.5 h-3.5" />
+                      시세지도
+                      <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-cyan-100 text-cyan-700 ml-0.5">NEW</span>
+                    </Link>
+                  )}
                   <Link href="/profile/ai-photo" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5" />
                     AI 이력서 사진
