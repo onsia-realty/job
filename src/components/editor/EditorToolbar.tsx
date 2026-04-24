@@ -54,9 +54,9 @@ export default function EditorToolbar({ editor, onImageUpload }: EditorToolbarPr
   const iconSize = 16;
 
   return (
-    <div className="border-b border-gray-200 bg-gray-50/80">
+    <div className="border-b border-gray-200 bg-gray-50/80 min-w-0 max-w-full overflow-hidden">
       {/* 기본 툴바: 가로 스크롤 (모바일 최적화) */}
-      <div className="flex items-center overflow-x-auto scrollbar-hide px-1.5 py-1.5 gap-0.5">
+      <div className="flex items-center overflow-x-auto scrollbar-hide px-1.5 py-1.5 gap-0.5 max-w-full">
         {/* Text Style */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -166,7 +166,7 @@ export default function EditorToolbar({ editor, onImageUpload }: EditorToolbarPr
 
       {/* 확장 툴바 (더보기) */}
       {showMore && (
-        <div className="flex items-center overflow-x-auto scrollbar-hide px-1.5 py-1.5 gap-0.5 border-t border-gray-200/80 bg-gray-50/50">
+        <div className="flex items-center overflow-x-auto scrollbar-hide px-1.5 py-1.5 gap-0.5 border-t border-gray-200/80 bg-gray-50/50 max-w-full">
           <ToolbarButton
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             isActive={editor.isActive('heading', { level: 1 })}

@@ -117,13 +117,13 @@ export default function AddressSearch({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           주소
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-2 min-w-0">
           <input
             type="text"
             value={address}
             readOnly
             placeholder="주소를 검색해주세요"
-            className={`flex-1 border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 text-gray-700 ${focusColor}`}
+            className={`flex-1 min-w-0 border border-gray-300 rounded-lg px-4 py-3 bg-gray-50 text-gray-700 ${focusColor}`}
           />
           <button
             type="button"
