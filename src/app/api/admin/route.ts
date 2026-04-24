@@ -77,6 +77,64 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(5);
 
+    // 일별 추이 (최근 30일) — JS 집계
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0);
+    const since = thirtyDaysAgo.toISOString();
+
+    const [recentUserRows, recentJobRows, recentPaymentRows] = await Promise.all([
+      supabaseAdmin.from('users').select('created_at').gte('created_at', since),
+      supabaseAdmin.from('jobs').select('created_at').gte('created_at', since),
+      supabaseAdmin
+        .from('payments')
+        .select('paid_at, amount')
+        .eq('payment_status', 'completed')
+        .gte('paid_at', since),
+    ]);
+
+    // 30일치 빈 슬롯 만들기 (오늘 포함)
+    const dayKey = (d: Date) => d.toISOString().slice(0, 10);
+    const dailyMap = new Map<string, { date: string; signups: number; jobs: number; revenue: number; paymentCount: number }>();
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const key = dayKey(d);
+      dailyMap.set(key, { date: key, signups: 0, jobs: 0, revenue: 0, paymentCount: 0 });
+    }
+
+    (recentUserRows.data || []).forEach((row: { created_at: string | null }) => {
+      if (!row.created_at) return;
+      const key = dayKey(new Date(row.created_at));
+      const slot = dailyMap.get(key);
+      if (slot) slot.signups += 1;
+    });
+    (recentJobRows.data || []).forEach((row: { created_at: string | null }) => {
+      if (!row.created_at) return;
+      const key = dayKey(new Date(row.created_at));
+      const slot = dailyMap.get(key);
+      if (slot) slot.jobs += 1;
+    });
+    (recentPaymentRows.data || []).forEach((row: { paid_at: string | null; amount: number | null }) => {
+      if (!row.paid_at) return;
+      const key = dayKey(new Date(row.paid_at));
+      const slot = dailyMap.get(key);
+      if (slot) {
+        slot.revenue += row.amount || 0;
+        slot.paymentCount += 1;
+      }
+    });
+
+    const daily = Array.from(dailyMap.values());
+
+    // 이번 달 매출 / 결제 건수
+    const monthlyRevenue = (recentPaymentRows.data || [])
+      .filter((p: { paid_at: string | null }) => p.paid_at && new Date(p.paid_at) >= firstOfMonth)
+      .reduce((sum: number, p: { amount: number | null }) => sum + (p.amount || 0), 0);
+    const monthlyPaymentCount = (recentPaymentRows.data || [])
+      .filter((p: { paid_at: string | null }) => p.paid_at && new Date(p.paid_at) >= firstOfMonth).length;
+
     return NextResponse.json({
       totalUsers: totalUsers || 0,
       newUsersThisMonth: newUsersThisMonth || 0,
@@ -84,8 +142,11 @@ export async function GET(req: NextRequest) {
       totalJobs: totalJobs || 0,
       pendingJobs: pendingJobs || 0,
       totalApplications: totalApplications || 0,
+      monthlyRevenue,
+      monthlyPaymentCount,
       recentUsers: recentUsers || [],
       recentJobs: recentJobs || [],
+      daily,
     });
   } catch (error) {
     console.error('Admin stats error:', error);

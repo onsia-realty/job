@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono, Black_Han_Sans, Gaegu } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import Providers from "@/components/providers/Providers";
 import SecurityShield from "@/components/security/SecurityShield";
 import Honeypot from "@/components/security/Honeypot";
@@ -170,6 +171,7 @@ export default function RootLayout({
           {children}
           <ChatWidget />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
