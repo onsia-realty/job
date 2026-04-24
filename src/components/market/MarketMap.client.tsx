@@ -1,74 +1,124 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, useMap, Marker, Popup } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useEffect, useRef, useState } from 'react';
 
-const VWORLD_KEY = process.env.NEXT_PUBLIC_VWORLD_KEY || '';
-const VWORLD_TILE = `https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Base/{z}/{y}/{x}.png`;
+const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || '';
 
 export interface MapComplexPoint {
   complex_key: string;
   complex_name: string;
   lat: number;
   lng: number;
-  avg_price_manwon: number;          // 평균 매매가
+  avg_price_manwon: number;
   trade_count: number;
   growth_pct?: number | null;
   property_type: 'apt' | 'officetel' | 'villa' | 'store' | 'presale';
 }
 
 interface MarketMapProps {
-  center: [number, number];          // [lat, lng]
+  center: [number, number];
   zoom?: number;
   points: MapComplexPoint[];
   onSelect?: (key: string) => void;
   height?: string;
 }
 
-function ViewUpdater({ center, zoom }: { center: [number, number]; zoom?: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, zoom ?? map.getZoom());
-  }, [map, center, zoom]);
-  return null;
+// naver.maps 타입 선언 (공식 @types 없음)
+declare global {
+  interface Window {
+    naver?: {
+      maps: {
+        Map: new (el: HTMLElement, opts: object) => NaverMap;
+        LatLng: new (lat: number, lng: number) => NaverLatLng;
+        Marker: new (opts: object) => NaverMarker;
+        Size: new (w: number, h: number) => object;
+        Point: new (x: number, y: number) => object;
+        Event: {
+          addListener: (tgt: object, evt: string, fn: (...a: unknown[]) => void) => object;
+          removeListener: (listener: object) => void;
+        };
+        Position: { BOTTOM_RIGHT: number; TOP_RIGHT: number };
+        ZoomControlStyle: { SMALL: number };
+      };
+    };
+  }
 }
 
-// 마커 DivIcon — 시세 라벨
-function makeDivIcon(point: MapComplexPoint): L.DivIcon {
-  const price = point.avg_price_manwon;
+interface NaverMap {
+  setCenter: (latlng: NaverLatLng) => void;
+  setZoom: (z: number) => void;
+  destroy?: () => void;
+}
+
+interface NaverLatLng {
+  lat: () => number;
+  lng: () => number;
+}
+
+interface NaverMarker {
+  setMap: (m: NaverMap | null) => void;
+  getPosition: () => NaverLatLng;
+}
+
+// 네이버 Maps 스크립트 동적 로딩 (한 번만)
+let scriptLoadPromise: Promise<void> | null = null;
+
+function loadNaverMapScript(clientId: string): Promise<void> {
+  if (typeof window !== 'undefined' && window.naver?.maps) {
+    return Promise.resolve();
+  }
+  if (scriptLoadPromise) return scriptLoadPromise;
+
+  scriptLoadPromise = new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[data-naver-maps]');
+    if (existing) {
+      existing.addEventListener('load', () => resolve());
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.naverMaps = 'true';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('네이버 지도 스크립트 로드 실패'));
+    document.head.appendChild(script);
+  });
+  return scriptLoadPromise;
+}
+
+// 마커용 HTML 문자열
+function buildMarkerHTML(p: MapComplexPoint): string {
+  const price = p.avg_price_manwon;
   const label = price >= 10000
     ? `${Math.floor(price / 10000)}억${price % 10000 > 0 ? `${Math.round((price % 10000) / 100)}` : ''}`
     : `${price.toLocaleString()}`;
-  const growth = point.growth_pct;
-  const bg = point.property_type === 'officetel'
-    ? 'rgba(244,114,182,0.92)'        // pink-400
-    : 'rgba(34,211,238,0.92)';        // cyan-400
+  const growth = p.growth_pct;
+  const bg = p.property_type === 'officetel'
+    ? 'rgba(244,114,182,0.95)'
+    : 'rgba(34,211,238,0.95)';
   const growthBadge = growth != null
-    ? `<span class="ml-1 text-[9px] font-bold ${growth > 0 ? 'text-red-300' : 'text-blue-300'}">${growth > 0 ? '↑' : '↓'}${Math.abs(growth).toFixed(1)}%</span>`
+    ? `<span style="margin-left:4px;font-size:9px;font-weight:800;color:${growth > 0 ? '#fca5a5' : '#93c5fd'};">${growth > 0 ? '↑' : '↓'}${Math.abs(growth).toFixed(1)}%</span>`
     : '';
 
-  return L.divIcon({
-    className: 'market-price-marker',
-    html: `
-      <div style="
-        background: ${bg};
-        color: #0B0F14;
-        padding: 3px 8px;
-        border-radius: 12px;
-        font-weight: 800;
-        font-size: 11px;
-        white-space: nowrap;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        border: 1.5px solid rgba(255,255,255,0.5);
-      ">
-        ${label}${growthBadge}
-      </div>
-    `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
-  });
+  return `
+    <div style="
+      background:${bg};
+      color:#0B0F14;
+      padding:3px 8px;
+      border-radius:12px;
+      font-weight:800;
+      font-size:11px;
+      white-space:nowrap;
+      box-shadow:0 2px 8px rgba(0,0,0,0.4);
+      border:1.5px solid rgba(255,255,255,0.6);
+      cursor:pointer;
+      transform:translate(-50%, -100%);
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    ">
+      ${label}${growthBadge}
+    </div>
+  `;
 }
 
 export default function MarketMap({
@@ -78,60 +128,118 @@ export default function MarketMap({
   onSelect,
   height = '100%',
 }: MarketMapProps) {
-  // 동일 좌표 중복 방지 (약간 흩뿌림)
-  const jittered = useMemo(() => {
-    return points.map((p, i) => ({
-      ...p,
-      _lat: p.lat + (i % 7) * 0.0001,
-      _lng: p.lng + (i % 11) * 0.0001,
-    }));
-  }, [points]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<NaverMap | null>(null);
+  const markersRef = useRef<NaverMarker[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  // 스크립트 + 지도 초기화 (1회)
+  useEffect(() => {
+    if (!NAVER_CLIENT_ID) {
+      setLoadError('NEXT_PUBLIC_NAVER_MAP_CLIENT_ID 환경변수가 설정되지 않았습니다');
+      return;
+    }
+    if (!containerRef.current) return;
+
+    let cancelled = false;
+
+    loadNaverMapScript(NAVER_CLIENT_ID)
+      .then(() => {
+        if (cancelled || !containerRef.current || !window.naver) return;
+        const { naver } = window;
+        mapRef.current = new naver.maps.Map(containerRef.current, {
+          center: new naver.maps.LatLng(center[0], center[1]),
+          zoom,
+          minZoom: 8,
+          maxZoom: 19,
+          scaleControl: false,
+          logoControl: true,
+          mapDataControl: false,
+          zoomControl: true,
+          zoomControlOptions: {
+            position: naver.maps.Position.TOP_RIGHT,
+            style: naver.maps.ZoomControlStyle.SMALL,
+          },
+        });
+      })
+      .catch((e) => {
+        if (!cancelled) setLoadError(e.message);
+      });
+
+    return () => {
+      cancelled = true;
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      if (mapRef.current && typeof mapRef.current.destroy === 'function') {
+        mapRef.current.destroy();
+      }
+      mapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // center/zoom 변경 반영
+  useEffect(() => {
+    if (!mapRef.current || !window.naver) return;
+    mapRef.current.setCenter(new window.naver.maps.LatLng(center[0], center[1]));
+    mapRef.current.setZoom(zoom);
+  }, [center, zoom]);
+
+  // 마커 재생성 (points 변경 시)
+  useEffect(() => {
+    if (!mapRef.current || !window.naver) return;
+    const { naver } = window;
+
+    // 기존 마커 제거
+    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current = [];
+
+    // 동일 좌표 겹침 방지 (지터링)
+    const makeMarker = (p: MapComplexPoint, idx: number) => {
+      const jitterLat = p.lat + (idx % 7) * 0.0001;
+      const jitterLng = p.lng + (idx % 11) * 0.0001;
+      const marker = new naver.maps.Marker({
+        position: new naver.maps.LatLng(jitterLat, jitterLng),
+        map: mapRef.current,
+        icon: {
+          content: buildMarkerHTML(p),
+          size: new naver.maps.Size(0, 0),
+          anchor: new naver.maps.Point(0, 0),
+        },
+        zIndex: p.property_type === 'officetel' ? 50 : 100,
+      });
+      naver.maps.Event.addListener(marker, 'click', () => {
+        onSelect?.(p.complex_key);
+      });
+      return marker;
+    };
+
+    markersRef.current = points.map(makeMarker);
+  }, [points, onSelect]);
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-full bg-[#0B0F14] text-slate-400 text-sm px-4 text-center">
+        <div>
+          <p className="mb-2">{loadError}</p>
+          <p className="text-xs text-slate-500">Vercel 환경변수 NEXT_PUBLIC_NAVER_MAP_CLIENT_ID 확인 필요</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ height, width: '100%' }} className="relative">
-      <MapContainer
-        center={center}
-        zoom={zoom}
-        style={{ width: '100%', height: '100%' }}
-        scrollWheelZoom
-        zoomControl
-      >
-        <TileLayer
-          url={VWORLD_TILE}
-          attribution='&copy; <a href="https://www.vworld.kr">VWorld</a>'
-        />
-        <ViewUpdater center={center} zoom={zoom} />
-        {jittered.map((p) => (
-          <Marker
-            key={p.complex_key}
-            position={[p._lat, p._lng]}
-            icon={makeDivIcon(p)}
-            eventHandlers={{
-              click: () => onSelect?.(p.complex_key),
-            }}
-          >
-            <Popup>
-              <div className="text-xs">
-                <div className="font-bold text-sm mb-1">{p.complex_name}</div>
-                <div>평균 {Math.round(p.avg_price_manwon).toLocaleString()}만 · {p.trade_count}건</div>
-                {p.growth_pct != null && (
-                  <div className={p.growth_pct > 0 ? 'text-red-600' : 'text-blue-600'}>
-                    월간 {p.growth_pct > 0 ? '+' : ''}{p.growth_pct.toFixed(1)}%
-                  </div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
       {points.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="bg-slate-900/80 text-slate-300 text-sm px-4 py-2 rounded-lg border border-slate-700">
-            이 지역의 최근 거래 데이터가 수집되지 않았습니다
+            이 지역의 최근 거래 데이터가 아직 수집되지 않았습니다
           </div>
         </div>
       )}
     </div>
   );
 }
+
