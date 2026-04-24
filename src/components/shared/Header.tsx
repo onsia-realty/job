@@ -83,9 +83,16 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <Link href="/agent" className="text-gray-700 hover:text-blue-600 font-medium">
                     홈
                   </Link>
-                  <Link href="/agent/jobs" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                  <Link
+                    href="/agent/jobs"
+                    className="relative px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-full text-sm font-bold shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-cyan-500/50 hover:from-blue-700 hover:to-cyan-600 transition-all flex items-center gap-1.5"
+                  >
                     <ClipboardList className="w-3.5 h-3.5" />
                     구인공고
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
+                    </span>
                   </Link>
                   <Link href="/agent/employer" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <ClipboardList className="w-3.5 h-3.5" />
@@ -112,9 +119,16 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <Link href="/agent" className="text-gray-700 hover:text-blue-600 font-medium">
                     홈
                   </Link>
-                  <Link href="/agent/jobs" className="px-3 py-1 bg-blue-600 text-white rounded-full text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-1">
+                  <Link
+                    href="/agent/jobs"
+                    className="relative px-3 py-1.5 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-full text-sm font-bold shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-cyan-500/50 hover:from-blue-700 hover:to-cyan-600 transition-all flex items-center gap-1.5"
+                  >
                     <ClipboardList className="w-3.5 h-3.5" />
                     구인공고
+                    <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500" />
+                    </span>
                   </Link>
                   <Link href="/agent/ai-assistant" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <Sparkles className="w-3.5 h-3.5" />
