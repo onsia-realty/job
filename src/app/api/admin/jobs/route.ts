@@ -12,7 +12,7 @@ async function verifyAdmin(req: NextRequest) {
     .from('users')
     .select('user_type')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!dbUser || dbUser.user_type !== 'admin') return null;
   return user;

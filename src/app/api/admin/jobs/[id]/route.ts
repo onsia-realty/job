@@ -12,7 +12,7 @@ async function verifyAdmin(req: NextRequest) {
     .from('users')
     .select('user_type')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!dbUser || dbUser.user_type !== 'admin') return null;
   return user;
@@ -50,7 +50,7 @@ export async function PATCH(
         .from('jobs')
         .select('is_active')
         .eq('id', id)
-        .single();
+        .maybeSingle();
       if (job) {
         const { error } = await supabaseAdmin
           .from('jobs')

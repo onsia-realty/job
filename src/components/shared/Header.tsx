@@ -143,11 +143,12 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
             {!isLoading && user ? (
               <Link
                 href={variant === 'sales' ? '/sales/mypage' : '/agent/mypage'}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-sm transition-colors ${
+                className={`inline-flex items-center justify-center gap-1.5 min-h-[44px] min-w-[44px] px-3 sm:px-4 rounded-full text-sm transition-colors ${
                   variant === 'landing' || variant === 'sales'
                     ? 'bg-white/20 text-white hover:bg-white/30'
                     : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
                 }`}
+                aria-label="마이페이지"
               >
                 <User className="w-4 h-4" />
                 <span className="hidden sm:inline">
@@ -157,11 +158,12 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
             ) : (
               <Link
                 href={variant === 'sales' ? '/sales/auth/login' : '/agent/auth/login'}
-                className={`flex items-center gap-1 px-3 py-2 rounded-full text-sm transition-colors ${
+                className={`inline-flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] px-3 sm:px-4 rounded-full text-sm transition-colors ${
                   variant === 'landing' || variant === 'sales'
                     ? 'bg-white/20 text-white hover:bg-white/30'
                     : 'bg-blue-600 text-white hover:bg-blue-700'
                 }`}
+                aria-label="로그인"
               >
                 <LogIn className="w-4 h-4" />
                 <span className="hidden sm:inline">로그인</span>

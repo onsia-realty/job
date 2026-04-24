@@ -15,7 +15,7 @@ async function verifyAdmin(req: NextRequest) {
     .from('users')
     .select('user_type')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!dbUser || dbUser.user_type !== 'admin') return null;
   return user;
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       .select('episode_number')
       .order('episode_number', { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     const nextEpNumber = (lastEp?.episode_number ?? 0) + 1;
     const slug = generateSlug(nextEpNumber, result.article.title);

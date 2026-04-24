@@ -12,7 +12,7 @@ async function verifyAdmin(req: NextRequest) {
     .from('users')
     .select('user_type')
     .eq('id', user.id)
-    .single();
+    .maybeSingle();
 
   if (!dbUser || dbUser.user_type !== 'admin') return null;
   return user;
@@ -38,7 +38,7 @@ export async function PATCH(
         .from('users')
         .select('is_active')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (member) {
         const currentStatus = member.is_active !== false;

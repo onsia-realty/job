@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
       .from('users')
       .select('id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     if (existingUser) {
       return NextResponse.json({ exists: true, user_id: user.id });

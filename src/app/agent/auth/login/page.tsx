@@ -109,11 +109,15 @@ export default function LoginPage() {
         auto_select: false,
       });
 
+      // 컨테이너 너비에 맞춰 동적 폭 결정 (모바일 360px 환경 대응)
+      const containerWidth = googleBtnRef.current.offsetWidth || 400;
+      const buttonWidth = Math.min(containerWidth, 400);
+
       window.google.accounts.id.renderButton(googleBtnRef.current, {
         theme: 'filled_blue',
         size: 'large',
         shape: 'rectangular',
-        width: 400,
+        width: buttonWidth,
         text: 'continue_with',
         locale: 'ko',
       });
@@ -314,7 +318,7 @@ export default function LoginPage() {
           </button>
 
           {/* Google GIS 공식 버튼 */}
-          <div ref={googleBtnRef} className="flex items-center justify-center" />
+          <div ref={googleBtnRef} className="w-full max-w-[400px] flex items-center justify-center overflow-hidden" />
         </div>
 
         {/* 구분선 */}
