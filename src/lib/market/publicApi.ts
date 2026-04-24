@@ -8,7 +8,8 @@ const xmlParser = new XMLParser({
   ignoreAttributes: false,
   attributeNamePrefix: '@_',
   textNodeName: '#text',
-  parseAttributeValue: true,
+  parseAttributeValue: false,
+  parseTagValue: false,
   trimValues: true,
 });
 
@@ -53,9 +54,10 @@ export function extractItems<T>(parsed: PublicApiResponse<T>): T[] {
   return Array.isArray(item) ? item : [item];
 }
 
-// resultCode 체크 (000이 성공)
+// resultCode 체크 (000이 성공) — parser 설정과 무관하게 문자열 비교
 export function isSuccessResponse(parsed: PublicApiResponse<unknown>): boolean {
-  return parsed?.response?.header?.resultCode === '000';
+  const rc = parsed?.response?.header?.resultCode;
+  return String(rc) === '000' || String(rc) === '00';
 }
 
 // 거래금액 문자열 → 만원 정수

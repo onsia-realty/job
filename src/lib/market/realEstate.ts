@@ -170,9 +170,9 @@ function pickNumberField(item: Record<string, unknown>, ...keys: string[]): numb
 }
 
 function buildDealDate(item: Record<string, unknown>): string {
-  const y = pickNumberField(item, '년', 'dealYear');
-  const m = pickNumberField(item, '월', 'dealMonth');
-  const d = pickNumberField(item, '일', 'dealDay');
+  const y = pickNumberField(item, 'dealYear', '년');
+  const m = pickNumberField(item, 'dealMonth', '월');
+  const d = pickNumberField(item, 'dealDay', '일');
   if (!y || !m || !d) return new Date().toISOString().slice(0, 10);
   return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
@@ -184,16 +184,17 @@ function transformTrade(
   deal_ymd: string
 ): NormalizedTransaction {
   const rec = item as unknown as Record<string, unknown>;
-  const complex_name = pickStringField(rec, '아파트', '오피스텔', 'complexName');
-  const dong = pickStringField(rec, '법정동', 'dong');
-  const jibun = pickStringField(rec, '지번', 'jibun') || null;
-  const exclusive_area = pickNumberField(rec, '전용면적', 'exclusiveArea') || 0;
-  const floor = pickNumberField(rec, '층', 'floor');
-  const build_year = pickNumberField(rec, '건축년도', 'buildYear');
-  const price_manwon = parseKoreanPrice(item.거래금액);
-  const cancel_raw = item.해제여부;
-  const cancel_yn = cancel_raw === 'O' || cancel_raw === true;
-  const deal_channel = pickStringField(rec, '거래유형') || null;
+  const complex_name = pickStringField(rec, 'aptNm', 'offiNm', '아파트', '오피스텔', 'complexName');
+  const dong = pickStringField(rec, 'umdNm', '법정동', 'dong');
+  const jibun = pickStringField(rec, 'jibun', '지번') || null;
+  const exclusive_area = pickNumberField(rec, 'excluUseAr', '전용면적', 'exclusiveArea') || 0;
+  const floor = pickNumberField(rec, 'floor', '층');
+  const build_year = pickNumberField(rec, 'buildYear', '건축년도');
+  const priceRaw = (rec.dealAmount ?? rec['거래금액']) as string | number | null | undefined;
+  const price_manwon = parseKoreanPrice(priceRaw);
+  const cancelType = pickStringField(rec, 'cdealType', '해제여부');
+  const cancel_yn = cancelType === 'O' || cancelType === 'true' || cancelType === '1';
+  const deal_channel = pickStringField(rec, 'dealingGbn', '거래유형') || null;
 
   return {
     property_type,
@@ -224,14 +225,16 @@ function transformRent(
   deal_ymd: string
 ): NormalizedTransaction {
   const rec = item as unknown as Record<string, unknown>;
-  const complex_name = pickStringField(rec, '아파트', '오피스텔');
-  const dong = pickStringField(rec, '법정동');
-  const jibun = pickStringField(rec, '지번') || null;
-  const exclusive_area = pickNumberField(rec, '전용면적') || 0;
-  const floor = pickNumberField(rec, '층');
-  const build_year = pickNumberField(rec, '건축년도');
-  const deposit_manwon = parseKoreanPrice(item.보증금액);
-  const monthly_manwon = parseKoreanPrice(item.월세금액);
+  const complex_name = pickStringField(rec, 'aptNm', 'offiNm', '아파트', '오피스텔');
+  const dong = pickStringField(rec, 'umdNm', '법정동');
+  const jibun = pickStringField(rec, 'jibun', '지번') || null;
+  const exclusive_area = pickNumberField(rec, 'excluUseAr', '전용면적') || 0;
+  const floor = pickNumberField(rec, 'floor', '층');
+  const build_year = pickNumberField(rec, 'buildYear', '건축년도');
+  const depositRaw = (rec.deposit ?? rec['보증금액']) as string | number | null | undefined;
+  const monthlyRaw = (rec.monthlyRent ?? rec['월세금액']) as string | number | null | undefined;
+  const deposit_manwon = parseKoreanPrice(depositRaw);
+  const monthly_manwon = parseKoreanPrice(monthlyRaw);
 
   return {
     property_type,

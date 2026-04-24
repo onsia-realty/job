@@ -68,9 +68,13 @@ export async function POST(req: NextRequest) {
         ];
 
         if (aptT.status === 'fulfilled') summary.apt_trade += aptT.value.length;
+        else summary.errors.push(`apt_trade ${region.sigungu} ${ym}: ${aptT.reason instanceof Error ? aptT.reason.message : String(aptT.reason)}`);
         if (aptR.status === 'fulfilled') summary.apt_rent += aptR.value.length;
+        else summary.errors.push(`apt_rent ${region.sigungu} ${ym}: ${aptR.reason instanceof Error ? aptR.reason.message : String(aptR.reason)}`);
         if (offiT.status === 'fulfilled') summary.offi_trade += offiT.value.length;
+        else summary.errors.push(`offi_trade ${region.sigungu} ${ym}: ${offiT.reason instanceof Error ? offiT.reason.message : String(offiT.reason)}`);
         if (offiR.status === 'fulfilled') summary.offi_rent += offiR.value.length;
+        else summary.errors.push(`offi_rent ${region.sigungu} ${ym}: ${offiR.reason instanceof Error ? offiR.reason.message : String(offiR.reason)}`);
 
         if (allRows.length > 0) {
           const { error: upErr } = await supabaseAdmin
