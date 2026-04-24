@@ -9,6 +9,7 @@ import {
   ArrowLeft, ToggleLeft, ToggleRight,
   Activity, Bell, Image as ImageIcon, Shield, Loader2,
   Lock, Mail, KeyRound, ShieldCheck, UserCog,
+  Wallet, ExternalLink, BarChart3,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -48,6 +49,16 @@ interface DbJob {
   application_count: number;
 }
 
+interface DailyPoint {
+  date: string;
+  signups: number;
+  jobs: number;
+  revenue: number;
+  paymentCount: number;
+}
+
+type ChartMetric = 'signups' | 'jobs' | 'revenue';
+
 interface DashboardStats {
   totalUsers: number;
   newUsersThisMonth: number;
@@ -55,8 +66,11 @@ interface DashboardStats {
   totalJobs: number;
   pendingJobs: number;
   totalApplications: number;
+  monthlyRevenue?: number;
+  monthlyPaymentCount?: number;
   recentUsers: { id: string; name: string; email: string; user_type: string; created_at: string }[];
   recentJobs: { id: string; title: string; company: string; is_approved: boolean; created_at: string }[];
+  daily?: DailyPoint[];
 }
 
 interface DbPayment {
@@ -168,6 +182,69 @@ function MetricCard({ label, value, sub, trend, icon: Icon, color }: {
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
       <p className="text-xs text-gray-500 mt-1">{label}</p>
+    </div>
+  );
+}
+
+function TrendChart({ daily, metric }: { daily: DailyPoint[]; metric: ChartMetric }) {
+  const max = Math.max(1, ...daily.map((d) => d[metric] as number));
+  const total = daily.reduce((s, d) => s + (d[metric] as number), 0);
+  const W = 600;
+  const H = 160;
+  const padX = 8;
+  const padY = 16;
+  const barCount = daily.length;
+  const barW = (W - padX * 2) / barCount - 2;
+  const formatMD = (iso: string) => {
+    const d = new Date(iso);
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  };
+  return (
+    <div className="bg-[#1C1D1F] rounded-xl p-5 border border-white/5">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <div className="text-xs text-gray-500">최근 30일 합계</div>
+          <div className="text-xl font-bold text-white">
+            {metric === 'revenue'
+              ? `${total.toLocaleString('ko-KR')}원`
+              : `${total.toLocaleString('ko-KR')}건`}
+          </div>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-40 min-w-[480px]">
+          {daily.map((d, i) => {
+            const v = d[metric] as number;
+            const h = (v / max) * (H - padY * 2);
+            const x = padX + i * ((W - padX * 2) / barCount);
+            const y = H - padY - h;
+            const isToday = i === barCount - 1;
+            return (
+              <g key={d.date}>
+                <rect
+                  x={x}
+                  y={y}
+                  width={barW}
+                  height={Math.max(h, 1)}
+                  rx={2}
+                  className={isToday ? 'fill-cyan-400' : v > 0 ? 'fill-cyan-500/60' : 'fill-white/5'}
+                />
+                {(i === 0 || i === barCount - 1 || i === Math.floor(barCount / 2)) && (
+                  <text
+                    x={x + barW / 2}
+                    y={H - 2}
+                    textAnchor="middle"
+                    className="fill-gray-500"
+                    style={{ fontSize: 9 }}
+                  >
+                    {formatMD(d.date)}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+      </div>
     </div>
   );
 }
@@ -418,6 +495,9 @@ export default function AdminDashboardPage() {
   // Action loading state
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  // Dashboard chart state
+  const [chartMetric, setChartMetric] = useState<ChartMetric>('signups');
+
   // ---- Data fetching ----
   const loadStats = useCallback(async () => {
     setStatsLoading(true);
@@ -626,14 +706,77 @@ export default function AdminDashboardPage() {
     return (
       <div className="space-y-6">
         {/* Metric Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <MetricCard label="총 가입자" value={stats.totalUsers.toLocaleString()} icon={Users} color="bg-blue-600" />
           <MetricCard label="신규 가입 (이번달)" value={stats.newUsersThisMonth.toLocaleString()} icon={UserPlus} color="bg-green-600" />
           <MetricCard label="활성 공고" value={stats.activeJobs.toLocaleString()} icon={FileText} color="bg-orange-600" />
           <MetricCard label="전체 공고" value={stats.totalJobs.toLocaleString()} icon={Briefcase} color="bg-purple-600" />
           <MetricCard label="승인 대기" value={stats.pendingJobs.toLocaleString()} icon={DollarSign} color="bg-amber-600" />
           <MetricCard label="총 지원 수" value={stats.totalApplications.toLocaleString()} icon={Send} color="bg-pink-600" />
+          <MetricCard
+            label="이번달 매출 (VAT 포함)"
+            value={`${(stats.monthlyRevenue ?? 0).toLocaleString('ko-KR')}원`}
+            icon={Wallet}
+            color="bg-rose-600"
+          />
+          <MetricCard
+            label="이번달 결제 건수"
+            value={(stats.monthlyPaymentCount ?? 0).toLocaleString('ko-KR')}
+            icon={CreditCard}
+            color="bg-indigo-600"
+          />
         </div>
+
+        {/* 일별 추이 차트 */}
+        {stats.daily && stats.daily.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                <BarChart3 className="w-4 h-4" />
+                일별 추이 (최근 30일)
+              </h3>
+              <div className="flex bg-[#1C1D1F] border border-white/10 rounded-lg p-0.5">
+                {([
+                  { key: 'signups', label: '가입' },
+                  { key: 'jobs', label: '공고' },
+                  { key: 'revenue', label: '매출' },
+                ] as const).map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setChartMetric(t.key)}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                      chartMetric === t.key
+                        ? 'bg-cyan-500 text-white'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <TrendChart daily={stats.daily} metric={chartMetric} />
+          </div>
+        )}
+
+        {/* Vercel Analytics 바로가기 */}
+        <a
+          href="https://vercel.com/onsia-realty/job/analytics"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between bg-[#1C1D1F] rounded-xl p-4 border border-white/5 hover:border-cyan-500/40 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">트래픽 분석 (Vercel Analytics)</p>
+              <p className="text-xs text-gray-500">방문자 / 페이지뷰 / 유입 경로</p>
+            </div>
+          </div>
+          <ExternalLink className="w-4 h-4 text-gray-500 group-hover:text-cyan-400" />
+        </a>
 
         {/* Recent Activity */}
         <div className="grid md:grid-cols-2 gap-4">
