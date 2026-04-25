@@ -7,21 +7,41 @@
 
 ## 마지막 작업 (2026-04-25)
 
-### 시세지도 upsert 버그 수정 + 마이그레이션 적용 ✅
+### 시세지도 배포 시퀀스 완료 (⚠️ 네이버 지도 API 블로커 남음)
 
-**문제**: `020` 마이그레이션에서 생성한 UNIQUE INDEX가 함수식(`COALESCE(jibun, '')` 등)으로
-만들어져 PostgREST의 `onConflict` 매칭 불가 → 모든 upsert 실패
+#### 1. upsert 버그 수정 + 마이그레이션 적용 ✅ (`2015d75`)
+- `026_fix_unique_index_for_upsert.sql` — PostgREST onConflict 호환 (함수식 → plain column index)
+- `realEstate.ts` null → 0/'' 정규화
+- `MarketPageClient.tsx` — 3개월 순차 조회
+- Supabase 라이브 적용 OK
 
-**수정 내용** (커밋 `2015d75`):
-- `supabase/migrations/026_fix_unique_index_for_upsert.sql`
-  - nullable 컬럼 → NOT NULL + DEFAULT 정규화 (jibun, exclusive_area, floor, price_manwon 등)
-  - plain column UNIQUE INDEX 재생성 (`idx_pt_unique_deal`)
-- `src/lib/market/realEstate.ts` — transform 함수 null → 0/'' 반환 (schema 정규화 대응)
-- `src/app/market/MarketPageClient.tsx` — 1개월 고정 → 최근 3개월 순차 시도 (데이터 밀도 확보)
-- `src/app/api/market/complex/[key]/route.ts` — complex_name, dong 필드 select 추가
+#### 2. cron 자동 실행 설정 ✅ (`2ff2f03`)
+- `vercel.json`에 `/api/cron/sync-transactions` 추가 (매일 04:00 KST)
+- CRON_SECRET 로컬/Vercel 동기화 (`booincronsecret20261024plain`)
+- 수동 트리거 검증: **53,039건 upsert 성공, 에러 0건, 29.5초**
 
-**Supabase 라이브 적용**: ✅ "Success. No rows returned"
-**GitHub push**: ✅ `e0ee41d..2015d75`
+#### 3. Market 플래그 오픈 ✅
+- Vercel 환경변수 `NEXT_PUBLIC_MARKET_ENABLED=true` 설정 + 재배포
+- `/market`, `/market/rankings`, `/market/[complex]` 접근 가능해짐
+
+#### 4. 도메인 구조 정리 ✅
+- Naver Cloud는 서브도메인 와일드카드 미지원 → 루트 도메인만 사용 필요
+- **변경 전**: `booin.co.kr` → 307 → `www.booin.co.kr` (Production)
+- **변경 후**: `booin.co.kr` (Production) ← `www.booin.co.kr` 307 redirect
+- Vercel Domains 설정에서 Edit 처리
+
+#### 5. ⚠️ 블로커: 네이버 지도 API 인증 실패
+- `/market` 접속 시 "오류가 발생했습니다" 에러
+- 원인: `TypeError: Cannot read properties of null (reading 'Marker')` — `window.naver.maps` null
+- Validate 엔드포인트: `{"error":{"errorCode":"200","message":"Authentication Failed"}}`
+- Client ID `nu2uv1l8nu` / 등록 URL 목록 (localhost:3000, booin.co.kr) 도메인 매칭 OK
+- **추정 원인**: Naver Cloud "Maps" 서비스 비활성화 or Web Dynamic Map 미체크 or 크레딧 소진
+- **다음 조치**: https://console.ncloud.com Maps 서비스 활성화 상태 확인 필요
+
+### 사고 기록: `.env.local` 복구 (`sed -i`)
+- Windows Git Bash에서 `sed -i`로 CRON_SECRET 수정 시도 → 파일 전체가 0줄로 비워짐
+- **복구 성공**: IDE의 Ctrl+Z로 버퍼 복원 → 저장
+- 메모리 저장: `feedback_never_sed_env.md` — `.env*` 파일은 Read+Edit만 사용 (sed/redirect 금지)
 
 ---
 
