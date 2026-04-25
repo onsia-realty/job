@@ -5,6 +5,26 @@
 
 ---
 
+## 마지막 작업 (2026-04-25)
+
+### 시세지도 upsert 버그 수정 + 마이그레이션 적용 ✅
+
+**문제**: `020` 마이그레이션에서 생성한 UNIQUE INDEX가 함수식(`COALESCE(jibun, '')` 등)으로
+만들어져 PostgREST의 `onConflict` 매칭 불가 → 모든 upsert 실패
+
+**수정 내용** (커밋 `2015d75`):
+- `supabase/migrations/026_fix_unique_index_for_upsert.sql`
+  - nullable 컬럼 → NOT NULL + DEFAULT 정규화 (jibun, exclusive_area, floor, price_manwon 등)
+  - plain column UNIQUE INDEX 재생성 (`idx_pt_unique_deal`)
+- `src/lib/market/realEstate.ts` — transform 함수 null → 0/'' 반환 (schema 정규화 대응)
+- `src/app/market/MarketPageClient.tsx` — 1개월 고정 → 최근 3개월 순차 시도 (데이터 밀도 확보)
+- `src/app/api/market/complex/[key]/route.ts` — complex_name, dong 필드 select 추가
+
+**Supabase 라이브 적용**: ✅ "Success. No rows returned"
+**GitHub push**: ✅ `e0ee41d..2015d75`
+
+---
+
 ## 마지막 작업 (2026-04-24)
 
 ### 오픈 전 점검 라운드 2 — 코드 감사
@@ -17,95 +37,16 @@
 - `src/app/api/admin/jobs/[id]/route.ts` — verifyAdmin + job is_active lookup 2군데
 
 #### 신규 마이그레이션 (✅ 라이브 적용 완료 via Playwright)
-- `supabase/migrations/017_security_hardening.sql` — 치명적 RLS 구멍 5개 차단:
-  1. jobs UPDATE: `USING (true)` → `auth.uid() = user_id` (**누구나 모든 공고 수정 가능 상태였음**)
-  2. news_toon_episodes: RLS 비활성화 → 활성화 + published 공개 SELECT만
-  3. broker_offices: INSERT/UPDATE `USING (true)` → service_role만
-  4. jobs INSERT: `WITH CHECK (true)` → `auth.uid() = user_id`
-  5. storage.job-images: 누구나 업로드 → authenticated만
+- `supabase/migrations/017_security_hardening.sql` — 치명적 RLS 구멍 5개 차단
+- `supabase/migrations/018_drop_stale_jobs_select.sql` — 중복 SELECT 정책 제거
 
-**중요**: 기존 API 라우트는 service_role로 DB 작업하므로 이 마이그레이션 적용해도 기능 영향 없음.
+### 모바일 반응형 점검 (Playwright 360×780) ✅
+- Google GIS 버튼 width 반응형, 헤더 터치타깃 44px, 각종 dead link 처리
+- 커밋 `c24f4d2`, `f442ad2` Vercel 배포 완료
 
-- `supabase/migrations/018_drop_stale_jobs_select.sql` — ✅ 적용 완료. 002에서 남은 `"Anyone can view jobs" USING (true)` 중복 SELECT 정책 제거. (이전까지 비활성 공고도 anon에 노출 가능했음)
-
-**라이브 검증 결과** (pg_policies 조회):
-- jobs 정책 4개: DELETE/INSERT/UPDATE는 본인만, SELECT는 `is_active = true`만
-- news_toon_episodes RLS 활성화 + published만 공개 SELECT
-- broker_offices는 SELECT만 남고 INSERT/UPDATE는 service_role 전용
-
-### 모바일 반응형 점검 (Playwright 360×780)
-
-검증 페이지: `/`, `/agent`, `/sales`, `/agent/auth/signup`, `/agent/auth/login`, `/toon`
-
-**발견 이슈 + 수정**:
-- 🔴 `/sales/{mypage,talents,search}` + `/sales/auth/login,signup` dead link (Header.tsx) → 신규 redirect/placeholder 6개 생성
-- 🔴 `/agent/auth/login` Google GIS 버튼 width:400 하드코딩 → 컨테이너 폭 기반 동적 계산 + `max-w-[400px] overflow-hidden`
-- 🟡 `/agent/talents` dead link (employer 메뉴) → placeholder 생성
-- 🟡 헤더 로그인/마이페이지 버튼 32x40 → `min-h-[44px] min-w-[44px]`
-- 🟢 `/icon.svg` 404 → `public/icon.svg` 생성 (blue-cyan gradient B 로고)
-- 🟢 `apple-touch-icon.png` 404 → layout.tsx에서 참조 제거
-
-**생성/수정 파일**:
-- 생성: `src/app/sales/mypage/page.tsx` (redirect)
-- 생성: `src/app/sales/search/page.tsx` (redirect)
-- 생성: `src/app/sales/auth/login/page.tsx` (redirect with role param)
-- 생성: `src/app/sales/auth/signup/page.tsx` (redirect with role param)
-- 생성: `src/app/sales/talents/page.tsx` (준비중 placeholder)
-- 생성: `src/app/agent/talents/page.tsx` (준비중 placeholder)
-- 생성: `public/icon.svg`
-- 수정: `src/app/agent/auth/login/page.tsx` (Google 버튼 반응형)
-- 수정: `src/components/shared/Header.tsx` (터치 타깃 44px)
-- 수정: `src/app/layout.tsx` (apple-touch-icon 참조 제거)
-
-**검증**: `npx tsc --noEmit` + `npm run build` 둘 다 EXIT=0 통과
-**배포 완료**: commit `c24f4d2` + `f442ad2` Vercel 라이브 반영 확인
-
-### 로그인 후 모바일 E2E 추가 fix (2026-04-24)
-
-**발견 이슈**:
-- 🔴 `/agent/jobs/new`, `/sales/jobs/new` 폼 가로 스크롤 37px
-  - 원인 1: `AddressSearch`의 `flex gap-2` 컨테이너에서 input/버튼이 축소 안 됨 (min-w-0 누락)
-  - 원인 2: `EditorToolbar`의 overflow-x-auto가 부모에 의해 밀려남 (min-w-0/max-w-full 누락)
-
-**수정** (commit `f442ad2`):
-- `src/components/shared/AddressSearch.tsx` — flex 컨테이너와 input에 `min-w-0`
-- `src/components/editor/EditorToolbar.tsx` — 최상위 wrapper에 `min-w-0 max-w-full overflow-hidden`, 스크롤 컨테이너에 `max-w-full`
-
-**검증**: 라이브에서 docW 345 / winW 360, horizontalScroll: false ✅
-
-**E2E 결과 최종**:
-- ✅ /agent/mypage — overflow 0
-- ✅ /agent/jobs/new 유형선택 — overflow 0
-- ✅ /agent/jobs/new 폼 — overflow 0 (fix 적용)
-- ✅ /checkout — 토스 위젯 정상, 부가세 정확, overflow 0
-- ✅ /profile/ai-photo — overflow 0
-- 🟡 미미 이슈: /agent/mypage "수 정" 버튼 세로 쪼개짐, /premium "공인중개/사" 세로 쪼개짐 (오픈 후 개선)
-
----
-
-## 마지막 작업 (2026-04-08)
-
-### 최신 커밋 (2026-04-06 ~ 04-08)
-
-#### 1. 결제 금액 부가세(10%) 적용 `6ffc1c1`
-- **toss.ts**: `getVat()`, `getTotalPrice()` 유틸 함수 추가
-- **checkout**: 위젯 금액 부가세 포함, 공급가액/부가세/총액 breakdown UI
-- **confirm API**: 금액 검증·DB 저장·응답 모두 totalPrice 기준으로 통일
-- **success**: 클라이언트 금액 검증도 `getTotalPrice()` 사용
-- **premium**: 가격표에 '부가세(10%) 별도' 안내 문구 + 애니메이션
-
-#### 2. 오픈 전 전면 점검 `b957c60`
-- 회원가입: 소셜 로그인 프로필 완성 시 중개사 필드 누락 수정
-- 회원가입: 서버사이드 유효성 검증 강화, 이메일/전화번호 중복 체크
-- 결제: success 페이지 세션 로딩 대기 후 confirm API 호출 (401 수정)
-- 보안: 미들웨어 외부 서비스 콜백 경로 면제, 웹훅 시크릿 검증
-- 인증: 비밀번호 찾기/재설정 페이지 신규 추가
-
-#### 3. EP.005 파크로쉬 서울원 뉴스툰 `52dad79`
-- `scripts/generate-parkroshe-toon.js` — AI 헬스케어 뉴스툰 생성 스크립트
-
-#### 4. 토스페이먼츠 라이브 결제 검증 ✅
-- 테스트 키 + 라이브 키 전체 플로우 (결제/취소/웹훅) 검증 완료
+### 로그인 후 E2E ✅
+- `/agent/jobs/new` 폼 가로 스크롤 제거 (AddressSearch, EditorToolbar)
+- 라이브 검증: overflow 0 확인
 
 ---
 
@@ -113,14 +54,49 @@
 - Pre-existing TS 에러: SecurityShield.tsx, Honeypot.tsx, dnaQuestions.ts (우리 변경과 무관)
 - 뉴스툰 EP.003, EP.004의 패널 중복 이미지 (향후 생성분부터 짝수 강제 적용됨)
 - commission-calculator 부동소수점 정밀도 이슈 (Math.floor + 0.7% → 1원 차이)
+- /agent/mypage "수 정" 버튼 세로 쪼개짐 (오픈 후 개선)
+- /premium "공인중개/사" 세로 쪼개짐 (오픈 후 개선)
 
 ---
 
-## 다음 단계 (오픈 전 남은 체크리스트)
-- [ ] 모바일 반응형 점검
-- [ ] 핵심 플로우 E2E 점검
-- [ ] Supabase RLS 라이브 테스트
+## 다음 단계
+
+### 시세지도 남은 작업
+- [ ] 공공데이터포털 API 키 온시아 서비스 활용신청 확인 (완료)
+- [ ] cron 실거래가 데이터 수집 정상 동작 확인 (upsert 수정 후 첫 실행)
+- [ ] 지도 페이지 라이브 테스트 (`/market`)
+
+### 오픈 전 남은 체크
 - [ ] 도메인/SSL 설정 확인
+
+---
+
+## 시세지도 기능 개요 (2026-04-24~25 개발)
+
+### 아키텍처
+- **데이터 소스**: 국토부 실거래가 OPEN API (data.go.kr, `DATA_GO_KR_API_KEY`)
+- **수집 방식**: Vercel Cron → `/api/cron/sync-transactions` (maxDuration 300, 병렬 처리)
+- **DB**: `price_transactions` 테이블 (Supabase PostgreSQL)
+- **지도**: 네이버 지도 JS API v3 (`NEXT_PUBLIC_NAVER_MAP_CLIENT_ID`)
+
+### 주요 파일
+- `src/components/market/MarketMap.client.tsx` — 지도 컴포넌트
+- `src/app/market/MarketPageClient.tsx` — 시세지도 메인 클라이언트
+- `src/app/market/[complex]/page.tsx` — 단지 상세
+- `src/app/market/rankings/page.tsx` — 단지 랭킹
+- `src/app/api/market/transactions/route.ts` — 거래 조회 API
+- `src/app/api/market/complex/[key]/route.ts` — 단지 상세 API
+- `src/app/api/cron/sync-transactions/route.ts` — 데이터 수집 cron
+- `src/lib/market/realEstate.ts` — MOLIT API fetch + transform
+- `src/lib/market/aggregateByComplex.ts` — 단지별 집계
+
+### DB 마이그레이션 이력
+| 번호 | 내용 |
+|------|------|
+| 019 | price_transactions 테이블 생성 |
+| 020 | unique index (함수식, 이후 026에서 교체) |
+| 021~025 | 시세지도 기능 확장 |
+| 026 | upsert onConflict 호환 — plain column index 재생성 ✅ |
 
 ---
 
