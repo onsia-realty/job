@@ -22,7 +22,7 @@ export async function GET(
     // 최근 10거래
     const { data: recent } = await supabaseAdmin
       .from('price_transactions')
-      .select('deal_date, price_manwon, exclusive_area, floor, deal_type, deal_channel, cancel_yn, lawd_cd')
+      .select('deal_date, price_manwon, exclusive_area, floor, deal_type, deal_channel, cancel_yn, lawd_cd, complex_name, dong')
       .eq('complex_key', complex_key)
       .eq('cancel_yn', false)
       .order('deal_date', { ascending: false })
@@ -44,7 +44,8 @@ export async function GET(
 
     return NextResponse.json({
       complex_key,
-      complex_name: monthly?.[0]?.complex_name || recent?.[0] ? '단지' : null,
+      complex_name: monthly?.[0]?.complex_name || recent?.[0]?.complex_name || null,
+      dong: recent?.[0]?.dong || null,
       lawd_cd,
       growth_pct,
       monthly: monthly || [],

@@ -37,23 +37,28 @@ export default function MarketPageClient() {
   const loadData = async (lc: string, pt: PropertyTypeFilter) => {
     setLoading(true);
     try {
-      // 최근 월 추정 (현재 월 기준, 실거래는 보통 1-2개월 지연)
+      // 실거래는 보통 1-2개월 지연. 최근 3개월을 순차 시도해서 데이터 밀도 확보.
       const now = new Date();
-      const targetMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-      const ym = `${targetMonth.getFullYear()}${String(targetMonth.getMonth() + 1).padStart(2, '0')}`;
+      const candidateYms = [1, 2, 3].map((lag) => {
+        const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
+        return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+      });
 
-      const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=trade`);
-      if (!res.ok) {
-        console.warn('[market] transactions fetch failed');
-        setPoints([]);
-        return;
-      }
-      const data = await res.json();
-      const txs: Array<{
+      let txs: Array<{
         complex_key: string;
         complex_name: string;
         price_manwon: number;
-      }> = data.transactions || [];
+      }> = [];
+      for (const ym of candidateYms) {
+        const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=trade`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        const arr = (data.transactions || []) as typeof txs;
+        if (arr.length > 0) {
+          txs = arr;
+          break;
+        }
+      }
 
       // 단지별 평균가 집계 (로컬)
       const map = new Map<string, { name: string; prices: number[] }>();
