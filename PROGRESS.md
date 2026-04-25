@@ -7,6 +7,28 @@
 
 ## 마지막 작업 (2026-04-25)
 
+### 시세지도 지도 SDK 전환: 네이버 → 카카오 ✅ (블로커 해소)
+
+#### 배경
+- 네이버 클라우드 Maps `Authentication Failed` (errorCode 200) 블로커로 `/market` 접속 불가
+- Naver Cloud "Maps" 서비스 활성화 / 도메인 매칭 / Web Dynamic Map 체크 등 모두 점검했으나 인증 실패 지속
+- → 카카오 지도 JS SDK로 전환 결정
+
+#### 변경 사항 (`src/components/market/MarketMap.client.tsx`)
+- 환경변수: `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID` → `NEXT_PUBLIC_KAKAO_MAP_KEY`
+- 스크립트 로더: `oapi.map.naver.com` → `dapi.kakao.com/v2/maps/sdk.js?autoload=false` + `kakao.maps.load()` 콜백
+- 지도 객체: `naver.maps.Map` → `kakao.maps.Map` (`zoom` → `level`)
+- 마커: `naver.maps.Marker` → `kakao.maps.CustomOverlay` (HTML content + click 리스너 직접 부착)
+- zoom 변환 함수 추가: `naverZoomToKakaoLevel(zoom)` — Naver 8~19 ↔ Kakao 14~1 선형 근사
+- `onSelect`를 `onSelectRef`로 분리 — 콜백 변경 시 오버레이 재등록 방지
+
+#### 다음 조치 (사용자 확인 필요)
+- [ ] Vercel 환경변수에 `NEXT_PUBLIC_KAKAO_MAP_KEY` (Kakao Developer Console JavaScript 키) 추가
+- [ ] Kakao Developer Console에서 사이트 도메인 등록 (`booin.co.kr`, `localhost:3000`)
+- [ ] 배포 후 `/market` 접속해서 마커 정상 표시 + 클릭 → 단지 상세 이동 확인
+
+---
+
 ### 시세지도 배포 시퀀스 완료 (⚠️ 네이버 지도 API 블로커 남음)
 
 #### 1. upsert 버그 수정 + 마이그레이션 적용 ✅ (`2015d75`)
