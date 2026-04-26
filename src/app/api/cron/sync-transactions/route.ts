@@ -10,14 +10,15 @@ import { getLastNMonths } from '@/lib/market/publicApi';
 export const maxDuration = 300;
 
 /**
- * POST /api/cron/sync-transactions
- * Vercel Cron(daily 04:00 KST) + 수동 트리거용.
+ * GET/POST /api/cron/sync-transactions
+ * Vercel Cron은 GET으로 호출(daily 04:00 KST), 수동 트리거는 POST 가능.
+ * 둘 다 Authorization: Bearer ${CRON_SECRET} 필요.
  * MVP 지역(is_mvp=true) × 최근 3개월 × (아파트+오피스텔) × (매매+전월세) 동기화.
  * 병렬: region×ym 조합을 CONCURRENCY개씩 묶어 처리.
  * ?months=202603 로 특정 월만, ?concurrency=10 로 동시성 조절 가능.
  */
 const DEFAULT_CONCURRENCY = 8;
-export async function POST(req: NextRequest) {
+async function runSync(req: NextRequest) {
   // Cron secret 검증 (Vercel Cron은 Authorization: Bearer <CRON_SECRET>)
   const authHeader = req.headers.get('authorization') || '';
   const secret = process.env.CRON_SECRET;
@@ -137,10 +138,10 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, summary });
 }
 
-// GET은 상태 확인용 (auth 없이도 summary만 반환)
-export async function GET() {
-  const { count } = await supabaseAdmin
-    .from('price_transactions')
-    .select('*', { count: 'exact', head: true });
-  return NextResponse.json({ total_transactions: count || 0 });
+export async function GET(req: NextRequest) {
+  return runSync(req);
+}
+
+export async function POST(req: NextRequest) {
+  return runSync(req);
 }
