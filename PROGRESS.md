@@ -5,6 +5,34 @@
 
 ---
 
+## 마지막 작업 (2026-04-27)
+
+### 오픈 전 점검 라운드 3 — 라이브 검수 + cron 버그 수정
+
+#### Step 1~2. 카카오 지도 인증 진단
+- `/market` 라이브 접속 → 페이지 자체는 200 OK, 헤더/필터/단지 카운트(94개) 정상
+- 카카오 SDK 요청: `net::ERR_BLOCKED_BY_ORB`
+- 직접 API 응답: `403 NotAuthorizedError "App(onsia-job) disabled OPEN_MAP_AND_LOCAL service"`
+- **결론**: 도메인 등록 문제 아니라 카카오 앱에서 **카카오맵 서비스 자체가 비활성화** 상태
+- **대표님 작업 대기**: developers.kakao.com → onsia-job 앱 → 제품 설정 → 카카오맵 ON
+
+#### Step 4. 🚨 cron 중대 버그 수정 + 라이브 검증 완료 (commit `afa091b`)
+- **진단**: cron이 한 번도 정상 작동한 적 없음. Vercel Cron은 GET 호출인데 sync 로직이 POST에만 있어서 GET은 카운트만 반환하고 끝남.
+- **수정**: `runSync()` 추출 → GET/POST 둘 다 호출하도록 통합 (`src/app/api/cron/sync-transactions/route.ts`)
+- **라이브 검증** (1개월치 호출): apt_trade 7,355 + apt_rent 17,777 + offi_trade 1,124 + offi_rent 5,770 = 32,026건, errors 0, 21.4초
+- **DB 반영**: 53,456 → **84,599** (+31,143건). 내일 04:00 KST Vercel Cron 자동 실행 시 동일 핸들러로 정상 작동 예정.
+- **참고**: `expire-jobs`는 처음부터 GET 핸들러로 정상 구현되어 있었음.
+
+#### Step 5. 도메인/SSL ✅ PASS
+- `https://booin.co.kr` 200 OK (Browser UA), `http→https` 308, `www→root` 307
+- SSL: Let's Encrypt, 2026-07-24까지 (자동 갱신)
+- ⚠️ 메모: curl/봇 UA는 403 차단됨 — Vercel 기본 동작, 일반 사용자 영향 없음
+
+#### CRON_SECRET 통일 확인
+- 로컬·Vercel 모두 `booincronsecret20261024plain`로 통일됨 (메모리 업데이트 완료)
+
+---
+
 ## 마지막 작업 (2026-04-25)
 
 ### 시세지도 지도 SDK 전환: 네이버 → 카카오 ✅ (블로커 해소)
@@ -104,12 +132,13 @@
 ## 다음 단계
 
 ### 시세지도 남은 작업
-- [ ] 공공데이터포털 API 키 온시아 서비스 활용신청 확인 (완료)
-- [ ] cron 실거래가 데이터 수집 정상 동작 확인 (upsert 수정 후 첫 실행)
-- [ ] 지도 페이지 라이브 테스트 (`/market`)
+- [x] 공공데이터포털 API 키 온시아 서비스 활용신청 확인 (완료)
+- [x] cron 실거래가 데이터 수집 정상 동작 확인 — `afa091b`로 GET 핸들러 추가 후 검증 완료
+- [ ] **[대표님] Kakao Developer Console에서 카카오맵 서비스 활성화** (블로커)
+- [ ] 카카오 활성화 후 지도 페이지 라이브 테스트 (`/market` 마커 표시 + 클릭)
 
 ### 오픈 전 남은 체크
-- [ ] 도메인/SSL 설정 확인
+- [x] 도메인/SSL 설정 확인 (booin.co.kr 정상)
 
 ---
 

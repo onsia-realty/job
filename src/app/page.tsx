@@ -51,11 +51,11 @@ const adBanners = [
   },
   {
     id: 2,
-    label: 'COMING SOON',
-    title: 'AI 매칭 서비스 준비중',
-    description: '나에게 딱 맞는 현장 추천, 곧 찾아옵니다!',
-    gradient: 'from-orange-500 to-pink-500',
-    link: '',
+    label: '시세 지도',
+    title: '시세·거래량 지도',
+    description: '주변 단지 실거래가, 한눈에 확인하세요',
+    gradient: 'from-blue-600 to-cyan-600',
+    link: '/market',
   },
 ];
 

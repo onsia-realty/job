@@ -233,7 +233,7 @@ export default function MarketMap({
       <div className="flex items-center justify-center h-full bg-[#0B0F14] text-slate-400 text-sm px-4 text-center">
         <div>
           <p className="mb-2">{loadError}</p>
-          <p className="text-xs text-slate-500">Kakao Developer Console에서 도메인 등록 상태를 확인해 주세요</p>
+          <p className="text-xs text-slate-500">Kakao Developer Console에서 카카오맵 서비스 활성화 및 사이트 도메인 등록을 확인해 주세요</p>
         </div>
       </div>
     );
