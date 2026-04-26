@@ -143,6 +143,7 @@ export default function MarketMap({
   const overlaysRef = useRef<KakaoOverlay[]>([]);
   const onSelectRef = useRef(onSelect);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [mapReady, setMapReady] = useState(false);
 
   // onSelect 최신값을 ref로 유지 (리스너 재등록 없이 사용)
   useEffect(() => {
@@ -169,6 +170,7 @@ export default function MarketMap({
           draggable: true,
           scrollwheel: true,
         });
+        setMapReady(true);
       })
       .catch((e: Error) => {
         if (!cancelled) setLoadError(e.message);
@@ -179,6 +181,7 @@ export default function MarketMap({
       overlaysRef.current.forEach((o) => o.setMap(null));
       overlaysRef.current = [];
       mapRef.current = null;
+      setMapReady(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -190,9 +193,9 @@ export default function MarketMap({
     mapRef.current.setLevel(naverZoomToKakaoLevel(zoom));
   }, [center, zoom]);
 
-  // 오버레이 재생성 (points 변경 시)
+  // 오버레이 재생성 (points 또는 지도 준비 완료 시)
   useEffect(() => {
-    if (!mapRef.current || !window.kakao?.maps) return;
+    if (!mapReady || !mapRef.current || !window.kakao?.maps) return;
     const { kakao } = window;
     const map = mapRef.current;
 
@@ -226,7 +229,7 @@ export default function MarketMap({
     };
 
     overlaysRef.current = points.map(makeOverlay);
-  }, [points]);
+  }, [points, mapReady]);
 
   if (loadError) {
     return (
