@@ -7,6 +7,28 @@
 
 ## 마지막 작업 (2026-04-27)
 
+### 카카오 지도 마커 미생성 — 디버깅 진행 중 (미해결)
+
+#### 진행 흐름
+1. **카카오 권한 활성화 (우회)**: onsia-job 앱이 카카오맵 심사 반려 상태였음. 카카오 '1앱-1서비스' 정책상 계정 첫 번째 앱이 자동 권한을 받음 → 이미 onsia.city에서 사용 중인 첫 번째 앱(생성 2025-12-18)에 booin 도메인 추가하여 우회. JS 키: `99928cf1f21dbccb73c00344b2bd66d3`. onsia-job 앱은 카카오맵 미사용으로 booin 도메인 삭제.
+2. **환경변수 교체** (`commit 7fe30be`): `.env.local` + Vercel 3개 환경 모두 새 키로. 시세지도 진입 카드(메인 페이지 광고 배너) 추가, 카카오 SDK 로드 실패 fallback 카피 정확화.
+3. **카카오 SDK 정상 로드 확인**: 라이브 `/market` → 카카오 다크 스카이 모드 타일 로딩 OK, 콘솔 에러 0, "94개 단지" 헤더 표시.
+4. **🔴 문제 발견**: 마커가 0개. `data-complex-key` 가진 div 0개. 헤더 카운트 94 vs DOM 0.
+5. **수정 시도 1** (`commit b84bbed`): `mapReady` state 추가 — useEffect[points,mapReady] race condition 해결 시도. **실패** (마커 여전히 0).
+6. **수정 시도 2** (`commit 15882af`): `drawMarkers` ref 패턴으로 재작성. SDK 로드 직후 직접 호출. **실패** (마커 여전히 0).
+7. **디버깅 console.log 추가** (`commit 73cd07d`): MarketMap.client.tsx에 단계별 log. **라이브 콘솔에 안 찍힘** → 새 빌드가 dynamic chunk에 반영 안 된 것으로 추정.
+8. **chunk 분석**: 이전 dynamic chunk(`545d38d88ee8ad5b.js`)는 9 bytes로 무효화, 새 chunk hash가 main HTML에서 안 보임. Vercel webpack chunk 매핑 또는 빌드 캐시 이슈 의심.
+
+#### 미해결 — 사용자 결정 대기
+- (A) Vercel `--force` rebuild + 추가 디버깅 (5분~∞)
+- (B) **VWorld + Leaflet 전환** (1시간 내, 검증된 패턴, 부동산인 다른 모든 지도와 일관성)
+- (C) 시세지도 잠시 보류, 다른 오픈 작업 우선
+
+#### 임시 코드 정리 필요
+- `src/components/market/MarketMap.client.tsx`에 디버깅 console.log 6개 남아있음. 결정 후 제거 또는 유지.
+
+---
+
 ### 오픈 전 점검 라운드 3 — 라이브 검수 + cron 버그 수정
 
 #### Step 1~2. 카카오 지도 인증 진단
