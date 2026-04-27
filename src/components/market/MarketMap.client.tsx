@@ -152,6 +152,7 @@ export default function MarketMap({
 
   // 마커 그리기 함수 — mapRef와 최신 points로 동기 실행
   const drawMarkers = () => {
+    console.log('[MarketMap] drawMarkers called', { hasMap: !!mapRef.current, hasKakao: !!window.kakao?.maps, pointsLen: pointsRef.current.length });
     if (!mapRef.current || !window.kakao?.maps) return;
     const { kakao } = window;
     const map = mapRef.current;
@@ -160,6 +161,7 @@ export default function MarketMap({
     overlaysRef.current.forEach((o) => o.setMap(null));
     overlaysRef.current = [];
 
+    console.log('[MarketMap] making', pts.length, 'overlays');
     overlaysRef.current = pts.map((p, idx) => {
       const jitterLat = p.lat + (idx % 7) * 0.0001;
       const jitterLng = p.lng + (idx % 11) * 0.0001;
@@ -195,8 +197,10 @@ export default function MarketMap({
 
     let cancelled = false;
 
+    console.log('[MarketMap] init useEffect, KAKAO_APP_KEY len:', KAKAO_APP_KEY.length);
     loadKakaoMapScript(KAKAO_APP_KEY)
       .then(() => {
+        console.log('[MarketMap] SDK loaded, cancelled:', cancelled, 'container:', !!containerRef.current, 'kakao:', !!window.kakao?.maps);
         if (cancelled || !containerRef.current || !window.kakao?.maps) return;
         const { kakao } = window;
         mapRef.current = new kakao.maps.Map(containerRef.current, {
@@ -205,6 +209,7 @@ export default function MarketMap({
           draggable: true,
           scrollwheel: true,
         });
+        console.log('[MarketMap] map created, calling drawMarkers');
         // 지도 생성 직후 즉시 마커 그리기 (현재 points로)
         drawMarkers();
       })
@@ -230,6 +235,7 @@ export default function MarketMap({
 
   // points 변경 시 ref 갱신 + 마커 재그리기
   useEffect(() => {
+    console.log('[MarketMap] points useEffect, len:', points.length);
     pointsRef.current = points;
     drawMarkers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
