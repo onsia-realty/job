@@ -142,69 +142,25 @@ export default function MarketMap({
   const mapRef = useRef<KakaoMap | null>(null);
   const overlaysRef = useRef<KakaoOverlay[]>([]);
   const onSelectRef = useRef(onSelect);
+  const pointsRef = useRef(points);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [mapReady, setMapReady] = useState(false);
 
   // onSelect 최신값을 ref로 유지 (리스너 재등록 없이 사용)
   useEffect(() => {
     onSelectRef.current = onSelect;
   }, [onSelect]);
 
-  // 스크립트 + 지도 초기화 (1회)
-  useEffect(() => {
-    if (!KAKAO_APP_KEY) {
-      setLoadError('NEXT_PUBLIC_KAKAO_MAP_KEY 환경변수가 설정되지 않았습니다');
-      return;
-    }
-    if (!containerRef.current) return;
-
-    let cancelled = false;
-
-    loadKakaoMapScript(KAKAO_APP_KEY)
-      .then(() => {
-        if (cancelled || !containerRef.current || !window.kakao?.maps) return;
-        const { kakao } = window;
-        mapRef.current = new kakao.maps.Map(containerRef.current, {
-          center: new kakao.maps.LatLng(center[0], center[1]),
-          level: naverZoomToKakaoLevel(zoom),
-          draggable: true,
-          scrollwheel: true,
-        });
-        setMapReady(true);
-      })
-      .catch((e: Error) => {
-        if (!cancelled) setLoadError(e.message);
-      });
-
-    return () => {
-      cancelled = true;
-      overlaysRef.current.forEach((o) => o.setMap(null));
-      overlaysRef.current = [];
-      mapRef.current = null;
-      setMapReady(false);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // center/zoom 변경 반영
-  useEffect(() => {
+  // 마커 그리기 함수 — mapRef와 최신 points로 동기 실행
+  const drawMarkers = () => {
     if (!mapRef.current || !window.kakao?.maps) return;
-    mapRef.current.setCenter(new window.kakao.maps.LatLng(center[0], center[1]));
-    mapRef.current.setLevel(naverZoomToKakaoLevel(zoom));
-  }, [center, zoom]);
-
-  // 오버레이 재생성 (points 또는 지도 준비 완료 시)
-  useEffect(() => {
-    if (!mapReady || !mapRef.current || !window.kakao?.maps) return;
     const { kakao } = window;
     const map = mapRef.current;
+    const pts = pointsRef.current;
 
-    // 기존 오버레이 제거
     overlaysRef.current.forEach((o) => o.setMap(null));
     overlaysRef.current = [];
 
-    // 동일 좌표 겹침 방지 (지터링)
-    const makeOverlay = (p: MapComplexPoint, idx: number) => {
+    overlaysRef.current = pts.map((p, idx) => {
       const jitterLat = p.lat + (idx % 7) * 0.0001;
       const jitterLng = p.lng + (idx % 11) * 0.0001;
       const content = document.createElement('div');
@@ -226,10 +182,58 @@ export default function MarketMap({
       });
       overlay.setMap(map);
       return overlay;
-    };
+    });
+  };
 
-    overlaysRef.current = points.map(makeOverlay);
-  }, [points, mapReady]);
+  // 스크립트 + 지도 초기화 (1회)
+  useEffect(() => {
+    if (!KAKAO_APP_KEY) {
+      setLoadError('NEXT_PUBLIC_KAKAO_MAP_KEY 환경변수가 설정되지 않았습니다');
+      return;
+    }
+    if (!containerRef.current) return;
+
+    let cancelled = false;
+
+    loadKakaoMapScript(KAKAO_APP_KEY)
+      .then(() => {
+        if (cancelled || !containerRef.current || !window.kakao?.maps) return;
+        const { kakao } = window;
+        mapRef.current = new kakao.maps.Map(containerRef.current, {
+          center: new kakao.maps.LatLng(center[0], center[1]),
+          level: naverZoomToKakaoLevel(zoom),
+          draggable: true,
+          scrollwheel: true,
+        });
+        // 지도 생성 직후 즉시 마커 그리기 (현재 points로)
+        drawMarkers();
+      })
+      .catch((e: Error) => {
+        if (!cancelled) setLoadError(e.message);
+      });
+
+    return () => {
+      cancelled = true;
+      overlaysRef.current.forEach((o) => o.setMap(null));
+      overlaysRef.current = [];
+      mapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // center/zoom 변경 반영
+  useEffect(() => {
+    if (!mapRef.current || !window.kakao?.maps) return;
+    mapRef.current.setCenter(new window.kakao.maps.LatLng(center[0], center[1]));
+    mapRef.current.setLevel(naverZoomToKakaoLevel(zoom));
+  }, [center, zoom]);
+
+  // points 변경 시 ref 갱신 + 마커 재그리기
+  useEffect(() => {
+    pointsRef.current = points;
+    drawMarkers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [points]);
 
   if (loadError) {
     return (
