@@ -98,7 +98,7 @@ export default function MarketPageClient() {
       {NAVER_CLIENT_ID && (
         <Script
           src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${NAVER_CLIENT_ID}`}
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
       )}
       {/* 헤더 */}
