@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { geocodeAddress, buildComplexAddress } from '@/lib/market/complexes';
+import { geocodeWithDebug, buildComplexAddress } from '@/lib/market/complexes';
 
 export const maxDuration = 300;
 
@@ -25,6 +25,8 @@ async function runGeocode(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const limit = Math.max(1, Math.min(500, parseInt(searchParams.get('limit') || String(DEFAULT_LIMIT), 10)));
   const force = searchParams.get('force') === 'true';
+  const debug = searchParams.get('debug') === 'true';
+  const debugSamples: unknown[] = [];
 
   // 1) 고유 단지 후보 추출 — price_transactions에 있고 complexes에 없는 (또는 force=true) 것.
   //    한 번에 너무 많이 가져오지 않게 limit×3 정도만 sample.
@@ -114,7 +116,8 @@ async function runGeocode(req: NextRequest) {
         jibun: c.jibun,
       });
 
-      const point = address ? await geocodeAddress(address) : null;
+      const { point, debug: dbg } = address ? await geocodeWithDebug(address) : { point: null, debug: { hasKey: false, address: '', roadStatus: 'NO_ADDR', parcelStatus: 'NO_ADDR', lastError: undefined } };
+      if (debug && debugSamples.length < 5) debugSamples.push({ complex_key: c.complex_key, ...dbg });
       if (point) {
         summary.geocoded++;
       } else {
@@ -149,7 +152,7 @@ async function runGeocode(req: NextRequest) {
   }
 
   summary.elapsed_ms = Date.now() - started_at;
-  return NextResponse.json({ ok: true, summary });
+  return NextResponse.json({ ok: true, summary, debug_samples: debug ? debugSamples : undefined });
 }
 
 export async function GET(req: NextRequest) {
