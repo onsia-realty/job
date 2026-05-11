@@ -33,31 +33,44 @@ export async function geocodeWithDebug(address: string): Promise<GeocodeResult> 
     const url =
       `https://api.vworld.kr/req/address?service=address&request=getcoord` +
       `&address=${encodeURIComponent(address)}&type=${type}&format=json&key=${VWORLD_KEY}`;
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      if (!res.ok) {
-        if (type === 'road') debug.roadStatus = `HTTP_${res.status}`; else debug.parcelStatus = `HTTP_${res.status}`;
-        return null;
+    // Vercel→Vworld 502/network 회피용 재시도 (지수 backoff, 최대 3회)
+    let lastStatus = '';
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) {
+        await new Promise((r) => setTimeout(r, 500 * Math.pow(2, attempt - 1))); // 500ms, 1s
       }
-      const data = await res.json();
-      const status = data?.response?.status || 'UNKNOWN';
-      const errCode = data?.response?.error?.code || '';
-      if (type === 'road') debug.roadStatus = `${status}${errCode ? '/' + errCode : ''}`;
-      else debug.parcelStatus = `${status}${errCode ? '/' + errCode : ''}`;
-      if (data.response?.result?.point) {
-        return {
-          lat: parseFloat(data.response.result.point.y),
-          lng: parseFloat(data.response.result.point.x),
-          source: type,
-        } as VworldPoint;
+      try {
+        const res = await fetch(url, {
+          signal: AbortSignal.timeout(15000),
+          headers: { 'User-Agent': 'Mozilla/5.0', 'Accept': 'application/json' },
+        });
+        if (!res.ok) {
+          lastStatus = `HTTP_${res.status}`;
+          if (res.status >= 500) continue; // 5xx는 재시도
+          break; // 4xx는 stop
+        }
+        const data = await res.json();
+        const status = data?.response?.status || 'UNKNOWN';
+        const errCode = data?.response?.error?.code || '';
+        lastStatus = `${status}${errCode ? '/' + errCode : ''}`;
+        if (data.response?.result?.point) {
+          if (type === 'road') debug.roadStatus = lastStatus; else debug.parcelStatus = lastStatus;
+          return {
+            lat: parseFloat(data.response.result.point.y),
+            lng: parseFloat(data.response.result.point.x),
+            source: type,
+          } as VworldPoint;
+        }
+        break; // 정상 응답이지만 결과 없음 — 재시도 의미 없음
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        lastStatus = `EXCEPTION:${msg.slice(0, 30)}`;
+        debug.lastError = `${type} attempt ${attempt}: ${msg}`;
+        // 네트워크 예외는 재시도
       }
-      return null;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      debug.lastError = `${type}: ${msg}`;
-      if (type === 'road') debug.roadStatus = 'EXCEPTION'; else debug.parcelStatus = 'EXCEPTION';
-      return null;
     }
+    if (type === 'road') debug.roadStatus = lastStatus; else debug.parcelStatus = lastStatus;
+    return null;
   };
 
   const point = (await tryFetch('road')) || (await tryFetch('parcel'));
