@@ -97,8 +97,8 @@ export default function MarketPageClient() {
     <div className="relative min-h-screen flex flex-col">
       {NAVER_CLIENT_ID && (
         <Script
-          src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${NAVER_CLIENT_ID}`}
-          strategy="lazyOnload"
+          src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_CLIENT_ID}`}
+          strategy="afterInteractive"
         />
       )}
       {/* 헤더 */}
