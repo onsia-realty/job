@@ -46,14 +46,16 @@ export async function geocodeAddress(address: string): Promise<VworldPoint | nul
 
 /**
  * MOLIT 거래 데이터에서 단지 주소를 추출.
- * 예: "서울특별시 강남구 도곡동 467" (sigungu + dong + jibun)
+ * 예: "서울특별시 강남구 도곡동 467" (sido + sigungu + dong + jibun)
+ * Vworld는 sido prefix가 빠지면 jibun이 짧은 단지(예: '4')를 매칭 못 함.
  */
 export function buildComplexAddress(opts: {
+  sido?: string | null | undefined;
   sigungu: string | null | undefined;
   dong: string | null | undefined;
   jibun: string | null | undefined;
 }): string {
-  return [opts.sigungu, opts.dong, opts.jibun].filter(Boolean).join(' ').trim();
+  return [opts.sido, opts.sigungu, opts.dong, opts.jibun].filter(Boolean).join(' ').trim();
 }
 
 export interface ComplexRecord {

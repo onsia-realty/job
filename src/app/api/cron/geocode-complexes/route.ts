@@ -64,13 +64,13 @@ async function runGeocode(req: NextRequest) {
     toGeocode = toGeocode.filter((c) => !existingWithGeo.has(c.complex_key));
   }
 
-  // 시군구 이름 보강 (지오코딩 주소 풍부화)
+  // 시도/시군구 이름 보강 (지오코딩 주소 풍부화)
   const lawdCdSet = new Set(toGeocode.map((c) => c.lawd_cd));
   const { data: regions } = await supabaseAdmin
     .from('region_codes')
-    .select('lawd_cd, sigungu')
+    .select('lawd_cd, sido, sigungu')
     .in('lawd_cd', Array.from(lawdCdSet));
-  const sigunguByLawd = new Map((regions || []).map((r) => [r.lawd_cd, r.sigungu]));
+  const regionByLawd = new Map((regions || []).map((r) => [r.lawd_cd, { sido: r.sido as string, sigungu: r.sigungu as string }]));
 
   toGeocode = toGeocode.slice(0, limit);
 
@@ -106,8 +106,13 @@ async function runGeocode(req: NextRequest) {
       const idx = cursor++;
       if (idx >= toGeocode.length) break;
       const c = toGeocode[idx];
-      const sigungu = sigunguByLawd.get(c.lawd_cd) || '';
-      const address = buildComplexAddress({ sigungu, dong: c.dong, jibun: c.jibun });
+      const region = regionByLawd.get(c.lawd_cd);
+      const address = buildComplexAddress({
+        sido: region?.sido,
+        sigungu: region?.sigungu || '',
+        dong: c.dong,
+        jibun: c.jibun,
+      });
 
       const point = address ? await geocodeAddress(address) : null;
       if (point) {
