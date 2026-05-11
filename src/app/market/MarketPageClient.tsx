@@ -25,6 +25,14 @@ const DEFAULT_LAWD_CD = '11680';
 
 type PropertyTypeFilter = 'apt' | 'officetel';
 
+interface SelectedDetail {
+  complex_name: string | null;
+  growth_pct: number | null;
+  monthly: Array<{ ym: string; avg_price_manwon: number; trade_count: number; avg_pyeong_price: number }>;
+  complex_meta: { hhld_cnt: number | null; build_year: number | null } | null;
+  lease_ratio: number | null;
+}
+
 export default function MarketPageClient() {
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [lawd_cd, setLawdCd] = useState(DEFAULT_LAWD_CD);
@@ -32,10 +40,26 @@ export default function MarketPageClient() {
   const [points, setPoints] = useState<MapComplexPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
     loadData(lawd_cd, property_type);
   }, [lawd_cd, property_type]);
+
+  // 단지 선택 시 상세 fetch
+  useEffect(() => {
+    if (!selectedKey) {
+      setSelectedDetail(null);
+      return;
+    }
+    setDetailLoading(true);
+    fetch(`/api/market/complex/${encodeURIComponent(selectedKey)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setSelectedDetail(d))
+      .catch(() => setSelectedDetail(null))
+      .finally(() => setDetailLoading(false));
+  }, [selectedKey]);
 
   const loadData = async (lc: string, pt: PropertyTypeFilter) => {
     setLoading(true);
@@ -173,28 +197,124 @@ export default function MarketPageClient() {
           onSelect={setSelectedKey}
         />
 
-        {/* 단지 선택 패널 */}
+        {/* 단지 선택 패널 — 미니 카드 */}
         {selectedKey && (
-          <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-80 bg-slate-900 border border-slate-700 rounded-xl p-4 shadow-2xl z-10">
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xs text-slate-500">단지 상세</span>
-              <button
-                onClick={() => setSelectedKey(null)}
-                className="text-slate-500 hover:text-white text-xs"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="text-sm font-bold mb-2">
-              {points.find((p) => p.complex_key === selectedKey)?.complex_name}
-            </div>
-            <p className="text-[11px] text-slate-400">
-              상세 분석·중개사 목록·구인공고는 Day 3에서 연결됩니다.
-            </p>
-          </div>
+          <ComplexMiniCard
+            complexKey={selectedKey}
+            point={points.find((p) => p.complex_key === selectedKey)}
+            detail={selectedDetail}
+            loading={detailLoading}
+            onClose={() => setSelectedKey(null)}
+          />
         )}
       </div>
     </div>
+  );
+}
+
+function ComplexMiniCard({
+  complexKey,
+  point,
+  detail,
+  loading,
+  onClose,
+}: {
+  complexKey: string;
+  point: MapComplexPoint | undefined;
+  detail: SelectedDetail | null;
+  loading: boolean;
+  onClose: () => void;
+}) {
+  const name = detail?.complex_name || point?.complex_name || '단지';
+  const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
+  const monthly = detail?.monthly ?? [];
+  const current = monthly[0];
+  const meta = detail?.complex_meta;
+
+  return (
+    <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-10 overflow-hidden">
+      {/* 헤더 */}
+      <div className="px-4 py-3 border-b border-slate-800 flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-bold truncate">{name}</div>
+          {(meta?.hhld_cnt != null || meta?.build_year != null) && (
+            <div className="text-[10px] text-slate-500 mt-0.5">
+              {meta.hhld_cnt != null && <>세대 {meta.hhld_cnt.toLocaleString()} · </>}
+              {meta.build_year != null && <>입주 {meta.build_year}년</>}
+            </div>
+          )}
+        </div>
+        <button onClick={onClose} className="text-slate-500 hover:text-white text-xs flex-shrink-0">✕</button>
+      </div>
+
+      {/* KPI */}
+      <div className="px-4 py-3 grid grid-cols-3 gap-2 border-b border-slate-800">
+        <div>
+          <div className="text-[10px] text-slate-500">평균 매매가</div>
+          <div className="text-sm font-bold text-cyan-300">
+            {current ? `${KRW(current.avg_price_manwon)}만` : (loading ? '…' : (point ? `${KRW(point.avg_price_manwon)}만` : '-'))}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] text-slate-500">평당가</div>
+          <div className="text-sm font-bold text-emerald-300">
+            {current ? `${KRW(current.avg_pyeong_price)}만` : (loading ? '…' : '-')}
+          </div>
+        </div>
+        <div>
+          <div className="text-[10px] text-slate-500">변동률</div>
+          <div className={`text-sm font-bold ${(detail?.growth_pct ?? 0) > 0 ? 'text-red-300' : 'text-blue-300'}`}>
+            {detail?.growth_pct != null ? `${detail.growth_pct > 0 ? '+' : ''}${detail.growth_pct.toFixed(1)}%` : (loading ? '…' : '-')}
+          </div>
+        </div>
+      </div>
+
+      {/* Sparkline */}
+      {monthly.length >= 2 && (
+        <div className="px-4 py-3 border-b border-slate-800">
+          <div className="text-[10px] text-slate-500 mb-1.5">최근 추이 (매매 평균)</div>
+          <Sparkline data={monthly.slice().reverse().map((m) => m.avg_price_manwon)} />
+        </div>
+      )}
+
+      {/* 전세가율 / 상세 보기 */}
+      <div className="px-4 py-3 flex items-center justify-between gap-2">
+        <div className="text-[11px] text-slate-400">
+          {detail?.lease_ratio != null ? (
+            <>전세가율 <strong className="text-amber-300">{detail.lease_ratio}%</strong></>
+          ) : (
+            <span className="text-slate-600">전세가율 -</span>
+          )}
+        </div>
+        <Link
+          href={`/market/${encodeURIComponent(complexKey)}`}
+          className="text-xs px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-[#0B0F14] rounded font-bold flex-shrink-0"
+        >
+          상세 보기 →
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function Sparkline({ data }: { data: number[] }) {
+  if (data.length < 2) return null;
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const W = 320;
+  const H = 32;
+  const stepX = W / (data.length - 1);
+  const points = data.map((v, i) => `${i * stepX},${H - ((v - min) / range) * H}`).join(' ');
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 32 }}>
+      <polyline points={points} fill="none" className="stroke-cyan-400" strokeWidth={1.5} />
+      {data.map((v, i) => {
+        const x = i * stepX;
+        const y = H - ((v - min) / range) * H;
+        return <circle key={i} cx={x} cy={y} r={1.5} className="fill-cyan-400" />;
+      })}
+    </svg>
   );
 }
 
