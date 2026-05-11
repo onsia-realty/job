@@ -195,6 +195,7 @@ export default function MarketPageClient() {
           zoom={14}
           points={points}
           onSelect={setSelectedKey}
+          selectedKey={selectedKey}
         />
 
         {/* 단지 선택 패널 — 미니 카드 */}

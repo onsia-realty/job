@@ -20,6 +20,7 @@ interface MarketMapProps {
   zoom?: number;
   points: MapComplexPoint[];
   onSelect?: (key: string) => void;
+  selectedKey?: string | null;
   height?: string;
 }
 
@@ -87,18 +88,44 @@ function waitForNaverMaps(timeoutMs = 15000): Promise<void> {
   });
 }
 
-function buildMarkerHTML(p: MapComplexPoint): string {
+// 5분위 색상 (낮음→높음). Q1 파랑 ~ Q5 빨강.
+const QUINTILE_COLORS = [
+  'rgba(96,165,250,0.95)',   // Q1 (저가)
+  'rgba(74,222,128,0.95)',   // Q2
+  'rgba(250,204,21,0.95)',   // Q3
+  'rgba(251,146,60,0.95)',   // Q4
+  'rgba(248,113,113,0.95)',  // Q5 (고가)
+];
+
+function quintileOf(price: number, sortedPrices: number[]): number {
+  if (sortedPrices.length === 0) return 2;
+  // index of price in sortedPrices (or where it would be)
+  let lo = 0, hi = sortedPrices.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (sortedPrices[mid] < price) lo = mid + 1;
+    else hi = mid;
+  }
+  const ratio = lo / sortedPrices.length; // 0..1
+  return Math.min(4, Math.floor(ratio * 5));
+}
+
+function buildMarkerHTML(p: MapComplexPoint, quintile: number, isSelected: boolean): string {
   const price = p.avg_price_manwon;
   const label = price >= 10000
     ? `${Math.floor(price / 10000)}억${price % 10000 > 0 ? `${Math.round((price % 10000) / 100)}` : ''}`
     : `${price.toLocaleString()}`;
   const growth = p.growth_pct;
-  const bg = p.property_type === 'officetel'
-    ? 'rgba(244,114,182,0.95)'
-    : 'rgba(34,211,238,0.95)';
+  const bg = QUINTILE_COLORS[quintile];
   const growthBadge = growth != null
-    ? `<span style="margin-left:4px;font-size:9px;font-weight:800;color:${growth > 0 ? '#fca5a5' : '#93c5fd'};">${growth > 0 ? '↑' : '↓'}${Math.abs(growth).toFixed(1)}%</span>`
+    ? `<span style="margin-left:4px;font-size:9px;font-weight:800;color:${growth > 0 ? '#7f1d1d' : '#1e3a8a'};">${growth > 0 ? '↑' : '↓'}${Math.abs(growth).toFixed(1)}%</span>`
     : '';
+  const typeDot = p.property_type === 'officetel'
+    ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#ec4899;margin-right:4px;vertical-align:middle;"></span>`
+    : '';
+  const selectedRing = isSelected
+    ? 'box-shadow:0 0 0 3px #0B0F14, 0 0 0 5px #06b6d4, 0 2px 8px rgba(0,0,0,0.4);'
+    : 'box-shadow:0 2px 8px rgba(0,0,0,0.4);';
 
   return `
     <div style="
@@ -109,13 +136,13 @@ function buildMarkerHTML(p: MapComplexPoint): string {
       font-weight:800;
       font-size:11px;
       white-space:nowrap;
-      box-shadow:0 2px 8px rgba(0,0,0,0.4);
+      ${selectedRing}
       border:1.5px solid rgba(255,255,255,0.6);
       cursor:pointer;
       transform:translate(-50%, -100%);
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
     ">
-      ${label}${growthBadge}
+      ${typeDot}${label}${growthBadge}
     </div>
   `;
 }
@@ -125,6 +152,7 @@ export default function MarketMap({
   zoom = 13,
   points,
   onSelect,
+  selectedKey = null,
   height = '100%',
 }: MarketMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -194,19 +222,24 @@ export default function MarketMap({
     });
     markersRef.current = [];
 
+    // 5분위 계산용 정렬된 가격 배열 (binary search lookup)
+    const sortedPrices = points.map((p) => p.avg_price_manwon).sort((a, b) => a - b);
+
     const makeMarker = (p: MapComplexPoint, idx: number) => {
       try {
         const jitterLat = p.lat + (idx % 7) * 0.0001;
         const jitterLng = p.lng + (idx % 11) * 0.0001;
+        const q = quintileOf(p.avg_price_manwon, sortedPrices);
+        const isSelected = selectedKey === p.complex_key;
         const marker = new naver.maps.Marker({
           position: new naver.maps.LatLng(jitterLat, jitterLng),
           map: mapRef.current,
           icon: {
-            content: buildMarkerHTML(p),
+            content: buildMarkerHTML(p, q, isSelected),
             size: new naver.maps.Size(0, 0),
             anchor: new naver.maps.Point(0, 0),
           },
-          zIndex: p.property_type === 'officetel' ? 50 : 100,
+          zIndex: isSelected ? 1000 : (p.property_type === 'officetel' ? 50 : 100),
         });
         naver.maps.Event.addListener(marker, 'click', () => {
           onSelect?.(p.complex_key);
@@ -220,7 +253,7 @@ export default function MarketMap({
     markersRef.current = points
       .map(makeMarker)
       .filter((m): m is NaverMarker => m !== null);
-  }, [points, onSelect]);
+  }, [points, onSelect, selectedKey]);
 
   if (loadError) {
     return (
