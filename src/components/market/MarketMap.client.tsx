@@ -165,49 +165,60 @@ export default function MarketMap({
 
     return () => {
       cancelled = true;
-      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current.forEach((m) => {
+        try { m.setMap(null); } catch { /* SDK internal state, ignore */ }
+      });
       markersRef.current = [];
-      if (mapRef.current && typeof mapRef.current.destroy === 'function') {
-        mapRef.current.destroy();
-      }
+      // map.destroy() 호출 시 Naver SDK 내부 상태가 깨져
+      // 재마운트(Strict Mode / dynamic import) 때 Marker 생성 실패 발생.
+      // 컨테이너 DOM 제거로 GC에 맡기는 게 안전.
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !window.naver) return;
+    if (!mapRef.current || !window.naver?.maps) return;
     mapRef.current.setCenter(new window.naver.maps.LatLng(center[0], center[1]));
     mapRef.current.setZoom(zoom);
   }, [center, zoom]);
 
   useEffect(() => {
-    if (!mapRef.current || !window.naver) return;
-    const { naver } = window;
+    if (!mapRef.current) return;
+    const naver = window.naver;
+    if (!naver?.maps?.Marker || !naver.maps.LatLng) return;
 
-    markersRef.current.forEach((m) => m.setMap(null));
+    markersRef.current.forEach((m) => {
+      try { m.setMap(null); } catch { /* ignore stale marker */ }
+    });
     markersRef.current = [];
 
     const makeMarker = (p: MapComplexPoint, idx: number) => {
-      const jitterLat = p.lat + (idx % 7) * 0.0001;
-      const jitterLng = p.lng + (idx % 11) * 0.0001;
-      const marker = new naver.maps.Marker({
-        position: new naver.maps.LatLng(jitterLat, jitterLng),
-        map: mapRef.current,
-        icon: {
-          content: buildMarkerHTML(p),
-          size: new naver.maps.Size(0, 0),
-          anchor: new naver.maps.Point(0, 0),
-        },
-        zIndex: p.property_type === 'officetel' ? 50 : 100,
-      });
-      naver.maps.Event.addListener(marker, 'click', () => {
-        onSelect?.(p.complex_key);
-      });
-      return marker;
+      try {
+        const jitterLat = p.lat + (idx % 7) * 0.0001;
+        const jitterLng = p.lng + (idx % 11) * 0.0001;
+        const marker = new naver.maps.Marker({
+          position: new naver.maps.LatLng(jitterLat, jitterLng),
+          map: mapRef.current,
+          icon: {
+            content: buildMarkerHTML(p),
+            size: new naver.maps.Size(0, 0),
+            anchor: new naver.maps.Point(0, 0),
+          },
+          zIndex: p.property_type === 'officetel' ? 50 : 100,
+        });
+        naver.maps.Event.addListener(marker, 'click', () => {
+          onSelect?.(p.complex_key);
+        });
+        return marker;
+      } catch {
+        return null;
+      }
     };
 
-    markersRef.current = points.map(makeMarker);
+    markersRef.current = points
+      .map(makeMarker)
+      .filter((m): m is NaverMarker => m !== null);
   }, [points, onSelect]);
 
   if (loadError) {
