@@ -121,26 +121,28 @@ function buildMarkerHTML(p: MapComplexPoint, quintile: number, isSelected: boole
     ? `<span style="margin-left:4px;font-size:9px;font-weight:800;color:${growth > 0 ? '#7f1d1d' : '#1e3a8a'};">${growth > 0 ? '↑' : '↓'}${Math.abs(growth).toFixed(1)}%</span>`
     : '';
   const typeDot = p.property_type === 'officetel'
-    ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#ec4899;margin-right:4px;vertical-align:middle;"></span>`
+    ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#ec4899;margin-right:4px;vertical-align:middle;box-shadow:0 0 4px rgba(236,72,153,0.6);"></span>`
     : '';
   const selectedRing = isSelected
-    ? 'box-shadow:0 0 0 3px #0B0F14, 0 0 0 5px #06b6d4, 0 2px 8px rgba(0,0,0,0.4);'
-    : 'box-shadow:0 2px 8px rgba(0,0,0,0.4);';
+    ? 'box-shadow:0 0 0 2px #0B0F14, 0 0 0 4px #fbbf24, 0 4px 16px rgba(251,191,36,0.4), 0 2px 8px rgba(0,0,0,0.5);transform:translate(-50%, -100%) scale(1.1);'
+    : 'box-shadow:0 4px 12px rgba(0,0,0,0.45), 0 0 0 1px rgba(0,0,0,0.15);transform:translate(-50%, -100%);';
 
   return `
     <div style="
       background:${bg};
       color:#0B0F14;
-      padding:3px 8px;
-      border-radius:12px;
-      font-weight:800;
+      padding:4px 9px;
+      border-radius:14px;
+      font-weight:900;
       font-size:11px;
+      letter-spacing:-0.2px;
       white-space:nowrap;
       ${selectedRing}
-      border:1.5px solid rgba(255,255,255,0.6);
+      border:1.5px solid rgba(255,255,255,0.85);
       cursor:pointer;
-      transform:translate(-50%, -100%);
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      font-family:-apple-system,BlinkMacSystemFont,'Pretendard','Segoe UI',sans-serif;
+      transition:transform 0.15s ease;
+      font-variant-numeric:tabular-nums;
     ">
       ${typeDot}${label}${growthBadge}
     </div>
