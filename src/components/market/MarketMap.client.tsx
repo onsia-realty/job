@@ -233,8 +233,12 @@ export default function MarketMap({
     );
   }
 
+  // outer는 부모(`flex-1 relative`)의 빈 공간을 absolute로 채움
+  // CSS flex item 안에서 height:100% 가 0으로 계산되는 케이스 회피
   return (
-    <div style={{ height, width: '100%' }} className="relative">
+    <div
+      style={height === '100%' ? { position: 'absolute', inset: 0 } : { height, width: '100%' }}
+    >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
       {points.length === 0 && (
