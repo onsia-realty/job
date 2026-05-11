@@ -41,10 +41,12 @@ export async function GET(req: NextRequest) {
       : false;
 
     if (isFresh && cached) {
+      const complex_coords = await loadComplexCoords(cached.map((c) => c.complex_key));
       return NextResponse.json({
         source: 'cache',
         count: cached.length,
         transactions: cached,
+        complex_coords,
       }, {
         headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' },
       });
@@ -94,10 +96,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const complex_coords = await loadComplexCoords(rows.map((r) => r.complex_key));
     return NextResponse.json({
       source,
       count: rows.length,
       transactions: rows,
+      complex_coords,
     }, {
       headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' },
     });
@@ -112,6 +116,29 @@ function isRecentlyFetched(fetchedAt: string | undefined, hours: number): boolea
   if (!fetchedAt) return false;
   const diffMs = Date.now() - new Date(fetchedAt).getTime();
   return diffMs < hours * 60 * 60 * 1000;
+}
+
+/**
+ * 단지별 좌표/메타 map 로드. complexes 테이블 미존재(마이그 미적용)면 {} 반환.
+ */
+type ComplexCoord = { lat: number | null; lng: number | null; hhld_cnt: number | null; build_year: number | null };
+async function loadComplexCoords(complex_keys: string[]): Promise<Record<string, ComplexCoord>> {
+  if (complex_keys.length === 0) return {};
+  const uniqKeys = Array.from(new Set(complex_keys));
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('complexes')
+      .select('complex_key, lat, lng, hhld_cnt, build_year')
+      .in('complex_key', uniqKeys);
+    if (error) return {};
+    const map: Record<string, ComplexCoord> = {};
+    for (const c of data || []) {
+      map[c.complex_key] = { lat: c.lat, lng: c.lng, hhld_cnt: c.hhld_cnt, build_year: c.build_year };
+    }
+    return map;
+  } catch {
+    return {};
+  }
 }
 
 async function fetchByType(

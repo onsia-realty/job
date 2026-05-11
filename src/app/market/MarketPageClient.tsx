@@ -52,6 +52,7 @@ export default function MarketPageClient() {
         complex_name: string;
         price_manwon: number;
       }> = [];
+      let complex_coords: Record<string, { lat: number | null; lng: number | null }> = {};
       for (const ym of candidateYms) {
         const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=trade`);
         if (!res.ok) continue;
@@ -59,6 +60,7 @@ export default function MarketPageClient() {
         const arr = (data.transactions || []) as typeof txs;
         if (arr.length > 0) {
           txs = arr;
+          complex_coords = data.complex_coords || {};
           break;
         }
       }
@@ -73,16 +75,20 @@ export default function MarketPageClient() {
         map.get(t.complex_key)!.prices.push(t.price_manwon);
       });
 
-      // 좌표는 현재 지역 lawd_cd 중심 + 지터링 (실제 단지 좌표는 v1.1에서 지오코딩)
-      const pts: MapComplexPoint[] = Array.from(map.entries()).map(([key, v], i) => ({
-        complex_key: key,
-        complex_name: v.name,
-        lat: center[0] + ((i % 9) - 4) * 0.003,
-        lng: center[1] + ((Math.floor(i / 9) % 9) - 4) * 0.003,
-        avg_price_manwon: Math.round(v.prices.reduce((a, b) => a + b, 0) / v.prices.length),
-        trade_count: v.prices.length,
-        property_type: pt,
-      }));
+      // 좌표: complex_coords 우선 사용, 없으면 jitter 폴백 (백필 완료 전까지)
+      const pts: MapComplexPoint[] = Array.from(map.entries()).map(([key, v], i) => {
+        const real = complex_coords[key];
+        const hasReal = real && real.lat != null && real.lng != null;
+        return {
+          complex_key: key,
+          complex_name: v.name,
+          lat: hasReal ? real.lat! : center[0] + ((i % 9) - 4) * 0.003,
+          lng: hasReal ? real.lng! : center[1] + ((Math.floor(i / 9) % 9) - 4) * 0.003,
+          avg_price_manwon: Math.round(v.prices.reduce((a, b) => a + b, 0) / v.prices.length),
+          trade_count: v.prices.length,
+          property_type: pt,
+        };
+      });
 
       setPoints(pts);
     } catch (e) {

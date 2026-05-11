@@ -5,7 +5,48 @@
 
 ---
 
-## 마지막 작업 (2026-04-27)
+## 마지막 작업 (2026-05-11) — 시세지도 완전 정상화 ✅
+
+### 결론: 라이브에서 지도 + 130개 마커 정상 표시
+
+12시간 디버깅 끝에 진짜 원인 2개로 압축됨:
+
+1. **NCP가 SDK URL 파라미터를 `ncpClientId` → `ncpKeyId`로 변경했음** (조용히)
+   - 옛 키 / 새 키 모두 `ncpKeyId`로만 인증 통과
+   - validatev3 엔드포인트 직접 hit해서 결정적으로 확인
+2. **CSS flex height 트랩**: `flex-1` 부모 안에서 `height:100%`가 0으로 계산
+   - 컨테이너 `position: absolute; inset: 0`으로 우회
+
+### 헛다리였던 가설들 (다음 작업자 주의)
+- NCP 캐시 / 카드/결제 / 화이트리스트 URL 형식 / Strict Mode / map.destroy() / SDK 로드 타이밍 / 다른 계정 키 — **전부 본질 아님**.
+- 콘솔에 `Authentication Failed Error Code 200` 메시지 뜨면 **1초 만에 파라미터 이름부터** 확인. NCP는 명확한 메시지 없이 deprecate함.
+
+### 디버깅 핵심 무기 (재사용)
+NCP 인증 결과 직접 hit (JSONP):
+```js
+const time = Date.now();
+const cb = '__cb_' + time;
+window[cb] = (r) => console.log(r);
+const s = document.createElement('script');
+s.src = `https://oapi.map.naver.com/v1/validatev3?ncpKeyId=KEY&uri=${encodeURIComponent(URL)}&time=${time}&callback=${cb}`;
+document.head.appendChild(s);
+// 응답 {error: {errorCode: '200', ...}} = 거부, 없음 = 통과
+```
+
+### 관련 메모리
+- `feedback_ncp_maps_keyid_param.md` — ncpKeyId 파라미터 + 디버깅 무기
+- `project_ncp_maps_account.md` — NCP 계정/Application/콘솔 경로
+- `feedback_flex_height_100pct_trap.md` — flex height:100% 트랩
+
+### 최종 커밋 시리즈
+- `8def16c` Naver SDK 라이프사이클 안정화 (map.destroy 제거)
+- `b2b2cf9` next/script로 SDK 로딩 페이지 레벨 이동
+- `0a4f83d` ncpClientId → ncpKeyId (🎯 진짜 fix)
+- `880187b` 지도 컨테이너 height 0 → absolute inset (🎯 마지막 fix)
+
+---
+
+## 이전 작업 (2026-04-27)
 
 ### 카카오 지도 마커 미생성 — 디버깅 진행 중 (미해결)
 
