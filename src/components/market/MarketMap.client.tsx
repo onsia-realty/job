@@ -60,30 +60,31 @@ interface NaverMarker {
   getPosition: () => NaverLatLng;
 }
 
-let scriptLoadPromise: Promise<void> | null = null;
-
-function loadNaverMapScript(clientId: string): Promise<void> {
-  if (typeof window !== 'undefined' && window.naver?.maps) {
-    return Promise.resolve();
-  }
-  if (scriptLoadPromise) return scriptLoadPromise;
-
-  scriptLoadPromise = new Promise((resolve, reject) => {
-    const existing = document.querySelector('script[data-naver-maps]');
-    if (existing) {
-      existing.addEventListener('load', () => resolve());
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = `https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${clientId}`;
-    script.async = true;
-    script.defer = true;
-    script.dataset.naverMaps = 'true';
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('네이버 지도 스크립트 로드 실패'));
-    document.head.appendChild(script);
+// SDK는 페이지 레벨 <Script strategy="afterInteractive">로 로드.
+// 여기서는 window.naver.maps 가 채워질 때까지 폴링.
+// 단, 인증 실패 시 SDK가 window.naver.maps = null 로 박는 케이스도 처리.
+function waitForNaverMaps(timeoutMs = 15000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const start = Date.now();
+    const tick = () => {
+      const m = typeof window !== 'undefined' ? window.naver?.maps : null;
+      if (m && typeof m.Map === 'function') {
+        resolve();
+        return;
+      }
+      // null 명시 박힘 = 인증 실패 신호
+      if (typeof window !== 'undefined' && window.naver && window.naver.maps === null) {
+        reject(new Error('네이버 지도 SDK 인증 실패 (NCP 화이트리스트 확인 필요)'));
+        return;
+      }
+      if (Date.now() - start > timeoutMs) {
+        reject(new Error('네이버 지도 SDK 로드 타임아웃'));
+        return;
+      }
+      setTimeout(tick, 100);
+    };
+    tick();
   });
-  return scriptLoadPromise;
 }
 
 function buildMarkerHTML(p: MapComplexPoint): string {
@@ -140,9 +141,9 @@ export default function MarketMap({
 
     let cancelled = false;
 
-    loadNaverMapScript(NAVER_CLIENT_ID)
+    waitForNaverMaps()
       .then(() => {
-        if (cancelled || !containerRef.current || !window.naver) return;
+        if (cancelled || !containerRef.current || !window.naver?.maps) return;
         const { naver } = window;
         mapRef.current = new naver.maps.Map(containerRef.current, {
           center: new naver.maps.LatLng(center[0], center[1]),

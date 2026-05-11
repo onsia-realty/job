@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Script from 'next/script';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, TrendingUp, Building2, Filter } from 'lucide-react';
 import type { MapComplexPoint } from '@/components/market/MarketMap.client';
+
+const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || '';
 
 // SSR 금지 (Leaflet은 window 의존)
 const MarketMap = dynamic(() => import('@/components/market/MarketMap.client'), {
@@ -92,6 +95,12 @@ export default function MarketPageClient() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
+      {NAVER_CLIENT_ID && (
+        <Script
+          src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${NAVER_CLIENT_ID}`}
+          strategy="afterInteractive"
+        />
+      )}
       {/* 헤더 */}
       <header className="bg-[#0B0F14]/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
