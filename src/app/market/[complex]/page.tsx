@@ -71,8 +71,8 @@ function formatBigPrice(manwon: number): string {
 function KpiInline({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div>
-      <div className="text-[10px] uppercase tracking-wider text-slate-500 mb-0.5">{label}</div>
-      <div className={`text-sm font-bold tabular-nums ${highlight ? 'text-amber-300' : 'text-slate-100'}`}>{value}</div>
+      <div className="text-[10px] text-slate-500 mb-0.5">{label}</div>
+      <div className={`text-sm font-semibold tabular-nums ${highlight ? 'text-blue-300' : 'text-slate-100'}`}>{value}</div>
     </div>
   );
 }
@@ -144,7 +144,7 @@ export default function ComplexDetailPage({
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-slate-400 mb-4">단지 정보를 찾을 수 없습니다.</p>
-          <Link href="/market" className="text-amber-400 hover:underline">시세지도로 돌아가기</Link>
+          <Link href="/market" className="text-blue-400 hover:underline">시세지도로 돌아가기</Link>
         </div>
       </div>
     );
@@ -180,13 +180,13 @@ export default function ComplexDetailPage({
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-5 space-y-4">
-        {/* 히어로 카드 — 단지 정체성 + 핵심 가격 */}
-        <section className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-slate-900 via-[#0F1419] to-slate-900 shadow-[0_8px_24px_rgba(0,0,0,0.4)]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(251,191,36,0.08),transparent_60%)] pointer-events-none" />
-          <div className="relative p-6">
+        {/* 히어로 카드 — 단지 정체성 + 핵심 가격 (차분 톤) */}
+        <section className="relative overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-md">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-blue-400 to-blue-500" />
+          <div className="relative p-5">
             {/* 상단: 단지명 + 메타 라인 */}
-            <div className="mb-5">
-              <h2 className="text-xl font-extrabold text-white tracking-tight mb-1">
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold text-white tracking-tight mb-1.5">
                 {data.complex_name || '단지'}
               </h2>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] text-slate-400">
@@ -218,12 +218,12 @@ export default function ComplexDetailPage({
             </div>
 
             {/* 중단: 큰 가격 + 변동률 chip */}
-            <div className="flex items-end gap-4 mb-4 flex-wrap">
+            <div className="flex items-end gap-3 mb-4 flex-wrap">
               <div>
-                <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">평균 매매가</div>
-                <div className="text-4xl md:text-5xl font-black text-amber-300 tabular-nums leading-none">
+                <div className="text-[11px] text-slate-500 mb-1">평균 매매가</div>
+                <div className="text-3xl md:text-4xl font-bold text-white tabular-nums leading-none whitespace-nowrap">
                   {formatBigPrice(current.avg_price_manwon)}
-                  <span className="text-lg text-amber-300/70 ml-1 font-bold">원</span>
+                  <span className="text-sm text-slate-400 ml-1 font-medium">원</span>
                 </div>
               </div>
               {data.growth_pct != null && (
@@ -268,7 +268,7 @@ export default function ComplexDetailPage({
         {/* 월별 추이 — 매매/전세 분리 라인 + 거래량 보조 */}
         <section className="bg-slate-900 rounded-xl border border-slate-800 p-5">
           <h2 className="text-sm font-bold mb-3 flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-cyan-400" />
+            <TrendingUp className="w-4 h-4 text-blue-400" />
             매매·전세 월별 추이 (최근 6개월)
           </h2>
           {data.monthly_split && data.monthly_split.length > 0 ? (
@@ -296,7 +296,7 @@ export default function ComplexDetailPage({
                     <div className="text-slate-500 text-[10px] truncate">{b.lctn_road_nm_addr}</div>
                   </div>
                   {b.tel_no && (
-                    <a href={`tel:${b.tel_no}`} className="text-cyan-400 hover:underline text-[11px] flex-shrink-0">
+                    <a href={`tel:${b.tel_no}`} className="text-blue-400 hover:underline text-[11px] flex-shrink-0">
                       {b.tel_no}
                     </a>
                   )}
@@ -379,7 +379,7 @@ export default function ComplexDetailPage({
                 {data.recent_transactions.map((t, i) => (
                   <tr key={i} className="border-b border-slate-800/50">
                     <td className="py-2 text-slate-300">{t.deal_date}</td>
-                    <td className="py-2 text-right font-bold text-amber-300">
+                    <td className="py-2 text-right font-semibold text-red-300 tabular-nums">
                       {t.price_manwon ? KRW(t.price_manwon) + '만' : '-'}
                     </td>
                     <td className="py-2 text-right text-slate-400">{t.exclusive_area?.toFixed(1)}</td>
@@ -404,15 +404,15 @@ function UnitDistribution({ buckets }: { buckets: UnitBucket[] }) {
         return (
           <div key={b.label} className="flex items-center gap-3">
             <div className="w-20 text-xs text-slate-400 flex-shrink-0 tabular-nums">{b.label}</div>
-            <div className="flex-1 h-8 bg-slate-800/50 rounded-md overflow-hidden relative ring-1 ring-slate-800">
+            <div className="flex-1 h-8 bg-slate-800/50 rounded overflow-hidden relative ring-1 ring-slate-800">
               <div
-                className="h-full bg-gradient-to-r from-amber-600/70 to-amber-400/80"
+                className="h-full bg-blue-500/40"
                 style={{ width: `${widthPct}%` }}
               />
               <div className="absolute inset-0 px-2.5 flex items-center justify-between text-[11px]">
-                <span className="font-bold text-white tabular-nums">{b.count}건</span>
-                <span className="text-slate-200 tabular-nums">
-                  평균 <strong className="text-amber-200">{KRW(b.avg_price_manwon)}만</strong>
+                <span className="font-semibold text-white tabular-nums">{b.count}건</span>
+                <span className="text-slate-300 tabular-nums">
+                  평균 <strong className="text-white">{KRW(b.avg_price_manwon)}만</strong>
                   <span className="opacity-50 mx-1">·</span>
                   평당 <strong className="text-slate-100">{KRW(b.avg_pyeong_price)}만</strong>
                 </span>
@@ -456,21 +456,21 @@ function MonthlySplitChart({ data }: { data: MonthlySplit[] }) {
         {[0.25, 0.5, 0.75, 1].map((r) => (
           <line key={r} x1={padding} y1={H - padding - r * (H - padding * 2)} x2={W - padding} y2={H - padding - r * (H - padding * 2)} className="stroke-slate-800" strokeWidth={1} />
         ))}
-        {/* trade line */}
+        {/* trade line — 매매 = 빨강 */}
         {tradePoints.length >= 2 && (
           <polyline
             points={tradePoints.join(' ')}
             fill="none"
-            className="stroke-amber-400"
-            strokeWidth={2.5}
+            className="stroke-red-400"
+            strokeWidth={2}
           />
         )}
-        {/* rent line */}
+        {/* rent line — 전세 = 파랑 */}
         {rentPoints.length >= 2 && (
           <polyline
             points={rentPoints.join(' ')}
             fill="none"
-            className="stroke-pink-400"
+            className="stroke-blue-400"
             strokeWidth={2}
             strokeDasharray="4 4"
           />
@@ -480,14 +480,14 @@ function MonthlySplitChart({ data }: { data: MonthlySplit[] }) {
           if (!d.trade_avg) return null;
           const x = padding + i * stepX;
           const y = H - padding - (d.trade_avg / max) * (H - padding * 2);
-          return <circle key={'t' + i} cx={x} cy={y} r={3.5} className="fill-amber-400" />;
+          return <circle key={'t' + i} cx={x} cy={y} r={3} className="fill-red-400" />;
         })}
         {/* rent points */}
         {data.map((d, i) => {
           if (!d.rent_avg) return null;
           const x = padding + i * stepX;
           const y = H - padding - (d.rent_avg / max) * (H - padding * 2);
-          return <circle key={'r' + i} cx={x} cy={y} r={3} className="fill-pink-400" />;
+          return <circle key={'r' + i} cx={x} cy={y} r={3} className="fill-blue-400" />;
         })}
         {/* x labels */}
         {data.map((d, i) => {
@@ -499,12 +499,12 @@ function MonthlySplitChart({ data }: { data: MonthlySplit[] }) {
           );
         })}
       </svg>
-      <div className="flex items-center gap-4 mt-2 text-[11px]">
+      <div className="flex items-center gap-4 mt-2 text-[11px] text-slate-400">
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-amber-400" /> 매매 평균
+          <span className="w-3 h-0.5 bg-red-400" /> 매매 평균
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 bg-pink-400 border-dashed" style={{ borderTopWidth: 1, borderTopStyle: 'dashed', borderColor: '#f472b6' }} /> 전세 보증금 평균
+          <span className="w-3 h-0.5 bg-blue-400" style={{ borderTopWidth: 1, borderTopStyle: 'dashed' }} /> 전세 보증금 평균
         </span>
       </div>
     </div>

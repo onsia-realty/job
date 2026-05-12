@@ -138,9 +138,9 @@ export default function MarketPageClient() {
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <h1 className="text-base font-bold flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-cyan-400" />
+            <MapPin className="w-4 h-4 text-blue-400" />
             시세·거래량 지도
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 ml-1">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 ml-1">
               β
             </span>
           </h1>
@@ -162,7 +162,7 @@ export default function MarketPageClient() {
             <button
               onClick={() => setPropertyType('apt')}
               className={`px-2.5 py-1 text-xs rounded ${
-                property_type === 'apt' ? 'bg-cyan-500 text-[#0B0F14] font-bold' : 'bg-slate-800 text-slate-300'
+                property_type === 'apt' ? 'bg-blue-500 text-white font-semibold' : 'bg-slate-800 text-slate-300'
               }`}
             >
               아파트
@@ -252,19 +252,19 @@ function ComplexMiniCard({
       <div className="px-4 py-3 grid grid-cols-3 gap-2 border-b border-slate-800">
         <div>
           <div className="text-[10px] text-slate-500">평균 매매가</div>
-          <div className="text-sm font-bold text-cyan-300">
+          <div className="text-sm font-semibold text-red-300 tabular-nums">
             {current ? `${KRW(current.avg_price_manwon)}만` : (loading ? '…' : (point ? `${KRW(point.avg_price_manwon)}만` : '-'))}
           </div>
         </div>
         <div>
           <div className="text-[10px] text-slate-500">평당가</div>
-          <div className="text-sm font-bold text-emerald-300">
+          <div className="text-sm font-semibold text-slate-100 tabular-nums">
             {current ? `${KRW(current.avg_pyeong_price)}만` : (loading ? '…' : '-')}
           </div>
         </div>
         <div>
           <div className="text-[10px] text-slate-500">변동률</div>
-          <div className={`text-sm font-bold ${(detail?.growth_pct ?? 0) > 0 ? 'text-red-300' : 'text-blue-300'}`}>
+          <div className={`text-sm font-semibold tabular-nums ${(detail?.growth_pct ?? 0) > 0 ? 'text-red-300' : (detail?.growth_pct ?? 0) < 0 ? 'text-blue-300' : 'text-slate-400'}`}>
             {detail?.growth_pct != null ? `${detail.growth_pct > 0 ? '+' : ''}${detail.growth_pct.toFixed(1)}%` : (loading ? '…' : '-')}
           </div>
         </div>
@@ -282,14 +282,14 @@ function ComplexMiniCard({
       <div className="px-4 py-3 flex items-center justify-between gap-2">
         <div className="text-[11px] text-slate-400">
           {detail?.lease_ratio != null ? (
-            <>전세가율 <strong className="text-amber-300">{detail.lease_ratio}%</strong></>
+            <>전세가율 <strong className="text-blue-300 tabular-nums">{detail.lease_ratio}%</strong></>
           ) : (
             <span className="text-slate-600">전세가율 -</span>
           )}
         </div>
         <Link
           href={`/market/${encodeURIComponent(complexKey)}`}
-          className="text-xs px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-[#0B0F14] rounded font-bold flex-shrink-0"
+          className="text-xs px-3 py-1.5 bg-blue-500 hover:bg-blue-400 text-white rounded font-semibold flex-shrink-0"
         >
           상세 보기 →
         </Link>
@@ -309,11 +309,11 @@ function Sparkline({ data }: { data: number[] }) {
   const points = data.map((v, i) => `${i * stepX},${H - ((v - min) / range) * H}`).join(' ');
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 32 }}>
-      <polyline points={points} fill="none" className="stroke-cyan-400" strokeWidth={1.5} />
+      <polyline points={points} fill="none" className="stroke-blue-400" strokeWidth={1.5} />
       {data.map((v, i) => {
         const x = i * stepX;
         const y = H - ((v - min) / range) * H;
-        return <circle key={i} cx={x} cy={y} r={1.5} className="fill-cyan-400" />;
+        return <circle key={i} cx={x} cy={y} r={1.5} className="fill-blue-400" />;
       })}
     </svg>
   );
