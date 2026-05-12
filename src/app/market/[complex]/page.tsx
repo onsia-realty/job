@@ -133,19 +133,40 @@ export default function ComplexDetailPage({
     return <div className="min-h-screen flex items-center justify-center text-slate-400">로딩 중…</div>;
   }
 
-  if (!data || data.monthly.length === 0) {
+  const hasAnyData =
+    data &&
+    (data.monthly.length > 0 ||
+      (data.monthly_split?.length || 0) > 0 ||
+      data.recent_transactions.length > 0);
+
+  if (!hasAnyData) {
     return (
       <div className="min-h-screen flex items-center justify-center px-6">
         <div className="text-center">
           <p className="text-slate-400 mb-4">단지 정보를 찾을 수 없습니다.</p>
-          <Link href="/market" className="text-cyan-400 hover:underline">시세지도로 돌아가기</Link>
+          <Link href="/market" className="text-amber-400 hover:underline">시세지도로 돌아가기</Link>
         </div>
       </div>
     );
   }
 
-  const current = data.monthly[0];
-  const meta = data.complex_meta;
+  // monthly가 비어있으면 monthly_split + unit_distribution에서 합성
+  const current: MonthlyAgg = data!.monthly[0] ?? (() => {
+    const splits = data!.monthly_split || [];
+    const lastSplit = splits[splits.length - 1];
+    const units = data!.unit_distribution || [];
+    const totalCount = units.reduce((s, u) => s + u.count, 0);
+    const avgPyeong = totalCount > 0
+      ? Math.round(units.reduce((s, u) => s + u.avg_pyeong_price * u.count, 0) / totalCount)
+      : 0;
+    return {
+      ym: lastSplit?.ym || new Date().toISOString().slice(0, 7),
+      avg_price_manwon: lastSplit?.trade_avg ?? 0,
+      trade_count: lastSplit?.trade_count ?? data!.recent_transactions.length,
+      avg_pyeong_price: avgPyeong,
+    };
+  })();
+  const meta = data!.complex_meta;
 
   return (
     <div className="min-h-screen bg-[#0B0F14]">
