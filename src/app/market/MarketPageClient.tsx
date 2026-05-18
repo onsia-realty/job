@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Script from 'next/script';
 import Link from 'next/link';
 import { ArrowLeft, MapPin, TrendingUp, Building2, Filter } from 'lucide-react';
-import type { MapComplexPoint } from '@/components/market/MarketMap.client';
+import type { MapComplexPoint, DealTypeFilter } from '@/components/market/MarketMap.client';
+import type { ComplexDetail } from '@/components/market/MarketDetailPanel';
+import MarketDetailPanel from '@/components/market/MarketDetailPanel';
+import MarketGraphPanel from '@/components/market/MarketGraphPanel';
+import MarketSearch, { type SearchResult } from '@/components/market/MarketSearch';
 
 const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || '';
 
@@ -13,7 +17,7 @@ const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || '';
 const MarketMap = dynamic(() => import('@/components/market/MarketMap.client'), {
   ssr: false,
   loading: () => (
-    <div className="flex items-center justify-center h-full bg-[#0B0F14] text-slate-500 text-sm">
+    <div className="flex items-center justify-center h-full bg-market-bg text-market-text-mute text-sm font-jakarta">
       지도를 불러오는 중…
     </div>
   ),
@@ -24,28 +28,77 @@ const DEFAULT_CENTER: [number, number] = [37.5172, 127.0473];
 const DEFAULT_LAWD_CD = '11680';
 
 type PropertyTypeFilter = 'apt' | 'officetel';
+type AreaBand = 'all' | 'under60' | '60to85' | '85to110' | 'over110';
+type AgeBand = 'all' | 'new5' | 'mid10' | 'mid20' | 'old20';
+type HouseholdBand = 'all' | 'over50' | 'over300' | 'over1000';
 
-interface SelectedDetail {
-  complex_name: string | null;
-  growth_pct: number | null;
-  monthly: Array<{ ym: string; avg_price_manwon: number; trade_count: number; avg_pyeong_price: number }>;
-  complex_meta: { hhld_cnt: number | null; build_year: number | null } | null;
-  lease_ratio: number | null;
+const AREA_OPTIONS: Array<{ value: AreaBand; label: string }> = [
+  { value: 'all', label: '전체' },
+  { value: 'under60', label: '~60㎡ (소형)' },
+  { value: '60to85', label: '60~85㎡ (중소형)' },
+  { value: '85to110', label: '85~110㎡ (중형)' },
+  { value: 'over110', label: '110㎡~ (대형)' },
+];
+const AGE_OPTIONS: Array<{ value: AgeBand; label: string }> = [
+  { value: 'all', label: '전체' },
+  { value: 'new5', label: '신축 (5년 이내)' },
+  { value: 'mid10', label: '준신축 (5~10년)' },
+  { value: 'mid20', label: '중고 (10~20년)' },
+  { value: 'old20', label: '노후 (20년~)' },
+];
+const HOUSEHOLD_OPTIONS: Array<{ value: HouseholdBand; label: string }> = [
+  { value: 'all', label: '전체' },
+  { value: 'over50', label: '50세대 이상' },
+  { value: 'over300', label: '300세대 이상' },
+  { value: 'over1000', label: '1000세대 이상' },
+];
+
+const CURRENT_YEAR = new Date().getFullYear();
+function matchAgeBand(buildYear: number | null | undefined, band: AgeBand): boolean {
+  if (band === 'all') return true;
+  if (buildYear == null) return false;
+  const age = CURRENT_YEAR - buildYear;
+  if (band === 'new5') return age <= 5;
+  if (band === 'mid10') return age > 5 && age <= 10;
+  if (band === 'mid20') return age > 10 && age <= 20;
+  if (band === 'old20') return age > 20;
+  return true;
+}
+function matchAreaBand(area: number | null | undefined, band: AreaBand): boolean {
+  if (band === 'all') return true;
+  if (area == null) return false;
+  if (band === 'under60') return area < 60;
+  if (band === '60to85') return area >= 60 && area < 85;
+  if (band === '85to110') return area >= 85 && area < 110;
+  if (band === 'over110') return area >= 110;
+  return true;
+}
+function matchHouseholdBand(hhld: number | null | undefined, band: HouseholdBand): boolean {
+  if (band === 'all') return true;
+  if (hhld == null) return false;
+  if (band === 'over50') return hhld >= 50;
+  if (band === 'over300') return hhld >= 300;
+  if (band === 'over1000') return hhld >= 1000;
+  return true;
 }
 
 export default function MarketPageClient() {
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [lawd_cd, setLawdCd] = useState(DEFAULT_LAWD_CD);
   const [property_type, setPropertyType] = useState<PropertyTypeFilter>('apt');
+  const [dealType, setDealType] = useState<DealTypeFilter>('trade');
+  const [areaBand, setAreaBand] = useState<AreaBand>('all');
+  const [ageBand, setAgeBand] = useState<AgeBand>('all');
+  const [householdBand, setHouseholdBand] = useState<HouseholdBand>('all');
   const [points, setPoints] = useState<MapComplexPoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [selectedDetail, setSelectedDetail] = useState<SelectedDetail | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<ComplexDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
-    loadData(lawd_cd, property_type);
-  }, [lawd_cd, property_type]);
+    loadData(lawd_cd, property_type, dealType, areaBand, ageBand, householdBand);
+  }, [lawd_cd, property_type, dealType, areaBand, ageBand, householdBand]);
 
   // 단지 선택 시 상세 fetch
   useEffect(() => {
@@ -61,7 +114,14 @@ export default function MarketPageClient() {
       .finally(() => setDetailLoading(false));
   }, [selectedKey]);
 
-  const loadData = async (lc: string, pt: PropertyTypeFilter) => {
+  const loadData = async (
+    lc: string,
+    pt: PropertyTypeFilter,
+    dt: DealTypeFilter,
+    ab: AreaBand,
+    ag: AgeBand,
+    hh: HouseholdBand,
+  ) => {
     setLoading(true);
     try {
       // 실거래는 보통 1-2개월 지연. 최근 3개월을 순차 시도해서 데이터 밀도 확보.
@@ -71,17 +131,26 @@ export default function MarketPageClient() {
         return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
       });
 
-      let txs: Array<{
+      // API deal: trade=매매, jeonse/wolse=rent (서버가 rent로 합쳐 가져옴), presale=분양권
+      const apiDeal = dt === 'trade' ? 'trade' : dt === 'presale' ? 'presale_resale' : 'rent';
+
+      type Tx = {
         complex_key: string;
         complex_name: string;
         price_manwon: number;
-      }> = [];
-      let complex_coords: Record<string, { lat: number | null; lng: number | null }> = {};
+        deposit_manwon: number;
+        monthly_manwon: number;
+        exclusive_area: number | null;
+        build_year: number | null;
+      };
+      type CoordEntry = { lat: number | null; lng: number | null; hhld_cnt: number | null; build_year: number | null };
+      let txs: Tx[] = [];
+      let complex_coords: Record<string, CoordEntry> = {};
       for (const ym of candidateYms) {
-        const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=trade`);
+        const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
         if (!res.ok) continue;
         const data = await res.json();
-        const arr = (data.transactions || []) as typeof txs;
+        const arr = (data.transactions || []) as Tx[];
         if (arr.length > 0) {
           txs = arr;
           complex_coords = data.complex_coords || {};
@@ -89,27 +158,56 @@ export default function MarketPageClient() {
         }
       }
 
-      // 단지별 평균가 집계 (로컬)
-      const map = new Map<string, { name: string; prices: number[] }>();
-      txs.forEach((t) => {
-        if (!t.price_manwon) return;
+      // 1차 필터: 거래 유형(매매/전세/월세/분양권) + 평형 + 연식
+      const filtered = txs.filter((t) => {
+        // dealType 분리 — presale은 price_manwon에 분양권 거래액
+        if (dt === 'trade' && !(t.price_manwon || 0)) return false;
+        if (dt === 'presale' && !(t.price_manwon || 0)) return false;
+        if (dt === 'jeonse' && !((t.monthly_manwon || 0) === 0 && (t.deposit_manwon || 0) > 0)) return false;
+        if (dt === 'wolse' && !(t.monthly_manwon || 0)) return false;
+        // 평형 band
+        if (!matchAreaBand(t.exclusive_area, ab)) return false;
+        // 연식 band — build_year는 거래 raw 또는 complex_coords에서
+        const buildYear = t.build_year ?? complex_coords[t.complex_key]?.build_year;
+        if (!matchAgeBand(buildYear, ag)) return false;
+        return true;
+      });
+
+      // 단지별 평균 집계 — dealType에 따라 다른 필드 사용
+      const map = new Map<string, { name: string; deposits: number[]; monthlies: number[] }>();
+      filtered.forEach((t) => {
+        // trade/presale = price_manwon, jeonse/wolse = deposit_manwon
+        const mainPrice = (dt === 'trade' || dt === 'presale') ? t.price_manwon : t.deposit_manwon;
+        if (!mainPrice) return;
         if (!map.has(t.complex_key)) {
-          map.set(t.complex_key, { name: t.complex_name, prices: [] });
+          map.set(t.complex_key, { name: t.complex_name, deposits: [], monthlies: [] });
         }
-        map.get(t.complex_key)!.prices.push(t.price_manwon);
+        const entry = map.get(t.complex_key)!;
+        entry.deposits.push(mainPrice);
+        if (dt === 'wolse' && t.monthly_manwon) {
+          entry.monthlies.push(t.monthly_manwon);
+        }
       });
 
       // 좌표: complex_coords 우선 사용, 없으면 jitter 폴백 (백필 완료 전까지)
-      const pts: MapComplexPoint[] = Array.from(map.entries()).map(([key, v], i) => {
+      // 세대수 필터는 단지 단위에 적용 — 집계 후 단지별로 필터
+      const pts: MapComplexPoint[] = Array.from(map.entries())
+        .filter(([key]) => matchHouseholdBand(complex_coords[key]?.hhld_cnt, hh))
+        .map(([key, v], i) => {
         const real = complex_coords[key];
         const hasReal = real && real.lat != null && real.lng != null;
+        const avgDeposit = Math.round(v.deposits.reduce((a, b) => a + b, 0) / v.deposits.length);
+        const avgMonthly = v.monthlies.length > 0
+          ? Math.round(v.monthlies.reduce((a, b) => a + b, 0) / v.monthlies.length)
+          : undefined;
         return {
           complex_key: key,
           complex_name: v.name,
           lat: hasReal ? real.lat! : center[0] + ((i % 9) - 4) * 0.003,
           lng: hasReal ? real.lng! : center[1] + ((Math.floor(i / 9) % 9) - 4) * 0.003,
-          avg_price_manwon: Math.round(v.prices.reduce((a, b) => a + b, 0) / v.prices.length),
-          trade_count: v.prices.length,
+          avg_price_manwon: avgDeposit,
+          avg_monthly_manwon: avgMonthly,
+          trade_count: v.deposits.length,
           property_type: pt,
         };
       });
@@ -123,30 +221,73 @@ export default function MarketPageClient() {
     }
   };
 
+  const selectedPoint = selectedKey ? points.find((p) => p.complex_key === selectedKey) : undefined;
+
+  // 검색 결과 클릭 시 — 지도 이동 + lawd_cd 동기화 + 단지 선택
+  const handleSearchSelect = useCallback((r: SearchResult) => {
+    if (r.lat == null || r.lng == null) return;
+    setCenter([r.lat, r.lng]);
+    // 가장 가까운 MVP_REGION으로 lawd_cd 변경
+    let minDist = Infinity;
+    let closestCode = lawd_cd;
+    MVP_REGIONS.forEach((reg) => {
+      const dist = (reg.lat - r.lat!) ** 2 + (reg.lng - r.lng!) ** 2;
+      if (dist < minDist) {
+        minDist = dist;
+        closestCode = reg.lawd_cd;
+      }
+    });
+    if (closestCode !== lawd_cd) {
+      setLawdCd(closestCode);
+    }
+    setSelectedKey(r.complex_key);
+  }, [lawd_cd]);
+
+  // 지도 이동 시 가장 가까운 MVP_REGIONS로 자동 전환
+  const handleMapCenterChanged = useCallback((lat: number, lng: number) => {
+    let minDist = Infinity;
+    let closestCode = lawd_cd;
+    MVP_REGIONS.forEach((r) => {
+      const dist = (r.lat - lat) ** 2 + (r.lng - lng) ** 2;
+      if (dist < minDist) {
+        minDist = dist;
+        closestCode = r.lawd_cd;
+      }
+    });
+    if (closestCode !== lawd_cd) {
+      setLawdCd(closestCode);
+      // center는 변경하지 않음 — 사용자가 직접 이동 중이라 그 위치 유지
+    }
+  }, [lawd_cd]);
+
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className="relative h-screen flex flex-col bg-market-bg font-jakarta">
       {NAVER_CLIENT_ID && (
         <Script
           src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_CLIENT_ID}`}
           strategy="afterInteractive"
         />
       )}
-      {/* 헤더 */}
-      <header className="bg-[#0B0F14]/95 backdrop-blur border-b border-slate-800 sticky top-0 z-20">
+      {/* 헤더 — 라이트 톤 */}
+      <header className="bg-market-surface/95 backdrop-blur border-b border-market-border sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link href="/" className="p-2 rounded-lg hover:bg-slate-800" aria-label="메인으로">
+          <Link
+            href="/"
+            className="p-2 rounded-lg hover:bg-market-surface-2 text-market-text-mute transition-colors"
+            aria-label="메인으로"
+          >
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-base font-bold flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-blue-400" />
+          <h1 className="text-base font-bold flex items-center gap-2 text-market-text flex-shrink-0">
+            <MapPin className="w-4 h-4 text-deal-trade" />
             시세·거래량 지도
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 ml-1">
-              β
-            </span>
           </h1>
+          <div className="flex-1 flex justify-center px-4 max-w-md mx-auto">
+            <MarketSearch onSelect={handleSearchSelect} />
+          </div>
           <Link
             href="/market/rankings"
-            className="ml-auto text-xs px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-300 flex items-center gap-1"
+            className="ml-auto text-xs px-3 py-1.5 bg-market-surface-2 hover:bg-market-border rounded-lg text-market-text-mute font-medium flex items-center gap-1 transition-colors flex-shrink-0"
           >
             <TrendingUp className="w-3.5 h-3.5" />
             랭킹
@@ -154,168 +295,212 @@ export default function MarketPageClient() {
         </div>
       </header>
 
-      {/* 필터바 */}
-      <div className="bg-[#0B0F14] border-b border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex items-center gap-2 overflow-x-auto">
-          <Filter className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+      {/* 필터바 — 라이트 톤 칩 */}
+      <div className="bg-market-surface border-b border-market-border">
+        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <Filter className="w-3.5 h-3.5 text-market-text-faint flex-shrink-0" />
+          {/* 거래 유형 */}
           <div className="flex gap-1 flex-shrink-0">
-            <button
-              onClick={() => setPropertyType('apt')}
-              className={`px-2.5 py-1 text-xs rounded ${
-                property_type === 'apt' ? 'bg-blue-500 text-white font-semibold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              아파트
-            </button>
-            <button
-              onClick={() => setPropertyType('officetel')}
-              className={`px-2.5 py-1 text-xs rounded ${
-                property_type === 'officetel' ? 'bg-pink-500 text-[#0B0F14] font-bold' : 'bg-slate-800 text-slate-300'
-              }`}
-            >
-              오피스텔
-            </button>
+            <FilterChip active={dealType === 'trade'} activeColor="bg-deal-trade" onClick={() => setDealType('trade')}>매매</FilterChip>
+            <FilterChip active={dealType === 'jeonse'} activeColor="bg-deal-jeonse" onClick={() => setDealType('jeonse')}>전세</FilterChip>
+            <FilterChip active={dealType === 'wolse'} activeColor="bg-deal-wolse" onClick={() => setDealType('wolse')}>월세</FilterChip>
+            <FilterChip active={dealType === 'presale'} activeColor="bg-[#7c3aed]" onClick={() => setDealType('presale')}>분양권</FilterChip>
           </div>
-          <div className="mx-2 h-4 w-px bg-slate-700" />
+          <div className="mx-1 h-4 w-px bg-market-border" />
+          {/* 매물 유형 */}
+          <div className="flex gap-1 flex-shrink-0">
+            <FilterChip active={property_type === 'apt'} activeColor="bg-market-text" onClick={() => setPropertyType('apt')}>아파트</FilterChip>
+            <FilterChip active={property_type === 'officetel'} activeColor="bg-market-text" onClick={() => setPropertyType('officetel')}>오피스텔</FilterChip>
+          </div>
+          <div className="mx-1 h-4 w-px bg-market-border" />
           <RegionPicker current={lawd_cd} onSelect={(cd, lat, lng) => {
             setLawdCd(cd);
             setCenter([lat, lng]);
           }} />
-          <div className="ml-auto text-[11px] text-slate-500 flex items-center gap-1 flex-shrink-0">
+          <div className="ml-auto text-[11px] text-market-text-faint flex items-center gap-1 flex-shrink-0 tabular-nums">
             <Building2 className="w-3 h-3" />
             {loading ? '로딩' : `${points.length}개 단지`}
           </div>
         </div>
+
+        {/* 2번째 row — 세부 필터 popover (평형/연식/세대수) */}
+        <div className="max-w-7xl mx-auto px-4 pb-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide border-t border-market-border/60 pt-2">
+          <FilterPopover<AreaBand>
+            label="평형"
+            options={AREA_OPTIONS}
+            value={areaBand}
+            onChange={setAreaBand}
+          />
+          <FilterPopover<AgeBand>
+            label="연식"
+            options={AGE_OPTIONS}
+            value={ageBand}
+            onChange={setAgeBand}
+          />
+          <FilterPopover<HouseholdBand>
+            label="세대수"
+            options={HOUSEHOLD_OPTIONS}
+            value={householdBand}
+            onChange={setHouseholdBand}
+          />
+          {(areaBand !== 'all' || ageBand !== 'all' || householdBand !== 'all') && (
+            <button
+              onClick={() => {
+                setAreaBand('all');
+                setAgeBand('all');
+                setHouseholdBand('all');
+              }}
+              className="text-[11px] text-market-text-mute hover:text-market-text px-2 py-1 underline underline-offset-2 decoration-dotted"
+            >
+              필터 초기화
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* 지도 */}
-      <div className="flex-1 relative">
-        <MarketMap
-          center={center}
-          zoom={14}
-          points={points}
-          onSelect={setSelectedKey}
-          selectedKey={selectedKey}
-        />
-
-        {/* 단지 선택 패널 — 미니 카드 */}
+      {/* 메인 영역: 데스크탑 사이드바×2 + 지도 / 모바일 지도 + bottom sheet */}
+      <div className="flex-1 flex relative overflow-hidden">
+        {/* 데스크탑 패널 A — 단지 정보 / KPI / 최근 거래 */}
         {selectedKey && (
-          <ComplexMiniCard
-            complexKey={selectedKey}
-            point={points.find((p) => p.complex_key === selectedKey)}
-            detail={selectedDetail}
-            loading={detailLoading}
-            onClose={() => setSelectedKey(null)}
+          <aside className="hidden md:flex md:w-[380px] md:flex-col md:border-r md:border-market-border md:bg-market-surface md:shadow-sm flex-shrink-0 overflow-hidden">
+            <MarketDetailPanel
+              complexKey={selectedKey}
+              point={selectedPoint}
+              detail={selectedDetail}
+              loading={detailLoading}
+              dealType={dealType}
+              onClose={() => setSelectedKey(null)}
+            />
+          </aside>
+        )}
+
+        {/* 데스크탑 패널 B — 큰 그래프 전용 */}
+        {selectedKey && (
+          <aside className="hidden lg:flex lg:w-[440px] lg:flex-col lg:border-r lg:border-market-border lg:bg-market-surface lg:shadow-sm flex-shrink-0 overflow-hidden">
+            <MarketGraphPanel
+              point={selectedPoint}
+              detail={selectedDetail}
+              loading={detailLoading}
+              dealType={dealType}
+              complexKey={selectedKey}
+            />
+          </aside>
+        )}
+
+        {/* 지도 영역 */}
+        <div className="flex-1 relative min-w-0">
+          <MarketMap
+            center={center}
+            zoom={14}
+            points={points}
+            onSelect={setSelectedKey}
+            selectedKey={selectedKey}
+            dealType={dealType}
+            onCenterChanged={handleMapCenterChanged}
           />
+        </div>
+
+        {/* 모바일 bottom sheet — 단지 정보만 (그래프는 데스크탑 전용 v1.0) */}
+        {selectedKey && (
+          <div className="md:hidden absolute bottom-0 left-0 right-0 max-h-[75vh] bg-market-surface rounded-t-2xl shadow-2xl border-t border-market-border z-30 flex flex-col overflow-hidden">
+            <MarketDetailPanel
+              complexKey={selectedKey}
+              point={selectedPoint}
+              detail={selectedDetail}
+              loading={detailLoading}
+              dealType={dealType}
+              onClose={() => setSelectedKey(null)}
+            />
+          </div>
         )}
       </div>
     </div>
   );
 }
 
-function ComplexMiniCard({
-  complexKey,
-  point,
-  detail,
-  loading,
-  onClose,
+// 라이트 톤 필터 칩
+function FilterChip({
+  active,
+  activeColor,
+  onClick,
+  children,
 }: {
-  complexKey: string;
-  point: MapComplexPoint | undefined;
-  detail: SelectedDetail | null;
-  loading: boolean;
-  onClose: () => void;
+  active: boolean;
+  activeColor: string;
+  onClick: () => void;
+  children: React.ReactNode;
 }) {
-  const name = detail?.complex_name || point?.complex_name || '단지';
-  const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
-  const monthly = detail?.monthly ?? [];
-  const current = monthly[0];
-  const meta = detail?.complex_meta;
-
   return (
-    <div className="absolute bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl z-10 overflow-hidden">
-      {/* 헤더 */}
-      <div className="px-4 py-3 border-b border-slate-800 flex items-start gap-2">
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold truncate">{name}</div>
-          {(meta?.hhld_cnt != null || meta?.build_year != null) && (
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              {meta.hhld_cnt != null && <>세대 {meta.hhld_cnt.toLocaleString()} · </>}
-              {meta.build_year != null && <>입주 {meta.build_year}년</>}
-            </div>
-          )}
-        </div>
-        <button onClick={onClose} className="text-slate-500 hover:text-white text-xs flex-shrink-0">✕</button>
-      </div>
-
-      {/* KPI */}
-      <div className="px-4 py-3 grid grid-cols-3 gap-2 border-b border-slate-800">
-        <div>
-          <div className="text-[10px] text-slate-500">평균 매매가</div>
-          <div className="text-sm font-semibold text-red-300 tabular-nums">
-            {current ? `${KRW(current.avg_price_manwon)}만` : (loading ? '…' : (point ? `${KRW(point.avg_price_manwon)}만` : '-'))}
-          </div>
-        </div>
-        <div>
-          <div className="text-[10px] text-slate-500">평당가</div>
-          <div className="text-sm font-semibold text-slate-100 tabular-nums">
-            {current ? `${KRW(current.avg_pyeong_price)}만` : (loading ? '…' : '-')}
-          </div>
-        </div>
-        <div>
-          <div className="text-[10px] text-slate-500">변동률</div>
-          <div className={`text-sm font-semibold tabular-nums ${(detail?.growth_pct ?? 0) > 0 ? 'text-red-300' : (detail?.growth_pct ?? 0) < 0 ? 'text-blue-300' : 'text-slate-400'}`}>
-            {detail?.growth_pct != null ? `${detail.growth_pct > 0 ? '+' : ''}${detail.growth_pct.toFixed(1)}%` : (loading ? '…' : '-')}
-          </div>
-        </div>
-      </div>
-
-      {/* Sparkline */}
-      {monthly.length >= 2 && (
-        <div className="px-4 py-3 border-b border-slate-800">
-          <div className="text-[10px] text-slate-500 mb-1.5">최근 추이 (매매 평균)</div>
-          <Sparkline data={monthly.slice().reverse().map((m) => m.avg_price_manwon)} />
-        </div>
-      )}
-
-      {/* 전세가율 / 상세 보기 */}
-      <div className="px-4 py-3 flex items-center justify-between gap-2">
-        <div className="text-[11px] text-slate-400">
-          {detail?.lease_ratio != null ? (
-            <>전세가율 <strong className="text-blue-300 tabular-nums">{detail.lease_ratio}%</strong></>
-          ) : (
-            <span className="text-slate-600">전세가율 -</span>
-          )}
-        </div>
-        <Link
-          href={`/market/${encodeURIComponent(complexKey)}`}
-          className="text-xs px-3 py-1.5 bg-blue-500 hover:bg-blue-400 text-white rounded font-semibold flex-shrink-0"
-        >
-          상세 보기 →
-        </Link>
-      </div>
-    </div>
+    <button
+      onClick={onClick}
+      className={`px-3 py-1 text-xs rounded-full font-medium transition-all ${
+        active
+          ? `${activeColor} text-white font-semibold shadow-sm`
+          : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
-function Sparkline({ data }: { data: number[] }) {
-  if (data.length < 2) return null;
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const W = 320;
-  const H = 32;
-  const stepX = W / (data.length - 1);
-  const points = data.map((v, i) => `${i * stepX},${H - ((v - min) / range) * H}`).join(' ');
+// 드롭다운 필터 popover (평형/연식/세대수)
+function FilterPopover<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  options: Array<{ value: T; label: string }>;
+  value: T;
+  onChange: (v: T) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const isActive = value !== options[0].value;
+  const activeOption = options.find((o) => o.value === value);
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 32 }}>
-      <polyline points={points} fill="none" className="stroke-blue-400" strokeWidth={1.5} />
-      {data.map((v, i) => {
-        const x = i * stepX;
-        const y = H - ((v - min) / range) * H;
-        return <circle key={i} cx={x} cy={y} r={1.5} className="fill-blue-400" />;
-      })}
-    </svg>
+    <div className="relative flex-shrink-0">
+      <button
+        onClick={() => setOpen(!open)}
+        className={`px-3 py-1 text-xs rounded-full font-medium transition-all flex items-center gap-1 whitespace-nowrap ${
+          isActive
+            ? 'bg-market-text text-white font-semibold shadow-sm'
+            : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
+        }`}
+      >
+        <span>{label}</span>
+        {isActive && activeOption && (
+          <span className="opacity-90">· {activeOption.label.split(' ')[0]}</span>
+        )}
+        <span className="text-[8px] ml-0.5">▼</span>
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
+          <div className="absolute top-full left-0 mt-1.5 bg-market-surface border border-market-border rounded-xl shadow-xl z-40 py-1.5 min-w-[180px]">
+            {options.map((opt) => {
+              const selected = opt.value === value;
+              return (
+                <button
+                  key={opt.value}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setOpen(false);
+                  }}
+                  className={`w-full px-3.5 py-2 text-xs text-left hover:bg-market-surface-2 transition-colors flex items-center justify-between ${
+                    selected ? 'font-bold text-market-text' : 'text-market-text-mute'
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  {selected && <span className="text-deal-jeonse">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -339,15 +524,15 @@ function RegionPicker({
   onSelect: (lawd_cd: string, lat: number, lng: number) => void;
 }) {
   return (
-    <div className="flex gap-1 overflow-x-auto">
+    <div className="flex gap-1 overflow-x-auto scrollbar-hide">
       {MVP_REGIONS.map((r) => (
         <button
           key={r.lawd_cd}
           onClick={() => onSelect(r.lawd_cd, r.lat, r.lng)}
-          className={`px-2.5 py-1 text-xs rounded whitespace-nowrap flex-shrink-0 ${
+          className={`px-3 py-1 text-xs rounded-full whitespace-nowrap flex-shrink-0 font-medium transition-all ${
             current === r.lawd_cd
-              ? 'bg-slate-100 text-[#0B0F14] font-bold'
-              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              ? 'bg-market-text text-white font-semibold shadow-sm'
+              : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
           }`}
         >
           {r.name}

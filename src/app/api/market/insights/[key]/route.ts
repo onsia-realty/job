@@ -5,21 +5,11 @@ import { GoogleGenAI } from '@google/genai';
 export const maxDuration = 30;
 
 // GET /api/market/insights/[key]
-// 단지 AI 인사이트 (로그인 필요, 7일 캐시)
+// 단지 AI 인사이트 — 공개 (정보 도구 방향, 가입 불필요)
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ key: string }> }
 ) {
-  // 로그인 확인
-  const authHeader = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (!authHeader) {
-    return NextResponse.json({ error: '로그인이 필요합니다' }, { status: 401 });
-  }
-  const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(authHeader);
-  if (authError || !user) {
-    return NextResponse.json({ error: '인증 실패' }, { status: 401 });
-  }
-
   const { key } = await params;
   const complex_key = decodeURIComponent(key);
 
@@ -82,7 +72,18 @@ export async function GET(
     if (!gemini_key) {
       // Fallback: 룰 기반 요약
       const fallback = buildFallbackSummary(monthly[0], growth, brokerCount, jobCount);
-      return NextResponse.json({ insight: fallback, source: 'rule-based' });
+      return NextResponse.json({
+        insight: fallback,
+        source: 'rule-based',
+        stats: {
+          current_avg_price: monthly[0].avg_price_manwon,
+          current_trade_count: monthly[0].trade_count,
+          avg_pyeong_price: monthly[0].avg_pyeong_price,
+          growth_pct: growth,
+          broker_count: brokerCount,
+          job_count: jobCount,
+        },
+      });
     }
 
     const ai = new GoogleGenAI({ apiKey: gemini_key });
@@ -112,12 +113,14 @@ ${growth !== null ? `- 전월 대비 변동률: ${growth > 0 ? '+' : ''}${growth
       stats: {
         current_avg_price: monthly[0].avg_price_manwon,
         current_trade_count: monthly[0].trade_count,
+        avg_pyeong_price: monthly[0].avg_pyeong_price,
         growth_pct: growth,
         broker_count: brokerCount,
         job_count: jobCount,
       },
     }, {
-      headers: { 'Cache-Control': 'private, max-age=600' },
+      // 공개 응답으로 변경: 1시간 캐시
+      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'unknown';

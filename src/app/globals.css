@@ -10,6 +10,35 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-jakarta: var(--font-plus-jakarta);
+
+  /* ===== 시세지도(Market) 전용 라이트 테마 토큰 ===== */
+  /* Surface */
+  --color-market-bg: #f7f9fb;
+  --color-market-surface: #ffffff;
+  --color-market-surface-2: #f2f4f6;
+  --color-market-border: #e4e7eb;
+  --color-market-border-strong: #cdd1d6;
+
+  /* Text */
+  --color-market-text: #1a1d23;
+  --color-market-text-mute: #5a5d63;
+  --color-market-text-faint: #9aa0a6;
+
+  /* 거래 유형 (의미색) */
+  --color-deal-trade: #e11d48;   /* 매매 Rose-600 */
+  --color-deal-trade-soft: #fef2f4;
+  --color-deal-jeonse: #2563eb;  /* 전세 Blue-600 */
+  --color-deal-jeonse-soft: #eff6ff;
+  --color-deal-wolse: #059669;   /* 월세 Emerald-600 */
+  --color-deal-wolse-soft: #ecfdf5;
+
+  /* 가격대 5분위 (마커 컬러, 라이트 톤) */
+  --color-quintile-1: #94a3b8;   /* 저가  Slate-400 */
+  --color-quintile-2: #0ea5e9;   /* Q2    Sky-500   */
+  --color-quintile-3: #f59e0b;   /* Q3    Amber-500 */
+  --color-quintile-4: #ea580c;   /* Q4    Orange-600 */
+  --color-quintile-5: #be123c;   /* 고가  Rose-700  */
 }
 
 
@@ -402,4 +431,23 @@ body {
 
 .animate-bounce-slow {
   animation: bounce-slow 2s ease-in-out infinite;
+}
+
+/* ===== 시세지도 마커 애니메이션 ===== */
+@keyframes market-marker-pulse {
+  0%, 100% { transform: translate(-50%, -100%) scale(1); }
+  50%      { transform: translate(-50%, -100%) scale(1.03); }
+}
+
+.market-marker-pulse {
+  animation: market-marker-pulse 3s ease-in-out infinite;
+}
+
+@keyframes market-marker-pop {
+  0%   { transform: translate(-50%, -100%) scale(0.6); opacity: 0; }
+  100% { transform: translate(-50%, -100%) scale(1); opacity: 1; }
+}
+
+.market-marker-pop {
+  animation: market-marker-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }

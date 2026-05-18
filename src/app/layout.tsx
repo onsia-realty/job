@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, JetBrains_Mono, Black_Han_Sans, Gaegu } from "next/font/google";
+import { Inter, JetBrains_Mono, Black_Han_Sans, Gaegu, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
@@ -28,6 +28,13 @@ const gaegu = Gaegu({
   variable: "--font-gaegu",
   weight: ["400", "700"],
   subsets: ["latin"],
+});
+
+const plusJakarta = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
+  weight: ["400", "500", "600", "700", "800"],
+  subsets: ["latin"],
+  display: "swap",
 });
 
 const SITE_URL = (process.env.NEXT_PUBLIC_BASE_URL || "https://www.booin.co.kr").trim();
@@ -163,7 +170,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} ${blackHanSans.variable} ${gaegu.variable} antialiased`}
+        className={`${inter.variable} ${jetbrainsMono.variable} ${blackHanSans.variable} ${gaegu.variable} ${plusJakarta.variable} antialiased`}
       >
         <Providers>
           <SecurityShield />

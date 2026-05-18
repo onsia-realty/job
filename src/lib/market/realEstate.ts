@@ -126,6 +126,27 @@ export async function fetchOfficetelRents(
 }
 
 /**
+ * 아파트 분양권 전매 — 핵심 차별점 (계약 후 30일 신고 의무)
+ * 매매와 raw 구조 거의 동일, deal_type만 'presale_resale'로 표시
+ */
+export async function fetchApartmentSilvTrades(
+  lawd_cd: string,
+  deal_ymd: string,
+  service_key: string
+): Promise<NormalizedTransaction[]> {
+  const items = await fetchMolit<AptTradeItem>({
+    endpoint: API_BASE.MOLIT_SILV_TRADE,
+    lawd_cd,
+    deal_ymd,
+    service_key,
+  });
+  return items.map((item) => {
+    const t = transformTrade(item, 'apt', lawd_cd, deal_ymd);
+    return { ...t, deal_type: 'presale_resale' as DealType };
+  });
+}
+
+/**
  * 단지별 최근 거래 조회 (여러 월 합산)
  * — cron이 아닌 on-demand 용도는 DB를 우선 조회하고 MISS만 fetch
  */

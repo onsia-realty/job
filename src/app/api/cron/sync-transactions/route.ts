@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import {
   fetchApartmentTrades, fetchApartmentRents,
   fetchOfficetelTrades, fetchOfficetelRents,
+  fetchApartmentSilvTrades,
 } from '@/lib/market/realEstate';
 import { getLastNMonths } from '@/lib/market/publicApi';
 
@@ -54,6 +55,7 @@ async function runSync(req: NextRequest) {
     apt_rent: 0,
     offi_trade: 0,
     offi_rent: 0,
+    apt_silv: 0,
     errors: [] as string[],
     elapsed_ms: 0,
   };
@@ -65,11 +67,12 @@ async function runSync(req: NextRequest) {
 
   async function processOne(t: { lawd_cd: string; sigungu: string; ym: string }) {
     try {
-      const [aptT, aptR, offiT, offiR] = await Promise.allSettled([
+      const [aptT, aptR, offiT, offiR, aptS] = await Promise.allSettled([
         fetchApartmentTrades(t.lawd_cd, t.ym, service_key!),
         fetchApartmentRents(t.lawd_cd, t.ym, service_key!),
         fetchOfficetelTrades(t.lawd_cd, t.ym, service_key!),
         fetchOfficetelRents(t.lawd_cd, t.ym, service_key!),
+        fetchApartmentSilvTrades(t.lawd_cd, t.ym, service_key!),
       ]);
 
       const allRows = [
@@ -77,6 +80,7 @@ async function runSync(req: NextRequest) {
         ...(aptR.status === 'fulfilled' ? aptR.value : []),
         ...(offiT.status === 'fulfilled' ? offiT.value : []),
         ...(offiR.status === 'fulfilled' ? offiR.value : []),
+        ...(aptS.status === 'fulfilled' ? aptS.value : []),
       ];
 
       if (aptT.status === 'fulfilled') summary.apt_trade += aptT.value.length;
@@ -87,6 +91,8 @@ async function runSync(req: NextRequest) {
       else summary.errors.push(`offi_trade ${t.sigungu} ${t.ym}: ${offiT.reason instanceof Error ? offiT.reason.message : String(offiT.reason)}`);
       if (offiR.status === 'fulfilled') summary.offi_rent += offiR.value.length;
       else summary.errors.push(`offi_rent ${t.sigungu} ${t.ym}: ${offiR.reason instanceof Error ? offiR.reason.message : String(offiR.reason)}`);
+      if (aptS.status === 'fulfilled') summary.apt_silv += aptS.value.length;
+      else summary.errors.push(`apt_silv ${t.sigungu} ${t.ym}: ${aptS.reason instanceof Error ? aptS.reason.message : String(aptS.reason)}`);
 
       if (allRows.length > 0) {
         const { error: upErr } = await supabaseAdmin

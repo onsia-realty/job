@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import {
   fetchApartmentTrades, fetchApartmentRents,
   fetchOfficetelTrades, fetchOfficetelRents,
+  fetchApartmentSilvTrades,
   getSampleTransactions, type PropertyType, type DealType,
   type NormalizedTransaction,
 } from '@/lib/market/realEstate';
@@ -150,6 +151,7 @@ async function fetchByType(
 ): Promise<NormalizedTransaction[]> {
   if (type === 'apt' && deal === 'trade') return fetchApartmentTrades(lawd_cd, ym, service_key);
   if (type === 'apt' && deal === 'rent') return fetchApartmentRents(lawd_cd, ym, service_key);
+  if (type === 'apt' && deal === 'presale_resale') return fetchApartmentSilvTrades(lawd_cd, ym, service_key);
   if (type === 'officetel' && deal === 'trade') return fetchOfficetelTrades(lawd_cd, ym, service_key);
   if (type === 'officetel' && deal === 'rent') return fetchOfficetelRents(lawd_cd, ym, service_key);
   return [];
