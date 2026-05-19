@@ -145,23 +145,42 @@ export default function MarketPageClient() {
       let txs: Tx[] = [];
       let complex_coords: Record<string, CoordEntry> = {};
 
+      // bounds 모드 우선 시도
       if (bStr) {
-        // bounds 모드 — viewport 범위 안 단지 6개월치 한 번에
         const res = await fetch(`/api/market/transactions?bounds=${bStr}&type=${pt}&deal=${apiDeal}&months=6`);
         if (res.ok) {
           const data = await res.json();
           txs = (data.transactions || []) as Tx[];
           complex_coords = data.complex_coords || {};
         }
-      } else {
-        // lawd_cd 모드 (초기/RegionPicker fallback) — 실거래 1~2개월 지연 고려, 최근 3개월 순차 시도
+      }
+
+      // bounds 모드 결과 비어있거나 bounds 모드 자체를 안 거친 경우(초기/RegionPicker) → lawd_cd 모드 fallback.
+      // 좌표 백필 진행 중 임시 안전망. 백필 완료되면 bounds 모드만으로 충분해짐.
+      if (txs.length === 0) {
+        // viewport 중심으로 가장 가까운 MVP_REGION 매핑 (bStr 있을 때만), 없으면 state lawd_cd 사용
+        let fallbackLc = lc;
+        if (bStr) {
+          const parts = bStr.split(',').map(Number);
+          if (parts.length === 4 && parts.every(Number.isFinite)) {
+            const cLat = (parts[0] + parts[2]) / 2;
+            const cLng = (parts[1] + parts[3]) / 2;
+            let minDist = Infinity;
+            for (const r of MVP_REGIONS) {
+              const d = (r.lat - cLat) ** 2 + (r.lng - cLng) ** 2;
+              if (d < minDist) { minDist = d; fallbackLc = r.lawd_cd; }
+            }
+          }
+        }
+
+        // 실거래 1~2개월 지연 고려, 최근 3개월 순차 시도
         const now = new Date();
         const candidateYms = [1, 2, 3].map((lag) => {
           const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
           return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
         });
         for (const ym of candidateYms) {
-          const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
+          const res = await fetch(`/api/market/transactions?lawd_cd=${fallbackLc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
           if (!res.ok) continue;
           const data = await res.json();
           const arr = (data.transactions || []) as Tx[];
