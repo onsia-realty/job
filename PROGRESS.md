@@ -5,6 +5,27 @@
 
 ---
 
+## 마지막 작업 (2026-05-19) — 시세지도 viewport bounds + 패널 정보 풍부도
+
+### 결론: 드래그 즉시 반영 + 평형별/건축물대장/인근단지 표시
+
+5/11 라이브 정상화 후 사용자 피드백 2건 해결:
+1. **드래그 시 정보 안 바뀌는 문제** — MVP_REGIONS 8개 lawd_cd 매핑 한계가 원인. viewport bounds 모드로 전환.
+2. **정보 빈약** — `unit_distribution`, `building_meta`, `nearby_complexes`, `monthly_split` 백엔드는 이미 반환 중. 패널 UI가 미사용. 4개 섹션 추가.
+
+### 변경 (4 files)
+- `src/app/api/market/transactions/route.ts` — `?bounds=sw_lat,sw_lng,ne_lat,ne_lng&type=&deal=&months=6` 모드 신설. `complexes` 테이블 좌표 범위 → `price_transactions` 6개월치. 국토부 API fetch 없이 캐시만 조회 (s-maxage=120). 기존 `lawd_cd+ym` 모드는 RegionPicker/cron 호환용 유지.
+- `src/components/market/MarketMap.client.tsx` — `onBoundsChanged(sw_lat, sw_lng, ne_lat, ne_lng)` 콜백 + idle 이벤트에서 `map.getBounds().getMin()/getMax()` 호출. 초기 마운트 직후 1회 발화 (setTimeout 0).
+- `src/app/market/MarketPageClient.tsx` — `boundsStr` state, `handleMapBoundsChanged` (재발화 차단 위해 string 비교), `handleMapCenterChanged` + 자동 lawd_cd 매핑 제거. RegionPicker 클릭 시 `setBoundsStr(null)` 로 리셋 후 새 center에서 idle → 새 bounds.
+- `src/components/market/MarketDetailPanel.tsx` — 4개 섹션 추가: 미니 스파크라인(`lg:hidden`, recharts LineChart), 평형별 평균(가로 스크롤 카드), 단지 정보(건폐율/용적률/대지지분/주차/승강기/구조), 인근 단지 비교(거리순 5건). 헬퍼 `shortPrice(manwon)` 추가.
+
+### 미해결 / 후속
+- `complexes` 테이블 좌표 백필 커버리지 확인 필요 — bounds 모드는 좌표 있는 단지만 조회. 미백필 단지가 많으면 결과 빈약 가능.
+- 라이브 배포 후 드래그/줌 동작 확인 필요.
+- 다음 단계 (mapiapp 통합 — 학교/지하철 정적 JSON, apartment-ranking 등) 는 별도 작업.
+
+---
+
 ## 마지막 작업 (2026-05-11) — 시세지도 완전 정상화 ✅
 
 ### 결론: 라이브에서 지도 + 130개 마커 정상 표시

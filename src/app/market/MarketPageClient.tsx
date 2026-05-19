@@ -85,6 +85,9 @@ function matchHouseholdBand(hhld: number | null | undefined, band: HouseholdBand
 export default function MarketPageClient() {
   const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
   const [lawd_cd, setLawdCd] = useState(DEFAULT_LAWD_CD);
+  // 지도 viewport 범위 (idle 시 갱신). 셋되면 bounds 모드, null이면 lawd_cd 모드.
+  // 직렬화 문자열로 보관해 useEffect 트리거가 안정적이도록.
+  const [boundsStr, setBoundsStr] = useState<string | null>(null);
   const [property_type, setPropertyType] = useState<PropertyTypeFilter>('apt');
   const [dealType, setDealType] = useState<DealTypeFilter>('trade');
   const [areaBand, setAreaBand] = useState<AreaBand>('all');
@@ -97,8 +100,9 @@ export default function MarketPageClient() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   useEffect(() => {
-    loadData(lawd_cd, property_type, dealType, areaBand, ageBand, householdBand);
-  }, [lawd_cd, property_type, dealType, areaBand, ageBand, householdBand]);
+    loadData(lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand]);
 
   // 단지 선택 시 상세 fetch
   useEffect(() => {
@@ -116,6 +120,7 @@ export default function MarketPageClient() {
 
   const loadData = async (
     lc: string,
+    bStr: string | null,
     pt: PropertyTypeFilter,
     dt: DealTypeFilter,
     ab: AreaBand,
@@ -124,13 +129,6 @@ export default function MarketPageClient() {
   ) => {
     setLoading(true);
     try {
-      // 실거래는 보통 1-2개월 지연. 최근 3개월을 순차 시도해서 데이터 밀도 확보.
-      const now = new Date();
-      const candidateYms = [1, 2, 3].map((lag) => {
-        const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
-        return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
-      });
-
       // API deal: trade=매매, jeonse/wolse=rent (서버가 rent로 합쳐 가져옴), presale=분양권
       const apiDeal = dt === 'trade' ? 'trade' : dt === 'presale' ? 'presale_resale' : 'rent';
 
@@ -146,15 +144,32 @@ export default function MarketPageClient() {
       type CoordEntry = { lat: number | null; lng: number | null; hhld_cnt: number | null; build_year: number | null };
       let txs: Tx[] = [];
       let complex_coords: Record<string, CoordEntry> = {};
-      for (const ym of candidateYms) {
-        const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
-        if (!res.ok) continue;
-        const data = await res.json();
-        const arr = (data.transactions || []) as Tx[];
-        if (arr.length > 0) {
-          txs = arr;
+
+      if (bStr) {
+        // bounds 모드 — viewport 범위 안 단지 6개월치 한 번에
+        const res = await fetch(`/api/market/transactions?bounds=${bStr}&type=${pt}&deal=${apiDeal}&months=6`);
+        if (res.ok) {
+          const data = await res.json();
+          txs = (data.transactions || []) as Tx[];
           complex_coords = data.complex_coords || {};
-          break;
+        }
+      } else {
+        // lawd_cd 모드 (초기/RegionPicker fallback) — 실거래 1~2개월 지연 고려, 최근 3개월 순차 시도
+        const now = new Date();
+        const candidateYms = [1, 2, 3].map((lag) => {
+          const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
+          return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+        });
+        for (const ym of candidateYms) {
+          const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const arr = (data.transactions || []) as Tx[];
+          if (arr.length > 0) {
+            txs = arr;
+            complex_coords = data.complex_coords || {};
+            break;
+          }
         }
       }
 
@@ -223,42 +238,22 @@ export default function MarketPageClient() {
 
   const selectedPoint = selectedKey ? points.find((p) => p.complex_key === selectedKey) : undefined;
 
-  // 검색 결과 클릭 시 — 지도 이동 + lawd_cd 동기화 + 단지 선택
+  // 검색 결과 클릭 시 — 지도 이동 + 단지 선택. bounds 는 지도 idle에서 자동 갱신.
   const handleSearchSelect = useCallback((r: SearchResult) => {
     if (r.lat == null || r.lng == null) return;
     setCenter([r.lat, r.lng]);
-    // 가장 가까운 MVP_REGION으로 lawd_cd 변경
-    let minDist = Infinity;
-    let closestCode = lawd_cd;
-    MVP_REGIONS.forEach((reg) => {
-      const dist = (reg.lat - r.lat!) ** 2 + (reg.lng - r.lng!) ** 2;
-      if (dist < minDist) {
-        minDist = dist;
-        closestCode = reg.lawd_cd;
-      }
-    });
-    if (closestCode !== lawd_cd) {
-      setLawdCd(closestCode);
-    }
     setSelectedKey(r.complex_key);
-  }, [lawd_cd]);
+  }, []);
 
-  // 지도 이동 시 가장 가까운 MVP_REGIONS로 자동 전환
-  const handleMapCenterChanged = useCallback((lat: number, lng: number) => {
-    let minDist = Infinity;
-    let closestCode = lawd_cd;
-    MVP_REGIONS.forEach((r) => {
-      const dist = (r.lat - lat) ** 2 + (r.lng - lng) ** 2;
-      if (dist < minDist) {
-        minDist = dist;
-        closestCode = r.lawd_cd;
-      }
-    });
-    if (closestCode !== lawd_cd) {
-      setLawdCd(closestCode);
-      // center는 변경하지 않음 — 사용자가 직접 이동 중이라 그 위치 유지
-    }
-  }, [lawd_cd]);
+  // 지도 idle 시 viewport bounds 갱신 → loadData(bounds 모드)로 자동 전환.
+  // 같은 bounds 재발화는 boundsStr 비교로 자체 차단.
+  const handleMapBoundsChanged = useCallback(
+    (sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number) => {
+      const next = `${sw_lat.toFixed(6)},${sw_lng.toFixed(6)},${ne_lat.toFixed(6)},${ne_lng.toFixed(6)}`;
+      setBoundsStr((prev) => (prev === next ? prev : next));
+    },
+    [],
+  );
 
   return (
     <div className="relative h-screen flex flex-col bg-market-bg font-jakarta">
@@ -316,6 +311,8 @@ export default function MarketPageClient() {
           <RegionPicker current={lawd_cd} onSelect={(cd, lat, lng) => {
             setLawdCd(cd);
             setCenter([lat, lng]);
+            // bounds 리셋 → 지도가 setCenter 후 새 idle에서 새 bounds 발화
+            setBoundsStr(null);
           }} />
           <div className="ml-auto text-[11px] text-market-text-faint flex items-center gap-1 flex-shrink-0 tabular-nums">
             <Building2 className="w-3 h-3" />
@@ -396,7 +393,7 @@ export default function MarketPageClient() {
             onSelect={setSelectedKey}
             selectedKey={selectedKey}
             dealType={dealType}
-            onCenterChanged={handleMapCenterChanged}
+            onBoundsChanged={handleMapBoundsChanged}
           />
         </div>
 

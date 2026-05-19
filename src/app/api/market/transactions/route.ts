@@ -10,16 +10,26 @@ import {
 
 const CACHE_FRESHNESS_HOURS = 24;
 
-// GET /api/market/transactions?lawd_cd=11680&ym=202604&type=apt&deal=trade
+// GET /api/market/transactions
+//   모드 1 (bounds): ?bounds=sw_lat,sw_lng,ne_lat,ne_lng&type=apt&deal=trade[&months=6]
+//                    지도 viewport 범위의 단지를 조회. 클라이언트 드래그용.
+//   모드 2 (lawd_cd): ?lawd_cd=11680&ym=202604&type=apt&deal=trade
+//                    국토부 API fetch + 캐시 채우기 (RegionPicker / cron 호환).
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const lawd_cd = searchParams.get('lawd_cd');
   const ym = searchParams.get('ym');
+  const bounds = searchParams.get('bounds');
+  const months = Math.min(12, Math.max(1, parseInt(searchParams.get('months') || '6', 10) || 6));
   const type = (searchParams.get('type') || 'apt') as PropertyType;
   const deal = (searchParams.get('deal') || 'trade') as DealType;
 
+  if (bounds) {
+    return handleBoundsMode(bounds, type, deal, months);
+  }
+
   if (!lawd_cd || !ym) {
-    return NextResponse.json({ error: 'lawd_cd and ym are required' }, { status: 400 });
+    return NextResponse.json({ error: 'lawd_cd and ym are required (or use bounds=)' }, { status: 400 });
   }
 
   try {
@@ -109,6 +119,86 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     const msg = error instanceof Error ? error.message : 'unknown';
     console.error('[market/transactions] error:', msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+// Viewport bounds 모드: 좌표 범위 안 단지의 최근 N개월 거래를 그대로 반환.
+// 국토부 API는 호출하지 않음 — cron이 이미 채운 데이터만 조회.
+const BOUNDS_MAX_COMPLEXES = 500;  // 줌 아웃 폭주 방지
+async function handleBoundsMode(
+  boundsParam: string,
+  type: PropertyType,
+  deal: DealType,
+  months: number,
+): Promise<NextResponse> {
+  const parts = boundsParam.split(',').map((v) => parseFloat(v));
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
+    return NextResponse.json({ error: 'bounds must be "sw_lat,sw_lng,ne_lat,ne_lng"' }, { status: 400 });
+  }
+  const [sw_lat, sw_lng, ne_lat, ne_lng] = parts;
+
+  try {
+    // 1) bounds 안 단지 키 조회 — complexes 마스터 사용 (좌표 백필된 것만)
+    const { data: complexRows, error: cErr } = await supabaseAdmin
+      .from('complexes')
+      .select('complex_key, lat, lng, hhld_cnt, build_year, property_type')
+      .gte('lat', sw_lat)
+      .lte('lat', ne_lat)
+      .gte('lng', sw_lng)
+      .lte('lng', ne_lng)
+      .eq('property_type', type)
+      .limit(BOUNDS_MAX_COMPLEXES);
+
+    if (cErr) {
+      console.error('[market/transactions] bounds complex query error:', cErr);
+      return NextResponse.json({ error: cErr.message }, { status: 500 });
+    }
+    if (!complexRows || complexRows.length === 0) {
+      return NextResponse.json({ source: 'bounds', count: 0, transactions: [], complex_coords: {} });
+    }
+
+    const complex_keys = complexRows.map((c) => c.complex_key);
+
+    // 2) 최근 N개월 거래 (cancel 제외, property_type + deal_type 매칭)
+    const sinceDate = new Date();
+    sinceDate.setMonth(sinceDate.getMonth() - months);
+    const sinceStr = sinceDate.toISOString().slice(0, 10);
+
+    const { data: txs, error: tErr } = await supabaseAdmin
+      .from('price_transactions')
+      .select('*')
+      .in('complex_key', complex_keys)
+      .eq('property_type', type)
+      .eq('deal_type', deal)
+      .eq('cancel_yn', false)
+      .gte('deal_date', sinceStr)
+      .order('deal_date', { ascending: false });
+
+    if (tErr) {
+      console.error('[market/transactions] bounds tx query error:', tErr);
+      return NextResponse.json({ error: tErr.message }, { status: 500 });
+    }
+
+    // 3) complex_coords map (클라이언트 jitter fallback 제거용)
+    const complex_coords: Record<string, ComplexCoord> = {};
+    for (const c of complexRows) {
+      complex_coords[c.complex_key] = {
+        lat: c.lat, lng: c.lng, hhld_cnt: c.hhld_cnt, build_year: c.build_year,
+      };
+    }
+
+    return NextResponse.json({
+      source: 'bounds',
+      count: (txs || []).length,
+      transactions: txs || [],
+      complex_coords,
+    }, {
+      headers: { 'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=600' },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'unknown';
+    console.error('[market/transactions] bounds mode error:', msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

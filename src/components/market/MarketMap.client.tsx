@@ -26,7 +26,9 @@ interface MarketMapProps {
   selectedKey?: string | null;
   height?: string;
   dealType?: DealTypeFilter;
-  onCenterChanged?: (lat: number, lng: number) => void;  // 지도 idle 시 콜백
+  onCenterChanged?: (lat: number, lng: number) => void;  // 지도 idle 시 중심 콜백 (legacy)
+  // viewport bounds 콜백 — idle 시 SW/NE 모서리 좌표 전달. bounds 기반 데이터 조회용.
+  onBoundsChanged?: (sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number) => void;
 }
 
 // naver.maps 타입 선언 (공식 @types 없음)
@@ -54,12 +56,18 @@ interface NaverMap {
   setCenter: (latlng: NaverLatLng) => void;
   setZoom: (z: number) => void;
   getCenter: () => NaverLatLng;
+  getBounds: () => NaverLatLngBounds;
   destroy?: () => void;
 }
 
 interface NaverLatLng {
   lat: () => number;
   lng: () => number;
+}
+
+interface NaverLatLngBounds {
+  getMin: () => NaverLatLng;  // SW
+  getMax: () => NaverLatLng;  // NE
 }
 
 interface NaverMarker {
@@ -216,6 +224,7 @@ export default function MarketMap({
   height = '100%',
   dealType = 'trade',
   onCenterChanged,
+  onBoundsChanged,
 }: MarketMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<NaverMap | null>(null);
@@ -223,6 +232,8 @@ export default function MarketMap({
   const [loadError, setLoadError] = useState<string | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
   onCenterChangedRef.current = onCenterChanged;
+  const onBoundsChangedRef = useRef(onBoundsChanged);
+  onBoundsChangedRef.current = onBoundsChanged;
 
   useEffect(() => {
     if (!NAVER_CLIENT_ID) {
@@ -253,11 +264,30 @@ export default function MarketMap({
         });
         mapRef.current = map;
 
-        // idle = panning/zoom 종료 시 발생. 중심 좌표 콜백 전달.
+        // idle = panning/zoom 종료 시 발생. 중심 + bounds 콜백 모두 전달.
         naver.maps.Event.addListener(map, 'idle', () => {
           const c = map.getCenter();
           onCenterChangedRef.current?.(c.lat(), c.lng());
+          if (onBoundsChangedRef.current) {
+            try {
+              const b = map.getBounds();
+              const sw = b.getMin();
+              const ne = b.getMax();
+              onBoundsChangedRef.current(sw.lat(), sw.lng(), ne.lat(), ne.lng());
+            } catch { /* SDK 인스턴스 상태 이슈 — 무시 */ }
+          }
         });
+
+        // 초기 마운트 직후에도 한 번 bounds 발화 (idle 이벤트 전에 데이터 채우려고)
+        setTimeout(() => {
+          if (cancelled || !onBoundsChangedRef.current) return;
+          try {
+            const b = map.getBounds();
+            const sw = b.getMin();
+            const ne = b.getMax();
+            onBoundsChangedRef.current(sw.lat(), sw.lng(), ne.lat(), ne.lng());
+          } catch { /* ignore */ }
+        }, 0);
       })
       .catch((e) => {
         if (!cancelled) setLoadError(e.message);

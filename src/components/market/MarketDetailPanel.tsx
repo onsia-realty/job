@@ -1,6 +1,7 @@
 'use client';
 
 import { X, TrendingUp, TrendingDown, Building2, Calendar, MapPin } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line, YAxis, Tooltip } from 'recharts';
 import type { MapComplexPoint, DealTypeFilter } from './MarketMap.client';
 
 export interface ComplexDetail {
@@ -102,6 +103,16 @@ const DEAL_LABELS: Record<DealTypeFilter, string> = {
 
 const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
 
+// 만원 단위를 "X억Y" 형태로 줄여 표시 (마커 라벨과 동일 규칙)
+function shortPrice(manwon: number): string {
+  if (manwon >= 10000) {
+    const eok = Math.floor(manwon / 10000);
+    const rest = manwon % 10000;
+    return rest > 0 ? `${eok}억${Math.round(rest / 100)}` : `${eok}억`;
+  }
+  return manwon.toLocaleString();
+}
+
 export default function MarketDetailPanel({
   complexKey,
   point,
@@ -127,6 +138,33 @@ export default function MarketDetailPanel({
     ? (detail?.recent_silv_transactions ?? []).slice(0, 5)
     : (detail?.recent_transactions ?? []).slice(0, 5);
   const showRecent = (dealType === 'trade' || dealType === 'presale') && recentTxs.length > 0;
+
+  // 평형별 분포 (매매 한정 — 백엔드가 매매로만 집계)
+  const unitDist = (detail?.unit_distribution ?? []).filter((u) => u.count > 0);
+  const showUnitDist = isTrade && unitDist.length > 0;
+
+  // 미니 시세 추이 (lg 미만에서만 표시 — lg는 GraphPanel이 큰 그래프 담당)
+  const sparkData = (detail?.monthly_split ?? [])
+    .map((m) => {
+      const val =
+        dealType === 'trade' ? m.trade_avg :
+        dealType === 'presale' ? (m.presale_avg ?? null) :
+        m.rent_avg;
+      return val != null ? { ym: m.ym.slice(2), value: val } : null;
+    })
+    .filter((d): d is { ym: string; value: number } => d !== null);
+  const showSpark = sparkData.length >= 2;
+
+  // 건축물대장 메타 — 아실 차별점
+  const bm = detail?.building_meta;
+  const showBuildingMeta = bm && (
+    bm.bc_rat != null || bm.vl_rat != null || bm.land_share_per_hhld != null ||
+    bm.parking_total != null || bm.ride_elvt_cnt != null
+  );
+
+  // 인근 단지 비교
+  const nearby = (detail?.nearby_complexes ?? []).slice(0, 5);
+  const showNearby = nearby.length > 0;
 
   return (
     <div className="h-full flex flex-col bg-market-surface font-jakarta text-market-text overflow-hidden">
@@ -236,6 +274,163 @@ export default function MarketDetailPanel({
             )}
           </div>
         </div>
+
+        {/* 미니 시세 추이 — lg 미만에서만 (lg 이상은 GraphPanel이 큰 차트 담당) */}
+        {showSpark && (
+          <div className="lg:hidden px-5 py-4 border-b border-market-border">
+            <div className="flex items-baseline justify-between mb-2">
+              <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">
+                {DEAL_LABELS[dealType]} 추이
+              </div>
+              <div className="text-[10px] text-market-text-faint tabular-nums">
+                최근 {sparkData.length}개월
+              </div>
+            </div>
+            <div className="h-[80px] -mx-1">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={sparkData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
+                  <YAxis hide domain={['dataMin', 'dataMax']} />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'white',
+                      border: '1px solid #e4e7eb',
+                      borderRadius: '8px',
+                      fontSize: '11px',
+                      padding: '4px 8px',
+                    }}
+                    labelFormatter={(l) => `'${l}`}
+                    formatter={(v) => {
+                      const n = typeof v === 'number' ? v : 0;
+                      return [`${KRW(n)}만`, ''];
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="value"
+                    stroke={dealColor}
+                    strokeWidth={2.2}
+                    dot={false}
+                    activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* 평형별 평균 — 매매만, 가로 스크롤 카드 */}
+        {showUnitDist && (
+          <div className="px-5 py-4 border-b border-market-border">
+            <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider mb-2.5">
+              평형별 평균
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+              {unitDist.map((u, i) => (
+                <div
+                  key={i}
+                  className="flex-shrink-0 min-w-[88px] bg-market-surface-2 rounded-xl px-3 py-2.5 border border-market-border"
+                >
+                  <div className="text-[10px] text-market-text-faint font-medium tabular-nums">
+                    {u.label}
+                  </div>
+                  <div
+                    className="text-base font-bold tabular-nums mt-0.5 leading-tight"
+                    style={{ color: dealColor }}
+                  >
+                    {shortPrice(u.avg_price_manwon)}
+                  </div>
+                  <div className="text-[10px] text-market-text-mute tabular-nums mt-0.5">
+                    {u.count}건 · 평당 {shortPrice(u.avg_pyeong_price)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 단지 정보 확장 (건축물대장) — 아실 차별점 */}
+        {showBuildingMeta && bm && (
+          <div className="px-5 py-4 border-b border-market-border">
+            <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider mb-2.5">
+              단지 정보
+            </div>
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+              {bm.bc_rat != null && (
+                <div className="flex justify-between">
+                  <span className="text-market-text-mute">건폐율</span>
+                  <span className="text-market-text font-semibold tabular-nums">{bm.bc_rat}%</span>
+                </div>
+              )}
+              {bm.vl_rat != null && (
+                <div className="flex justify-between">
+                  <span className="text-market-text-mute">용적률</span>
+                  <span className="text-market-text font-semibold tabular-nums">{bm.vl_rat}%</span>
+                </div>
+              )}
+              {bm.land_share_per_hhld != null && (
+                <div className="flex justify-between">
+                  <span className="text-market-text-mute">세대당 대지지분</span>
+                  <span className="text-market-text font-semibold tabular-nums">{bm.land_share_per_hhld}㎡</span>
+                </div>
+              )}
+              {bm.parking_total != null && (
+                <div className="flex justify-between">
+                  <span className="text-market-text-mute">총 주차</span>
+                  <span className="text-market-text font-semibold tabular-nums">{bm.parking_total.toLocaleString()}대</span>
+                </div>
+              )}
+              {bm.ride_elvt_cnt != null && (
+                <div className="flex justify-between">
+                  <span className="text-market-text-mute">승강기</span>
+                  <span className="text-market-text font-semibold tabular-nums">{bm.ride_elvt_cnt}기</span>
+                </div>
+              )}
+              {bm.strct && (
+                <div className="flex justify-between">
+                  <span className="text-market-text-mute">구조</span>
+                  <span className="text-market-text font-semibold truncate ml-2">{bm.strct}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 인근 단지 비교 — 반경 2km 내 거리 순 */}
+        {showNearby && (
+          <div className="px-5 py-4 border-b border-market-border">
+            <div className="flex items-baseline justify-between mb-2.5">
+              <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">
+                인근 단지 비교
+              </div>
+              <div className="text-[10px] text-market-text-faint">반경 2km</div>
+            </div>
+            <div className="space-y-1.5">
+              {nearby.map((n) => (
+                <div key={n.complex_key} className="flex items-center justify-between text-xs gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-market-text font-medium truncate">{n.complex_name}</div>
+                    <div className="text-[10px] text-market-text-faint tabular-nums">
+                      {n.distance_km != null ? `${n.distance_km}km` : '-'}
+                      {' · '}
+                      평당 {shortPrice(n.avg_pyeong_price)}만
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div
+                      className="text-sm font-bold tabular-nums leading-tight"
+                      style={{ color: dealColor }}
+                    >
+                      {shortPrice(n.avg_price_manwon)}
+                    </div>
+                    <div className="text-[10px] text-market-text-faint tabular-nums">
+                      {n.trade_count}건
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 최근 거래 (매매·분양권) */}
         {showRecent && (
