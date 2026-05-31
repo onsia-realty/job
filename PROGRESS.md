@@ -5,6 +5,40 @@
 
 ---
 
+## 마지막 작업 (2026-05-31) — 시세지도 네이버페이/호갱노노 벤치마킹 ✅
+
+### 결론: 네이버페이 부동산 UX 갭 3종 + 호갱노노 차트 스타일 적용 (커밋·푸시 완료)
+
+사용자가 네이버페이 부동산(`fin.land.naver.com/map`) HTML을 제공 → 시스템 디코딩 후
+우리 시세지도와 벤치마크. 분석/플랜 문서: `claudedocs/naver-land-benchmark.md`.
+**우리가 앞선 것**: 데이터 파이프라인·마커(5분위 색상)·차별화 데이터(구인/중개/AI/건축물대장).
+**뒤처진 UX 3종**(전부 채택·구현): ① URL 공유 상태 ② React Query 캐시 ③ 차트 기간 탭.
+
+### 커밋 시리즈 (브랜치 `feature/market-naver-benchmark`, origin 동기화 완료)
+- `339b2e5` 시세지도 풀 리뉴얼 — 라이트 톤 + Recharts + 분양권 + 검색 (19파일, +2869)
+  - 신규: `MarketDetailPanel.tsx`, `MarketGraphPanel.tsx`, `MarketSearch.tsx`, `buildingLedger.ts`,
+    `api/market/search`, `api/cron/sync-building-ledgers`
+- `8b9f678` bounds 모드 0건 시 lawd_cd 모드 자동 fallback
+- `e7a7e48` 패키지 매니저 pnpm으로 통일
+- `28e508f` **네이버페이 벤치마킹 본체** — React Query/URL공유/차트기간탭/구인중개 레이어 (11파일, +730)
+  - 신규: `MarketQueryProvider.tsx`(@tanstack/react-query), `src/lib/market/queries.ts`(useQuery 훅 모음)
+  - URL 상태 동기화, 차트 기간 탭, brokers-nearby 마커 + jobs-nearby 패널
+- `dfc0ebc` (memory) 네이버 지도 키 인벤토리 보정 — Vercel 전용, 로컬 누락 주의
+- `f5533f0` **호갱노노 스타일 차트** — 매매+전세 듀얼라인 + 기간대비% + 출처 푸터 (← 마지막 커밋)
+  - `MarketGraphPanel.tsx` 대폭 리라이트, `api/market/complex/[key]/route.ts` 응답 보강
+
+### 미해결 / 후속 (다음 작업자 주의)
+- ⚠️ **로컬 `.env.local`에 네이버 지도 키 누락** — 키는 Vercel 환경에만 존재. 로컬 `pnpm dev`로
+  `/market` 지도 확인하려면 `NEXT_PUBLIC_NAVER_MAP_*`(ncpKeyId) + `NEXT_PUBLIC_MARKET_ENABLED=true` 필요.
+  (메모리 `dfc0ebc` 참조)
+- **차트 장기 탭(1Y/3Y/5Y) 실데이터 부족** — `sync-transactions` cron 기본 최근 3개월만 수집.
+  UI는 있으나 과거 백필(`?months=` 다회 실행) 필요. 데이터 없으면 "누적 중" 안내.
+- **jobs-nearby lat/lng 없음** — 구인공고는 정밀 핀 불가, "이 지역 채용 N건" 패널 방식. 지오코딩은 차후.
+- 라이브 배포 후 URL 공유/차트 기간탭/구인·중개 레이어 동작 확인 필요.
+- `claudedocs/결제창.md` — 프리미엄 "공고 선택 → 결제" 플로우 복원 가이드 (PG 테스트 우회 중, 미커밋).
+
+---
+
 ## 마지막 작업 (2026-05-19) — 시세지도 viewport bounds + 패널 정보 풍부도
 
 ### 결론: 드래그 즉시 반영 + 평형별/건축물대장/인근단지 표시
