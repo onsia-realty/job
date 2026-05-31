@@ -60,6 +60,29 @@ const LIMIT = parseInt(getArg('--limit', '0'), 10) || 0; // 0 = 전부
 const FORCE = args.includes('--force');
 const CONCURRENCY = parseInt(getArg('--concurrency', '6'), 10) || 6;
 
+// sigungu_cd(앞 2자리) → 시도명. jibun_address에 시도 접두어가 없으면 보강.
+// VWorld는 sido prefix가 빠지면 짧은 지번 단지를 매칭 못 함 (complexes.ts 주석 참조).
+const SIDO_BY_CODE = {
+  '11': '서울특별시', '26': '부산광역시', '27': '대구광역시', '28': '인천광역시',
+  '29': '광주광역시', '30': '대전광역시', '31': '울산광역시', '36': '세종특별자치시',
+  '41': '경기도', '42': '강원특별자치도', '43': '충청북도', '44': '충청남도',
+  '45': '전라북도', '46': '전라남도', '47': '경상북도', '48': '경상남도',
+  '50': '제주특별자치도', '51': '강원특별자치도', '52': '전북특별자치도',
+};
+const SIDO_NAMES = new Set(Object.values(SIDO_BY_CODE));
+
+function ensureSido(address, sigungu_cd) {
+  const addr = (address || '').trim();
+  if (!addr) return addr;
+  const firstToken = addr.split(/\s+/)[0];
+  // 이미 시도로 시작하면 그대로
+  if (SIDO_NAMES.has(firstToken) || firstToken.endsWith('특별시') || firstToken.endsWith('광역시')) {
+    return addr;
+  }
+  const sido = SIDO_BY_CODE[(sigungu_cd || '').slice(0, 2)];
+  return sido ? `${sido} ${addr}` : addr;
+}
+
 // ── Supabase REST 헬퍼 ──
 const sb = (path, opts = {}) =>
   fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -112,7 +135,7 @@ async function loadTargets() {
   const filter = FORCE ? '' : '&lat=is.null';
   for (;;) {
     const res = await sb(
-      `complexes?select=complex_key,complex_name,jibun_address,road_address${filter}&order=complex_key&limit=${PAGE}&offset=${from}`,
+      `complexes?select=complex_key,complex_name,jibun_address,road_address,sigungu_cd${filter}&order=complex_key&limit=${PAGE}&offset=${from}`,
     );
     if (!res.ok) {
       console.error('대상 로드 실패:', res.status, await res.text());
@@ -161,7 +184,8 @@ async function main() {
     while (cursor < targets.length) {
       const idx = cursor++;
       const c = targets[idx];
-      const address = (c.jibun_address || c.road_address || '').trim();
+      const rawAddress = (c.jibun_address || c.road_address || '').trim();
+      const address = ensureSido(rawAddress, c.sigungu_cd);
       if (!address) {
         stats.noaddr++;
         continue;
