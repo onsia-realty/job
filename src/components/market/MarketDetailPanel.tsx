@@ -71,6 +71,8 @@ export interface ComplexDetail {
     trade_avg: number | null;
     rent_avg: number | null;
     presale_avg?: number | null;
+    trade_pyeong?: number | null;   // 매매 평당가 (전용면적 기준, 만원/평)
+    rent_pyeong?: number | null;    // 전세 평당가 (전용면적 기준, 만원/평)
     trade_count: number;
     rent_count: number;
     presale_count?: number;

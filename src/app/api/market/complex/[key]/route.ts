@@ -244,9 +244,11 @@ export async function GET(
       return { label: b.label, count, avg_price_manwon: avg_price, avg_pyeong_price: avg_pyeong };
     }).filter((b) => b.count > 0);
 
-    // 매매/전세/분양권 월별 분리
+    // 매매/전세/분양권 월별 분리 (+ 매매/전세 평당가 — 전용면적 기준)
+    const PY = 3.3058; // ㎡ → 평
     const monthlyGroup = new Map<string, {
       trade_prices: number[]; rent_deposits: number[]; presale_prices: number[];
+      trade_pyeongs: number[]; rent_pyeongs: number[];
       trade_count: number; rent_count: number; presale_count: number;
     }>();
     (allTxs || []).forEach((t) => {
@@ -255,28 +257,35 @@ export async function GET(
       if (!monthlyGroup.has(ym)) {
         monthlyGroup.set(ym, {
           trade_prices: [], rent_deposits: [], presale_prices: [],
+          trade_pyeongs: [], rent_pyeongs: [],
           trade_count: 0, rent_count: 0, presale_count: 0,
         });
       }
       const g = monthlyGroup.get(ym)!;
+      const area = t.exclusive_area && t.exclusive_area > 0 ? t.exclusive_area : null;
       if (t.deal_type === 'trade' && t.price_manwon) {
         g.trade_prices.push(t.price_manwon);
+        if (area) g.trade_pyeongs.push((t.price_manwon / area) * PY);
         g.trade_count++;
       } else if (t.deal_type === 'rent' && t.deposit_manwon) {
         g.rent_deposits.push(t.deposit_manwon);
+        if (area) g.rent_pyeongs.push((t.deposit_manwon / area) * PY);
         g.rent_count++;
       } else if (t.deal_type === 'presale_resale' && t.price_manwon) {
         g.presale_prices.push(t.price_manwon);
         g.presale_count++;
       }
     });
+    const avg = (arr: number[]) => (arr.length > 0 ? Math.round(arr.reduce((s, p) => s + p, 0) / arr.length) : null);
     const monthly_split = Array.from(monthlyGroup.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([ym, g]) => ({
         ym,
-        trade_avg: g.trade_prices.length > 0 ? Math.round(g.trade_prices.reduce((s, p) => s + p, 0) / g.trade_prices.length) : null,
-        rent_avg: g.rent_deposits.length > 0 ? Math.round(g.rent_deposits.reduce((s, p) => s + p, 0) / g.rent_deposits.length) : null,
-        presale_avg: g.presale_prices.length > 0 ? Math.round(g.presale_prices.reduce((s, p) => s + p, 0) / g.presale_prices.length) : null,
+        trade_avg: avg(g.trade_prices),
+        rent_avg: avg(g.rent_deposits),
+        presale_avg: avg(g.presale_prices),
+        trade_pyeong: avg(g.trade_pyeongs),
+        rent_pyeong: avg(g.rent_pyeongs),
         trade_count: g.trade_count,
         rent_count: g.rent_count,
         presale_count: g.presale_count,
