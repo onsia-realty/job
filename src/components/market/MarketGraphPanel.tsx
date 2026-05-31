@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   ResponsiveContainer,
   LineChart,
@@ -16,6 +17,7 @@ import Link from 'next/link';
 import { TrendingUp, TrendingDown, Sparkles } from 'lucide-react';
 import type { MapComplexPoint, DealTypeFilter } from './MarketMap.client';
 import type { ComplexDetail } from './MarketDetailPanel';
+import { useComplexDetail, type ChartRange } from '@/lib/market/queries';
 
 interface Props {
   point: MapComplexPoint | undefined;
@@ -39,29 +41,63 @@ const DEAL_LABELS: Record<DealTypeFilter, string> = {
   presale: '분양권',
 };
 
+// 차트 기간 탭
+const RANGE_TABS: Array<{ value: ChartRange; label: string }> = [
+  { value: '1m', label: '1개월' },
+  { value: '6m', label: '6개월' },
+  { value: '1y', label: '1년' },
+  { value: '3y', label: '3년' },
+  { value: '5y', label: '5년' },
+];
+const RANGE_LABEL: Record<ChartRange, string> = {
+  '1m': '1개월', '6m': '6개월', '1y': '1년', '3y': '3년', '5y': '5년',
+};
+
+type Metric = 'price' | 'pyeong';
+
 const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
 const formatPrice = (v: number) =>
   v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}억` : `${Math.round(v / 1000)}천`;
 
 export default function MarketGraphPanel({ point, detail, loading, dealType, complexKey }: Props) {
-  const name = detail?.complex_name || point?.complex_name || '단지';
+  const [range, setRange] = useState<ChartRange>('6m');
+  const [metric, setMetric] = useState<Metric>('price');
+
+  // 기간 탭에 따른 데이터 — React Query. 기본 6m은 부모 캐시(같은 키) 공유 → 추가 fetch 없음.
+  const { data: fetched, isFetching } = useComplexDetail(complexKey ?? null, range);
+  const data = fetched ?? detail;        // hook 우선, prop fallback (첫 렌더 즉시 표시)
+  const busy = isFetching || loading;
+
+  const name = data?.complex_name || point?.complex_name || '단지';
   const isTrade = dealType === 'trade';
   const dealColor = DEAL_COLORS[dealType];
 
-  const chartData = (detail?.monthly_split ?? []).map((m) => ({
+  // 평당가(매매 전용) — monthly MV의 ym → avg_pyeong_price 매핑
+  const pyeongByYm = new Map(
+    (data?.monthly ?? []).map((m) => [String(m.ym).slice(0, 7), m.avg_pyeong_price]),
+  );
+
+  const chartData = (data?.monthly_split ?? []).map((m) => ({
     ym: m.ym.slice(2),
     매매: m.trade_avg,
     전세: m.rent_avg,
     분양권: m.presale_avg ?? null,
+    평당: pyeongByYm.get(m.ym.slice(0, 7)) ?? null,
     거래량:
       dealType === 'trade' ? m.trade_count
       : dealType === 'presale' ? (m.presale_count ?? 0)
       : m.rent_count,
   }));
 
-  const unitDist = detail?.unit_distribution ?? [];
+  const unitDist = data?.unit_distribution ?? [];
   const hasChart = chartData.length >= 2;
   const hasUnits = unitDist.length > 0;
+
+  // 가격 라인 dataKey — 거래유형(매매/전세/분양권) 또는 평당가(매매 한정)
+  const priceKey = isTrade ? '매매' : dealType === 'presale' ? '분양권' : '전세';
+  const showMetricToggle = isTrade; // 평당가 데이터는 매매만 존재
+  const lineKey = metric === 'pyeong' && showMetricToggle ? '평당' : priceKey;
+  const metricUnit = lineKey === '평당' ? '만원/평' : '만원';
 
   return (
     <div className="h-full flex flex-col bg-market-surface font-jakarta text-market-text overflow-hidden">
@@ -84,24 +120,24 @@ export default function MarketGraphPanel({ point, detail, loading, dealType, com
           )}
         </div>
         <h2 className="text-xl font-extrabold text-market-text leading-tight truncate">{name}</h2>
-        {isTrade && detail?.growth_pct != null && (
+        {isTrade && data?.growth_pct != null && (
           <div className="mt-2 flex items-center gap-2">
             <span
               className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full ${
-                detail.growth_pct > 0
+                data.growth_pct > 0
                   ? 'bg-deal-trade-soft text-deal-trade'
-                  : detail.growth_pct < 0
+                  : data.growth_pct < 0
                   ? 'bg-deal-jeonse-soft text-deal-jeonse'
                   : 'bg-market-surface-2 text-market-text-mute'
               }`}
             >
-              {detail.growth_pct > 0 ? (
+              {data.growth_pct > 0 ? (
                 <TrendingUp className="w-3.5 h-3.5" />
               ) : (
                 <TrendingDown className="w-3.5 h-3.5" />
               )}
-              {detail.growth_pct > 0 ? '+' : ''}
-              {detail.growth_pct.toFixed(1)}%
+              {data.growth_pct > 0 ? '+' : ''}
+              {data.growth_pct.toFixed(1)}%
             </span>
             <span className="text-xs text-market-text-mute">전월 대비</span>
           </div>
@@ -112,26 +148,62 @@ export default function MarketGraphPanel({ point, detail, loading, dealType, com
       <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
         {/* 큰 가격 추이 차트 */}
         <div className="px-6 py-5 border-b border-market-border">
-          <div className="flex items-baseline justify-between mb-4">
+          <div className="flex items-baseline justify-between mb-3">
             <div>
               <div className="text-sm font-bold text-market-text">가격 추이</div>
               <div className="text-[11px] text-market-text-faint mt-0.5 tabular-nums">
-                최근 {hasChart ? chartData.length : 0}개월 · 단위 만원
+                {RANGE_LABEL[range]} · 단위 {metricUnit}
               </div>
             </div>
             <div
               className="flex items-center gap-1.5 text-xs font-medium"
               style={{ color: dealColor }}
             >
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ background: dealColor }}
-              />
-              {DEAL_LABELS[dealType]}
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: dealColor }} />
+              {lineKey === '평당' ? '평당가' : DEAL_LABELS[dealType]}
             </div>
           </div>
+
+          {/* 기간 탭 + 지표 토글 */}
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex gap-1">
+              {RANGE_TABS.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => setRange(t.value)}
+                  className={`px-2.5 py-1 text-[11px] rounded-md font-medium transition-all ${
+                    range === t.value
+                      ? 'bg-market-text text-white font-semibold'
+                      : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            {showMetricToggle && (
+              <div className="flex gap-0.5 bg-market-surface-2 rounded-md p-0.5 flex-shrink-0">
+                {([['price', '총액'], ['pyeong', '평당가']] as Array<[Metric, string]>).map(
+                  ([m, label]) => (
+                    <button
+                      key={m}
+                      onClick={() => setMetric(m)}
+                      className={`px-2 py-0.5 text-[10px] rounded font-medium transition-all ${
+                        metric === m
+                          ? 'bg-market-surface text-market-text font-semibold shadow-sm'
+                          : 'text-market-text-mute hover:text-market-text'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ),
+                )}
+              </div>
+            )}
+          </div>
+
           {hasChart ? (
-            <div className="h-[320px] -ml-2">
+            <div className={`h-[320px] -ml-2 transition-opacity ${busy ? 'opacity-60' : ''}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 8, right: 12, left: -4, bottom: 0 }}>
                   <defs>
@@ -172,11 +244,7 @@ export default function MarketGraphPanel({ point, detail, loading, dealType, com
                   />
                   <Line
                     type="monotone"
-                    dataKey={
-                      isTrade ? '매매' :
-                      dealType === 'presale' ? '분양권' :
-                      '전세'
-                    }
+                    dataKey={lineKey}
                     stroke={dealColor}
                     strokeWidth={3}
                     dot={{ r: 4, fill: dealColor, strokeWidth: 0 }}
@@ -187,8 +255,10 @@ export default function MarketGraphPanel({ point, detail, loading, dealType, com
               </ResponsiveContainer>
             </div>
           ) : (
-            <div className="h-[320px] flex items-center justify-center text-sm text-market-text-faint border border-dashed border-market-border rounded-xl">
-              {loading ? '차트 로딩 중…' : '추이 데이터 부족 (2개월 이상 필요)'}
+            <div className="h-[320px] flex items-center justify-center text-sm text-market-text-faint border border-dashed border-market-border rounded-xl text-center px-4">
+              {busy
+                ? '차트 로딩 중…'
+                : `${RANGE_LABEL[range]} 추이 데이터 부족 (2개월 이상 필요)\n실거래가 누적되면 표시됩니다`}
             </div>
           )}
         </div>
@@ -288,7 +358,7 @@ export default function MarketGraphPanel({ point, detail, loading, dealType, com
         )}
 
         {/* 데이터가 전혀 없을 때 안내 */}
-        {!hasChart && !hasUnits && !loading && (
+        {!hasChart && !hasUnits && !busy && (
           <div className="px-6 py-10 text-center text-sm text-market-text-mute">
             이 단지의 분석 데이터가 부족합니다.
             <br />

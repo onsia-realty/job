@@ -29,6 +29,10 @@ interface MarketMapProps {
   onCenterChanged?: (lat: number, lng: number) => void;  // 지도 idle 시 중심 콜백 (legacy)
   // viewport bounds 콜백 — idle 시 SW/NE 모서리 좌표 전달. bounds 기반 데이터 조회용.
   onBoundsChanged?: (sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number) => void;
+  // 지도 idle 시 현재 중심+줌 콜백 — URL 동기화(딥링크)용.
+  onViewChanged?: (lat: number, lng: number, zoom: number) => void;
+  // 중개업소 보조 마커 (차별화 레이어 — 토글 on일 때만)
+  brokers?: Array<{ lat: number; lng: number; name: string }>;
 }
 
 // naver.maps 타입 선언 (공식 @types 없음)
@@ -56,6 +60,7 @@ interface NaverMap {
   setCenter: (latlng: NaverLatLng) => void;
   setZoom: (z: number) => void;
   getCenter: () => NaverLatLng;
+  getZoom: () => number;
   getBounds: () => NaverLatLngBounds;
   destroy?: () => void;
 }
@@ -215,6 +220,26 @@ function buildMarkerHTML(p: MapComplexPoint, quintile: number, isSelected: boole
   `;
 }
 
+// 중개업소 보조 마커 — 시세 마커(5분위 색)와 시각 구분되는 작은 청록 배지.
+function buildBrokerMarkerHTML(name: string): string {
+  const label = name.length > 7 ? `${name.slice(0, 6)}…` : name;
+  return `
+    <div style="transform: translate(-50%, -50%); z-index: 30; cursor: default;">
+      <div style="
+        display: flex; align-items: center; gap: 3px;
+        background: #0d9488; color: #ffffff;
+        padding: 2px 6px; border-radius: 8px;
+        border: 1.5px solid rgba(255,255,255,0.92);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+        font-family: 'Plus Jakarta Sans', Pretendard, -apple-system, sans-serif;
+        font-size: 9.5px; font-weight: 700; white-space: nowrap;
+      ">
+        <span style="width:5px;height:5px;border-radius:50%;background:#fff;"></span>${label}
+      </div>
+    </div>
+  `;
+}
+
 export default function MarketMap({
   center,
   zoom = 13,
@@ -225,15 +250,20 @@ export default function MarketMap({
   dealType = 'trade',
   onCenterChanged,
   onBoundsChanged,
+  onViewChanged,
+  brokers,
 }: MarketMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<NaverMap | null>(null);
   const markersRef = useRef<NaverMarker[]>([]);
+  const brokerMarkersRef = useRef<NaverMarker[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
   onCenterChangedRef.current = onCenterChanged;
   const onBoundsChangedRef = useRef(onBoundsChanged);
   onBoundsChangedRef.current = onBoundsChanged;
+  const onViewChangedRef = useRef(onViewChanged);
+  onViewChangedRef.current = onViewChanged;
 
   useEffect(() => {
     if (!NAVER_CLIENT_ID) {
@@ -268,6 +298,7 @@ export default function MarketMap({
         naver.maps.Event.addListener(map, 'idle', () => {
           const c = map.getCenter();
           onCenterChangedRef.current?.(c.lat(), c.lng());
+          try { onViewChangedRef.current?.(c.lat(), c.lng(), map.getZoom()); } catch { /* ignore */ }
           if (onBoundsChangedRef.current) {
             try {
               const b = map.getBounds();
@@ -299,6 +330,10 @@ export default function MarketMap({
         try { m.setMap(null); } catch { /* SDK internal state, ignore */ }
       });
       markersRef.current = [];
+      brokerMarkersRef.current.forEach((m) => {
+        try { m.setMap(null); } catch { /* ignore */ }
+      });
+      brokerMarkersRef.current = [];
       // map.destroy() 호출 시 Naver SDK 내부 상태가 깨져
       // 재마운트(Strict Mode / dynamic import) 때 Marker 생성 실패 발생.
       // 컨테이너 DOM 제거로 GC에 맡기는 게 안전.
@@ -355,6 +390,39 @@ export default function MarketMap({
       .map(makeMarker)
       .filter((m): m is NaverMarker => m !== null);
   }, [points, onSelect, selectedKey, dealType]);
+
+  // 중개업소 보조 마커 레이어 (토글 on일 때만 brokers 전달됨)
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const naver = window.naver;
+    if (!naver?.maps?.Marker || !naver.maps.LatLng) return;
+
+    brokerMarkersRef.current.forEach((m) => {
+      try { m.setMap(null); } catch { /* ignore stale marker */ }
+    });
+    brokerMarkersRef.current = [];
+
+    if (!brokers || brokers.length === 0) return;
+
+    brokerMarkersRef.current = brokers
+      .map((b) => {
+        try {
+          return new naver.maps.Marker({
+            position: new naver.maps.LatLng(b.lat, b.lng),
+            map: mapRef.current,
+            icon: {
+              content: buildBrokerMarkerHTML(b.name),
+              size: new naver.maps.Size(0, 0),
+              anchor: new naver.maps.Point(0, 0),
+            },
+            zIndex: 30,
+          });
+        } catch {
+          return null;
+        }
+      })
+      .filter((m): m is NaverMarker => m !== null);
+  }, [brokers]);
 
   if (loadError) {
     return (

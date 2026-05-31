@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import MarketQueryProvider from './MarketQueryProvider';
 
 const SITE_URL = (process.env.NEXT_PUBLIC_BASE_URL || 'https://www.booin.co.kr').trim();
 
@@ -21,8 +22,10 @@ export const metadata: Metadata = {
 
 export default function MarketLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0B0F14] text-slate-100">
-      {children}
-    </div>
+    <MarketQueryProvider>
+      <div className="min-h-screen bg-[#0B0F14] text-slate-100">
+        {children}
+      </div>
+    </MarketQueryProvider>
   );
 }

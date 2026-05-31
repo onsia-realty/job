@@ -15,32 +15,37 @@ interface RawTx {
 
 // GET /api/market/complex/[key]
 // 단지 상세: 월별 집계, 평형별 분포, 매매/전세 분리, 전세가율, 단지 메타, 최근 거래
+// 차트 기간 → 개월 수. 잘못된 값은 6개월.
+const RANGE_MONTHS: Record<string, number> = { '1m': 1, '6m': 6, '1y': 12, '3y': 36, '5y': 60 };
+
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ key: string }> }
 ) {
   const { key } = await params;
   const complex_key = decodeURIComponent(key);
+  const range = new URL(req.url).searchParams.get('range') || '6m';
+  const months = RANGE_MONTHS[range] ?? 6;
 
   try {
-    // 월별 집계 (최근 6개월) — complex_aggregates Materialized View
+    // 월별 집계 (기간 범위) — complex_aggregates Materialized View
     const { data: monthly } = await supabaseAdmin
       .from('complex_aggregates')
       .select('*')
       .eq('complex_key', complex_key)
       .order('ym', { ascending: false })
-      .limit(6);
+      .limit(months);
 
-    // 최근 6개월 거래 raw (매매 + 전세 분리 집계용)
-    const sixMonthsAgo = new Date();
-    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-    const sixMonthsAgoStr = sixMonthsAgo.toISOString().slice(0, 10);
+    // 기간 범위 거래 raw (매매 + 전세 분리 집계용)
+    const sinceDate = new Date();
+    sinceDate.setMonth(sinceDate.getMonth() - months);
+    const sinceStr = sinceDate.toISOString().slice(0, 10);
 
     const { data: allTxs } = await supabaseAdmin
       .from('price_transactions')
       .select('deal_date, price_manwon, deposit_manwon, exclusive_area, deal_type, cancel_yn, complex_name, dong, lawd_cd')
       .eq('complex_key', complex_key)
-      .gte('deal_date', sixMonthsAgoStr)
+      .gte('deal_date', sinceStr)
       .eq('cancel_yn', false)
       .order('deal_date', { ascending: false }) as { data: RawTx[] | null };
 
