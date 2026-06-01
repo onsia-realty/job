@@ -11,7 +11,16 @@
       "mcp__playwright__playwright_navigate",
       "mcp__playwright__playwright_screenshot",
       "mcp__playwright__playwright_evaluate",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git commit:*)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(pnpm -v)",
+      "Bash(echo \"pnpm: $\\(pnpm -v 2>/dev/null || echo 없음\\)\")",
+      "Bash(node_modules/.bin/tsc --noEmit)",
+      "Bash(tee /tmp/tsc-out.txt)",
+      "Bash(pnpm build *)",
+      "Bash(git check-ignore *)"
     ]
   }
 }

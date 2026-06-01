@@ -21,6 +21,7 @@ originSessionId: 13bbd32d-2ca0-4f12-93e9-06f62bd48bcf
 - `SEOUL_OPEN_API_KEY` — 서울 열린데이터광장
 - `VWORLD_API_KEY` + `NEXT_PUBLIC_VWORLD_KEY` — 전국 중개사무소 조회
 - `NEXT_PUBLIC_KAKAO_MAP_KEY` — 카카오 지도 (온시아 계정 **첫 번째 앱** 키 사용. onsia.city와 공유. 자세히는 [project_kakao_apps.md](project_kakao_apps.md))
+- `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID` — **시세지도 실제 사용 SDK** (NCP `booin-market` 앱, [project_ncp_maps_account.md](project_ncp_maps_account.md)). `NEXT_PUBLIC`이라 배포 JS에 공개됨(도메인 화이트리스트로 보호). `localhost:3000` 화이트리스트 등록됨. **로컬 `.env.local`에 빠지기 쉬움** — 누락 시 지도 영역에 "환경변수 미설정" 에러. 값은 배포 사이트 `booin.co.kr/market`의 maps.js `ncpKeyId=` 파라미터에서도 확인 가능.
 
 ### AI / 콘텐츠
 - `GEMINI_API_KEY` — Google Gemini (AI 사진/뉴스툰)

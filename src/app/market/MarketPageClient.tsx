@@ -1,15 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Script from 'next/script';
 import Link from 'next/link';
-import { ArrowLeft, MapPin, TrendingUp, Building2, Filter } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, MapPin, TrendingUp, Building2, Filter, Store, Briefcase, X } from 'lucide-react';
 import type { MapComplexPoint, DealTypeFilter } from '@/components/market/MarketMap.client';
-import type { ComplexDetail } from '@/components/market/MarketDetailPanel';
 import MarketDetailPanel from '@/components/market/MarketDetailPanel';
 import MarketGraphPanel from '@/components/market/MarketGraphPanel';
 import MarketSearch, { type SearchResult } from '@/components/market/MarketSearch';
+import { useComplexDetail, useBrokersNearby, useJobsNearby } from '@/lib/market/queries';
 
 const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || '';
 
@@ -82,41 +83,117 @@ function matchHouseholdBand(hhld: number | null | undefined, band: HouseholdBand
   return true;
 }
 
+// URL 쿼리값을 허용된 옵션으로 검증 (잘못된 값은 fallback)
+function validBand<T extends string>(
+  v: string | null,
+  options: ReadonlyArray<{ value: T }>,
+  fallback: T,
+): T {
+  return options.some((o) => o.value === v) ? (v as T) : fallback;
+}
+
 export default function MarketPageClient() {
-  const [center, setCenter] = useState<[number, number]>(DEFAULT_CENTER);
-  const [lawd_cd, setLawdCd] = useState(DEFAULT_LAWD_CD);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // ── URL → 초기 상태 (최초 마운트 1회, 딥링크 복원) ──
+  const [center, setCenter] = useState<[number, number]>(() => {
+    const lat = parseFloat(searchParams.get('lat') || '');
+    const lng = parseFloat(searchParams.get('lng') || '');
+    return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : DEFAULT_CENTER;
+  });
+  const [zoom] = useState<number>(() => {
+    const z = parseFloat(searchParams.get('zoom') || '');
+    return Number.isFinite(z) && z >= 8 && z <= 19 ? z : 14;
+  });
+  const [lawd_cd, setLawdCd] = useState(() => searchParams.get('region') || DEFAULT_LAWD_CD);
   // 지도 viewport 범위 (idle 시 갱신). 셋되면 bounds 모드, null이면 lawd_cd 모드.
   // 직렬화 문자열로 보관해 useEffect 트리거가 안정적이도록.
   const [boundsStr, setBoundsStr] = useState<string | null>(null);
-  const [property_type, setPropertyType] = useState<PropertyTypeFilter>('apt');
-  const [dealType, setDealType] = useState<DealTypeFilter>('trade');
-  const [areaBand, setAreaBand] = useState<AreaBand>('all');
-  const [ageBand, setAgeBand] = useState<AgeBand>('all');
-  const [householdBand, setHouseholdBand] = useState<HouseholdBand>('all');
+  const [property_type, setPropertyType] = useState<PropertyTypeFilter>(() =>
+    searchParams.get('type') === 'officetel' ? 'officetel' : 'apt',
+  );
+  const [dealType, setDealType] = useState<DealTypeFilter>(() => {
+    const d = searchParams.get('deal');
+    return d === 'jeonse' || d === 'wolse' || d === 'presale' || d === 'trade' ? d : 'trade';
+  });
+  const [areaBand, setAreaBand] = useState<AreaBand>(() =>
+    validBand(searchParams.get('area'), AREA_OPTIONS, 'all'),
+  );
+  const [ageBand, setAgeBand] = useState<AgeBand>(() =>
+    validBand(searchParams.get('age'), AGE_OPTIONS, 'all'),
+  );
+  const [householdBand, setHouseholdBand] = useState<HouseholdBand>(() =>
+    validBand(searchParams.get('hhld'), HOUSEHOLD_OPTIONS, 'all'),
+  );
   const [points, setPoints] = useState<MapComplexPoint[]>([]);
   const [loading, setLoading] = useState(false);
-  const [selectedKey, setSelectedKey] = useState<string | null>(null);
-  const [selectedDetail, setSelectedDetail] = useState<ComplexDetail | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [selectedKey, setSelectedKey] = useState<string | null>(() => searchParams.get('sel') || null);
+
+  // ── 차별화 레이어 토글 (중개업소/구인공고) — 네이버에 없는 우리 고유 무기 ──
+  const [showBrokers, setShowBrokers] = useState(false);
+  const [showJobs, setShowJobs] = useState(false);
+
+  const { data: brokerRows = [] } = useBrokersNearby(lawd_cd, showBrokers);
+  const { data: jobs = [] } = useJobsNearby(lawd_cd, showJobs);
+
+  // 중개업소 → 지도 마커 (좌표 보유분만)
+  const brokerMarkers = useMemo(
+    () =>
+      brokerRows
+        .filter((b) => b.latitude != null && b.longitude != null)
+        .map((b) => ({ lat: b.latitude as number, lng: b.longitude as number, name: b.med_office_nm })),
+    [brokerRows],
+  );
+
+  // ── 상태 → URL 동기화 (딥링크/공유) ──
+  // 지도 위치는 mapViewRef에 보관(맵 idle 콜백이 갱신) — center/zoom state로 되먹이지 않아 피드백 루프 회피.
+  const mapViewRef = useRef<{ lat: number; lng: number; zoom: number }>({
+    lat: center[0],
+    lng: center[1],
+    zoom,
+  });
+  const writeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const writeUrl = useCallback(() => {
+    if (writeTimerRef.current) clearTimeout(writeTimerRef.current);
+    writeTimerRef.current = setTimeout(() => {
+      const p = new URLSearchParams();
+      p.set('lat', mapViewRef.current.lat.toFixed(5));
+      p.set('lng', mapViewRef.current.lng.toFixed(5));
+      p.set('zoom', mapViewRef.current.zoom.toFixed(2));
+      p.set('deal', dealType);
+      p.set('type', property_type);
+      p.set('region', lawd_cd);
+      if (areaBand !== 'all') p.set('area', areaBand);
+      if (ageBand !== 'all') p.set('age', ageBand);
+      if (householdBand !== 'all') p.set('hhld', householdBand);
+      if (selectedKey) p.set('sel', selectedKey);
+      router.replace(`/market?${p.toString()}`, { scroll: false });
+    }, 400);
+  }, [dealType, property_type, lawd_cd, areaBand, ageBand, householdBand, selectedKey, router]);
+
+  // 필터/선택 변경 시 URL 갱신 (writeUrl 식별자가 deps 변화에 따라 바뀜)
+  useEffect(() => {
+    writeUrl();
+  }, [writeUrl]);
+
+  // 지도 idle 시 현재 중심/줌을 URL에 반영 (state 미변경 → 맵 되먹임 없음)
+  const handleMapViewChanged = useCallback(
+    (lat: number, lng: number, z: number) => {
+      mapViewRef.current = { lat, lng, zoom: z };
+      writeUrl();
+    },
+    [writeUrl],
+  );
 
   useEffect(() => {
     loadData(lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand]);
 
-  // 단지 선택 시 상세 fetch
-  useEffect(() => {
-    if (!selectedKey) {
-      setSelectedDetail(null);
-      return;
-    }
-    setDetailLoading(true);
-    fetch(`/api/market/complex/${encodeURIComponent(selectedKey)}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setSelectedDetail(d))
-      .catch(() => setSelectedDetail(null))
-      .finally(() => setDetailLoading(false));
-  }, [selectedKey]);
+  // 단지 선택 시 상세 — React Query (캐시/중복제거/리페치)
+  const { data: selectedDetail = null, isFetching: detailLoading } = useComplexDetail(selectedKey);
 
   const loadData = async (
     lc: string,
@@ -260,6 +337,7 @@ export default function MarketPageClient() {
   // 검색 결과 클릭 시 — 지도 이동 + 단지 선택. bounds 는 지도 idle에서 자동 갱신.
   const handleSearchSelect = useCallback((r: SearchResult) => {
     if (r.lat == null || r.lng == null) return;
+    mapViewRef.current = { ...mapViewRef.current, lat: r.lat, lng: r.lng };
     setCenter([r.lat, r.lng]);
     setSelectedKey(r.complex_key);
   }, []);
@@ -328,6 +406,7 @@ export default function MarketPageClient() {
           </div>
           <div className="mx-1 h-4 w-px bg-market-border" />
           <RegionPicker current={lawd_cd} onSelect={(cd, lat, lng) => {
+            mapViewRef.current = { ...mapViewRef.current, lat, lng };
             setLawdCd(cd);
             setCenter([lat, lng]);
             // bounds 리셋 → 지도가 setCenter 후 새 idle에서 새 bounds 발화
@@ -371,6 +450,26 @@ export default function MarketPageClient() {
               필터 초기화
             </button>
           )}
+
+          {/* 차별화 레이어 토글 — 중개업소 / 구인공고 */}
+          <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+            <LayerToggle
+              active={showBrokers}
+              onClick={() => setShowBrokers((v) => !v)}
+              icon={<Store className="w-3 h-3" />}
+              activeClass="bg-teal-600 text-white"
+            >
+              중개업소{showBrokers && brokerMarkers.length > 0 ? ` ${brokerMarkers.length}` : ''}
+            </LayerToggle>
+            <LayerToggle
+              active={showJobs}
+              onClick={() => setShowJobs((v) => !v)}
+              icon={<Briefcase className="w-3 h-3" />}
+              activeClass="bg-deal-trade text-white"
+            >
+              구인공고{showJobs && jobs.length > 0 ? ` ${jobs.length}` : ''}
+            </LayerToggle>
+          </div>
         </div>
       </div>
 
@@ -407,13 +506,55 @@ export default function MarketPageClient() {
         <div className="flex-1 relative min-w-0">
           <MarketMap
             center={center}
-            zoom={14}
+            zoom={zoom}
             points={points}
             onSelect={setSelectedKey}
             selectedKey={selectedKey}
             dealType={dealType}
             onBoundsChanged={handleMapBoundsChanged}
+            onViewChanged={handleMapViewChanged}
+            brokers={showBrokers ? brokerMarkers : undefined}
           />
+
+          {/* 구인공고 오버레이 — 정밀 핀 대신 이 지역 채용 리스트 (jobs는 좌표 없음) */}
+          {showJobs && (
+            <div className="absolute top-3 left-3 z-10 w-[230px] max-h-[60%] bg-market-surface/97 backdrop-blur border border-market-border rounded-xl shadow-xl flex flex-col overflow-hidden">
+              <div className="flex items-center justify-between px-3 py-2 border-b border-market-border flex-shrink-0">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-market-text">
+                  <Briefcase className="w-3.5 h-3.5 text-deal-trade" />
+                  이 지역 채용 {jobs.length}건
+                </div>
+                <button
+                  onClick={() => setShowJobs(false)}
+                  className="text-market-text-faint hover:text-market-text"
+                  aria-label="닫기"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="overflow-y-auto overscroll-contain">
+                {jobs.length === 0 ? (
+                  <div className="px-3 py-6 text-center text-[11px] text-market-text-faint">
+                    이 지역 활성 공고가 없습니다
+                  </div>
+                ) : (
+                  jobs.map((j) => (
+                    <Link
+                      key={j.id}
+                      href={`/agent/jobs/${j.id}`}
+                      className="block px-3 py-2 hover:bg-market-surface-2 transition-colors border-b border-market-border/40 last:border-b-0"
+                    >
+                      <div className="text-xs font-semibold text-market-text truncate">{j.title}</div>
+                      <div className="text-[10px] text-market-text-mute mt-0.5 truncate">
+                        {j.company || '회사명 비공개'}
+                        {j.category ? ` · ${j.category}` : ''}
+                      </div>
+                    </Link>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 모바일 bottom sheet — 단지 정보만 (그래프는 데스크탑 전용 v1.0) */}
@@ -455,6 +596,33 @@ function FilterChip({
           : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
       }`}
     >
+      {children}
+    </button>
+  );
+}
+
+// 차별화 레이어 토글 칩 (중개업소/구인공고)
+function LayerToggle({
+  active,
+  onClick,
+  icon,
+  activeClass,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  activeClass: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2.5 py-1 text-[11px] rounded-full font-medium transition-all flex items-center gap-1 whitespace-nowrap ${
+        active ? `${activeClass} font-semibold shadow-sm` : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
+      }`}
+    >
+      {icon}
       {children}
     </button>
   );

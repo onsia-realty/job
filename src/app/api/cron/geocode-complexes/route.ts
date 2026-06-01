@@ -10,7 +10,7 @@ export const maxDuration = 300;
  * Authorization: Bearer ${CRON_SECRET}
  * ?limit=100 (기본), ?force=true 시 기존 좌표도 갱신
  *
- * 단지 1개당 ~2-3초 (Vworld 도로명+지번 시도). limit=100이면 5분 안.
+ * 단지 1개당 ~0.3-3초 (Naver 우선, 실패 시 VWorld 도로명+지번). limit=100이면 5분 안.
  * Vercel cron 일1회 + 사용자 수동 트리거 양쪽 지원.
  */
 const DEFAULT_LIMIT = 100;
@@ -87,7 +87,7 @@ async function runGeocode(req: NextRequest) {
   };
   const started_at = Date.now();
 
-  // 2) geocode + upsert. 동시 4개씩 (Vworld rate limit 보호).
+  // 2) geocode + upsert. 동시 4개씩 (NCP/VWorld rate limit 보호).
   const results: Array<{
     complex_key: string;
     complex_name: string;
@@ -132,7 +132,7 @@ async function runGeocode(req: NextRequest) {
         jibun_address: address,
         sigungu_cd: c.lawd_cd,
         property_type: c.property_type,
-        geocode_source: point ? `vworld_${point.source}` : null,
+        geocode_source: point ? point.source : null,
         geocoded_at: point ? new Date().toISOString() : null,
       });
     }

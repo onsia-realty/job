@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Search, MapPin, X } from 'lucide-react';
+import { useMarketSearch } from '@/lib/market/queries';
 
 export interface SearchResult {
   complex_key: string;
@@ -21,34 +22,22 @@ interface Props {
 
 export default function MarketSearch({ onSelect }: Props) {
   const [q, setQ] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
-  // debounce 250ms
+  // debounce 250ms — 입력값을 쿼리 키로 전달. 캐시/중복제거는 React Query가 처리.
   useEffect(() => {
-    if (!q.trim()) {
-      setResults([]);
-      return;
-    }
-    setLoading(true);
-    const t = setTimeout(async () => {
-      try {
-        const res = await fetch(`/api/market/search?q=${encodeURIComponent(q.trim())}`);
-        if (res.ok) {
-          const data = await res.json();
-          setResults(data.results || []);
-          setOpen(true);
-        }
-      } catch {
-        // ignore
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
+    const t = setTimeout(() => setDebouncedQ(q.trim()), 250);
     return () => clearTimeout(t);
   }, [q]);
+
+  const { data: results = [], isFetching: loading } = useMarketSearch(debouncedQ);
+
+  // 검색 결과 도착 시 드롭다운 열기
+  useEffect(() => {
+    if (debouncedQ && results.length > 0) setOpen(true);
+  }, [debouncedQ, results.length]);
 
   // 외부 클릭 시 닫기
   useEffect(() => {
@@ -75,7 +64,7 @@ export default function MarketSearch({ onSelect }: Props) {
         />
         {q && (
           <button
-            onClick={() => { setQ(''); setResults([]); setOpen(false); }}
+            onClick={() => { setQ(''); setDebouncedQ(''); setOpen(false); }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-market-text-faint hover:text-market-text"
           >
             <X className="w-3.5 h-3.5" />
@@ -102,6 +91,7 @@ export default function MarketSearch({ onSelect }: Props) {
                   onSelect(r);
                   setOpen(false);
                   setQ('');
+                  setDebouncedQ('');
                 }}
                 disabled={noCoord}
                 className={`w-full px-3 py-2 text-left hover:bg-market-surface-2 transition-colors border-b border-market-border/40 last:border-b-0 ${noCoord ? 'opacity-50 cursor-not-allowed' : ''}`}
