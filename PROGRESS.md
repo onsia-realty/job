@@ -5,6 +5,38 @@
 
 ---
 
+## 마지막 작업 (2026-06-01) — Cron geocoding Naver 교체 + main 머지 + 라이브 검증 ✅
+
+### 결론: 5/31 어제 작업 7커밋 + 오늘 Naver geocoding 1커밋 한꺼번에 main 머지 → 라이브 정상 작동
+
+어제 작업의 핵심 미해결인 "Vercel(US 리전) → VWorld(KR 정부) 502 만성 실패" 근본 해결.
+NCP Naver Geocoding API는 한국 서버라 Vercel US에서도 정상 응답 — geocode-complexes cron이 신규 단지 좌표를 자동으로 채울 수 있게 됨.
+
+### 변경
+- `src/lib/market/complexes.ts`: `geocodeNaver()` 추가, `geocodeWithDebug()` 재구성 (Naver 우선 → VWorld 도로명 → VWorld 지번 fallback)
+- `src/app/api/cron/geocode-complexes/route.ts`: `geocode_source` 라벨 동기화 (`'naver' | 'vworld_road' | 'vworld_parcel'`)
+- `.env.local`: `NAVER_GEOCODE_CLIENT_ID=2v2hncoi4d`, `NAVER_GEOCODE_CLIENT_SECRET` 추가
+- Vercel Production + Preview 환경변수에 동일 키 2개 추가 (Playwright MCP)
+
+### 커밋 시리즈 (main 기준)
+- `d75ea69` feat(market): cron geocoding Naver 우선 + VWorld fallback로 교체
+- `f0ad37e` (merge) Merge feature/market-naver-benchmark → main — 8 커밋 한꺼번에 라이브화
+
+### 라이브 검증 (booin.co.kr/api/cron/geocode-complexes?limit=20&debug=true)
+```
+geocoded: 20 / failed: 0 / elapsed_ms: 3,492 / upserted: 20
+debug_samples[*].naverStatus: "OK/total=1"   (5/5 첫 시도 성공)
+debug_samples[*].vworldRoadStatus: ""        (Naver가 다 잡아서 fallback 안 감)
+```
+
+### 미해결 / 후속
+- 차트 1Y/3Y/5Y 데이터 백필 (sync-transactions `?months=` 다회 실행)
+- jobs-nearby 좌표 (구인공고 지오코딩)
+- 남은 172개 단지명 정제 (지번 파편 / 재개발·멸실 추정)
+- 라이브 UI 동작 확인 (URL 공유 / 차트 기간탭 / brokers·jobs 레이어 — 머지로 전부 라이브 반영됨)
+
+---
+
 ## 마지막 작업 (2026-05-31) — 시세지도 네이버페이/호갱노노 벤치마킹 ✅
 
 ### 결론: 네이버페이 부동산 UX 갭 3종 + 호갱노노 차트 스타일 적용 (커밋·푸시 완료)
