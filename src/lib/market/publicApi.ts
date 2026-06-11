@@ -23,7 +23,8 @@ export const API_BASE = {
   MOLIT_RH_TRADE: 'https://apis.data.go.kr/1613000/RTMSDataSvcRHTrade/getRTMSDataSvcRHTrade', // 연립·다세대
   MOLIT_SILV_TRADE: 'https://apis.data.go.kr/1613000/RTMSDataSvcSilvTrade/getRTMSDataSvcSilvTrade', // 분양권 전매
   APPLYHOME: 'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1',
-  BLDG_LEDGER: 'https://apis.data.go.kr/1613000/BldRgstService_v2',
+  // ⚠️ 구 BldRgstService_v2는 폐기(500 고정) — 현행은 BldRgstHubService
+  BLDG_LEDGER: 'https://apis.data.go.kr/1613000/BldRgstHubService',
 } as const;
 
 export function parseXmlResponse<T = unknown>(xmlData: string): T {

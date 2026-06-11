@@ -31,31 +31,49 @@ async function runSync(req: NextRequest) {
   const limit = Math.max(1, Math.min(300, parseInt(searchParams.get('limit') || String(DEFAULT_LIMIT), 10)));
   const force = searchParams.get('force') === 'true';
 
-  // 1) PNU 있는 complexes 가져오기 (force=false면 미백필만)
-  const { data: complexes, error: cErr } = await supabaseAdmin
-    .from('complexes')
-    .select('complex_key, complex_name, pnu')
-    .not('pnu', 'is', null)
-    .limit(limit * 4);
+  // 1) PNU 있는데 building_ledgers에 없는 complexes 수집.
+  //    keyset 페이지네이션(complex_key 순) — ORDER BY 없는 샘플링은 같은 행만 반복해
+  //    미백필분에 영영 도달 못 함 (geocode cron과 동일한 버그였음).
+  //    존재 확인 .in()은 50개 청크 (URL 길이 한도).
+  type Candidate = { complex_key: string; complex_name: string; pnu: string };
+  const toFetch: Candidate[] = [];
+  let scanCursor = '';
+  let scanned = 0;
+  for (let page = 0; page < 40 && toFetch.length < limit; page++) {
+    const { data: rows, error: cErr } = await supabaseAdmin
+      .from('complexes')
+      .select('complex_key, complex_name, pnu')
+      .not('pnu', 'is', null)
+      .gt('complex_key', scanCursor)
+      .order('complex_key', { ascending: true })
+      .limit(200);
+    if (cErr) {
+      return NextResponse.json({ error: 'failed to load complexes', detail: cErr }, { status: 500 });
+    }
+    if (!rows || rows.length === 0) break;
+    scanCursor = rows[rows.length - 1].complex_key;
+    scanned += rows.length;
 
-  if (cErr) {
-    return NextResponse.json({ error: 'failed to load complexes', detail: cErr }, { status: 500 });
+    let candidates = rows as Candidate[];
+    if (!force) {
+      const known = new Set<string>();
+      for (let i = 0; i < candidates.length; i += 50) {
+        const batch = candidates.slice(i, i + 50).map((c) => c.pnu);
+        const { data: existing } = await supabaseAdmin
+          .from('building_ledgers')
+          .select('pnu')
+          .in('pnu', batch);
+        for (const e of existing ?? []) known.add(e.pnu);
+      }
+      candidates = candidates.filter((c) => !known.has(c.pnu));
+    }
+    toFetch.push(...candidates);
+    if (rows.length < 200) break;
   }
-
-  // 이미 있는 pnu 제외 (force=false인 경우)
-  let toFetch = complexes ?? [];
-  if (!force && toFetch.length > 0) {
-    const { data: existing } = await supabaseAdmin
-      .from('building_ledgers')
-      .select('pnu')
-      .in('pnu', toFetch.map((c) => c.pnu));
-    const existingSet = new Set((existing ?? []).map((e) => e.pnu));
-    toFetch = toFetch.filter((c) => !existingSet.has(c.pnu));
-  }
-  toFetch = toFetch.slice(0, limit);
+  toFetch.length = Math.min(toFetch.length, limit);
 
   const summary = {
-    candidates: complexes?.length ?? 0,
+    scanned,
     to_fetch: toFetch.length,
     succeeded: 0,
     not_found: 0,
@@ -64,7 +82,7 @@ async function runSync(req: NextRequest) {
   };
   const started_at = Date.now();
 
-  async function processOne(c: { complex_key: string; complex_name: string; pnu: string }) {
+  async function processOne(c: Candidate) {
     try {
       const row = await fetchBuildingTitle(c.pnu, service_key!);
       if (!row) {
@@ -79,8 +97,22 @@ async function runSync(req: NextRequest) {
         );
       if (upErr) {
         summary.errors.push(`upsert ${c.complex_name}: ${upErr.message}`);
-      } else {
-        summary.succeeded++;
+        return;
+      }
+      summary.succeeded++;
+
+      // complexes 메타 역반영 — 세대수 필터/패널 헤더/연식 fallback이 이 컬럼들을 사용
+      const buildYear = row.use_apr_day && row.use_apr_day.length >= 4
+        ? parseInt(row.use_apr_day.slice(0, 4), 10)
+        : null;
+      const metaUpdate: Record<string, unknown> = {};
+      if (row.hhld_cnt != null) metaUpdate.hhld_cnt = row.hhld_cnt;
+      if (buildYear && buildYear > 1900) metaUpdate.build_year = buildYear;
+      if (row.grnd_flr_cnt != null) metaUpdate.grnd_flr_cnt = row.grnd_flr_cnt;
+      if (row.bjdong_cd) metaUpdate.bjdong_cd = row.bjdong_cd;
+      if (row.bld_nm) metaUpdate.bld_nm = row.bld_nm;
+      if (Object.keys(metaUpdate).length > 0) {
+        await supabaseAdmin.from('complexes').update(metaUpdate).eq('complex_key', c.complex_key);
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

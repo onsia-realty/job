@@ -110,7 +110,9 @@ function str(v: string | undefined): string | null {
 }
 
 /**
- * PNU 19자리에서 시군구/법정동/대지구분/본번/부번 추출
+ * PNU 19자리에서 시군구/법정동/대지구분/본번/부번 추출.
+ * ⚠️ 표준 PNU 필지구분(1=일반, 2=산)과 건축물대장 API platGbCd(0=대지, 1=산)는
+ *    코드 체계가 다르다 — 여기서 변환하지 않으면 전 건이 "산"으로 조회돼 미스난다.
  */
 export function splitPnu(pnu: string): {
   sigunguCd: string;
@@ -120,10 +122,12 @@ export function splitPnu(pnu: string): {
   ji: string;
 } | null {
   if (!pnu || pnu.length !== 19) return null;
+  const pnuGb = pnu.slice(10, 11); // 1=일반, 2=산
+  const platGbCd = pnuGb === '2' ? '1' : '0';
   return {
     sigunguCd: pnu.slice(0, 5),
     bjdongCd: pnu.slice(5, 10),
-    platGbCd: pnu.slice(10, 11),
+    platGbCd,
     bun: pnu.slice(11, 15),
     ji: pnu.slice(15, 19),
   };
