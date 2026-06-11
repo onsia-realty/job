@@ -100,6 +100,7 @@ interface SubwayStationData {
 export interface NearbySubway {
   stationName: string;
   lineName: string;
+  lineNumber: string;   // 원형 뱃지용 — "3", "K", "S" 등
   lineColor: string;
   isTransfer: boolean;
   transferLines: string | null;
@@ -126,6 +127,21 @@ function lineColorOf(lineName: string): string {
   return '#666666';
 }
 
+/** 노선 번호/약칭 추출 — "3호선" → "3", "신분당선" → "S" (원형 뱃지용) */
+function lineNumberOf(lineName: string): string {
+  const m = lineName.match(/(\d+)호선/);
+  if (m) return m[1];
+  const special: Record<string, string> = {
+    경의중앙: 'K', 수인분당: 'SB', 분당: 'B', 경춘: 'C', 신분당: 'S',
+    공항철도: 'A', 경강: 'G', 서해: 'W', 우이신설: 'U', 신림: 'SL',
+    김포골드라인: 'GF', 용인경전철: 'Y', 의정부경전철: 'UI',
+  };
+  for (const [key, value] of Object.entries(special)) {
+    if (lineName.includes(key)) return value;
+  }
+  return lineName.slice(0, 1);
+}
+
 export function getNearbySubway(lat: number, lng: number, radiusKm = 2, limit = 4): NearbySubway[] {
   return subwayStations
     .map((st) => {
@@ -138,6 +154,7 @@ export function getNearbySubway(lat: number, lng: number, radiusKm = 2, limit = 
     .map((x) => ({
       stationName: x.st.stationName,
       lineName: x.st.lineName,
+      lineNumber: lineNumberOf(x.st.lineName),
       lineColor: lineColorOf(x.st.lineName),
       isTransfer: x.st.isTransfer,
       transferLines: x.st.transferLines,

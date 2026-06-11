@@ -70,9 +70,17 @@ function WalkBadge({ minutes, distance }: { minutes: number; distance: number })
       : 'bg-market-surface-2 text-market-text-mute';
   return (
     <span className={`flex-shrink-0 text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded ${cls}`}>
-      도보 {minutes}분 · {distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance}km`}
+      {distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance}km`} / 도보 {minutes}분
     </span>
   );
+}
+
+function SectionLoading() {
+  return <div className="bg-market-surface-2 rounded-xl px-3 py-4 text-center text-xs text-market-text-faint mb-4">불러오는 중…</div>;
+}
+
+function EmptyCard({ children }: { children: React.ReactNode }) {
+  return <div className="bg-market-surface-2 rounded-xl px-3 py-4 text-center text-xs text-market-text-faint mb-4">{children}</div>;
 }
 
 // 상세 패널 탭 (네이버페이 부동산 스타일)
@@ -87,6 +95,7 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
   const [range, setRange] = useState<ChartRange>('6m');
   const [metric, setMetric] = useState<Metric>('price');
   const [tab, setTab] = useState<DetailTab>('price');
+  const [schoolTab, setSchoolTab] = useState<'elementary' | 'middle' | 'high'>('elementary');
 
   const { data, isFetching } = useComplexDetail(complexKey, range);
   const detail: ComplexDetail | null = data ?? null;
@@ -567,33 +576,43 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
           </div>
         ))}
 
-        {/* ── 인근 탭 — 지하철/버스/학교 + 인근 단지 비교 ── */}
+        {/* ── 인근 탭 — 지하철/버스/학교 (마피앱 카드 스타일) + 인근 단지 비교 ── */}
         {tab === 'nearby' && (
         <>
-        {/* 지하철 (반경 2km) */}
+        {/* 주변 대중교통 */}
         <div className="px-5 py-4 border-b border-market-border">
-          <div className="flex items-baseline justify-between mb-2.5">
-            <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">지하철</div>
-            <div className="text-[10px] text-market-text-faint">반경 2km</div>
+          <div className="text-sm font-bold text-market-text mb-3">주변 대중교통</div>
+
+          {/* 지하철 */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-sm">🚇</span>
+            <span className="text-xs font-bold text-market-text">
+              지하철 <span className="tabular-nums">{surroundings?.subway.length || '-'}</span>
+            </span>
+            <span className="text-[10px] text-market-text-faint ml-auto">반경 2km</span>
           </div>
           {surroundingsLoading ? (
-            <div className="text-xs text-market-text-faint py-2">불러오는 중…</div>
+            <SectionLoading />
           ) : !surroundings || surroundings.subway.length === 0 ? (
-            <div className="text-xs text-market-text-faint py-1">반경 내 지하철역이 없습니다</div>
+            <EmptyCard>반경 2km 내 지하철역이 없습니다</EmptyCard>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 mb-4">
               {surroundings.subway.map((st, i) => (
-                <div key={i} className="flex items-center justify-between text-xs gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0">
+                <div
+                  key={i}
+                  className="bg-market-surface border border-market-border rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 hover:border-market-text-faint transition-colors"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
                     <span
-                      className="flex-shrink-0 text-[9px] font-bold text-white px-1.5 py-0.5 rounded-full whitespace-nowrap"
-                      style={{ background: st.lineColor }}
+                      className="flex-shrink-0 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
+                      style={{ backgroundColor: st.lineColor }}
+                      title={st.lineName}
                     >
-                      {st.lineName}
+                      {st.lineNumber}
                     </span>
-                    <span className="font-semibold text-market-text truncate">{st.stationName}</span>
+                    <span className="text-xs font-semibold text-market-text truncate">{st.stationName}</span>
                     {st.isTransfer && (
-                      <span className="flex-shrink-0 text-[9px] text-market-text-faint border border-market-border rounded px-1">환승</span>
+                      <span className="flex-shrink-0 text-[10px] text-deal-jeonse font-medium">(환승)</span>
                     )}
                   </div>
                   <WalkBadge minutes={st.walkingTime} distance={st.distance} />
@@ -601,23 +620,32 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
               ))}
             </div>
           )}
-        </div>
 
-        {/* 버스 정류장 (반경 600m) */}
-        <div className="px-5 py-4 border-b border-market-border">
-          <div className="flex items-baseline justify-between mb-2.5">
-            <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">버스 정류장</div>
-            <div className="text-[10px] text-market-text-faint">반경 600m</div>
+          {/* 버스 */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <span className="text-sm">🚌</span>
+            <span className="text-xs font-bold text-market-text">
+              버스 <span className="tabular-nums">{surroundings?.bus.length || '-'}</span>
+            </span>
+            <span className="text-[10px] text-market-text-faint ml-auto">반경 600m</span>
           </div>
           {surroundingsLoading ? (
-            <div className="text-xs text-market-text-faint py-2">불러오는 중…</div>
+            <SectionLoading />
           ) : !surroundings || surroundings.bus.length === 0 ? (
-            <div className="text-xs text-market-text-faint py-1">반경 내 정류장 정보가 없습니다</div>
+            <EmptyCard>반경 600m 내 정류장 정보가 없습니다</EmptyCard>
           ) : (
             <div className="space-y-1.5">
               {surroundings.bus.map((b, i) => (
-                <div key={i} className="flex items-center justify-between text-xs gap-2">
-                  <span className="font-medium text-market-text truncate">{b.stationName}</span>
+                <div
+                  key={i}
+                  className="bg-market-surface border border-market-border rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 hover:border-market-text-faint transition-colors"
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                      B
+                    </span>
+                    <span className="text-xs font-medium text-market-text truncate">{b.stationName}</span>
+                  </div>
                   <WalkBadge minutes={b.walkingTime} distance={b.distance} />
                 </div>
               ))}
@@ -625,46 +653,86 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
           )}
         </div>
 
-        {/* 학교 (반경 1.5km — 초/중/고) */}
+        {/* 학군 정보 */}
         <div className="px-5 py-4 border-b border-market-border">
-          <div className="flex items-baseline justify-between mb-2.5">
-            <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">학교</div>
+          <div className="flex items-baseline justify-between mb-3">
+            <div className="text-sm font-bold text-market-text">학군 정보</div>
             <div className="text-[10px] text-market-text-faint">반경 1.5km</div>
           </div>
+
+          {/* 초/중/고 탭 칩 */}
+          <div className="flex gap-1.5 mb-2.5">
+            {([
+              ['elementary', '초등학교', surroundings?.schools.elementary.length ?? 0],
+              ['middle', '중학교', surroundings?.schools.middle.length ?? 0],
+              ['high', '고등학교', surroundings?.schools.high.length ?? 0],
+            ] as Array<['elementary' | 'middle' | 'high', string, number]>).map(([value, label, count]) => (
+              <button
+                key={value}
+                onClick={() => setSchoolTab(value)}
+                className={`px-3 py-1.5 text-[11px] rounded-full font-medium transition-all tabular-nums ${
+                  schoolTab === value
+                    ? 'bg-market-text text-white font-semibold shadow-sm'
+                    : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
+                }`}
+              >
+                {label} ({count})
+              </button>
+            ))}
+          </div>
+
+          {/* 도보 거리 범례 */}
+          <div className="bg-market-surface-2 rounded-lg px-3 py-2 mb-2.5 flex gap-3 text-[10px] text-market-text-mute">
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />도보 5분 이내
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-amber-400 rounded-full" />10분 이내
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-orange-500 rounded-full" />그 이상
+            </span>
+          </div>
+
           {surroundingsLoading ? (
-            <div className="text-xs text-market-text-faint py-2">불러오는 중…</div>
-          ) : !surroundings ? (
-            <div className="text-xs text-market-text-faint py-1">학교 정보가 없습니다</div>
-          ) : (
-            <div className="space-y-3">
-              {([
-                ['초등학교', surroundings.schools.elementary],
-                ['중학교', surroundings.schools.middle],
-                ['고등학교', surroundings.schools.high],
-              ] as Array<[string, NearbySchool[]]>).map(([label, list]) => (
-                <div key={label}>
-                  <div className="text-[10px] font-semibold text-market-text-faint mb-1">{label}</div>
-                  {list.length === 0 ? (
-                    <div className="text-[11px] text-market-text-faint">반경 내 없음</div>
-                  ) : (
-                    <div className="space-y-1">
-                      {list.map((s, i) => (
-                        <div key={i} className="flex items-center justify-between text-xs gap-2">
-                          <div className="flex items-center gap-1.5 min-w-0">
-                            <span className="font-semibold text-market-text truncate">{s.schoolName}</span>
-                            <span className="flex-shrink-0 text-[9px] text-market-text-faint border border-market-border rounded px-1">
-                              {s.foundationType}
-                            </span>
-                          </div>
-                          <WalkBadge minutes={s.walkingTime} distance={s.distance} />
-                        </div>
-                      ))}
+            <SectionLoading />
+          ) : (() => {
+            const list: NearbySchool[] = surroundings?.schools[schoolTab] ?? [];
+            if (list.length === 0) {
+              return <EmptyCard>반경 1.5km 내 {schoolTab === 'elementary' ? '초등학교' : schoolTab === 'middle' ? '중학교' : '고등학교'}가 없습니다</EmptyCard>;
+            }
+            return (
+              <div className="space-y-1.5">
+                {list.map((s, i) => (
+                  <div key={i} className="bg-market-surface border border-market-border rounded-xl px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
+                            s.walkingTime <= 5 ? 'bg-emerald-500' : s.walkingTime <= 10 ? 'bg-amber-400' : 'bg-orange-500'
+                          }`}
+                        />
+                        <span className="text-xs font-semibold text-market-text truncate">{s.schoolName}</span>
+                        <span className="flex-shrink-0 text-[9px] text-market-text-faint border border-market-border rounded px-1">
+                          {s.foundationType}
+                        </span>
+                      </div>
+                      <span className="flex-shrink-0 text-[10px] text-market-text-mute tabular-nums">
+                        {s.distance < 1 ? `${Math.round(s.distance * 1000)}m` : `${s.distance}km`} / 도보 {s.walkingTime}분
+                      </span>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                    {i === 0 && (
+                      <div className="text-[10px] text-deal-jeonse font-semibold mt-1 ml-3">가장 가까움</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          <div className="bg-blue-50 rounded-lg px-3 py-2 mt-2.5 text-[10px] text-blue-800">
+            ✓ 전국초중등학교위치표준데이터 · 도시철도역사정보 · 버스정류장위치정보 (공공데이터) 기반
+          </div>
         </div>
 
         {/* 인근 단지 비교 (반경 2km 내 거리 순) */}
