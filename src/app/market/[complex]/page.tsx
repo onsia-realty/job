@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, TrendingUp, Users, Briefcase, Sparkles, Building2, Calendar, Layers } from 'lucide-react';
+import { formatKoreanPrice } from '@/lib/market/format';
 
 interface MonthlyAgg {
   ym: string;
@@ -55,18 +56,7 @@ interface ComplexMeta {
   grnd_flr_cnt: number | null;
 }
 
-const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
-
-// 12,550만원 → "12억 5,500" / 9,800만원 → "9,800만"
-function formatBigPrice(manwon: number): string {
-  const m = Math.round(manwon);
-  if (m >= 10000) {
-    const eok = Math.floor(m / 10000);
-    const rem = m % 10000;
-    return rem > 0 ? `${eok}억 ${rem.toLocaleString('ko-KR')}만` : `${eok}억`;
-  }
-  return `${m.toLocaleString('ko-KR')}만`;
-}
+const formatBigPrice = formatKoreanPrice;
 
 function KpiInline({ label, value, highlight = false }: { label: string; value: string; highlight?: boolean }) {
   return (
@@ -243,7 +233,7 @@ export default function ComplexDetailPage({
 
             {/* 하단: 보조 KPI 라인 */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 pt-4 border-t border-slate-800">
-              <KpiInline label="평당가" value={`${KRW(current.avg_pyeong_price)}만`} />
+              <KpiInline label="평당가" value={formatKoreanPrice(current.avg_pyeong_price)} />
               <KpiInline label={`${current.ym.slice(0, 7)} 거래`} value={`${current.trade_count}건`} />
               {data.lease_ratio != null
                 ? <KpiInline label="전세가율" value={`${data.lease_ratio}%`} highlight />
@@ -380,7 +370,7 @@ export default function ComplexDetailPage({
                   <tr key={i} className="border-b border-slate-800/50">
                     <td className="py-2 text-slate-300">{t.deal_date}</td>
                     <td className="py-2 text-right font-semibold text-red-300 tabular-nums">
-                      {t.price_manwon ? KRW(t.price_manwon) + '만' : '-'}
+                      {t.price_manwon ? formatKoreanPrice(t.price_manwon) : '-'}
                     </td>
                     <td className="py-2 text-right text-slate-400">{t.exclusive_area?.toFixed(1)}</td>
                     <td className="py-2 text-right text-slate-500">{t.floor ?? '-'}</td>
@@ -412,9 +402,9 @@ function UnitDistribution({ buckets }: { buckets: UnitBucket[] }) {
               <div className="absolute inset-0 px-2.5 flex items-center justify-between text-[11px]">
                 <span className="font-semibold text-white tabular-nums">{b.count}건</span>
                 <span className="text-slate-300 tabular-nums">
-                  평균 <strong className="text-white">{KRW(b.avg_price_manwon)}만</strong>
+                  평균 <strong className="text-white">{formatKoreanPrice(b.avg_price_manwon, 'compact')}</strong>
                   <span className="opacity-50 mx-1">·</span>
-                  평당 <strong className="text-slate-100">{KRW(b.avg_pyeong_price)}만</strong>
+                  평당 <strong className="text-slate-100">{formatKoreanPrice(b.avg_pyeong_price, 'compact')}</strong>
                 </span>
               </div>
             </div>

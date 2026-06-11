@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { formatKoreanPrice } from '@/lib/market/format';
 
 const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || '';
 
@@ -18,6 +19,18 @@ export interface MapComplexPoint {
   property_type: 'apt' | 'officetel' | 'villa' | 'store' | 'presale';
 }
 
+export type MarkerMode = 'complex' | 'dong' | 'gu';
+
+export interface MapAggregatePoint {
+  key: string;
+  name: string;
+  lat: number;
+  lng: number;
+  avg_price_manwon: number;
+  trade_count: number;
+  complex_count: number;
+}
+
 interface MarketMapProps {
   center: [number, number];
   zoom?: number;
@@ -26,6 +39,9 @@ interface MarketMapProps {
   selectedKey?: string | null;
   height?: string;
   dealType?: DealTypeFilter;
+  // 줌 레벨별 마커 모드 — gu(구 집계)/dong(동 집계)/complex(단지 개별)
+  markerMode?: MarkerMode;
+  aggregates?: MapAggregatePoint[];
   onCenterChanged?: (lat: number, lng: number) => void;  // 지도 idle 시 중심 콜백 (legacy)
   // viewport bounds 콜백 — idle 시 SW/NE 모서리 좌표 전달. bounds 기반 데이터 조회용.
   onBoundsChanged?: (sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number) => void;
@@ -78,6 +94,9 @@ interface NaverLatLngBounds {
 interface NaverMarker {
   setMap: (m: NaverMap | null) => void;
   getPosition: () => NaverLatLng;
+  setPosition: (latlng: NaverLatLng) => void;
+  setIcon: (icon: { content: string; size: object; anchor: object }) => void;
+  setZIndex: (z: number) => void;
 }
 
 // SDK는 페이지 레벨 <Script strategy="afterInteractive">로 로드.
@@ -107,14 +126,14 @@ function waitForNaverMaps(timeoutMs = 15000): Promise<void> {
   });
 }
 
-// 5분위 색상 (낮음→높음). 라이트 톤 — globals.css의 --color-quintile-N과 동일.
-const QUINTILE_COLORS = [
-  '#94a3b8',  // Q1 Slate-400  — 저가
-  '#0ea5e9',  // Q2 Sky-500
-  '#f59e0b',  // Q3 Amber-500
-  '#ea580c',  // Q4 Orange-600
-  '#be123c',  // Q5 Rose-700   — 고가
-];
+// 거래유형별 단색 hue 농도 램프 (Q1 저가 → Q5 고가).
+// 호갱노노식 — 색상(hue)은 거래유형이 결정, 가격 분위는 명도만 바꾼다.
+const DEAL_RAMPS: Record<DealTypeFilter, [string, string, string, string, string]> = {
+  trade:   ['#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239'], // rose
+  jeonse:  ['#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af'], // blue
+  wolse:   ['#34d399', '#10b981', '#059669', '#047857', '#065f46'], // emerald
+  presale: ['#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6'], // violet
+};
 
 function quintileOf(price: number, sortedPrices: number[]): number {
   if (sortedPrices.length === 0) return 2;
@@ -129,98 +148,154 @@ function quintileOf(price: number, sortedPrices: number[]): number {
   return Math.min(4, Math.floor(ratio * 5));
 }
 
-function formatPriceLabel(manwon: number): string {
-  if (manwon >= 10000) {
-    const eok = Math.floor(manwon / 10000);
-    const rest = manwon % 10000;
-    return rest > 0 ? `${eok}억${Math.round(rest / 100)}` : `${eok}억`;
-  }
-  return manwon.toLocaleString();
-}
+const MARKER_FONT = `'Plus Jakarta Sans', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 
+// 네이버페이 부동산식 마커 — 가격(크게) + 단지명(작게) 말풍선 + 하단 꼬리 + 거래건수 뱃지.
 function buildMarkerHTML(p: MapComplexPoint, quintile: number, isSelected: boolean, dealType: DealTypeFilter = 'trade'): string {
-  const priceLabel = formatPriceLabel(p.avg_price_manwon);
-  // 거래 유형에 따라 라벨 형식 변경
-  const label = dealType === 'wolse' && p.avg_monthly_manwon
-    ? `${priceLabel}/${p.avg_monthly_manwon}`     // 1억/100 (보증금/월세)
-    : dealType === 'jeonse'
-    ? `전 ${priceLabel}`                          // 전 9억
-    : dealType === 'presale'
-    ? `분 ${priceLabel}`                          // 분 12억 (분양권)
-    : priceLabel;                                 // 18.5억 (매매)
-  const growth = p.growth_pct;
-  const bg = QUINTILE_COLORS[quintile];
+  const bg = DEAL_RAMPS[dealType][quintile];
+  const priceLabel = formatKoreanPrice(p.avg_price_manwon, 'compact');
 
-  // 변동률 뱃지 (매매 탭만)
-  const growthBadge = (dealType === 'trade' && growth != null)
-    ? `<span style="margin-left:3px;font-size:9px;font-weight:700;opacity:0.92;">${growth > 0 ? '↑' : '↓'}${Math.abs(growth).toFixed(1)}%</span>`
+  // 거래 유형 표시: 매매는 가격만, 전세/분양권은 작은 prefix, 월세는 보증금/월세
+  const prefix = dealType === 'jeonse' ? '전' : dealType === 'presale' ? '분' : '';
+  const prefixHtml = prefix
+    ? `<span style="font-size:9px;font-weight:700;opacity:0.85;margin-right:2px;vertical-align:1px;">${prefix}</span>`
     : '';
+  const priceHtml = dealType === 'wolse' && p.avg_monthly_manwon
+    ? `${priceLabel}<span style="font-size:10px;font-weight:700;opacity:0.9;">/${p.avg_monthly_manwon}</span>`
+    : `${prefixHtml}${priceLabel}`;
 
-  // 단지명 9자 컷
+  // 단지명 6자 컷
   const nameRaw = p.complex_name || '';
-  const nameLabel = nameRaw.length > 9 ? `${nameRaw.slice(0, 8)}…` : nameRaw;
+  const nameLabel = nameRaw.length > 7 ? `${nameRaw.slice(0, 6)}…` : nameRaw;
 
-  // 오피스텔 식별 점
+  // 오피스텔 식별 점 (단지명 줄 앞)
   const typeDot = p.property_type === 'officetel'
-    ? `<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0.9;margin-right:4px;vertical-align:middle;box-shadow:0 0 0 1.5px ${bg};"></span>`
+    ? `<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.9);margin-right:3px;vertical-align:middle;"></span>`
     : '';
 
-  // 선택 상태에 따른 wrapper / 그림자
+  // 거래건수 뱃지 (우상단, 1건이면 숨김)
+  const countBadge = p.trade_count > 1
+    ? `<div style="
+        position:absolute;top:-7px;right:-7px;
+        min-width:17px;height:17px;padding:0 4px;border-radius:9px;
+        background:#ffffff;color:${bg};
+        font-size:9px;font-weight:800;line-height:17px;text-align:center;
+        box-shadow:0 1px 3px rgba(0,0,0,0.28);
+        font-variant-numeric:tabular-nums;
+      ">${p.trade_count > 99 ? '99+' : p.trade_count}</div>`
+    : '';
+
   const wrapperTransform = isSelected
-    ? `transform: translate(-50%, -100%) scale(1.18);`
-    : `transform: translate(-50%, -100%);`;
+    ? 'transform: translate(-50%, -100%) scale(1.12);'
+    : 'transform: translate(-50%, -100%);';
   const wrapperZ = isSelected ? 1000 : (p.property_type === 'officetel' ? 50 : 100);
-  const innerShadow = isSelected
-    ? `box-shadow: 0 0 0 3px #ffffff, 0 0 0 5px ${bg}, 0 14px 28px -6px rgba(0,0,0,0.32), 0 4px 8px rgba(0,0,0,0.15);`
-    : `box-shadow: 0 6px 16px -4px rgba(0,0,0,0.22), 0 2px 4px rgba(0,0,0,0.08);`;
+  const bubbleShadow = isSelected
+    ? `box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px ${bg}, 0 12px 24px -6px rgba(0,0,0,0.35);`
+    : 'box-shadow: 0 4px 12px -2px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.1);';
 
   return `
     <div style="
       ${wrapperTransform}
+      transform-origin: 50% 100%;
       z-index: ${wrapperZ};
       cursor: pointer;
-      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transition: transform 0.15s ease-out;
     ">
       <div style="
+        position: relative;
         background: ${bg};
         color: #ffffff;
-        padding: 6px 11px 5px;
-        border-radius: 12px 12px 12px 3px;
-        ${innerShadow}
-        border: 1.5px solid rgba(255,255,255,0.92);
-        font-family: 'Plus Jakarta Sans', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        padding: 4px 10px 3px;
+        border-radius: 8px;
+        ${bubbleShadow}
+        font-family: ${MARKER_FONT};
         text-align: center;
         font-variant-numeric: tabular-nums;
-        min-width: 56px;
-        max-width: 120px;
+        min-width: 48px;
+        max-width: 110px;
       ">
         <div style="
-          font-size: 13px;
+          font-size: 14px;
           font-weight: 800;
           line-height: 1.15;
           letter-spacing: -0.02em;
           white-space: nowrap;
-        ">
-          ${typeDot}${label}${growthBadge}
-        </div>
+        ">${priceHtml}</div>
         <div style="
           font-size: 9.5px;
           font-weight: 500;
-          line-height: 1.25;
-          opacity: 0.94;
-          margin-top: 1px;
+          line-height: 1.2;
+          color: rgba(255,255,255,0.88);
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        ">${typeDot}${nameLabel}</div>
+        ${countBadge}
+      </div>
+      <div style="
+        width: 0; height: 0; margin: 0 auto;
+        border-left: 5px solid transparent;
+        border-right: 5px solid transparent;
+        border-top: 6px solid ${bg};
+        filter: drop-shadow(0 2px 1px rgba(0,0,0,0.12));
+      "></div>
+    </div>
+  `;
+}
+
+// 집계 마커 — 구(원형) / 동(둥근 사각). 클릭 시 드릴다운 줌인.
+function buildAggMarkerHTML(a: MapAggregatePoint, level: 'gu' | 'dong', dealType: DealTypeFilter): string {
+  const accent = DEAL_RAMPS[dealType][2]; // 중간 농도
+  const priceLabel = formatKoreanPrice(a.avg_price_manwon, 'compact');
+
+  if (level === 'gu') {
+    return `
+      <div style="
+        transform: translate(-50%, -50%);
+        z-index: 80; cursor: pointer;
+        transition: transform 0.15s ease-out;
+      ">
+        <div style="
+          width: 68px; height: 68px; border-radius: 50%;
+          background: ${accent}e6;
+          border: 2px solid rgba(255,255,255,0.95);
+          box-shadow: 0 6px 16px -4px rgba(0,0,0,0.3);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          font-family: ${MARKER_FONT}; color: #fff; text-align: center;
+          font-variant-numeric: tabular-nums;
         ">
-          ${nameLabel}
+          <div style="font-size:10px;font-weight:600;line-height:1.2;opacity:0.92;max-width:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name}</div>
+          <div style="font-size:13px;font-weight:800;line-height:1.2;letter-spacing:-0.02em;">${priceLabel}</div>
+          <div style="font-size:9px;font-weight:600;opacity:0.85;line-height:1.2;">${a.trade_count.toLocaleString()}건</div>
         </div>
+      </div>
+    `;
+  }
+
+  // dong — pill형
+  return `
+    <div style="
+      transform: translate(-50%, -50%);
+      z-index: 80; cursor: pointer;
+      transition: transform 0.15s ease-out;
+    ">
+      <div style="
+        background: ${accent}f2;
+        border: 1.5px solid rgba(255,255,255,0.95);
+        border-radius: 14px;
+        padding: 4px 11px;
+        box-shadow: 0 4px 12px -2px rgba(0,0,0,0.28);
+        font-family: ${MARKER_FONT}; color: #fff; text-align: center;
+        font-variant-numeric: tabular-nums;
+      ">
+        <div style="font-size:9.5px;font-weight:600;line-height:1.2;opacity:0.92;white-space:nowrap;">${a.name} · ${a.complex_count}단지</div>
+        <div style="font-size:13px;font-weight:800;line-height:1.2;letter-spacing:-0.02em;white-space:nowrap;">${priceLabel}</div>
       </div>
     </div>
   `;
 }
 
-// 중개업소 보조 마커 — 시세 마커(5분위 색)와 시각 구분되는 작은 청록 배지.
+// 중개업소 보조 마커 — 시세 마커와 시각 구분되는 작은 청록 배지.
 function buildBrokerMarkerHTML(name: string): string {
   const label = name.length > 7 ? `${name.slice(0, 6)}…` : name;
   return `
@@ -248,6 +323,8 @@ export default function MarketMap({
   selectedKey = null,
   height = '100%',
   dealType = 'trade',
+  markerMode = 'complex',
+  aggregates = [],
   onCenterChanged,
   onBoundsChanged,
   onViewChanged,
@@ -255,7 +332,11 @@ export default function MarketMap({
 }: MarketMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<NaverMap | null>(null);
-  const markersRef = useRef<NaverMarker[]>([]);
+  // 단지 마커 diff 렌더용 — key별 마커 + 마지막 렌더 HTML/좌표 캐시 (변경분만 setIcon/setPosition)
+  const markersRef = useRef<Map<string, { marker: NaverMarker; html: string; lat: number; lng: number }>>(new Map());
+  const aggMarkersRef = useRef<NaverMarker[]>([]);
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
   const brokerMarkersRef = useRef<NaverMarker[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const onCenterChangedRef = useRef(onCenterChanged);
@@ -326,10 +407,14 @@ export default function MarketMap({
 
     return () => {
       cancelled = true;
-      markersRef.current.forEach((m) => {
-        try { m.setMap(null); } catch { /* SDK internal state, ignore */ }
+      markersRef.current.forEach(({ marker }) => {
+        try { marker.setMap(null); } catch { /* SDK internal state, ignore */ }
       });
-      markersRef.current = [];
+      markersRef.current = new Map();
+      aggMarkersRef.current.forEach((m) => {
+        try { m.setMap(null); } catch { /* ignore */ }
+      });
+      aggMarkersRef.current = [];
       brokerMarkersRef.current.forEach((m) => {
         try { m.setMap(null); } catch { /* ignore */ }
       });
@@ -353,43 +438,117 @@ export default function MarketMap({
     const naver = window.naver;
     if (!naver?.maps?.Marker || !naver.maps.LatLng) return;
 
-    markersRef.current.forEach((m) => {
-      try { m.setMap(null); } catch { /* ignore stale marker */ }
-    });
-    markersRef.current = [];
+    // 집계 모드에서는 단지 마커 전체 숨김
+    if (markerMode !== 'complex') {
+      markersRef.current.forEach(({ marker }) => {
+        try { marker.setMap(null); } catch { /* ignore */ }
+      });
+      markersRef.current = new Map();
+      return;
+    }
 
     // 5분위 계산용 정렬된 가격 배열 (binary search lookup)
     const sortedPrices = points.map((p) => p.avg_price_manwon).sort((a, b) => a - b);
+    const existing = markersRef.current;
+    const nextKeys = new Set(points.map((p) => p.complex_key));
 
-    const makeMarker = (p: MapComplexPoint, idx: number) => {
+    // 1) 사라진 단지 마커 제거
+    for (const [key, entry] of existing) {
+      if (!nextKeys.has(key)) {
+        try { entry.marker.setMap(null); } catch { /* ignore stale marker */ }
+        existing.delete(key);
+      }
+    }
+
+    // 2) 신규 생성 / 변경분만 setIcon (선택 변경 시 2개만 갱신됨)
+    for (const p of points) {
+      const q = quintileOf(p.avg_price_manwon, sortedPrices);
+      const isSelected = selectedKey === p.complex_key;
+      const html = buildMarkerHTML(p, q, isSelected, dealType);
+      const zIndex = isSelected ? 1000 : (p.property_type === 'officetel' ? 50 : 100);
+      const entry = existing.get(p.complex_key);
+
+      if (entry) {
+        try {
+          if (entry.html !== html) {
+            entry.marker.setIcon({
+              content: html,
+              size: new naver.maps.Size(0, 0),
+              anchor: new naver.maps.Point(0, 0),
+            });
+            entry.marker.setZIndex(zIndex);
+            entry.html = html;
+          }
+          if (entry.lat !== p.lat || entry.lng !== p.lng) {
+            entry.marker.setPosition(new naver.maps.LatLng(p.lat, p.lng));
+            entry.lat = p.lat;
+            entry.lng = p.lng;
+          }
+        } catch { /* ignore */ }
+        continue;
+      }
+
       try {
-        const jitterLat = p.lat + (idx % 7) * 0.0001;
-        const jitterLng = p.lng + (idx % 11) * 0.0001;
-        const q = quintileOf(p.avg_price_manwon, sortedPrices);
-        const isSelected = selectedKey === p.complex_key;
         const marker = new naver.maps.Marker({
-          position: new naver.maps.LatLng(jitterLat, jitterLng),
+          position: new naver.maps.LatLng(p.lat, p.lng),
           map: mapRef.current,
           icon: {
-            content: buildMarkerHTML(p, q, isSelected, dealType),
+            content: html,
             size: new naver.maps.Size(0, 0),
             anchor: new naver.maps.Point(0, 0),
           },
-          zIndex: isSelected ? 1000 : (p.property_type === 'officetel' ? 50 : 100),
+          zIndex,
         });
+        const key = p.complex_key;
         naver.maps.Event.addListener(marker, 'click', () => {
-          onSelect?.(p.complex_key);
+          onSelectRef.current?.(key);
         });
-        return marker;
-      } catch {
-        return null;
-      }
-    };
+        existing.set(key, { marker, html, lat: p.lat, lng: p.lng });
+      } catch { /* ignore */ }
+    }
+  }, [points, selectedKey, dealType, markerMode]);
 
-    markersRef.current = points
-      .map(makeMarker)
+  // 집계 마커 (구/동) — 수가 적어 전량 재생성. 클릭 시 드릴다운 줌인.
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const naver = window.naver;
+    if (!naver?.maps?.Marker || !naver.maps.LatLng) return;
+
+    aggMarkersRef.current.forEach((m) => {
+      try { m.setMap(null); } catch { /* ignore */ }
+    });
+    aggMarkersRef.current = [];
+
+    if (markerMode === 'complex' || aggregates.length === 0) return;
+    const level = markerMode;
+
+    aggMarkersRef.current = aggregates
+      .map((a) => {
+        try {
+          const marker = new naver.maps.Marker({
+            position: new naver.maps.LatLng(a.lat, a.lng),
+            map: mapRef.current,
+            icon: {
+              content: buildAggMarkerHTML(a, level, dealType),
+              size: new naver.maps.Size(0, 0),
+              anchor: new naver.maps.Point(0, 0),
+            },
+            zIndex: 80,
+          });
+          naver.maps.Event.addListener(marker, 'click', () => {
+            const map = mapRef.current;
+            if (!map || !window.naver?.maps) return;
+            // 구 → 동(12), 동 → 단지(14) 드릴다운
+            map.setCenter(new window.naver.maps.LatLng(a.lat, a.lng));
+            map.setZoom(level === 'gu' ? 12 : 14);
+          });
+          return marker;
+        } catch {
+          return null;
+        }
+      })
       .filter((m): m is NaverMarker => m !== null);
-  }, [points, onSelect, selectedKey, dealType]);
+  }, [aggregates, markerMode, dealType]);
 
   // 중개업소 보조 마커 레이어 (토글 on일 때만 brokers 전달됨)
   useEffect(() => {
@@ -443,7 +602,7 @@ export default function MarketMap({
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
-      {points.length === 0 && (
+      {markerMode === 'complex' && points.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="bg-white/95 text-market-text-mute text-sm px-4 py-2.5 rounded-xl border border-market-border shadow-lg font-jakarta">
             이 지역의 최근 거래 데이터가 아직 수집되지 않았습니다

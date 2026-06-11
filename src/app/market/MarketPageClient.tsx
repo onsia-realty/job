@@ -5,16 +5,26 @@ import dynamic from 'next/dynamic';
 import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MapPin, TrendingUp, Building2, Filter, Store, Briefcase, X } from 'lucide-react';
-import type { MapComplexPoint, DealTypeFilter } from '@/components/market/MarketMap.client';
-import MarketDetailPanel from '@/components/market/MarketDetailPanel';
-import MarketGraphPanel from '@/components/market/MarketGraphPanel';
+import { ArrowLeft, MapPin, TrendingUp, Building2, Filter, Store, Briefcase, X, SlidersHorizontal } from 'lucide-react';
+import type { MapComplexPoint, DealTypeFilter, MarkerMode } from '@/components/market/MarketMap.client';
+import ComplexListPanel from '@/components/market/ComplexListPanel';
+import ComplexDetailView from '@/components/market/ComplexDetailView';
+import BottomSheet, { type SheetSnap } from '@/components/market/BottomSheet';
+import MarketFilterSheet from '@/components/market/MarketFilterSheet';
 import MarketSearch, { type SearchResult } from '@/components/market/MarketSearch';
-import { useComplexDetail, useBrokersNearby, useJobsNearby } from '@/lib/market/queries';
+import { useBrokersNearby, useJobsNearby, useGuAggregates } from '@/lib/market/queries';
+import { aggregateByDong } from '@/lib/market/aggregateMarkers';
+import { nearestLawdCd } from '@/lib/market/regions';
+import { formatKoreanPrice } from '@/lib/market/format';
+import {
+  type PropertyTypeFilter, type AreaBand, type AgeBand, type HouseholdBand,
+  AREA_OPTIONS, AGE_OPTIONS, HOUSEHOLD_OPTIONS,
+  matchAreaBand, matchAgeBand, matchHouseholdBand, validBand,
+} from '@/lib/market/filters';
 
 const NAVER_CLIENT_ID = process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID || '';
 
-// SSR 금지 (Leaflet은 window 의존)
+// SSR 금지 (네이버 지도 SDK는 window 의존)
 const MarketMap = dynamic(() => import('@/components/market/MarketMap.client'), {
   ssr: false,
   loading: () => (
@@ -28,68 +38,11 @@ const MarketMap = dynamic(() => import('@/components/market/MarketMap.client'), 
 const DEFAULT_CENTER: [number, number] = [37.5172, 127.0473];
 const DEFAULT_LAWD_CD = '11680';
 
-type PropertyTypeFilter = 'apt' | 'officetel';
-type AreaBand = 'all' | 'under60' | '60to85' | '85to110' | 'over110';
-type AgeBand = 'all' | 'new5' | 'mid10' | 'mid20' | 'old20';
-type HouseholdBand = 'all' | 'over50' | 'over300' | 'over1000';
-
-const AREA_OPTIONS: Array<{ value: AreaBand; label: string }> = [
-  { value: 'all', label: '전체' },
-  { value: 'under60', label: '~60㎡ (소형)' },
-  { value: '60to85', label: '60~85㎡ (중소형)' },
-  { value: '85to110', label: '85~110㎡ (중형)' },
-  { value: 'over110', label: '110㎡~ (대형)' },
-];
-const AGE_OPTIONS: Array<{ value: AgeBand; label: string }> = [
-  { value: 'all', label: '전체' },
-  { value: 'new5', label: '신축 (5년 이내)' },
-  { value: 'mid10', label: '준신축 (5~10년)' },
-  { value: 'mid20', label: '중고 (10~20년)' },
-  { value: 'old20', label: '노후 (20년~)' },
-];
-const HOUSEHOLD_OPTIONS: Array<{ value: HouseholdBand; label: string }> = [
-  { value: 'all', label: '전체' },
-  { value: 'over50', label: '50세대 이상' },
-  { value: 'over300', label: '300세대 이상' },
-  { value: 'over1000', label: '1000세대 이상' },
-];
-
-const CURRENT_YEAR = new Date().getFullYear();
-function matchAgeBand(buildYear: number | null | undefined, band: AgeBand): boolean {
-  if (band === 'all') return true;
-  if (buildYear == null) return false;
-  const age = CURRENT_YEAR - buildYear;
-  if (band === 'new5') return age <= 5;
-  if (band === 'mid10') return age > 5 && age <= 10;
-  if (band === 'mid20') return age > 10 && age <= 20;
-  if (band === 'old20') return age > 20;
-  return true;
-}
-function matchAreaBand(area: number | null | undefined, band: AreaBand): boolean {
-  if (band === 'all') return true;
-  if (area == null) return false;
-  if (band === 'under60') return area < 60;
-  if (band === '60to85') return area >= 60 && area < 85;
-  if (band === '85to110') return area >= 85 && area < 110;
-  if (band === 'over110') return area >= 110;
-  return true;
-}
-function matchHouseholdBand(hhld: number | null | undefined, band: HouseholdBand): boolean {
-  if (band === 'all') return true;
-  if (hhld == null) return false;
-  if (band === 'over50') return hhld >= 50;
-  if (band === 'over300') return hhld >= 300;
-  if (band === 'over1000') return hhld >= 1000;
-  return true;
-}
-
-// URL 쿼리값을 허용된 옵션으로 검증 (잘못된 값은 fallback)
-function validBand<T extends string>(
-  v: string | null,
-  options: ReadonlyArray<{ value: T }>,
-  fallback: T,
-): T {
-  return options.some((o) => o.value === v) ? (v as T) : fallback;
+// 줌 레벨 → 마커 모드 (구 집계 / 동 집계 / 단지 개별)
+function modeForZoom(z: number): MarkerMode {
+  if (z <= 11) return 'gu';
+  if (z <= 13) return 'dong';
+  return 'complex';
 }
 
 export default function MarketPageClient() {
@@ -102,13 +55,14 @@ export default function MarketPageClient() {
     const lng = parseFloat(searchParams.get('lng') || '');
     return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : DEFAULT_CENTER;
   });
-  const [zoom] = useState<number>(() => {
+  const [zoom, setZoom] = useState<number>(() => {
     const z = parseFloat(searchParams.get('zoom') || '');
-    return Number.isFinite(z) && z >= 8 && z <= 19 ? z : 14;
+    const saved = Number.isFinite(z) && z >= 8 && z <= 19 ? z : 14;
+    // 단지 딥링크(sel)는 단지 마커가 보이는 줌(≥14)으로 보정
+    return searchParams.get('sel') ? Math.max(14, saved) : saved;
   });
   const [lawd_cd, setLawdCd] = useState(() => searchParams.get('region') || DEFAULT_LAWD_CD);
-  // 지도 viewport 범위 (idle 시 갱신). 셋되면 bounds 모드, null이면 lawd_cd 모드.
-  // 직렬화 문자열로 보관해 useEffect 트리거가 안정적이도록.
+  // 지도 viewport 범위 (idle 시 갱신). 직렬화 문자열로 보관해 useEffect 트리거가 안정적이도록.
   const [boundsStr, setBoundsStr] = useState<string | null>(null);
   const [property_type, setPropertyType] = useState<PropertyTypeFilter>(() =>
     searchParams.get('type') === 'officetel' ? 'officetel' : 'apt',
@@ -127,15 +81,35 @@ export default function MarketPageClient() {
     validBand(searchParams.get('hhld'), HOUSEHOLD_OPTIONS, 'all'),
   );
   const [points, setPoints] = useState<MapComplexPoint[]>([]);
+  // complex_key → 법정동명 (동 집계 마커용 — 거래 데이터에서 수집)
+  const [dongByKey, setDongByKey] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(() => searchParams.get('sel') || null);
 
-  // ── 차별화 레이어 토글 (중개업소/구인공고) — 네이버에 없는 우리 고유 무기 ──
+  // 줌 레벨별 마커 모드 (idle 콜백에서 갱신)
+  const [markerMode, setMarkerMode] = useState<MarkerMode>(() => modeForZoom(zoom));
+
+  // 모바일 바텀시트 / 필터시트
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // ── 차별화 레이어 토글 (중개업소/구인공고) ──
   const [showBrokers, setShowBrokers] = useState(false);
   const [showJobs, setShowJobs] = useState(false);
 
   const { data: brokerRows = [] } = useBrokersNearby(lawd_cd, showBrokers);
   const { data: jobs = [] } = useJobsNearby(lawd_cd, showJobs);
+
+  // 구(시군구) 집계 — 줌아웃 시에만 fetch (React Query 1시간 캐시)
+  const { data: guAggregates = [] } = useGuAggregates(property_type, markerMode === 'gu');
+
+  // 동(洞) 집계 — viewport 단지 클라이언트 집계 (bounds 캡 500단지 기준)
+  const dongAggregates = useMemo(
+    () => (markerMode === 'dong' ? aggregateByDong(points, dongByKey) : []),
+    [markerMode, points, dongByKey],
+  );
+
+  const aggregates = markerMode === 'gu' ? guAggregates : markerMode === 'dong' ? dongAggregates : [];
 
   // 중개업소 → 지도 마커 (좌표 보유분만)
   const brokerMarkers = useMemo(
@@ -173,27 +147,33 @@ export default function MarketPageClient() {
     }, 400);
   }, [dealType, property_type, lawd_cd, areaBand, ageBand, householdBand, selectedKey, router]);
 
-  // 필터/선택 변경 시 URL 갱신 (writeUrl 식별자가 deps 변화에 따라 바뀜)
   useEffect(() => {
     writeUrl();
   }, [writeUrl]);
 
-  // 지도 idle 시 현재 중심/줌을 URL에 반영 (state 미변경 → 맵 되먹임 없음)
+  // 지도 idle 시: URL 반영 + 마커 모드 갱신 + lawd_cd 자동 매핑 (지역 칩 대체)
   const handleMapViewChanged = useCallback(
     (lat: number, lng: number, z: number) => {
       mapViewRef.current = { lat, lng, zoom: z };
+      setMarkerMode((prev) => {
+        const next = modeForZoom(z);
+        return prev === next ? prev : next;
+      });
+      setLawdCd((prev) => {
+        const next = nearestLawdCd(lat, lng);
+        return prev === next ? prev : next;
+      });
       writeUrl();
     },
     [writeUrl],
   );
 
   useEffect(() => {
+    // 구 집계 모드에서는 bounds 거래 조회 생략 (서버 집계 API만 사용 — 네트워크 절약)
+    if (markerMode === 'gu') return;
     loadData(lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand]);
-
-  // 단지 선택 시 상세 — React Query (캐시/중복제거/리페치)
-  const { data: selectedDetail = null, isFetching: detailLoading } = useComplexDetail(selectedKey);
+  }, [lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand, markerMode]);
 
   const loadData = async (
     lc: string,
@@ -212,6 +192,7 @@ export default function MarketPageClient() {
       type Tx = {
         complex_key: string;
         complex_name: string;
+        dong: string | null;
         price_manwon: number;
         deposit_manwon: number;
         monthly_manwon: number;
@@ -232,24 +213,8 @@ export default function MarketPageClient() {
         }
       }
 
-      // bounds 모드 결과 비어있거나 bounds 모드 자체를 안 거친 경우(초기/RegionPicker) → lawd_cd 모드 fallback.
-      // 좌표 백필 진행 중 임시 안전망. 백필 완료되면 bounds 모드만으로 충분해짐.
-      if (txs.length === 0) {
-        // viewport 중심으로 가장 가까운 MVP_REGION 매핑 (bStr 있을 때만), 없으면 state lawd_cd 사용
-        let fallbackLc = lc;
-        if (bStr) {
-          const parts = bStr.split(',').map(Number);
-          if (parts.length === 4 && parts.every(Number.isFinite)) {
-            const cLat = (parts[0] + parts[2]) / 2;
-            const cLng = (parts[1] + parts[3]) / 2;
-            let minDist = Infinity;
-            for (const r of MVP_REGIONS) {
-              const d = (r.lat - cLat) ** 2 + (r.lng - cLng) ** 2;
-              if (d < minDist) { minDist = d; fallbackLc = r.lawd_cd; }
-            }
-          }
-        }
-
+      // bounds 결과 없거나 bounds 미설정(초기 마운트) → lawd_cd 모드 안전망
+      if (txs.length === 0 && !bStr) {
         // 실거래 1~2개월 지연 고려, 최근 3개월 순차 시도
         const now = new Date();
         const candidateYms = [1, 2, 3].map((lag) => {
@@ -257,7 +222,7 @@ export default function MarketPageClient() {
           return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
         });
         for (const ym of candidateYms) {
-          const res = await fetch(`/api/market/transactions?lawd_cd=${fallbackLc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
+          const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
           if (!res.ok) continue;
           const data = await res.json();
           const arr = (data.transactions || []) as Tx[];
@@ -271,27 +236,23 @@ export default function MarketPageClient() {
 
       // 1차 필터: 거래 유형(매매/전세/월세/분양권) + 평형 + 연식
       const filtered = txs.filter((t) => {
-        // dealType 분리 — presale은 price_manwon에 분양권 거래액
         if (dt === 'trade' && !(t.price_manwon || 0)) return false;
         if (dt === 'presale' && !(t.price_manwon || 0)) return false;
         if (dt === 'jeonse' && !((t.monthly_manwon || 0) === 0 && (t.deposit_manwon || 0) > 0)) return false;
         if (dt === 'wolse' && !(t.monthly_manwon || 0)) return false;
-        // 평형 band
         if (!matchAreaBand(t.exclusive_area, ab)) return false;
-        // 연식 band — build_year는 거래 raw 또는 complex_coords에서
         const buildYear = t.build_year ?? complex_coords[t.complex_key]?.build_year;
         if (!matchAgeBand(buildYear, ag)) return false;
         return true;
       });
 
       // 단지별 평균 집계 — dealType에 따라 다른 필드 사용
-      const map = new Map<string, { name: string; deposits: number[]; monthlies: number[] }>();
+      const map = new Map<string, { name: string; dong: string | null; deposits: number[]; monthlies: number[] }>();
       filtered.forEach((t) => {
-        // trade/presale = price_manwon, jeonse/wolse = deposit_manwon
         const mainPrice = (dt === 'trade' || dt === 'presale') ? t.price_manwon : t.deposit_manwon;
         if (!mainPrice) return;
         if (!map.has(t.complex_key)) {
-          map.set(t.complex_key, { name: t.complex_name, deposits: [], monthlies: [] });
+          map.set(t.complex_key, { name: t.complex_name, dong: t.dong ?? null, deposits: [], monthlies: [] });
         }
         const entry = map.get(t.complex_key)!;
         entry.deposits.push(mainPrice);
@@ -300,30 +261,36 @@ export default function MarketPageClient() {
         }
       });
 
-      // 좌표: complex_coords 우선 사용, 없으면 jitter 폴백 (백필 완료 전까지)
-      // 세대수 필터는 단지 단위에 적용 — 집계 후 단지별로 필터
+      // 좌표: complexes 마스터(백필 완료) 좌표만 사용 — 좌표 없는 단지는 마커 제외.
+      // 세대수 필터는 단지 단위에 적용
+      const dongMap: Record<string, string | null> = {};
       const pts: MapComplexPoint[] = Array.from(map.entries())
-        .filter(([key]) => matchHouseholdBand(complex_coords[key]?.hhld_cnt, hh))
-        .map(([key, v], i) => {
-        const real = complex_coords[key];
-        const hasReal = real && real.lat != null && real.lng != null;
-        const avgDeposit = Math.round(v.deposits.reduce((a, b) => a + b, 0) / v.deposits.length);
-        const avgMonthly = v.monthlies.length > 0
-          ? Math.round(v.monthlies.reduce((a, b) => a + b, 0) / v.monthlies.length)
-          : undefined;
-        return {
-          complex_key: key,
-          complex_name: v.name,
-          lat: hasReal ? real.lat! : center[0] + ((i % 9) - 4) * 0.003,
-          lng: hasReal ? real.lng! : center[1] + ((Math.floor(i / 9) % 9) - 4) * 0.003,
-          avg_price_manwon: avgDeposit,
-          avg_monthly_manwon: avgMonthly,
-          trade_count: v.deposits.length,
-          property_type: pt,
-        };
-      });
+        .filter(([key]) => {
+          const real = complex_coords[key];
+          if (!real || real.lat == null || real.lng == null) return false;
+          return matchHouseholdBand(real.hhld_cnt, hh);
+        })
+        .map(([key, v]) => {
+          const real = complex_coords[key];
+          dongMap[key] = v.dong;
+          const avgDeposit = Math.round(v.deposits.reduce((a, b) => a + b, 0) / v.deposits.length);
+          const avgMonthly = v.monthlies.length > 0
+            ? Math.round(v.monthlies.reduce((a, b) => a + b, 0) / v.monthlies.length)
+            : undefined;
+          return {
+            complex_key: key,
+            complex_name: v.name,
+            lat: real.lat!,
+            lng: real.lng!,
+            avg_price_manwon: avgDeposit,
+            avg_monthly_manwon: avgMonthly,
+            trade_count: v.deposits.length,
+            property_type: pt,
+          };
+        });
 
       setPoints(pts);
+      setDongByKey(dongMap);
     } catch (e) {
       console.error('[market] load error:', e);
       setPoints([]);
@@ -334,16 +301,29 @@ export default function MarketPageClient() {
 
   const selectedPoint = selectedKey ? points.find((p) => p.complex_key === selectedKey) : undefined;
 
-  // 검색 결과 클릭 시 — 지도 이동 + 단지 선택. bounds 는 지도 idle에서 자동 갱신.
+  // 단지 선택 (마커/리스트/검색) — 모바일은 시트 half로 올림
+  const handleSelect = useCallback((key: string) => {
+    setSelectedKey(key);
+    setSheetSnap((s) => (s === 'peek' ? 'half' : s));
+  }, []);
+
+  // 검색 결과 클릭 — 지도 이동 + 단지 선택. 단지 마커가 보이는 줌으로 보정.
   const handleSearchSelect = useCallback((r: SearchResult) => {
     if (r.lat == null || r.lng == null) return;
     mapViewRef.current = { ...mapViewRef.current, lat: r.lat, lng: r.lng };
     setCenter([r.lat, r.lng]);
-    setSelectedKey(r.complex_key);
-  }, []);
+    setZoom((z) => Math.max(15, z));
+    handleSelect(r.complex_key);
+  }, [handleSelect]);
+
+  // 리스트 행 클릭 — 선택 + 지도 이동
+  const handleListSelect = useCallback((key: string, lat: number, lng: number) => {
+    mapViewRef.current = { ...mapViewRef.current, lat, lng };
+    setCenter([lat, lng]);
+    handleSelect(key);
+  }, [handleSelect]);
 
   // 지도 idle 시 viewport bounds 갱신 → loadData(bounds 모드)로 자동 전환.
-  // 같은 bounds 재발화는 boundsStr 비교로 자체 차단.
   const handleMapBoundsChanged = useCallback(
     (sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number) => {
       const next = `${sw_lat.toFixed(6)},${sw_lng.toFixed(6)},${ne_lat.toFixed(6)},${ne_lng.toFixed(6)}`;
@@ -352,17 +332,40 @@ export default function MarketPageClient() {
     [],
   );
 
+  const activeFilterCount =
+    (areaBand !== 'all' ? 1 : 0) + (ageBand !== 'all' ? 1 : 0) + (householdBand !== 'all' ? 1 : 0);
+
+  // 사이드 패널 내용 (데스크탑 좌측 / 모바일 바텀시트 공용)
+  const sidePanelContent = selectedKey ? (
+    <ComplexDetailView
+      complexKey={selectedKey}
+      point={selectedPoint}
+      dealType={dealType}
+      onClose={() => setSelectedKey(null)}
+    />
+  ) : (
+    <ComplexListPanel
+      points={points}
+      dealType={dealType}
+      loading={loading}
+      markerMode={markerMode}
+      selectedKey={selectedKey}
+      onSelect={handleListSelect}
+    />
+  );
+
   return (
     <div className="relative h-screen flex flex-col bg-market-bg font-jakarta">
       {NAVER_CLIENT_ID && (
+        // ⚠️ 파라미터는 ncpKeyId — ncpClientId는 deprecated로 silent fail (라이브 검증 완료 파라미터)
         <Script
-          src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${NAVER_CLIENT_ID}`}
+          src={`https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=${NAVER_CLIENT_ID}`}
           strategy="afterInteractive"
         />
       )}
-      {/* 헤더 — 라이트 톤 */}
+      {/* 헤더 */}
       <header className="bg-market-surface/95 backdrop-blur border-b border-market-border sticky top-0 z-20">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="px-4 py-3 flex items-center gap-3">
           <Link
             href="/"
             className="p-2 rounded-lg hover:bg-market-surface-2 text-market-text-mute transition-colors"
@@ -374,7 +377,7 @@ export default function MarketPageClient() {
             <MapPin className="w-4 h-4 text-deal-trade" />
             시세·거래량 지도
           </h1>
-          <div className="flex-1 flex justify-center px-4 max-w-md mx-auto">
+          <div className="flex-1 flex justify-center px-2 max-w-md mx-auto">
             <MarketSearch onSelect={handleSearchSelect} />
           </div>
           <Link
@@ -387,10 +390,10 @@ export default function MarketPageClient() {
         </div>
       </header>
 
-      {/* 필터바 — 라이트 톤 칩 */}
+      {/* 필터바 — 1줄 (지역 칩 제거: 지도 이동 기반) */}
       <div className="bg-market-surface border-b border-market-border">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
-          <Filter className="w-3.5 h-3.5 text-market-text-faint flex-shrink-0" />
+        <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <Filter className="w-3.5 h-3.5 text-market-text-faint flex-shrink-0 hidden md:block" />
           {/* 거래 유형 */}
           <div className="flex gap-1 flex-shrink-0">
             <FilterChip active={dealType === 'trade'} activeColor="bg-deal-trade" onClick={() => setDealType('trade')}>매매</FilterChip>
@@ -398,60 +401,46 @@ export default function MarketPageClient() {
             <FilterChip active={dealType === 'wolse'} activeColor="bg-deal-wolse" onClick={() => setDealType('wolse')}>월세</FilterChip>
             <FilterChip active={dealType === 'presale'} activeColor="bg-[#7c3aed]" onClick={() => setDealType('presale')}>분양권</FilterChip>
           </div>
-          <div className="mx-1 h-4 w-px bg-market-border" />
-          {/* 매물 유형 */}
-          <div className="flex gap-1 flex-shrink-0">
-            <FilterChip active={property_type === 'apt'} activeColor="bg-market-text" onClick={() => setPropertyType('apt')}>아파트</FilterChip>
-            <FilterChip active={property_type === 'officetel'} activeColor="bg-market-text" onClick={() => setPropertyType('officetel')}>오피스텔</FilterChip>
-          </div>
-          <div className="mx-1 h-4 w-px bg-market-border" />
-          <RegionPicker current={lawd_cd} onSelect={(cd, lat, lng) => {
-            mapViewRef.current = { ...mapViewRef.current, lat, lng };
-            setLawdCd(cd);
-            setCenter([lat, lng]);
-            // bounds 리셋 → 지도가 setCenter 후 새 idle에서 새 bounds 발화
-            setBoundsStr(null);
-          }} />
-          <div className="ml-auto text-[11px] text-market-text-faint flex items-center gap-1 flex-shrink-0 tabular-nums">
-            <Building2 className="w-3 h-3" />
-            {loading ? '로딩' : `${points.length}개 단지`}
-          </div>
-        </div>
 
-        {/* 2번째 row — 세부 필터 popover (평형/연식/세대수) */}
-        <div className="max-w-7xl mx-auto px-4 pb-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide border-t border-market-border/60 pt-2">
-          <FilterPopover<AreaBand>
-            label="평형"
-            options={AREA_OPTIONS}
-            value={areaBand}
-            onChange={setAreaBand}
-          />
-          <FilterPopover<AgeBand>
-            label="연식"
-            options={AGE_OPTIONS}
-            value={ageBand}
-            onChange={setAgeBand}
-          />
-          <FilterPopover<HouseholdBand>
-            label="세대수"
-            options={HOUSEHOLD_OPTIONS}
-            value={householdBand}
-            onChange={setHouseholdBand}
-          />
-          {(areaBand !== 'all' || ageBand !== 'all' || householdBand !== 'all') && (
-            <button
-              onClick={() => {
-                setAreaBand('all');
-                setAgeBand('all');
-                setHouseholdBand('all');
-              }}
-              className="text-[11px] text-market-text-mute hover:text-market-text px-2 py-1 underline underline-offset-2 decoration-dotted"
-            >
-              필터 초기화
-            </button>
-          )}
+          {/* 모바일: 통합 필터 버튼 */}
+          <button
+            onClick={() => setFilterSheetOpen(true)}
+            className={`md:hidden flex items-center gap-1 px-3 py-1 text-xs rounded-full font-medium flex-shrink-0 transition-all ${
+              activeFilterCount > 0 || property_type !== 'apt'
+                ? 'bg-market-text text-white font-semibold shadow-sm'
+                : 'bg-market-surface-2 text-market-text-mute'
+            }`}
+          >
+            <SlidersHorizontal className="w-3 h-3" />
+            필터{activeFilterCount > 0 ? ` ${activeFilterCount}` : ''}
+          </button>
 
-          {/* 차별화 레이어 토글 — 중개업소 / 구인공고 */}
+          {/* 데스크탑: 매물유형 + 세부필터 popover */}
+          <div className="hidden md:flex items-center gap-2">
+            <div className="mx-1 h-4 w-px bg-market-border" />
+            <div className="flex gap-1 flex-shrink-0">
+              <FilterChip active={property_type === 'apt'} activeColor="bg-market-text" onClick={() => setPropertyType('apt')}>아파트</FilterChip>
+              <FilterChip active={property_type === 'officetel'} activeColor="bg-market-text" onClick={() => setPropertyType('officetel')}>오피스텔</FilterChip>
+            </div>
+            <div className="mx-1 h-4 w-px bg-market-border" />
+            <FilterPopover<AreaBand> label="평형" options={AREA_OPTIONS} value={areaBand} onChange={setAreaBand} />
+            <FilterPopover<AgeBand> label="연식" options={AGE_OPTIONS} value={ageBand} onChange={setAgeBand} />
+            <FilterPopover<HouseholdBand> label="세대수" options={HOUSEHOLD_OPTIONS} value={householdBand} onChange={setHouseholdBand} />
+            {activeFilterCount > 0 && (
+              <button
+                onClick={() => {
+                  setAreaBand('all');
+                  setAgeBand('all');
+                  setHouseholdBand('all');
+                }}
+                className="text-[11px] text-market-text-mute hover:text-market-text px-2 py-1 underline underline-offset-2 decoration-dotted whitespace-nowrap"
+              >
+                초기화
+              </button>
+            )}
+          </div>
+
+          {/* 우측: 레이어 토글 + 단지 수 */}
           <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
             <LayerToggle
               active={showBrokers}
@@ -467,40 +456,22 @@ export default function MarketPageClient() {
               icon={<Briefcase className="w-3 h-3" />}
               activeClass="bg-deal-trade text-white"
             >
-              구인공고{showJobs && jobs.length > 0 ? ` ${jobs.length}` : ''}
+              구인{showJobs && jobs.length > 0 ? ` ${jobs.length}` : ''}
             </LayerToggle>
+            <div className="hidden md:flex text-[11px] text-market-text-faint items-center gap-1 tabular-nums pl-1">
+              <Building2 className="w-3 h-3" />
+              {loading ? '로딩' : `${points.length}개 단지`}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 메인 영역: 데스크탑 사이드바×2 + 지도 / 모바일 지도 + bottom sheet */}
+      {/* 메인 영역: 데스크탑 좌측 패널 1개 + 지도 최대화 / 모바일 지도 + 바텀시트 */}
       <div className="flex-1 flex relative overflow-hidden">
-        {/* 데스크탑 패널 A — 단지 정보 / KPI / 최근 거래 */}
-        {selectedKey && (
-          <aside className="hidden md:flex md:w-[380px] md:flex-col md:border-r md:border-market-border md:bg-market-surface md:shadow-sm flex-shrink-0 overflow-hidden">
-            <MarketDetailPanel
-              complexKey={selectedKey}
-              point={selectedPoint}
-              detail={selectedDetail}
-              loading={detailLoading}
-              dealType={dealType}
-              onClose={() => setSelectedKey(null)}
-            />
-          </aside>
-        )}
-
-        {/* 데스크탑 패널 B — 큰 그래프 전용 */}
-        {selectedKey && (
-          <aside className="hidden lg:flex lg:w-[440px] lg:flex-col lg:border-r lg:border-market-border lg:bg-market-surface lg:shadow-sm flex-shrink-0 overflow-hidden">
-            <MarketGraphPanel
-              point={selectedPoint}
-              detail={selectedDetail}
-              loading={detailLoading}
-              dealType={dealType}
-              complexKey={selectedKey}
-            />
-          </aside>
-        )}
+        {/* 데스크탑 좌측 통합 패널 — 미선택: 단지 리스트 / 선택: 상세+차트 */}
+        <aside className="hidden md:flex md:w-[400px] md:flex-col md:border-r md:border-market-border md:bg-market-surface md:shadow-sm flex-shrink-0 overflow-hidden">
+          {sidePanelContent}
+        </aside>
 
         {/* 지도 영역 */}
         <div className="flex-1 relative min-w-0">
@@ -508,9 +479,11 @@ export default function MarketPageClient() {
             center={center}
             zoom={zoom}
             points={points}
-            onSelect={setSelectedKey}
+            onSelect={handleSelect}
             selectedKey={selectedKey}
             dealType={dealType}
+            markerMode={markerMode}
+            aggregates={aggregates}
             onBoundsChanged={handleMapBoundsChanged}
             onViewChanged={handleMapViewChanged}
             brokers={showBrokers ? brokerMarkers : undefined}
@@ -557,20 +530,46 @@ export default function MarketPageClient() {
           )}
         </div>
 
-        {/* 모바일 bottom sheet — 단지 정보만 (그래프는 데스크탑 전용 v1.0) */}
-        {selectedKey && (
-          <div className="md:hidden absolute bottom-0 left-0 right-0 max-h-[75vh] bg-market-surface rounded-t-2xl shadow-2xl border-t border-market-border z-30 flex flex-col overflow-hidden">
-            <MarketDetailPanel
-              complexKey={selectedKey}
-              point={selectedPoint}
-              detail={selectedDetail}
-              loading={detailLoading}
-              dealType={dealType}
-              onClose={() => setSelectedKey(null)}
-            />
-          </div>
-        )}
+        {/* 모바일 바텀시트 — peek/half/full 스냅 (지도 가시성 유지) */}
+        <BottomSheet
+          snap={sheetSnap}
+          onSnapChange={setSheetSnap}
+          peekContent={
+            selectedKey && selectedPoint ? (
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-bold text-market-text truncate">{selectedPoint.complex_name}</div>
+                  <div className="text-[11px] text-market-text-mute tabular-nums">거래 {selectedPoint.trade_count}건</div>
+                </div>
+                <div className="text-lg font-extrabold text-deal-trade tabular-nums flex-shrink-0">
+                  {formatKoreanPrice(selectedPoint.avg_price_manwon, 'compact')}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-sm font-semibold text-market-text">
+                <Building2 className="w-4 h-4 text-market-text-mute" />
+                지도 내 단지 <span className="tabular-nums">{loading ? '…' : points.length.toLocaleString()}</span>개
+              </div>
+            )
+          }
+        >
+          {sidePanelContent}
+        </BottomSheet>
       </div>
+
+      {/* 모바일 필터 시트 */}
+      <MarketFilterSheet
+        open={filterSheetOpen}
+        onClose={() => setFilterSheetOpen(false)}
+        propertyType={property_type}
+        onPropertyType={setPropertyType}
+        areaBand={areaBand}
+        onAreaBand={setAreaBand}
+        ageBand={ageBand}
+        onAgeBand={setAgeBand}
+        householdBand={householdBand}
+        onHouseholdBand={setHouseholdBand}
+      />
     </div>
   );
 }
@@ -628,7 +627,7 @@ function LayerToggle({
   );
 }
 
-// 드롭다운 필터 popover (평형/연식/세대수)
+// 드롭다운 필터 popover (평형/연식/세대수) — 데스크탑 전용
 function FilterPopover<T extends string>({
   label,
   options,
@@ -684,44 +683,6 @@ function FilterPopover<T extends string>({
           </div>
         </>
       )}
-    </div>
-  );
-}
-
-// ========== 지역 선택 (간이) ==========
-const MVP_REGIONS: Array<{ lawd_cd: string; name: string; lat: number; lng: number }> = [
-  { lawd_cd: '11680', name: '서울 강남', lat: 37.5172, lng: 127.0473 },
-  { lawd_cd: '11710', name: '서울 송파', lat: 37.5145, lng: 127.1060 },
-  { lawd_cd: '11650', name: '서울 서초', lat: 37.4837, lng: 127.0323 },
-  { lawd_cd: '11440', name: '서울 마포', lat: 37.5637, lng: 126.9085 },
-  { lawd_cd: '11170', name: '서울 용산', lat: 37.5326, lng: 126.9906 },
-  { lawd_cd: '41135', name: '성남 분당', lat: 37.3822, lng: 127.1186 },
-  { lawd_cd: '41117', name: '수원 영통', lat: 37.2595, lng: 127.0460 },
-  { lawd_cd: '41465', name: '용인 수지', lat: 37.3220, lng: 127.0976 },
-];
-
-function RegionPicker({
-  current,
-  onSelect,
-}: {
-  current: string;
-  onSelect: (lawd_cd: string, lat: number, lng: number) => void;
-}) {
-  return (
-    <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-      {MVP_REGIONS.map((r) => (
-        <button
-          key={r.lawd_cd}
-          onClick={() => onSelect(r.lawd_cd, r.lat, r.lng)}
-          className={`px-3 py-1 text-xs rounded-full whitespace-nowrap flex-shrink-0 font-medium transition-all ${
-            current === r.lawd_cd
-              ? 'bg-market-text text-white font-semibold shadow-sm'
-              : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
-          }`}
-        >
-          {r.name}
-        </button>
-      ))}
     </div>
   );
 }

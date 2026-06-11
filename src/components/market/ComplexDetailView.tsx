@@ -1,90 +1,29 @@
 'use client';
 
-import { X, TrendingUp, TrendingDown, Building2, Calendar, MapPin } from 'lucide-react';
-import { ResponsiveContainer, LineChart, Line, YAxis, Tooltip } from 'recharts';
+import { useState } from 'react';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  BarChart,
+  Bar,
+} from 'recharts';
+import Link from 'next/link';
+import {
+  X, TrendingUp, TrendingDown, Building2, Calendar, MapPin, Sparkles, ChevronLeft,
+} from 'lucide-react';
 import type { MapComplexPoint, DealTypeFilter } from './MarketMap.client';
-
-export interface ComplexDetail {
-  complex_key: string;
-  complex_name: string | null;
-  dong: string | null;
-  lawd_cd: string | null;
-  growth_pct: number | null;
-  monthly: Array<{
-    ym: string;
-    avg_price_manwon: number;
-    trade_count: number;
-    avg_pyeong_price: number;
-  }>;
-  recent_transactions: Array<{
-    deal_date: string;
-    price_manwon: number | null;
-    exclusive_area: number | null;
-    floor: number | null;
-    deal_type: string;
-    deal_channel: string | null;
-  }>;
-  recent_silv_transactions?: Array<{
-    deal_date: string;
-    price_manwon: number | null;
-    exclusive_area: number | null;
-    floor: number | null;
-    deal_type: string;
-    deal_channel: string | null;
-  }>;
-  complex_meta: {
-    lat: number | null;
-    lng: number | null;
-    road_address: string | null;
-    hhld_cnt: number | null;
-    build_year: number | null;
-    grnd_flr_cnt: number | null;
-  } | null;
-  building_meta?: {
-    bc_rat: number | null;
-    vl_rat: number | null;
-    plat_area: number | null;
-    arch_area: number | null;
-    tot_area: number | null;
-    land_share_per_hhld: number | null;
-    parking_total: number | null;
-    ride_elvt_cnt: number | null;
-    strct: string | null;
-    main_purps: string | null;
-  } | null;
-  nearby_complexes?: Array<{
-    complex_key: string;
-    complex_name: string;
-    avg_price_manwon: number;
-    trade_count: number;
-    avg_pyeong_price: number;
-    distance_km: number | null;
-  }>;
-  unit_distribution: Array<{
-    label: string;
-    count: number;
-    avg_price_manwon: number;
-    avg_pyeong_price: number;
-  }>;
-  monthly_split: Array<{
-    ym: string;
-    trade_avg: number | null;
-    rent_avg: number | null;
-    presale_avg?: number | null;
-    trade_pyeong?: number | null;   // 매매 평당가 (전용면적 기준, 만원/평)
-    rent_pyeong?: number | null;    // 전세 평당가 (전용면적 기준, 만원/평)
-    trade_count: number;
-    rent_count: number;
-    presale_count?: number;
-  }>;
-  lease_ratio: number | null;
-}
+import type { ComplexDetail } from '@/lib/market/types';
+import { useComplexDetail, type ChartRange } from '@/lib/market/queries';
+import { formatKoreanPrice, formatEokUnit } from '@/lib/market/format';
 
 interface Props {
   complexKey: string;
   point: MapComplexPoint | undefined;
-  detail: ComplexDetail | null;
-  loading: boolean;
   dealType: DealTypeFilter;
   onClose: () => void;
 }
@@ -95,7 +34,6 @@ const DEAL_COLORS: Record<DealTypeFilter, string> = {
   wolse: '#059669',   // Emerald-600 (월세)
   presale: '#7c3aed', // Violet-600 (분양권)
 };
-
 const DEAL_LABELS: Record<DealTypeFilter, string> = {
   trade: '매매',
   jeonse: '전세',
@@ -103,37 +41,64 @@ const DEAL_LABELS: Record<DealTypeFilter, string> = {
   presale: '분양권',
 };
 
-const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
+// 듀얼 라인 색상 (호갱노노/네이버 스타일 — 매매 빨강 + 전세 파랑)
+const LINE_TRADE = '#e11d48';
+const LINE_RENT = '#2563eb';
+const LINE_PRESALE = '#7c3aed';
 
-// 만원 단위를 "X억Y" 형태로 줄여 표시 (마커 라벨과 동일 규칙)
-function shortPrice(manwon: number): string {
-  if (manwon >= 10000) {
-    const eok = Math.floor(manwon / 10000);
-    const rest = manwon % 10000;
-    return rest > 0 ? `${eok}억${Math.round(rest / 100)}` : `${eok}억`;
-  }
-  return manwon.toLocaleString();
-}
+const RANGE_TABS: Array<{ value: ChartRange; label: string }> = [
+  { value: '1m', label: '1개월' },
+  { value: '6m', label: '6개월' },
+  { value: '1y', label: '1년' },
+  { value: '3y', label: '3년' },
+  { value: '5y', label: '5년' },
+];
+const RANGE_LABEL: Record<ChartRange, string> = {
+  '1m': '1개월', '6m': '6개월', '1y': '1년', '3y': '3년', '5y': '5년',
+};
 
-export default function MarketDetailPanel({
-  complexKey,
-  point,
-  detail,
-  loading,
-  dealType,
-  onClose,
-}: Props) {
+type Metric = 'price' | 'pyeong';
+
+export default function ComplexDetailView({ complexKey, point, dealType, onClose }: Props) {
+  const [range, setRange] = useState<ChartRange>('6m');
+  const [metric, setMetric] = useState<Metric>('price');
+
+  const { data, isFetching } = useComplexDetail(complexKey, range);
+  const detail: ComplexDetail | null = data ?? null;
+  const busy = isFetching;
+
   const name = detail?.complex_name || point?.complex_name || '단지';
   const meta = detail?.complex_meta;
   const isTrade = dealType === 'trade';
   const dealColor = DEAL_COLORS[dealType];
-
   const currentMonthly = detail?.monthly?.[0];
 
   // KPI 메인 값
   const mainPrice = isTrade
     ? currentMonthly?.avg_price_manwon ?? point?.avg_price_manwon
     : point?.avg_price_manwon;
+
+  // ── 차트 데이터 (매매+전세 듀얼 라인, 지표 토글) ──
+  const useP = metric === 'pyeong';
+  const showPresale = dealType === 'presale' && !useP;
+  const chartData = (detail?.monthly_split ?? []).map((m) => ({
+    ym: m.ym.slice(2),
+    매매: useP ? (m.trade_pyeong ?? null) : m.trade_avg,
+    전세: useP ? (m.rent_pyeong ?? null) : m.rent_avg,
+    분양권: showPresale ? (m.presale_avg ?? null) : null,
+    거래량:
+      dealType === 'trade' ? m.trade_count
+      : dealType === 'presale' ? (m.presale_count ?? 0)
+      : m.rent_count,
+  }));
+  const hasChart = chartData.length >= 2;
+
+  // 기간 대비 변동률 (매매 기준)
+  const tradeSeries = chartData.map((d) => d.매매).filter((v): v is number => v != null && v > 0);
+  const periodDelta =
+    tradeSeries.length >= 2 && tradeSeries[0] > 0
+      ? ((tradeSeries[tradeSeries.length - 1] - tradeSeries[0]) / tradeSeries[0]) * 100
+      : null;
 
   // dealType에 따라 거래 리스트 분기 (분양권은 별도 배열)
   const recentTxs = dealType === 'presale'
@@ -145,19 +110,7 @@ export default function MarketDetailPanel({
   const unitDist = (detail?.unit_distribution ?? []).filter((u) => u.count > 0);
   const showUnitDist = isTrade && unitDist.length > 0;
 
-  // 미니 시세 추이 (lg 미만에서만 표시 — lg는 GraphPanel이 큰 그래프 담당)
-  const sparkData = (detail?.monthly_split ?? [])
-    .map((m) => {
-      const val =
-        dealType === 'trade' ? m.trade_avg :
-        dealType === 'presale' ? (m.presale_avg ?? null) :
-        m.rent_avg;
-      return val != null ? { ym: m.ym.slice(2), value: val } : null;
-    })
-    .filter((d): d is { ym: string; value: number } => d !== null);
-  const showSpark = sparkData.length >= 2;
-
-  // 건축물대장 메타 — 아실 차별점
+  // 건축물대장 메타
   const bm = detail?.building_meta;
   const showBuildingMeta = bm && (
     bm.bc_rat != null || bm.vl_rat != null || bm.land_share_per_hhld != null ||
@@ -168,19 +121,30 @@ export default function MarketDetailPanel({
   const nearby = (detail?.nearby_complexes ?? []).slice(0, 5);
   const showNearby = nearby.length > 0;
 
+  const tooltipStyle = {
+    background: 'white',
+    border: '1px solid #e4e7eb',
+    borderRadius: '10px',
+    fontSize: '12px',
+    boxShadow: '0 6px 16px rgba(0,0,0,0.1)',
+    padding: '8px 12px',
+  } as const;
+
   return (
     <div className="h-full flex flex-col bg-market-surface font-jakarta text-market-text overflow-hidden">
-      {/* 모바일 grabber */}
-      <div className="md:hidden flex justify-center pt-2 pb-1 flex-shrink-0">
-        <div className="w-10 h-1 rounded-full bg-market-border" />
-      </div>
-
       {/* 스크롤 영역 */}
       <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
         {/* 헤더 */}
-        <div className="px-5 pt-3 pb-4 border-b border-market-border">
+        <div className="px-5 pt-4 pb-4 border-b border-market-border">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
+              <button
+                onClick={onClose}
+                className="hidden md:inline-flex items-center gap-0.5 text-[11px] text-market-text-mute hover:text-market-text mb-1.5 -ml-1 transition-colors"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                단지 목록
+              </button>
               <h2 className="text-lg font-bold text-market-text leading-tight truncate">{name}</h2>
               {meta?.road_address && (
                 <div className="text-xs text-market-text-mute mt-1 flex items-center gap-1">
@@ -225,15 +189,14 @@ export default function MarketDetailPanel({
           </div>
           <div className="flex items-baseline gap-2 flex-wrap">
             <div
-              className="text-[32px] font-extrabold tabular-nums leading-none"
+              className="text-[30px] font-extrabold tabular-nums leading-none"
               style={{ color: dealColor }}
             >
-              {mainPrice != null ? KRW(mainPrice) : loading ? '…' : '-'}
-              {mainPrice != null && <span className="text-base font-medium ml-0.5">만</span>}
+              {mainPrice != null ? formatKoreanPrice(mainPrice) : busy ? '…' : '-'}
             </div>
             {dealType === 'wolse' && point?.avg_monthly_manwon != null && (
               <div className="text-sm font-semibold text-market-text-mute tabular-nums">
-                / 월 {KRW(point.avg_monthly_manwon)}만
+                / 월 {formatKoreanPrice(point.avg_monthly_manwon)}
               </div>
             )}
           </div>
@@ -250,18 +213,14 @@ export default function MarketDetailPanel({
                     : 'bg-market-surface-2 text-market-text-mute'
                 }`}
               >
-                {detail.growth_pct > 0 ? (
-                  <TrendingUp className="w-3 h-3" />
-                ) : (
-                  <TrendingDown className="w-3 h-3" />
-                )}
+                {detail.growth_pct > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                 {detail.growth_pct > 0 ? '+' : ''}
                 {detail.growth_pct.toFixed(1)}%
               </span>
             )}
             {isTrade && currentMonthly?.avg_pyeong_price && (
               <span className="text-xs text-market-text-mute tabular-nums">
-                평당 <strong className="text-market-text font-semibold">{KRW(currentMonthly.avg_pyeong_price)}만</strong>
+                평당 <strong className="text-market-text font-semibold">{formatKoreanPrice(currentMonthly.avg_pyeong_price)}</strong>
               </span>
             )}
             {dealType === 'jeonse' && detail?.lease_ratio != null && (
@@ -277,44 +236,144 @@ export default function MarketDetailPanel({
           </div>
         </div>
 
-        {/* 미니 시세 추이 — lg 미만에서만 (lg 이상은 GraphPanel이 큰 차트 담당) */}
-        {showSpark && (
-          <div className="lg:hidden px-5 py-4 border-b border-market-border">
-            <div className="flex items-baseline justify-between mb-2">
-              <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">
-                {DEAL_LABELS[dealType]} 추이
-              </div>
-              <div className="text-[10px] text-market-text-faint tabular-nums">
-                최근 {sparkData.length}개월
-              </div>
+        {/* 가격 추이 — 매매+전세 듀얼 라인 + 기간 탭 + 지표 토글 */}
+        <div className="px-5 py-4 border-b border-market-border">
+          <div className="flex items-baseline justify-between mb-2.5">
+            <div className="text-sm font-bold text-market-text">가격 추이</div>
+            <div className="flex items-center gap-2.5 text-[11px] font-medium">
+              <span className="flex items-center gap-1" style={{ color: LINE_TRADE }}>
+                <span className="w-2 h-2 rounded-full" style={{ background: LINE_TRADE }} />매매
+              </span>
+              <span className="flex items-center gap-1" style={{ color: LINE_RENT }}>
+                <span className="w-2 h-2 rounded-full" style={{ background: LINE_RENT }} />전세
+              </span>
+              {showPresale && (
+                <span className="flex items-center gap-1" style={{ color: LINE_PRESALE }}>
+                  <span className="w-2 h-2 rounded-full" style={{ background: LINE_PRESALE }} />분양권
+                </span>
+              )}
             </div>
-            <div className="h-[80px] -mx-1">
+          </div>
+
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <div className="flex gap-1">
+              {RANGE_TABS.map((t) => (
+                <button
+                  key={t.value}
+                  onClick={() => setRange(t.value)}
+                  className={`px-2 py-1 text-[11px] rounded-md font-medium transition-all ${
+                    range === t.value
+                      ? 'bg-market-text text-white font-semibold'
+                      : 'bg-market-surface-2 text-market-text-mute hover:bg-market-border'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-0.5 bg-market-surface-2 rounded-md p-0.5 flex-shrink-0">
+              {([['price', '총액'], ['pyeong', '평당가']] as Array<[Metric, string]>).map(([m, label]) => (
+                <button
+                  key={m}
+                  onClick={() => setMetric(m)}
+                  className={`px-2 py-0.5 text-[10px] rounded font-medium transition-all ${
+                    metric === m
+                      ? 'bg-market-surface text-market-text font-semibold shadow-sm'
+                      : 'text-market-text-mute hover:text-market-text'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {hasChart ? (
+            <>
+              {periodDelta != null && (
+                <div className="mb-2">
+                  <span
+                    className={`inline-flex items-center gap-0.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                      periodDelta > 0
+                        ? 'bg-deal-trade-soft text-deal-trade'
+                        : periodDelta < 0
+                        ? 'bg-deal-jeonse-soft text-deal-jeonse'
+                        : 'bg-market-surface-2 text-market-text-mute'
+                    }`}
+                  >
+                    {periodDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                    매매 {RANGE_LABEL[range]} 전 대비 {periodDelta > 0 ? '+' : ''}{periodDelta.toFixed(1)}%
+                  </span>
+                </div>
+              )}
+              <div className={`h-[240px] -ml-2 transition-opacity ${busy ? 'opacity-60' : ''}`}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: -4, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f1f3" vertical={false} />
+                    <XAxis
+                      dataKey="ym"
+                      tick={{ fontSize: 10, fill: '#9aa0a6' }}
+                      axisLine={{ stroke: '#e4e7eb' }}
+                      tickLine={false}
+                      dy={4}
+                      minTickGap={24}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 10, fill: '#9aa0a6' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={formatEokUnit}
+                      width={44}
+                    />
+                    <Tooltip
+                      contentStyle={tooltipStyle}
+                      labelStyle={{ color: '#5a5d63', fontSize: '11px', marginBottom: '3px', fontWeight: 600 }}
+                      formatter={(v, n) => {
+                        const num = typeof v === 'number' ? v : 0;
+                        return num ? [formatKoreanPrice(num), n] : ['-', n];
+                      }}
+                    />
+                    <Line type="monotone" dataKey="매매" name="매매" stroke={LINE_TRADE} strokeWidth={2.2}
+                      dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
+                    <Line type="monotone" dataKey="전세" name="전세" stroke={LINE_RENT} strokeWidth={2.2}
+                      dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
+                    {showPresale && (
+                      <Line type="monotone" dataKey="분양권" name="분양권" stroke={LINE_PRESALE} strokeWidth={2.2}
+                        dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
+                    )}
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </>
+          ) : (
+            <div className="h-[160px] flex items-center justify-center text-xs text-market-text-faint border border-dashed border-market-border rounded-xl text-center px-4">
+              {busy ? '차트 로딩 중…' : `${RANGE_LABEL[range]} 추이 데이터 부족 (2개월 이상 필요)`}
+            </div>
+          )}
+
+          <div className="mt-2 text-[10px] text-market-text-faint leading-relaxed">
+            실거래가 기준 · {useP ? '평당가(전용면적)' : '거래금액'} 평균 · 출처: 국토교통부
+          </div>
+        </div>
+
+        {/* 월별 거래량 */}
+        {hasChart && (
+          <div className="px-5 py-4 border-b border-market-border">
+            <div className="flex items-baseline justify-between mb-2.5">
+              <div className="text-sm font-bold text-market-text">월별 거래량</div>
+              <div className="text-[11px] text-market-text-faint">{DEAL_LABELS[dealType]} · 건수</div>
+            </div>
+            <div className="h-[100px] -ml-2">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sparkData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }}>
-                  <YAxis hide domain={['dataMin', 'dataMax']} />
+                <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                  <XAxis dataKey="ym" tick={{ fontSize: 10, fill: '#9aa0a6' }} axisLine={false} tickLine={false} minTickGap={20} />
+                  <YAxis tick={{ fontSize: 10, fill: '#9aa0a6' }} axisLine={false} tickLine={false} width={32} />
                   <Tooltip
-                    contentStyle={{
-                      background: 'white',
-                      border: '1px solid #e4e7eb',
-                      borderRadius: '8px',
-                      fontSize: '11px',
-                      padding: '4px 8px',
-                    }}
-                    labelFormatter={(l) => `'${l}`}
-                    formatter={(v) => {
-                      const n = typeof v === 'number' ? v : 0;
-                      return [`${KRW(n)}만`, ''];
-                    }}
+                    contentStyle={tooltipStyle}
+                    formatter={(v) => [`${typeof v === 'number' ? v : 0}건`, '거래량']}
                   />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke={dealColor}
-                    strokeWidth={2.2}
-                    dot={false}
-                    activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }}
-                  />
-                </LineChart>
+                  <Bar dataKey="거래량" fill={dealColor} opacity={0.65} radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -330,7 +389,7 @@ export default function MarketDetailPanel({
               {unitDist.map((u, i) => (
                 <div
                   key={i}
-                  className="flex-shrink-0 min-w-[88px] bg-market-surface-2 rounded-xl px-3 py-2.5 border border-market-border"
+                  className="flex-shrink-0 min-w-[92px] bg-market-surface-2 rounded-xl px-3 py-2.5 border border-market-border"
                 >
                   <div className="text-[10px] text-market-text-faint font-medium tabular-nums">
                     {u.label}
@@ -339,10 +398,10 @@ export default function MarketDetailPanel({
                     className="text-base font-bold tabular-nums mt-0.5 leading-tight"
                     style={{ color: dealColor }}
                   >
-                    {shortPrice(u.avg_price_manwon)}
+                    {formatKoreanPrice(u.avg_price_manwon, 'compact')}
                   </div>
                   <div className="text-[10px] text-market-text-mute tabular-nums mt-0.5">
-                    {u.count}건 · 평당 {shortPrice(u.avg_pyeong_price)}
+                    {u.count}건 · 평당 {formatKoreanPrice(u.avg_pyeong_price, 'compact')}
                   </div>
                 </div>
               ))}
@@ -350,7 +409,7 @@ export default function MarketDetailPanel({
           </div>
         )}
 
-        {/* 단지 정보 확장 (건축물대장) — 아실 차별점 */}
+        {/* 단지 정보 확장 (건축물대장) */}
         {showBuildingMeta && bm && (
           <div className="px-5 py-4 border-b border-market-border">
             <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider mb-2.5">
@@ -414,7 +473,7 @@ export default function MarketDetailPanel({
                     <div className="text-[10px] text-market-text-faint tabular-nums">
                       {n.distance_km != null ? `${n.distance_km}km` : '-'}
                       {' · '}
-                      평당 {shortPrice(n.avg_pyeong_price)}만
+                      평당 {formatKoreanPrice(n.avg_pyeong_price, 'compact')}
                     </div>
                   </div>
                   <div className="text-right flex-shrink-0">
@@ -422,7 +481,7 @@ export default function MarketDetailPanel({
                       className="text-sm font-bold tabular-nums leading-tight"
                       style={{ color: dealColor }}
                     >
-                      {shortPrice(n.avg_price_manwon)}
+                      {formatKoreanPrice(n.avg_price_manwon, 'compact')}
                     </div>
                     <div className="text-[10px] text-market-text-faint tabular-nums">
                       {n.trade_count}건
@@ -452,9 +511,12 @@ export default function MarketDetailPanel({
                         {tx.exclusive_area.toFixed(1)}㎡
                       </span>
                     )}
+                    {tx.floor != null && (
+                      <span className="text-market-text-faint tabular-nums">{tx.floor}층</span>
+                    )}
                   </div>
-                  <span className="font-bold text-market-text tabular-nums">
-                    {tx.price_manwon ? `${KRW(tx.price_manwon)}만` : '-'}
+                  <span className="font-bold text-market-text tabular-nums flex-shrink-0">
+                    {tx.price_manwon ? formatKoreanPrice(tx.price_manwon) : '-'}
                   </span>
                 </div>
               ))}
@@ -463,12 +525,18 @@ export default function MarketDetailPanel({
         )}
       </div>
 
-      {/* 푸터 — 데이터 출처만 (페이지 이동 X) */}
+      {/* 푸터 — 데이터 출처 + AI 분석 링크 */}
       <div className="px-5 py-2.5 border-t border-market-border bg-market-surface flex-shrink-0 flex items-center justify-between">
         <div className="text-[10px] text-market-text-faint">국토부 실거래가</div>
-        <div className="text-[10px] text-market-text-faint tabular-nums">
-          최근 6개월 데이터
-        </div>
+        <Link
+          href={`/market/insights/${encodeURIComponent(complexKey)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[10px] font-semibold text-deal-jeonse hover:underline flex items-center gap-1"
+        >
+          <Sparkles className="w-3 h-3" />
+          AI 깊은 분석
+        </Link>
       </div>
     </div>
   );

@@ -15,7 +15,8 @@ import {
   Bar,
   Cell,
 } from 'recharts';
-import type { ComplexDetail } from '@/components/market/MarketDetailPanel';
+import type { ComplexDetail } from '@/lib/market/types';
+import { formatKoreanPrice, formatEokUnit } from '@/lib/market/format';
 
 interface InsightStats {
   current_avg_price: number;
@@ -26,9 +27,8 @@ interface InsightStats {
   job_count: number;
 }
 
-const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
-const formatPriceAxis = (v: number) =>
-  v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}억` : `${Math.round(v / 1000)}천`;
+const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR'); // 면적 등 비가격 수치용
+const formatPriceAxis = formatEokUnit;
 
 export default function ComplexInsightsPage({
   params,
@@ -210,8 +210,8 @@ export default function ComplexInsightsPage({
         {/* 핵심 통계 카드 */}
         {stats && (
           <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatCard label="평균 매매가" value={`${KRW(stats.current_avg_price)}만`} accent="trade" />
-            <StatCard label="평당가" value={`${KRW(stats.avg_pyeong_price)}만`} />
+            <StatCard label="평균 매매가" value={formatKoreanPrice(stats.current_avg_price)} accent="trade" />
+            <StatCard label="평당가" value={formatKoreanPrice(stats.avg_pyeong_price)} />
             <StatCard
               label="변동률"
               value={stats.growth_pct != null ? `${stats.growth_pct > 0 ? '+' : ''}${stats.growth_pct.toFixed(1)}%` : '-'}
@@ -266,7 +266,7 @@ export default function ComplexInsightsPage({
                     }}
                     formatter={(v) => {
                       const n = typeof v === 'number' ? v : 0;
-                      return n ? `${KRW(n)}만` : '-';
+                      return n ? formatKoreanPrice(n) : '-';
                     }}
                   />
                   <Line type="monotone" dataKey="매매" stroke="#e11d48" strokeWidth={2.5} dot={{ r: 3, fill: '#e11d48', strokeWidth: 0 }} activeDot={{ r: 5, strokeWidth: 2, stroke: 'white' }} connectNulls />
@@ -333,7 +333,7 @@ export default function ComplexInsightsPage({
                     formatter={(v, _name, item) => {
                       const n = typeof v === 'number' ? v : 0;
                       const count = (item?.payload as { count?: number })?.count ?? 0;
-                      return [`${KRW(n)}만 (${count}건)`, '평균'];
+                      return [`${formatKoreanPrice(n)} (${count}건)`, '평균'];
                     }}
                   />
                   <Bar dataKey="avg_price_manwon" radius={[0, 4, 4, 0]} barSize={20}>
@@ -383,10 +383,10 @@ export default function ComplexInsightsPage({
                         {n.distance_km != null ? `${n.distance_km}km` : '-'}
                       </td>
                       <td className="text-right py-2.5 px-2 font-semibold text-deal-trade tabular-nums">
-                        {KRW(n.avg_price_manwon)}만
+                        {formatKoreanPrice(n.avg_price_manwon)}
                       </td>
                       <td className="text-right py-2.5 px-2 text-market-text-mute tabular-nums">
-                        {KRW(n.avg_pyeong_price)}만
+                        {formatKoreanPrice(n.avg_pyeong_price)}
                       </td>
                       <td className="text-right py-2.5 px-2 text-xs text-market-text-mute tabular-nums">
                         {n.trade_count}건

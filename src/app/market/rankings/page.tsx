@@ -12,6 +12,7 @@ import {
   Tooltip,
   Cell,
 } from 'recharts';
+import { formatKoreanPrice, formatEokUnit } from '@/lib/market/format';
 
 type Metric = 'count' | 'price' | 'pyeong';
 type PropertyType = 'apt' | 'officetel';
@@ -28,9 +29,7 @@ interface RankingItem {
   ym: string;
 }
 
-const KRW = (n: number) => Math.round(n).toLocaleString('ko-KR');
-const formatPrice = (v: number) =>
-  v >= 10000 ? `${(v / 10000).toFixed(1).replace(/\.0$/, '')}억` : `${Math.round(v / 1000)}천`;
+const formatPrice = formatEokUnit;
 
 const METRIC_META: Record<Metric, { label: string; unit: string; color: string }> = {
   count: { label: '거래량', unit: '건', color: '#2563eb' },
@@ -185,7 +184,7 @@ export default function MarketRankingsPage() {
                       formatter={(v) => {
                         const n = typeof v === 'number' ? v : 0;
                         if (metric === 'count') return [`${n}건`, meta.label];
-                        return [`${KRW(n)}만`, meta.label];
+                        return [formatKoreanPrice(n), meta.label];
                       }}
                     />
                     <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={18}>
@@ -225,11 +224,11 @@ export default function MarketRankingsPage() {
                   <div className="text-right flex-shrink-0">
                     <div className="text-sm font-extrabold tabular-nums" style={{ color: meta.color }}>
                       {metric === 'count' && `${item.trade_count}건`}
-                      {metric === 'price' && `${KRW(item.avg_price_manwon)}만`}
-                      {metric === 'pyeong' && `${KRW(item.avg_pyeong_price)}만`}
+                      {metric === 'price' && formatKoreanPrice(item.avg_price_manwon)}
+                      {metric === 'pyeong' && formatKoreanPrice(item.avg_pyeong_price)}
                     </div>
                     <div className="text-[10px] text-market-text-faint tabular-nums">
-                      평균 {KRW(item.avg_price_manwon)}만 · {item.trade_count}건
+                      평균 {formatKoreanPrice(item.avg_price_manwon, 'compact')} · {item.trade_count}건
                     </div>
                   </div>
                 </li>

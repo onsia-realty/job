@@ -5,6 +5,74 @@
 
 ---
 
+## 마지막 작업 (2026-06-11) — 시세지도 전면 개편 (호갱노노/네이버페이 부동산 스타일)
+
+### 결론: 데이터(좌표 백필 완주) + UI(마커/패널/모바일) 5단계 전면 개편 완료
+
+### P1. 좌표 백필 완주 ✅ (지도가 "이상했던" 근본 원인)
+- **원인 1**: geocode cron이 ORDER BY 없는 `limit*30` 샘플링 → 미백필 단지에 영영 도달 못 함
+- **원인 2**: 강남 등 단지들 lat=null 방치 (NCP 키 추가 전 실패분, 재시도 안 됨)
+- **수정**: cron 후보 추출 = 재시도 풀(complexes lat=null, 7일 쿨다운) + 일별 지역 로테이션 발굴. 실패 시에도 geocoded_at 스탬프.
+- **`scripts/backfill-geocode.mjs`** (신규, 로컬 실행): price_transactions 225k행 전체 스캔 → **12,481/12,517 지오코딩 성공 (99.7%, 4분41초, 전부 NCP naver)**. 실패 36건은 "가-" 분양권 블록 지번 (지오코딩 불가).
+- **⚠️ `.in()` 청크 30개 제한**: 한글 complex_key는 URL 인코딩 시 키당 100-150바이트 → 100개만 넘어도 fetch failed. PostgREST 1000행 캡도 회피됨. (transactions route + cron)
+
+### P2. 마커 리디자인 + 가격 포맷 통일 ✅
+- **`src/lib/market/format.ts`** (신규): `formatKoreanPrice(만원, 'full'|'compact')` → "52억 5,000" / "52.5억". `formatEokUnit` (차트 축). 테스트 11개.
+- 마커: 네이버식 — 가격(compact, 크게) + 단지명(6자컷) 말풍선 + 꼬리 + 거래건수 우상단 뱃지. 5분위 5색 → **dealType별 단색 농도 램프** (`DEAL_RAMPS`: 매매 rose / 전세 blue / 월세 emerald / 분양권 violet).
+- 마커 diff 렌더: `markersRef`를 Map으로 — 선택 변경 시 2개만 setIcon (기존: 500개 전량 재생성).
+- jitter fallback 제거 — 좌표 없는 단지는 마커 제외.
+
+### P3. 줌 레벨별 집계 마커 ✅
+- 줌 ≤11 구(원형, region_codes centroid) / 12~13 동(pill, 클라이언트 집계) / ≥14 단지
+- **`/api/market/aggregates`** (신규): complex_aggregates MV 최근 3개월 → lawd_cd별 가중평균 (매매 기준). s-maxage=3600.
+- `src/lib/market/aggregateMarkers.ts`: aggregateByDong (bounds 응답의 dong 사용)
+- 집계 마커 클릭 → 드릴다운 줌인 (구→12, 동→14). 구 모드에서는 bounds 거래 fetch 생략.
+
+### P4. 좌측 통합 패널 1개 + 지도 최대화 ✅
+- `MarketDetailPanel`+`MarketGraphPanel`(380+440px) 삭제 → **`ComplexDetailView`** 1개(400px)로 통합 (KPI+듀얼라인 차트+거래량+평형별+건축물대장+인근비교+최근거래)
+- 미선택 시 **`ComplexListPanel`**: viewport 단지 리스트 (가격/거래량 정렬) — 네이버페이 부동산 스타일
+- **지역 칩(RegionPicker) 제거** — lawd_cd는 viewport 중심→최근접 매핑 자동 갱신 (`src/lib/market/regions.ts`)
+- `ComplexDetail` 타입 → `src/lib/market/types.ts`, 필터 상수 → `src/lib/market/filters.ts`
+
+### P5. 모바일 ✅
+- **`BottomSheet.tsx`**: peek(124px)/half(50dvh)/full(92dvh) 스냅, 드래그는 grabber 전용 (콘텐츠 스크롤 충돌 없음)
+- **`MarketFilterSheet.tsx`**: 필터 1줄 + 통합 필터 바텀시트
+
+### ⚠️ 배포 관련 발견
+- **라이브 ≠ origin/main이었음**: 라이브는 `ncpKeyId` 사용, repo HEAD(7941fb2)는 `ncpClientId` — 노트북 CLI 배포 추정. 이번 커밋에서 코드를 `ncpKeyId`로 통일 (검증된 파라미터).
+- 라이브 프로덕션 지도 키: `2v2hncoi4d` (HTML에서 확인). Vercel env `NEXT_PUBLIC_NAVER_MAP_CLIENT_ID` 값과 일치 여부는 배포 후 확인.
+- SecurityShield 우회: `?devmode=onsia-dev-2026` (Playwright 검증 시 필수)
+
+### 미해결 / 다음 단계
+- [ ] 배포 후 라이브 검증: 강남 마커, 줌아웃 집계 마커, 모바일 시트
+- [ ] 차트 1Y/3Y/5Y 데이터 백필 (sync-transactions 다회 실행)
+- [ ] 분양권 "가-" 지번 36개 단지 지오코딩 (단지명 검색 fallback 검토)
+- [ ] 줌 12~13 동 집계는 bounds 500단지 캡 기준 (광역 viewport에서 일부 누락 가능)
+
+---
+
+## 마지막 작업 (2026-06-03) — 라이브 배포 검증 ✅ (코드 변경 없음)
+
+### 결론: booin.co.kr/market 정상 작동 확인 — 지도+마커+필터 전부 OK
+
+사용자가 노트북에서 문제 수정 후 "배포된 것 확인" 요청. Playwright로 라이브 직접 검증.
+
+### 검증 결과 (Playwright, https://booin.co.kr/market)
+| 항목 | 상태 |
+|------|------|
+| 네이버 지도 타일 | ✅ 렌더링 (한강·압구정·코엑스 등) |
+| 가격 마커 | ✅ 다수 표시 (27억·40억·156억6,000·32억 등 단지명+시세) |
+| SDK 인증 | ✅ `window.naver.maps` 로드, URL `?ncpKeyId=2v2hncoi4d` |
+| 필터 탭 | ✅ 매매/전세/월세/분양권 · 아파트/오피스텔 · 서울 강남 |
+| 헤더 | ✅ "60개 단지" / 콘솔 에러 0건 |
+
+### 주의 / 메모
+- ⚠️ **`[data-complex-key]` 셀렉터 마커 카운트는 오탐** — 배포 버전 마커는 네이버 오버레이라 그 속성 미사용. 마커 검증은 셀렉터 카운트 말고 **스크린샷(시각)으로 판단**할 것.
+- **GitHub `onsia-realty/job`에는 6/1 이후 새 커밋 없음** (local/origin main 모두 `7941fb2`). 라이브가 정상이므로 오늘 수정은 6/1 커밋에 이미 포함됐거나 Vercel 환경변수/대시보드 변경으로 추정. 코드 변경이었다면 노트북 push 미반영 상태 — 확인 필요.
+- 로컬 `.env.local`은 오늘 03:41 수정 흔적 있으나 커밋 안 됨(gitignore).
+
+---
+
 ## 마지막 작업 (2026-06-01) — Cron geocoding Naver 교체 + main 머지 + 라이브 검증 ✅
 
 ### 결론: 5/31 어제 작업 7커밋 + 오늘 Naver geocoding 1커밋 한꺼번에 main 머지 → 라이브 정상 작동

@@ -1,8 +1,9 @@
 'use client';
 
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import type { ComplexDetail } from '@/components/market/MarketDetailPanel';
+import type { ComplexDetail } from '@/lib/market/types';
 import type { SearchResult } from '@/components/market/MarketSearch';
+import type { GuAggregate } from '@/lib/market/aggregateMarkers';
 
 // 차트 기간 범위 (Phase 3에서 UI 노출). API ?range= 로 전달.
 export type ChartRange = '1m' | '6m' | '1y' | '3y' | '5y';
@@ -40,6 +41,19 @@ export function useMarketSearch(q: string) {
     // 검색은 더 빨리 stale 처리 (입력 변화 잦음).
     staleTime: 30_000,
     placeholderData: keepPreviousData,
+  });
+}
+
+// 구(시군구) 집계 — /api/market/aggregates (줌아웃 마커용, 매매 기준)
+export function useGuAggregates(propertyType: 'apt' | 'officetel', enabled: boolean) {
+  return useQuery({
+    queryKey: ['market', 'agg', 'gu', propertyType],
+    enabled,
+    queryFn: () =>
+      fetchJson<{ aggregates: GuAggregate[] }>(
+        `/api/market/aggregates?level=gu&type=${propertyType}`,
+      ).then((d) => d.aggregates || []),
+    staleTime: 60 * 60 * 1000, // 구 평균은 일 단위 변동 — 1시간 캐시
   });
 }
 

@@ -126,6 +126,16 @@ export async function GET(req: NextRequest) {
 // Viewport bounds 모드: 좌표 범위 안 단지의 최근 N개월 거래를 그대로 반환.
 // 국토부 API는 호출하지 않음 — cron이 이미 채운 데이터만 조회.
 const BOUNDS_MAX_COMPLEXES = 500;  // 줌 아웃 폭주 방지
+// .in() 키 수 제한 — 한글 complex_key는 URL 인코딩 시 키당 ~100-150바이트라
+// 100개만 넘어도 게이트웨이/undici URL 한도를 초과(fetch failed). 또한 PostgREST는
+// 요청당 1000행 캡이 있어, 청크를 작게 가져가면 행 잘림도 함께 방지된다.
+const IN_QUERY_CHUNK = 30;
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
 async function handleBoundsMode(
   boundsParam: string,
   type: PropertyType,
@@ -161,24 +171,26 @@ async function handleBoundsMode(
     const complex_keys = complexRows.map((c) => c.complex_key);
 
     // 2) 최근 N개월 거래 (cancel 제외, property_type + deal_type 매칭)
+    //    .in() 키가 수백 개면 쿼리 URL이 게이트웨이 한도를 넘어 400 → 청크 병렬 조회
     const sinceDate = new Date();
     sinceDate.setMonth(sinceDate.getMonth() - months);
     const sinceStr = sinceDate.toISOString().slice(0, 10);
 
-    const { data: txs, error: tErr } = await supabaseAdmin
-      .from('price_transactions')
-      .select('*')
-      .in('complex_key', complex_keys)
-      .eq('property_type', type)
-      .eq('deal_type', deal)
-      .eq('cancel_yn', false)
-      .gte('deal_date', sinceStr)
-      .order('deal_date', { ascending: false });
-
-    if (tErr) {
-      console.error('[market/transactions] bounds tx query error:', tErr);
-      return NextResponse.json({ error: tErr.message }, { status: 500 });
-    }
+    const txChunks = await Promise.all(
+      chunk(complex_keys, IN_QUERY_CHUNK).map(async (keys) => {
+        const { data, error } = await supabaseAdmin
+          .from('price_transactions')
+          .select('*')
+          .in('complex_key', keys)
+          .eq('property_type', type)
+          .eq('deal_type', deal)
+          .eq('cancel_yn', false)
+          .gte('deal_date', sinceStr);
+        if (error) throw new Error(`bounds tx query: ${error.message}`);
+        return data || [];
+      }),
+    );
+    const txs = txChunks.flat().sort((a, b) => (a.deal_date < b.deal_date ? 1 : -1));
 
     // 3) complex_coords map (클라이언트 jitter fallback 제거용)
     const complex_coords: Record<string, ComplexCoord> = {};
@@ -217,13 +229,17 @@ async function loadComplexCoords(complex_keys: string[]): Promise<Record<string,
   if (complex_keys.length === 0) return {};
   const uniqKeys = Array.from(new Set(complex_keys));
   try {
-    const { data, error } = await supabaseAdmin
-      .from('complexes')
-      .select('complex_key, lat, lng, hhld_cnt, build_year')
-      .in('complex_key', uniqKeys);
-    if (error) return {};
+    const chunks = await Promise.all(
+      chunk(uniqKeys, IN_QUERY_CHUNK).map(async (keys) => {
+        const { data, error } = await supabaseAdmin
+          .from('complexes')
+          .select('complex_key, lat, lng, hhld_cnt, build_year')
+          .in('complex_key', keys);
+        return error ? [] : data || [];
+      }),
+    );
     const map: Record<string, ComplexCoord> = {};
-    for (const c of data || []) {
+    for (const c of chunks.flat()) {
       map[c.complex_key] = { lat: c.lat, lng: c.lng, hhld_cnt: c.hhld_cnt, build_year: c.build_year };
     }
     return map;
