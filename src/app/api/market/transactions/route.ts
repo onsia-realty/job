@@ -150,6 +150,9 @@ async function handleBoundsMode(
 
   try {
     // 1) bounds 안 단지 키 조회 — complexes 마스터 사용 (좌표 백필된 것만)
+    //    ⚠️ property_type으로 거르지 않는다 — 주상복합(예: 파크하비오)은 한 complex_key에
+    //    apt+officetel 거래가 섞여 있는데 마스터 행의 type은 하나뿐이라, 여기서 거르면
+    //    반대 탭에서 단지가 통째로 사라진다. 유형 필터는 아래 거래 쿼리가 담당.
     const { data: complexRows, error: cErr } = await supabaseAdmin
       .from('complexes')
       .select('complex_key, lat, lng, hhld_cnt, build_year, property_type')
@@ -157,7 +160,6 @@ async function handleBoundsMode(
       .lte('lat', ne_lat)
       .gte('lng', sw_lng)
       .lte('lng', ne_lng)
-      .eq('property_type', type)
       .limit(BOUNDS_MAX_COMPLEXES);
 
     if (cErr) {

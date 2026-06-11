@@ -174,6 +174,10 @@ export default function MarketPageClient() {
     [writeUrl],
   );
 
+  // 응답 레이스 가드 — 초기 lawd fallback(느림)이 직후 bounds 결과(빠름)를 덮어쓰는 것 방지.
+  // 마지막으로 시작된 loadData의 결과만 반영한다.
+  const loadSeqRef = useRef(0);
+
   useEffect(() => {
     // 구 집계 모드에서는 bounds 거래 조회 생략 (서버 집계 API만 사용 — 네트워크 절약)
     if (markerMode === 'gu') return;
@@ -190,6 +194,7 @@ export default function MarketPageClient() {
     ag: AgeBand,
     hh: HouseholdBand,
   ) => {
+    const seq = ++loadSeqRef.current;
     setLoading(true);
     try {
       type Tx = {
@@ -359,13 +364,14 @@ export default function MarketPageClient() {
           };
         });
 
+      if (seq !== loadSeqRef.current) return; // 더 최신 요청이 있으면 이 결과는 폐기
       setPoints(pts);
       setDongByKey(dongMap);
     } catch (e) {
       console.error('[market] load error:', e);
-      setPoints([]);
+      if (seq === loadSeqRef.current) setPoints([]);
     } finally {
-      setLoading(false);
+      if (seq === loadSeqRef.current) setLoading(false);
     }
   };
 
