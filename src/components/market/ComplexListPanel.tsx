@@ -22,12 +22,9 @@ const SORT_OPTIONS: Array<{ value: SortKey; label: string }> = [
   { value: 'count_desc', label: '거래량순' },
 ];
 
-const DEAL_COLORS: Record<DealTypeFilter, string> = {
-  trade: '#e11d48',
-  jeonse: '#2563eb',
-  wolse: '#059669',
-  presale: '#7c3aed',
-};
+// 무채색 + 초록 포인트 (집 마커와 동일 톤)
+const PRICE_DARK = '#1E1E23';
+const PRICE_GREEN = '#0A8348';
 
 // 지도 내 단지 리스트 — 네이버페이 부동산 스타일 (미선택 시 좌측 패널)
 export default function ComplexListPanel({ points, dealType, loading, markerMode, onSelect }: Props) {
@@ -41,7 +38,10 @@ export default function ComplexListPanel({ points, dealType, loading, markerMode
     return arr;
   }, [points, sortKey]);
 
-  const dealColor = DEAL_COLORS[dealType];
+  // 보조 가격 (집 마커와 동일 규칙 — 매매 탭이면 전세, 그 외엔 매매)
+  const secondaryOf = (p: MapComplexPoint) =>
+    dealType === 'trade' ? p.avg_jeonse_manwon : p.avg_trade_manwon;
+  const secondaryPrefix = dealType === 'trade' ? '전' : '매';
 
   return (
     <div className="h-full flex flex-col bg-market-surface font-jakarta text-market-text overflow-hidden">
@@ -97,17 +97,21 @@ export default function ComplexListPanel({ points, dealType, loading, markerMode
                   )}
                 </div>
                 <div className="text-[11px] text-market-text-mute tabular-nums mt-0.5">
-                  거래 {p.trade_count}건
+                  {p.rep_area ? `${p.rep_area}㎡ · ` : ''}거래 {p.trade_count}건
                   {dealType === 'wolse' && p.avg_monthly_manwon != null && (
                     <> · 월 {formatKoreanPrice(p.avg_monthly_manwon)}</>
                   )}
                 </div>
               </div>
-              <div
-                className="text-[15px] font-extrabold tabular-nums flex-shrink-0"
-                style={{ color: dealColor }}
-              >
-                {formatKoreanPrice(p.avg_price_manwon, 'compact')}
+              <div className="text-right flex-shrink-0">
+                <div className="text-[15px] font-extrabold tabular-nums" style={{ color: PRICE_DARK }}>
+                  {formatKoreanPrice(p.avg_price_manwon, 'compact')}
+                </div>
+                {secondaryOf(p) != null && (
+                  <div className="text-[11px] font-bold tabular-nums" style={{ color: PRICE_GREEN }}>
+                    {secondaryPrefix} {formatKoreanPrice(secondaryOf(p)!, 'compact')}
+                  </div>
+                )}
               </div>
             </button>
           ))

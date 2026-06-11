@@ -59,9 +59,18 @@ const RANGE_LABEL: Record<ChartRange, string> = {
 
 type Metric = 'price' | 'pyeong';
 
+// 상세 패널 탭 (네이버페이 부동산 스타일)
+type DetailTab = 'price' | 'info' | 'nearby';
+const DETAIL_TABS: Array<{ value: DetailTab; label: string }> = [
+  { value: 'price', label: '시세/실거래' },
+  { value: 'info', label: '단지정보' },
+  { value: 'nearby', label: '인근' },
+];
+
 export default function ComplexDetailView({ complexKey, point, dealType, onClose }: Props) {
   const [range, setRange] = useState<ChartRange>('6m');
   const [metric, setMetric] = useState<Metric>('price');
+  const [tab, setTab] = useState<DetailTab>('price');
 
   const { data, isFetching } = useComplexDetail(complexKey, range);
   const detail: ComplexDetail | null = data ?? null;
@@ -132,10 +141,8 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
 
   return (
     <div className="h-full flex flex-col bg-market-surface font-jakarta text-market-text overflow-hidden">
-      {/* 스크롤 영역 */}
-      <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
-        {/* 헤더 */}
-        <div className="px-5 pt-4 pb-4 border-b border-market-border">
+      {/* 헤더 (고정) */}
+      <div className="px-5 pt-4 pb-3 flex-shrink-0">
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
               <button
@@ -182,6 +189,29 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
           </div>
         </div>
 
+      {/* 탭 (고정) — 네이버페이 부동산 스타일 밑줄 탭 */}
+      <div className="flex border-b border-market-border flex-shrink-0 px-3" role="tablist">
+        {DETAIL_TABS.map((t) => (
+          <button
+            key={t.value}
+            role="tab"
+            aria-selected={tab === t.value}
+            onClick={() => setTab(t.value)}
+            className={`flex-1 py-2.5 text-[13px] text-center transition-colors border-b-2 -mb-px ${
+              tab === t.value
+                ? 'font-bold text-market-text border-market-text'
+                : 'font-medium text-market-text-mute border-transparent hover:text-market-text'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* 스크롤 영역 (탭 콘텐츠) */}
+      <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
+        {tab === 'price' && (
+        <>
         {/* 메인 KPI */}
         <div className="px-5 py-4 border-b border-market-border">
           <div className="text-[11px] font-medium text-market-text-mute mb-1.5">
@@ -409,8 +439,45 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
           </div>
         )}
 
-        {/* 단지 정보 확장 (건축물대장) */}
-        {showBuildingMeta && bm && (
+        {/* 최근 거래 (매매·분양권) */}
+        {showRecent && (
+          <div className="px-5 py-4 border-b border-market-border">
+            <div className="text-[11px] font-semibold text-market-text-mute mb-2.5 uppercase tracking-wider">
+              최근 {DEAL_LABELS[dealType]} 거래 {recentTxs.length}건
+            </div>
+            <div className="space-y-2">
+              {recentTxs.map((tx, i) => (
+                <div key={i} className="flex items-center justify-between text-xs gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-market-text-faint tabular-nums flex-shrink-0">
+                      {tx.deal_date.slice(2).replace(/-/g, '.')}
+                    </span>
+                    {tx.exclusive_area != null && (
+                      <span className="text-market-text-mute tabular-nums">
+                        {tx.exclusive_area.toFixed(1)}㎡
+                      </span>
+                    )}
+                    {tx.floor != null && (
+                      <span className="text-market-text-faint tabular-nums">{tx.floor}층</span>
+                    )}
+                  </div>
+                  <span className="font-bold text-market-text tabular-nums flex-shrink-0">
+                    {tx.price_manwon ? formatKoreanPrice(tx.price_manwon) : '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        </>
+        )}
+
+        {/* ── 단지정보 탭 ── */}
+        {tab === 'info' && (!showBuildingMeta ? (
+          <div className="px-6 py-10 text-center text-sm text-market-text-mute">
+            건축물대장 정보가 아직 수집되지 않았습니다.
+          </div>
+        ) : bm && (
           <div className="px-5 py-4 border-b border-market-border">
             <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider mb-2.5">
               단지 정보
@@ -454,10 +521,14 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
               )}
             </div>
           </div>
-        )}
+        ))}
 
-        {/* 인근 단지 비교 — 반경 2km 내 거리 순 */}
-        {showNearby && (
+        {/* ── 인근 탭 — 인근 단지 비교 (반경 2km 내 거리 순) ── */}
+        {tab === 'nearby' && (!showNearby ? (
+          <div className="px-6 py-10 text-center text-sm text-market-text-mute">
+            반경 2km 내 비교할 단지 데이터가 없습니다.
+          </div>
+        ) : (
           <div className="px-5 py-4 border-b border-market-border">
             <div className="flex items-baseline justify-between mb-2.5">
               <div className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">
@@ -491,38 +562,7 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
               ))}
             </div>
           </div>
-        )}
-
-        {/* 최근 거래 (매매·분양권) */}
-        {showRecent && (
-          <div className="px-5 py-4 border-b border-market-border">
-            <div className="text-[11px] font-semibold text-market-text-mute mb-2.5 uppercase tracking-wider">
-              최근 {DEAL_LABELS[dealType]} 거래 {recentTxs.length}건
-            </div>
-            <div className="space-y-2">
-              {recentTxs.map((tx, i) => (
-                <div key={i} className="flex items-center justify-between text-xs gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-market-text-faint tabular-nums flex-shrink-0">
-                      {tx.deal_date.slice(2).replace(/-/g, '.')}
-                    </span>
-                    {tx.exclusive_area != null && (
-                      <span className="text-market-text-mute tabular-nums">
-                        {tx.exclusive_area.toFixed(1)}㎡
-                      </span>
-                    )}
-                    {tx.floor != null && (
-                      <span className="text-market-text-faint tabular-nums">{tx.floor}층</span>
-                    )}
-                  </div>
-                  <span className="font-bold text-market-text tabular-nums flex-shrink-0">
-                    {tx.price_manwon ? formatKoreanPrice(tx.price_manwon) : '-'}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        ))}
       </div>
 
       {/* 푸터 — 데이터 출처 + AI 분석 링크 */}

@@ -12,8 +12,11 @@ export interface MapComplexPoint {
   complex_name: string;
   lat: number;
   lng: number;
-  avg_price_manwon: number;          // trade=매매가, jeonse=보증금, wolse=보증금
+  avg_price_manwon: number;          // primary 가격 — trade/presale=매매가, jeonse/wolse=보증금 (정렬/리스트 기준)
   avg_monthly_manwon?: number;       // wolse일 때만 사용 (월세)
+  avg_trade_manwon?: number;         // 매매 평균 (집 마커 병기용 — dealType 무관)
+  avg_jeonse_manwon?: number;        // 전세 평균 보증금 (집 마커 병기용)
+  rep_area?: number;                 // 대표 전용면적 ㎡ (지붕 표시 — primary 거래 중앙값)
   trade_count: number;
   growth_pct?: number | null;
   property_type: 'apt' | 'officetel' | 'villa' | 'store' | 'presale';
@@ -126,72 +129,66 @@ function waitForNaverMaps(timeoutMs = 15000): Promise<void> {
   });
 }
 
-// 거래유형별 단색 hue 농도 램프 (Q1 저가 → Q5 고가).
-// 호갱노노식 — 색상(hue)은 거래유형이 결정, 가격 분위는 명도만 바꾼다.
-const DEAL_RAMPS: Record<DealTypeFilter, [string, string, string, string, string]> = {
-  trade:   ['#fb7185', '#f43f5e', '#e11d48', '#be123c', '#9f1239'], // rose
-  jeonse:  ['#60a5fa', '#3b82f6', '#2563eb', '#1d4ed8', '#1e40af'], // blue
-  wolse:   ['#34d399', '#10b981', '#059669', '#047857', '#065f46'], // emerald
-  presale: ['#a78bfa', '#8b5cf6', '#7c3aed', '#6d28d9', '#5b21b6'], // violet
-};
-
-function quintileOf(price: number, sortedPrices: number[]): number {
-  if (sortedPrices.length === 0) return 2;
-  // index of price in sortedPrices (or where it would be)
-  let lo = 0, hi = sortedPrices.length;
-  while (lo < hi) {
-    const mid = (lo + hi) >>> 1;
-    if (sortedPrices[mid] < price) lo = mid + 1;
-    else hi = mid;
-  }
-  const ratio = lo / sortedPrices.length; // 0..1
-  return Math.min(4, Math.floor(ratio * 5));
-}
+// 네이버페이 부동산 톤 — 무채색(검정/흰색) + 초록 포인트만. 가격대별 색 인코딩 없음.
+const MARKER_DARK = '#1E1E23';   // 지붕/선택 본문/집계 마커
+const MARKER_BORDER = '#E2E4E8';
+const MARKER_GREEN = '#0A8348';  // 보조 가격 (네이버의 '실거래가' 초록)
+const MARKER_GREEN_LIGHT = '#6EE7A8'; // 선택(다크 반전) 시 보조 가격
 
 const MARKER_FONT = `'Plus Jakarta Sans', Pretendard, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`;
 
-// 네이버페이 부동산식 마커 — 가격(크게) + 단지명(작게) 말풍선 + 하단 꼬리 + 거래건수 뱃지.
-function buildMarkerHTML(p: MapComplexPoint, quintile: number, isSelected: boolean, dealType: DealTypeFilter = 'trade'): string {
-  const bg = DEAL_RAMPS[dealType][quintile];
+// 네이버페이 부동산식 집 모양 마커 — 검정 지붕(대표면적㎡) + 흰 본문(가격 2줄) + 아래 단지명.
+function buildMarkerHTML(p: MapComplexPoint, isSelected: boolean, dealType: DealTypeFilter = 'trade'): string {
+  // primary 가격 줄 (검정 볼드)
   const priceLabel = formatKoreanPrice(p.avg_price_manwon, 'compact');
+  const primaryPrefix = dealType === 'jeonse' ? '전' : dealType === 'presale' ? '분' : dealType === 'wolse' ? '월' : '매';
+  const primaryValue = dealType === 'wolse' && p.avg_monthly_manwon
+    ? `${priceLabel}/${p.avg_monthly_manwon}`
+    : priceLabel;
 
-  // 거래 유형 표시: 매매는 가격만, 전세/분양권은 작은 prefix, 월세는 보증금/월세
-  const prefix = dealType === 'jeonse' ? '전' : dealType === 'presale' ? '분' : '';
-  const prefixHtml = prefix
-    ? `<span style="font-size:9px;font-weight:700;opacity:0.85;margin-right:2px;vertical-align:1px;">${prefix}</span>`
+  // 보조 가격 줄 (초록) — 매매 탭이면 전세, 그 외 탭이면 매매
+  const secondaryManwon = dealType === 'trade' ? p.avg_jeonse_manwon : p.avg_trade_manwon;
+  const secondaryPrefix = dealType === 'trade' ? '전' : '매';
+  const secondaryGreen = isSelected ? MARKER_GREEN_LIGHT : MARKER_GREEN;
+  const secondaryHtml = secondaryManwon
+    ? `<div style="font-size:11px;font-weight:700;line-height:1.25;color:${secondaryGreen};white-space:nowrap;">
+        <span style="font-size:9px;font-weight:700;margin-right:2px;vertical-align:0.5px;">${secondaryPrefix}</span>${formatKoreanPrice(secondaryManwon, 'compact')}
+      </div>`
     : '';
-  const priceHtml = dealType === 'wolse' && p.avg_monthly_manwon
-    ? `${priceLabel}<span style="font-size:10px;font-weight:700;opacity:0.9;">/${p.avg_monthly_manwon}</span>`
-    : `${prefixHtml}${priceLabel}`;
 
-  // 단지명 6자 컷
+  // 지붕: 대표면적 (오피스텔은 OP 표기)
+  const roofLabel = `${p.property_type === 'officetel' ? 'OP ' : ''}${p.rep_area ? `${p.rep_area}㎡` : ''}`.trim();
+
+  // 단지명: 집 아래 — 지도 라벨처럼 흰 halo. 절대배치라 anchor(집 바닥)에 영향 없음.
   const nameRaw = p.complex_name || '';
-  const nameLabel = nameRaw.length > 7 ? `${nameRaw.slice(0, 6)}…` : nameRaw;
-
-  // 오피스텔 식별 점 (단지명 줄 앞)
-  const typeDot = p.property_type === 'officetel'
-    ? `<span style="display:inline-block;width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,0.9);margin-right:3px;vertical-align:middle;"></span>`
-    : '';
+  const nameLabel = nameRaw.length > 9 ? `${nameRaw.slice(0, 8)}…` : nameRaw;
 
   // 거래건수 뱃지 (우상단, 1건이면 숨김)
   const countBadge = p.trade_count > 1
     ? `<div style="
-        position:absolute;top:-7px;right:-7px;
+        position:absolute;top:-6px;right:-8px;
         min-width:17px;height:17px;padding:0 4px;border-radius:9px;
-        background:#ffffff;color:${bg};
-        font-size:9px;font-weight:800;line-height:17px;text-align:center;
-        box-shadow:0 1px 3px rgba(0,0,0,0.28);
+        background:${MARKER_DARK};color:#ffffff;
+        border:1.5px solid #ffffff;
+        font-size:9px;font-weight:800;line-height:14px;text-align:center;
+        box-shadow:0 1px 3px rgba(0,0,0,0.25);
         font-variant-numeric:tabular-nums;
+        z-index:2;
       ">${p.trade_count > 99 ? '99+' : p.trade_count}</div>`
     : '';
 
   const wrapperTransform = isSelected
-    ? 'transform: translate(-50%, -100%) scale(1.12);'
+    ? 'transform: translate(-50%, -100%) scale(1.1);'
     : 'transform: translate(-50%, -100%);';
   const wrapperZ = isSelected ? 1000 : (p.property_type === 'officetel' ? 50 : 100);
-  const bubbleShadow = isSelected
-    ? `box-shadow: 0 0 0 2px #ffffff, 0 0 0 3.5px ${bg}, 0 12px 24px -6px rgba(0,0,0,0.35);`
-    : 'box-shadow: 0 4px 12px -2px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.1);';
+
+  // 선택 시 본문 다크 반전
+  const bodyBg = isSelected ? MARKER_DARK : '#ffffff';
+  const bodyColor = isSelected ? '#ffffff' : MARKER_DARK;
+  const bodyBorder = isSelected ? MARKER_DARK : MARKER_BORDER;
+  const houseShadow = isSelected
+    ? 'filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));'
+    : 'filter: drop-shadow(0 3px 8px rgba(0,0,0,0.22));';
 
   return `
     <div style="
@@ -200,52 +197,61 @@ function buildMarkerHTML(p: MapComplexPoint, quintile: number, isSelected: boole
       z-index: ${wrapperZ};
       cursor: pointer;
       transition: transform 0.15s ease-out;
+      position: relative;
     ">
-      <div style="
-        position: relative;
-        background: ${bg};
-        color: #ffffff;
-        padding: 4px 10px 3px;
-        border-radius: 8px;
-        ${bubbleShadow}
-        font-family: ${MARKER_FONT};
-        text-align: center;
-        font-variant-numeric: tabular-nums;
-        min-width: 48px;
-        max-width: 110px;
-      ">
+      <div style="${houseShadow}">
         <div style="
-          font-size: 14px;
-          font-weight: 800;
-          line-height: 1.15;
-          letter-spacing: -0.02em;
-          white-space: nowrap;
-        ">${priceHtml}</div>
-        <div style="
-          font-size: 9.5px;
-          font-weight: 500;
-          line-height: 1.2;
-          color: rgba(255,255,255,0.88);
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        ">${typeDot}${nameLabel}</div>
-        ${countBadge}
+          position: relative;
+          min-width: 58px;
+          max-width: 110px;
+          font-family: ${MARKER_FONT};
+          font-variant-numeric: tabular-nums;
+          text-align: center;
+        ">
+          <div style="
+            height: 19px;
+            background: ${MARKER_DARK};
+            clip-path: polygon(50% 0, 100% 58%, 100% 100%, 0 100%, 0 58%);
+            display: flex; align-items: flex-end; justify-content: center;
+            padding-bottom: 1px;
+            color: #ffffff;
+            font-size: 9px; font-weight: 700; letter-spacing: -0.01em;
+            white-space: nowrap;
+          ">${roofLabel}</div>
+          <div style="
+            background: ${bodyBg};
+            color: ${bodyColor};
+            border: 1px solid ${bodyBorder};
+            border-top: none;
+            border-radius: 0 0 5px 5px;
+            padding: 2px 8px 3px;
+          ">
+            <div style="font-size:13px;font-weight:800;line-height:1.25;letter-spacing:-0.02em;white-space:nowrap;">
+              <span style="font-size:9px;font-weight:700;opacity:0.75;margin-right:2px;vertical-align:0.5px;">${primaryPrefix}</span>${primaryValue}
+            </div>
+            ${secondaryHtml}
+          </div>
+          ${countBadge}
+        </div>
       </div>
       <div style="
-        width: 0; height: 0; margin: 0 auto;
-        border-left: 5px solid transparent;
-        border-right: 5px solid transparent;
-        border-top: 6px solid ${bg};
-        filter: drop-shadow(0 2px 1px rgba(0,0,0,0.12));
-      "></div>
+        position: absolute;
+        top: 100%; left: 50%;
+        transform: translateX(-50%);
+        margin-top: 1px;
+        font-family: ${MARKER_FONT};
+        font-size: 10px; font-weight: 600;
+        color: #444448;
+        white-space: nowrap;
+        text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 4px #fff;
+        pointer-events: none;
+      ">${nameLabel}</div>
     </div>
   `;
 }
 
-// 집계 마커 — 구(원형) / 동(둥근 사각). 클릭 시 드릴다운 줌인.
-function buildAggMarkerHTML(a: MapAggregatePoint, level: 'gu' | 'dong', dealType: DealTypeFilter): string {
-  const accent = DEAL_RAMPS[dealType][2]; // 중간 농도
+// 집계 마커 — 구(원형) / 동(둥근 사각). 무채색 다크 톤 (집 마커 지붕과 동일). 클릭 시 드릴다운 줌인.
+function buildAggMarkerHTML(a: MapAggregatePoint, level: 'gu' | 'dong'): string {
   const priceLabel = formatKoreanPrice(a.avg_price_manwon, 'compact');
 
   if (level === 'gu') {
@@ -257,7 +263,7 @@ function buildAggMarkerHTML(a: MapAggregatePoint, level: 'gu' | 'dong', dealType
       ">
         <div style="
           width: 68px; height: 68px; border-radius: 50%;
-          background: ${accent}e6;
+          background: rgba(30,30,35,0.92);
           border: 2px solid rgba(255,255,255,0.95);
           box-shadow: 0 6px 16px -4px rgba(0,0,0,0.3);
           display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -266,7 +272,7 @@ function buildAggMarkerHTML(a: MapAggregatePoint, level: 'gu' | 'dong', dealType
         ">
           <div style="font-size:10px;font-weight:600;line-height:1.2;opacity:0.92;max-width:60px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name}</div>
           <div style="font-size:13px;font-weight:800;line-height:1.2;letter-spacing:-0.02em;">${priceLabel}</div>
-          <div style="font-size:9px;font-weight:600;opacity:0.85;line-height:1.2;">${a.trade_count.toLocaleString()}건</div>
+          <div style="font-size:9px;font-weight:600;color:${MARKER_GREEN_LIGHT};line-height:1.2;">${a.trade_count.toLocaleString()}건</div>
         </div>
       </div>
     `;
@@ -280,7 +286,7 @@ function buildAggMarkerHTML(a: MapAggregatePoint, level: 'gu' | 'dong', dealType
       transition: transform 0.15s ease-out;
     ">
       <div style="
-        background: ${accent}f2;
+        background: rgba(30,30,35,0.92);
         border: 1.5px solid rgba(255,255,255,0.95);
         border-radius: 14px;
         padding: 4px 11px;
@@ -447,8 +453,6 @@ export default function MarketMap({
       return;
     }
 
-    // 5분위 계산용 정렬된 가격 배열 (binary search lookup)
-    const sortedPrices = points.map((p) => p.avg_price_manwon).sort((a, b) => a - b);
     const existing = markersRef.current;
     const nextKeys = new Set(points.map((p) => p.complex_key));
 
@@ -462,9 +466,8 @@ export default function MarketMap({
 
     // 2) 신규 생성 / 변경분만 setIcon (선택 변경 시 2개만 갱신됨)
     for (const p of points) {
-      const q = quintileOf(p.avg_price_manwon, sortedPrices);
       const isSelected = selectedKey === p.complex_key;
-      const html = buildMarkerHTML(p, q, isSelected, dealType);
+      const html = buildMarkerHTML(p, isSelected, dealType);
       const zIndex = isSelected ? 1000 : (p.property_type === 'officetel' ? 50 : 100);
       const entry = existing.get(p.complex_key);
 
@@ -529,7 +532,7 @@ export default function MarketMap({
             position: new naver.maps.LatLng(a.lat, a.lng),
             map: mapRef.current,
             icon: {
-              content: buildAggMarkerHTML(a, level, dealType),
+              content: buildAggMarkerHTML(a, level),
               size: new naver.maps.Size(0, 0),
               anchor: new naver.maps.Point(0, 0),
             },
@@ -548,7 +551,7 @@ export default function MarketMap({
         }
       })
       .filter((m): m is NaverMarker => m !== null);
-  }, [aggregates, markerMode, dealType]);
+  }, [aggregates, markerMode]);
 
   // 중개업소 보조 마커 레이어 (토글 on일 때만 brokers 전달됨)
   useEffect(() => {

@@ -88,6 +88,8 @@ export default function MarketPageClient() {
 
   // 줌 레벨별 마커 모드 (idle 콜백에서 갱신)
   const [markerMode, setMarkerMode] = useState<MarkerMode>(() => modeForZoom(zoom));
+  // 줌 15 이상 = 근접 — 단지 마커 전량 표시. 14(중간)는 과밀 방지로 상위 N개만.
+  const [nearZoom, setNearZoom] = useState(() => zoom >= 15);
 
   // 모바일 바텀시트 / 필터시트
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek');
@@ -159,6 +161,10 @@ export default function MarketPageClient() {
         const next = modeForZoom(z);
         return prev === next ? prev : next;
       });
+      setNearZoom((prev) => {
+        const next = z >= 15;
+        return prev === next ? prev : next;
+      });
       setLawdCd((prev) => {
         const next = nearestLawdCd(lat, lng);
         return prev === next ? prev : next;
@@ -186,9 +192,6 @@ export default function MarketPageClient() {
   ) => {
     setLoading(true);
     try {
-      // API deal: trade=매매, jeonse/wolse=rent (서버가 rent로 합쳐 가져옴), presale=분양권
-      const apiDeal = dt === 'trade' ? 'trade' : dt === 'presale' ? 'presale_resale' : 'rent';
-
       type Tx = {
         complex_key: string;
         complex_name: string;
@@ -200,72 +203,118 @@ export default function MarketPageClient() {
         build_year: number | null;
       };
       type CoordEntry = { lat: number | null; lng: number | null; hhld_cnt: number | null; build_year: number | null };
-      let txs: Tx[] = [];
-      let complex_coords: Record<string, CoordEntry> = {};
 
-      // bounds 모드 우선 시도
-      if (bStr) {
-        const res = await fetch(`/api/market/transactions?bounds=${bStr}&type=${pt}&deal=${apiDeal}&months=6`);
-        if (res.ok) {
+      // 집 마커가 매매+전세를 병기하므로 trade/rent를 항상 함께 fetch. 분양권 탭이면 +1.
+      const apiDeals = dt === 'presale' ? ['trade', 'rent', 'presale_resale'] : ['trade', 'rent'];
+      const complex_coords: Record<string, CoordEntry> = {};
+      const txsByDeal: Record<string, Tx[]> = {};
+
+      const fetchDeal = async (apiDeal: string): Promise<Tx[]> => {
+        // bounds 모드 우선, 미설정(초기 마운트) 시 lawd_cd 안전망 (최근 3개월 순차)
+        if (bStr) {
+          const res = await fetch(`/api/market/transactions?bounds=${bStr}&type=${pt}&deal=${apiDeal}&months=6`);
+          if (!res.ok) return [];
           const data = await res.json();
-          txs = (data.transactions || []) as Tx[];
-          complex_coords = data.complex_coords || {};
+          Object.assign(complex_coords, data.complex_coords || {});
+          return (data.transactions || []) as Tx[];
         }
-      }
-
-      // bounds 결과 없거나 bounds 미설정(초기 마운트) → lawd_cd 모드 안전망
-      if (txs.length === 0 && !bStr) {
-        // 실거래 1~2개월 지연 고려, 최근 3개월 순차 시도
         const now = new Date();
-        const candidateYms = [1, 2, 3].map((lag) => {
+        for (const lag of [1, 2, 3]) {
           const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
-          return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
-        });
-        for (const ym of candidateYms) {
+          const ym = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
           const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
           if (!res.ok) continue;
           const data = await res.json();
           const arr = (data.transactions || []) as Tx[];
           if (arr.length > 0) {
-            txs = arr;
-            complex_coords = data.complex_coords || {};
-            break;
+            Object.assign(complex_coords, data.complex_coords || {});
+            return arr;
           }
+        }
+        return [];
+      };
+
+      await Promise.all(
+        apiDeals.map(async (d) => {
+          txsByDeal[d] = await fetchDeal(d);
+        }),
+      );
+
+      // 평형/연식 필터 (모든 거래 유형에 동일 적용)
+      const passBands = (t: Tx) => {
+        if (!matchAreaBand(t.exclusive_area, ab)) return false;
+        const buildYear = t.build_year ?? complex_coords[t.complex_key]?.build_year;
+        return matchAgeBand(buildYear, ag);
+      };
+
+      // 단지별 이중 집계 — primary(현재 탭) + 매매/전세(집 마커 병기용)
+      interface Agg {
+        name: string;
+        dong: string | null;
+        primary: number[];        // 현재 탭 기준 가격 (정렬/마커 1줄)
+        primaryAreas: number[];   // 대표면적용
+        monthlies: number[];      // 월세
+        trades: number[];         // 매매 (병기)
+        jeonses: number[];        // 전세 보증금 (병기)
+      }
+      const map = new Map<string, Agg>();
+      const getAgg = (t: Tx): Agg => {
+        let a = map.get(t.complex_key);
+        if (!a) {
+          a = { name: t.complex_name, dong: t.dong ?? null, primary: [], primaryAreas: [], monthlies: [], trades: [], jeonses: [] };
+          map.set(t.complex_key, a);
+        }
+        return a;
+      };
+
+      for (const t of txsByDeal['trade'] || []) {
+        if (!passBands(t) || !(t.price_manwon || 0)) continue;
+        const a = getAgg(t);
+        a.trades.push(t.price_manwon);
+        if (dt === 'trade') {
+          a.primary.push(t.price_manwon);
+          if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
+        }
+      }
+      for (const t of txsByDeal['rent'] || []) {
+        if (!passBands(t)) continue;
+        const isJeonse = (t.monthly_manwon || 0) === 0 && (t.deposit_manwon || 0) > 0;
+        const isWolse = (t.monthly_manwon || 0) > 0;
+        if (isJeonse) {
+          const a = getAgg(t);
+          a.jeonses.push(t.deposit_manwon);
+          if (dt === 'jeonse') {
+            a.primary.push(t.deposit_manwon);
+            if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
+          }
+        } else if (isWolse && dt === 'wolse' && (t.deposit_manwon || 0) > 0) {
+          const a = getAgg(t);
+          a.primary.push(t.deposit_manwon);
+          a.monthlies.push(t.monthly_manwon);
+          if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
+        }
+      }
+      for (const t of txsByDeal['presale_resale'] || []) {
+        if (!passBands(t) || !(t.price_manwon || 0)) continue;
+        const a = getAgg(t);
+        if (dt === 'presale') {
+          a.primary.push(t.price_manwon);
+          if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
         }
       }
 
-      // 1차 필터: 거래 유형(매매/전세/월세/분양권) + 평형 + 연식
-      const filtered = txs.filter((t) => {
-        if (dt === 'trade' && !(t.price_manwon || 0)) return false;
-        if (dt === 'presale' && !(t.price_manwon || 0)) return false;
-        if (dt === 'jeonse' && !((t.monthly_manwon || 0) === 0 && (t.deposit_manwon || 0) > 0)) return false;
-        if (dt === 'wolse' && !(t.monthly_manwon || 0)) return false;
-        if (!matchAreaBand(t.exclusive_area, ab)) return false;
-        const buildYear = t.build_year ?? complex_coords[t.complex_key]?.build_year;
-        if (!matchAgeBand(buildYear, ag)) return false;
-        return true;
-      });
+      const avg = (arr: number[]) => (arr.length > 0 ? Math.round(arr.reduce((x, y) => x + y, 0) / arr.length) : undefined);
+      const median = (arr: number[]) => {
+        if (arr.length === 0) return undefined;
+        const s = [...arr].sort((x, y) => x - y);
+        return Math.round(s[Math.floor(s.length / 2)]);
+      };
 
-      // 단지별 평균 집계 — dealType에 따라 다른 필드 사용
-      const map = new Map<string, { name: string; dong: string | null; deposits: number[]; monthlies: number[] }>();
-      filtered.forEach((t) => {
-        const mainPrice = (dt === 'trade' || dt === 'presale') ? t.price_manwon : t.deposit_manwon;
-        if (!mainPrice) return;
-        if (!map.has(t.complex_key)) {
-          map.set(t.complex_key, { name: t.complex_name, dong: t.dong ?? null, deposits: [], monthlies: [] });
-        }
-        const entry = map.get(t.complex_key)!;
-        entry.deposits.push(mainPrice);
-        if (dt === 'wolse' && t.monthly_manwon) {
-          entry.monthlies.push(t.monthly_manwon);
-        }
-      });
-
-      // 좌표: complexes 마스터(백필 완료) 좌표만 사용 — 좌표 없는 단지는 마커 제외.
-      // 세대수 필터는 단지 단위에 적용
+      // 표시 단지 = 현재 탭 거래가 있고 좌표가 있는 단지. 세대수 필터는 단지 단위.
       const dongMap: Record<string, string | null> = {};
       const pts: MapComplexPoint[] = Array.from(map.entries())
-        .filter(([key]) => {
+        .filter(([key, v]) => {
+          if (v.primary.length === 0) return false;
           const real = complex_coords[key];
           if (!real || real.lat == null || real.lng == null) return false;
           return matchHouseholdBand(real.hhld_cnt, hh);
@@ -273,18 +322,17 @@ export default function MarketPageClient() {
         .map(([key, v]) => {
           const real = complex_coords[key];
           dongMap[key] = v.dong;
-          const avgDeposit = Math.round(v.deposits.reduce((a, b) => a + b, 0) / v.deposits.length);
-          const avgMonthly = v.monthlies.length > 0
-            ? Math.round(v.monthlies.reduce((a, b) => a + b, 0) / v.monthlies.length)
-            : undefined;
           return {
             complex_key: key,
             complex_name: v.name,
             lat: real.lat!,
             lng: real.lng!,
-            avg_price_manwon: avgDeposit,
-            avg_monthly_manwon: avgMonthly,
-            trade_count: v.deposits.length,
+            avg_price_manwon: avg(v.primary)!,
+            avg_monthly_manwon: avg(v.monthlies),
+            avg_trade_manwon: avg(v.trades),
+            avg_jeonse_manwon: avg(v.jeonses),
+            rep_area: median(v.primaryAreas),
+            trade_count: v.primary.length,
             property_type: pt,
           };
         });
@@ -300,6 +348,20 @@ export default function MarketPageClient() {
   };
 
   const selectedPoint = selectedKey ? points.find((p) => p.complex_key === selectedKey) : undefined;
+
+  // 줌 14(중간)에서는 집 마커 과밀 방지 — 거래량 상위 N개만 지도에 표시 (리스트는 전체 유지)
+  const MAX_MID_ZOOM_MARKERS = 90;
+  const mapPoints = useMemo(() => {
+    if (markerMode !== 'complex' || nearZoom || points.length <= MAX_MID_ZOOM_MARKERS) return points;
+    const top = [...points]
+      .sort((a, b) => b.trade_count - a.trade_count)
+      .slice(0, MAX_MID_ZOOM_MARKERS);
+    if (selectedKey && !top.some((p) => p.complex_key === selectedKey)) {
+      const sel = points.find((p) => p.complex_key === selectedKey);
+      if (sel) top.push(sel);
+    }
+    return top;
+  }, [points, markerMode, nearZoom, selectedKey]);
 
   // 단지 선택 (마커/리스트/검색) — 모바일은 시트 half로 올림
   const handleSelect = useCallback((key: string) => {
@@ -478,7 +540,7 @@ export default function MarketPageClient() {
           <MarketMap
             center={center}
             zoom={zoom}
-            points={points}
+            points={mapPoints}
             onSelect={handleSelect}
             selectedKey={selectedKey}
             dealType={dealType}
@@ -541,7 +603,7 @@ export default function MarketPageClient() {
                   <div className="text-sm font-bold text-market-text truncate">{selectedPoint.complex_name}</div>
                   <div className="text-[11px] text-market-text-mute tabular-nums">거래 {selectedPoint.trade_count}건</div>
                 </div>
-                <div className="text-lg font-extrabold text-deal-trade tabular-nums flex-shrink-0">
+                <div className="text-lg font-extrabold text-market-text tabular-nums flex-shrink-0">
                   {formatKoreanPrice(selectedPoint.avg_price_manwon, 'compact')}
                 </div>
               </div>
