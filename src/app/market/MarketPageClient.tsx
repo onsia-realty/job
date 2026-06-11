@@ -196,6 +196,7 @@ export default function MarketPageClient() {
         complex_key: string;
         complex_name: string;
         dong: string | null;
+        deal_date: string;
         price_manwon: number;
         deposit_manwon: number;
         monthly_manwon: number;
@@ -247,24 +248,39 @@ export default function MarketPageClient() {
         return matchAgeBand(buildYear, ag);
       };
 
-      // 단지별 이중 집계 — primary(현재 탭) + 매매/전세(집 마커 병기용)
+      // 단지별 이중 집계 — primary(현재 탭) 평균 + 최근 실거래 + 매매/전세 참고치
       interface Agg {
         name: string;
         dong: string | null;
-        primary: number[];        // 현재 탭 기준 가격 (정렬/마커 1줄)
+        primary: number[];        // 현재 탭 기준 가격 (정렬/마커 1줄 평균)
         primaryAreas: number[];   // 대표면적용
         monthlies: number[];      // 월세
-        trades: number[];         // 매매 (병기)
-        jeonses: number[];        // 전세 보증금 (병기)
+        trades: number[];         // 매매 (참고)
+        jeonses: number[];        // 전세 보증금 (참고)
+        latestDate: string;       // 현재 탭 기준 가장 최근 실거래일
+        latestPrice?: number;     // 최근 실거래가 (마커 "실 X억")
+        latestMonthly?: number;   // 월세 탭의 최근 실거래 월세
       }
       const map = new Map<string, Agg>();
       const getAgg = (t: Tx): Agg => {
         let a = map.get(t.complex_key);
         if (!a) {
-          a = { name: t.complex_name, dong: t.dong ?? null, primary: [], primaryAreas: [], monthlies: [], trades: [], jeonses: [] };
+          a = {
+            name: t.complex_name, dong: t.dong ?? null,
+            primary: [], primaryAreas: [], monthlies: [], trades: [], jeonses: [],
+            latestDate: '',
+          };
           map.set(t.complex_key, a);
         }
         return a;
+      };
+      // 현재 탭 기준 최근 실거래 갱신
+      const trackLatest = (a: Agg, t: Tx, price: number, monthly?: number) => {
+        if ((t.deal_date || '') > a.latestDate) {
+          a.latestDate = t.deal_date || '';
+          a.latestPrice = price;
+          a.latestMonthly = monthly;
+        }
       };
 
       for (const t of txsByDeal['trade'] || []) {
@@ -274,6 +290,7 @@ export default function MarketPageClient() {
         if (dt === 'trade') {
           a.primary.push(t.price_manwon);
           if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
+          trackLatest(a, t, t.price_manwon);
         }
       }
       for (const t of txsByDeal['rent'] || []) {
@@ -286,12 +303,14 @@ export default function MarketPageClient() {
           if (dt === 'jeonse') {
             a.primary.push(t.deposit_manwon);
             if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
+            trackLatest(a, t, t.deposit_manwon);
           }
         } else if (isWolse && dt === 'wolse' && (t.deposit_manwon || 0) > 0) {
           const a = getAgg(t);
           a.primary.push(t.deposit_manwon);
           a.monthlies.push(t.monthly_manwon);
           if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
+          trackLatest(a, t, t.deposit_manwon, t.monthly_manwon);
         }
       }
       for (const t of txsByDeal['presale_resale'] || []) {
@@ -300,6 +319,7 @@ export default function MarketPageClient() {
         if (dt === 'presale') {
           a.primary.push(t.price_manwon);
           if (t.exclusive_area) a.primaryAreas.push(t.exclusive_area);
+          trackLatest(a, t, t.price_manwon);
         }
       }
 
@@ -331,6 +351,8 @@ export default function MarketPageClient() {
             avg_monthly_manwon: avg(v.monthlies),
             avg_trade_manwon: avg(v.trades),
             avg_jeonse_manwon: avg(v.jeonses),
+            latest_price_manwon: v.latestPrice,
+            latest_monthly_manwon: v.latestMonthly,
             rep_area: median(v.primaryAreas),
             trade_count: v.primary.length,
             property_type: pt,

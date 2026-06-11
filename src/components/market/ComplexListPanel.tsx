@@ -38,11 +38,6 @@ export default function ComplexListPanel({ points, dealType, loading, markerMode
     return arr;
   }, [points, sortKey]);
 
-  // 보조 가격 (집 마커와 동일 규칙 — 매매 탭이면 전세, 그 외엔 매매)
-  const secondaryOf = (p: MapComplexPoint) =>
-    dealType === 'trade' ? p.avg_jeonse_manwon : p.avg_trade_manwon;
-  const secondaryPrefix = dealType === 'trade' ? '전' : '매';
-
   return (
     <div className="h-full flex flex-col bg-market-surface font-jakarta text-market-text overflow-hidden">
       {/* 헤더 — 단지 수 + 정렬 */}
@@ -107,9 +102,10 @@ export default function ComplexListPanel({ points, dealType, loading, markerMode
                 <div className="text-[15px] font-extrabold tabular-nums" style={{ color: PRICE_DARK }}>
                   {formatKoreanPrice(p.avg_price_manwon, 'compact')}
                 </div>
-                {secondaryOf(p) != null && (
+                {p.latest_price_manwon != null && (
                   <div className="text-[11px] font-bold tabular-nums" style={{ color: PRICE_GREEN }}>
-                    {secondaryPrefix} {formatKoreanPrice(secondaryOf(p)!, 'compact')}
+                    실 {formatKoreanPrice(p.latest_price_manwon, 'compact')}
+                    {dealType === 'wolse' && p.latest_monthly_manwon != null && `/${p.latest_monthly_manwon}`}
                   </div>
                 )}
               </div>
