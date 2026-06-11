@@ -36,10 +36,12 @@ async function runSync(req: NextRequest) {
   //    미백필분에 영영 도달 못 함 (geocode cron과 동일한 버그였음).
   //    존재 확인 .in()은 50개 청크 (URL 길이 한도).
   type Candidate = { complex_key: string; complex_name: string; pnu: string };
+  // 스캔 페이지 상한은 전체 단지 수를 덮을 만큼 충분히 — 40으로 끊으면 8,000행 너머의
+  // 단지에 영영 도달 못 함 (페이지당 200행 × 150 = 3만 행 커버)
   const toFetch: Candidate[] = [];
   let scanCursor = '';
   let scanned = 0;
-  for (let page = 0; page < 40 && toFetch.length < limit; page++) {
+  for (let page = 0; page < 150 && toFetch.length < limit; page++) {
     const { data: rows, error: cErr } = await supabaseAdmin
       .from('complexes')
       .select('complex_key, complex_name, pnu')
@@ -87,6 +89,17 @@ async function runSync(req: NextRequest) {
       const row = await fetchBuildingTitle(c.pnu, service_key!);
       if (!row) {
         summary.not_found++;
+        // 표제부 없음도 스텁으로 기록 — 안 하면 매 실행마다 같은 단지를 무한 재시도
+        await supabaseAdmin.from('building_ledgers').upsert(
+          {
+            pnu: c.pnu,
+            sigungu_cd: c.pnu.slice(0, 5),
+            bjdong_cd: c.pnu.slice(5, 10),
+            raw: { not_found: true },
+            fetched_at: new Date().toISOString(),
+          },
+          { onConflict: 'pnu' },
+        );
         return;
       }
       const { error: upErr } = await supabaseAdmin
