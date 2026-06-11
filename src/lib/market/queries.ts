@@ -4,6 +4,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import type { ComplexDetail } from '@/lib/market/types';
 import type { SearchResult } from '@/components/market/MarketSearch';
 import type { GuAggregate } from '@/lib/market/aggregateMarkers';
+import type { Surroundings } from '@/lib/market/surroundings';
 
 // 차트 기간 범위 (Phase 3에서 UI 노출). API ?range= 로 전달.
 export type ChartRange = '1m' | '6m' | '1y' | '3y' | '5y';
@@ -54,6 +55,24 @@ export function useGuAggregates(propertyType: 'apt' | 'officetel', enabled: bool
         `/api/market/aggregates?level=gu&type=${propertyType}`,
       ).then((d) => d.aggregates || []),
     staleTime: 60 * 60 * 1000, // 구 평균은 일 단위 변동 — 1시간 캐시
+  });
+}
+
+// 단지 주변 학교/지하철/버스 — /api/market/surroundings (인근 탭)
+export function useSurroundings(
+  lat: number | null | undefined,
+  lng: number | null | undefined,
+  address: string | null | undefined,
+  enabled: boolean,
+) {
+  return useQuery({
+    queryKey: ['market', 'surroundings', lat, lng],
+    enabled: enabled && lat != null && lng != null,
+    queryFn: () =>
+      fetchJson<Surroundings>(
+        `/api/market/surroundings?lat=${lat}&lng=${lng}&address=${encodeURIComponent(address || '')}`,
+      ),
+    staleTime: 24 * 60 * 60 * 1000, // 주변 시설은 사실상 정적 — 24시간
   });
 }
 

@@ -62,12 +62,14 @@ export async function GET(
     try {
       const { data: cm } = await supabaseAdmin
         .from('complexes')
-        .select('lat, lng, road_address, hhld_cnt, build_year, grnd_flr_cnt, pnu')
+        .select('lat, lng, road_address, jibun_address, hhld_cnt, build_year, grnd_flr_cnt, pnu')
         .eq('complex_key', complex_key)
         .maybeSingle();
       if (cm) {
         complex_meta = {
-          lat: cm.lat, lng: cm.lng, road_address: cm.road_address,
+          lat: cm.lat, lng: cm.lng,
+          // 지오코딩 백필이 jibun_address만 채우므로 coalesce (헤더 주소 + 주변정보 도시 추출용)
+          road_address: cm.road_address ?? cm.jibun_address,
           hhld_cnt: cm.hhld_cnt, build_year: cm.build_year, grnd_flr_cnt: cm.grnd_flr_cnt,
         };
         pnu = cm.pnu;
