@@ -36,6 +36,15 @@ export interface MapAggregatePoint {
   complex_count: number;
 }
 
+// 인근 탭 대중교통/학교 클릭 시 단지→목적지 점선 안내
+export interface RouteOverlay {
+  from: [number, number];
+  to: [number, number];
+  label: string;       // 목적지 이름 (예: "대치역")
+  sub?: string;        // 보조 텍스트 (예: "도보 5분")
+  color?: string;
+}
+
 interface MarketMapProps {
   center: [number, number];
   zoom?: number;
@@ -47,6 +56,8 @@ interface MarketMapProps {
   // 줌 레벨별 마커 모드 — gu(구 집계)/dong(동 집계)/complex(단지 개별)
   markerMode?: MarkerMode;
   aggregates?: MapAggregatePoint[];
+  // 단지 → 인근 시설 점선 안내 (null이면 제거)
+  routeOverlay?: RouteOverlay | null;
   onCenterChanged?: (lat: number, lng: number) => void;  // 지도 idle 시 중심 콜백 (legacy)
   // viewport bounds 콜백 — idle 시 SW/NE 모서리 좌표 전달. bounds 기반 데이터 조회용.
   onBoundsChanged?: (sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number) => void;
@@ -64,6 +75,7 @@ declare global {
         Map: new (el: HTMLElement, opts: object) => NaverMap;
         LatLng: new (lat: number, lng: number) => NaverLatLng;
         Marker: new (opts: object) => NaverMarker;
+        Polyline: new (opts: object) => NaverPolyline;
         Size: new (w: number, h: number) => object;
         Point: new (x: number, y: number) => object;
         Event: {
@@ -94,6 +106,10 @@ interface NaverLatLng {
 interface NaverLatLngBounds {
   getMin: () => NaverLatLng;  // SW
   getMax: () => NaverLatLng;  // NE
+}
+
+interface NaverPolyline {
+  setMap: (m: NaverMap | null) => void;
 }
 
 interface NaverMarker {
@@ -338,6 +354,7 @@ export default function MarketMap({
   dealType = 'trade',
   markerMode = 'complex',
   aggregates = [],
+  routeOverlay = null,
   onCenterChanged,
   onBoundsChanged,
   onViewChanged,
@@ -348,6 +365,7 @@ export default function MarketMap({
   // 단지 마커 diff 렌더용 — key별 마커 + 마지막 렌더 HTML/좌표 캐시 (변경분만 setIcon/setPosition)
   const markersRef = useRef<Map<string, { marker: NaverMarker; html: string; lat: number; lng: number }>>(new Map());
   const aggMarkersRef = useRef<NaverMarker[]>([]);
+  const routeRef = useRef<{ line: NaverPolyline; marker: NaverMarker } | null>(null);
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
   const brokerMarkersRef = useRef<NaverMarker[]>([]);
@@ -428,6 +446,13 @@ export default function MarketMap({
         try { m.setMap(null); } catch { /* ignore */ }
       });
       aggMarkersRef.current = [];
+      if (routeRef.current) {
+        try {
+          routeRef.current.line.setMap(null);
+          routeRef.current.marker.setMap(null);
+        } catch { /* ignore */ }
+        routeRef.current = null;
+      }
       brokerMarkersRef.current.forEach((m) => {
         try { m.setMap(null); } catch { /* ignore */ }
       });
@@ -559,6 +584,67 @@ export default function MarketMap({
       })
       .filter((m): m is NaverMarker => m !== null);
   }, [aggregates, markerMode]);
+
+  // 단지 → 인근 시설 점선 안내 오버레이
+  useEffect(() => {
+    if (!mapRef.current) return;
+    const naver = window.naver;
+    if (!naver?.maps?.Polyline || !naver.maps.LatLng) return;
+
+    // 기존 오버레이 제거
+    if (routeRef.current) {
+      try {
+        routeRef.current.line.setMap(null);
+        routeRef.current.marker.setMap(null);
+      } catch { /* ignore */ }
+      routeRef.current = null;
+    }
+    if (!routeOverlay) return;
+
+    const color = routeOverlay.color || '#2563EB';
+    try {
+      const line = new naver.maps.Polyline({
+        map: mapRef.current,
+        path: [
+          new naver.maps.LatLng(routeOverlay.from[0], routeOverlay.from[1]),
+          new naver.maps.LatLng(routeOverlay.to[0], routeOverlay.to[1]),
+        ],
+        strokeColor: color,
+        strokeWeight: 3,
+        strokeOpacity: 0.9,
+        strokeStyle: 'shortdash',
+        zIndex: 500,
+      });
+      const marker = new naver.maps.Marker({
+        position: new naver.maps.LatLng(routeOverlay.to[0], routeOverlay.to[1]),
+        map: mapRef.current,
+        icon: {
+          content: `
+            <div style="transform: translate(-50%, -120%); z-index: 600; pointer-events: none;">
+              <div style="
+                background: #ffffff; border: 1.5px solid ${color};
+                border-radius: 10px; padding: 3px 9px;
+                box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+                font-family: ${MARKER_FONT}; text-align: center; white-space: nowrap;
+              ">
+                <div style="font-size:11px;font-weight:800;color:#1E1E23;line-height:1.25;">📍 ${routeOverlay.label}</div>
+                ${routeOverlay.sub ? `<div style="font-size:9.5px;font-weight:600;color:${color};line-height:1.2;">${routeOverlay.sub}</div>` : ''}
+              </div>
+              <div style="
+                width:0;height:0;margin:0 auto;
+                border-left:5px solid transparent;border-right:5px solid transparent;
+                border-top:6px solid ${color};
+              "></div>
+            </div>
+          `,
+          size: new naver.maps.Size(0, 0),
+          anchor: new naver.maps.Point(0, 0),
+        },
+        zIndex: 600,
+      });
+      routeRef.current = { line, marker };
+    } catch { /* ignore */ }
+  }, [routeOverlay]);
 
   // 중개업소 보조 마커 레이어 (토글 on일 때만 brokers 전달됨)
   useEffect(() => {

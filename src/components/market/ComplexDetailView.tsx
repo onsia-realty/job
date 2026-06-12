@@ -27,6 +27,8 @@ interface Props {
   point: MapComplexPoint | undefined;
   dealType: DealTypeFilter;
   onClose: () => void;
+  // 인근 시설 클릭 시 지도에 단지→목적지 점선 안내 (null = 제거)
+  onShowRoute?: (dest: { lat: number; lng: number; label: string; sub?: string; color?: string } | null) => void;
 }
 
 const DEAL_COLORS: Record<DealTypeFilter, string> = {
@@ -91,11 +93,24 @@ const DETAIL_TABS: Array<{ value: DetailTab; label: string }> = [
   { value: 'nearby', label: '인근' },
 ];
 
-export default function ComplexDetailView({ complexKey, point, dealType, onClose }: Props) {
+export default function ComplexDetailView({ complexKey, point, dealType, onClose, onShowRoute }: Props) {
   const [range, setRange] = useState<ChartRange>('6m');
   const [metric, setMetric] = useState<Metric>('price');
   const [tab, setTab] = useState<DetailTab>('price');
   const [schoolTab, setSchoolTab] = useState<'elementary' | 'middle' | 'high'>('elementary');
+  // 점선 안내 중인 인근 시설 (카드 하이라이트용)
+  const [activeRoute, setActiveRoute] = useState<string | null>(null);
+
+  // 인근 시설 카드 클릭 — 같은 항목 재클릭 시 안내선 제거 (토글)
+  const toggleRoute = (id: string, dest: { lat: number; lng: number; label: string; sub?: string; color?: string }) => {
+    if (activeRoute === id) {
+      setActiveRoute(null);
+      onShowRoute?.(null);
+    } else {
+      setActiveRoute(id);
+      onShowRoute?.(dest);
+    }
+  };
 
   const { data, isFetching } = useComplexDetail(complexKey, range);
   const detail: ComplexDetail | null = data ?? null;
@@ -596,30 +611,45 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
           ) : !surroundings || surroundings.subway.length === 0 ? (
             <EmptyCard>반경 2km 내 지하철역이 없습니다</EmptyCard>
           ) : (
-            <div className="space-y-1.5 mb-4">
-              {surroundings.subway.map((st, i) => (
-                <div
-                  key={i}
-                  className="bg-market-surface border border-market-border rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 hover:border-market-text-faint transition-colors"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span
-                      className="flex-shrink-0 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
-                      style={{ backgroundColor: st.lineColor }}
-                      title={st.lineName}
-                    >
-                      {st.lineNumber}
-                    </span>
-                    <span className="text-xs font-semibold text-market-text truncate">{st.stationName}</span>
-                    {st.isTransfer && (
-                      <span className="flex-shrink-0 text-[10px] text-deal-jeonse font-medium">(환승)</span>
-                    )}
-                  </div>
-                  <WalkBadge minutes={st.walkingTime} distance={st.distance} />
-                </div>
-              ))}
+            <div className="space-y-1.5 mb-1">
+              {surroundings.subway.map((st, i) => {
+                const id = `subway:${i}`;
+                const active = activeRoute === id;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => toggleRoute(id, {
+                      lat: st.lat, lng: st.lng,
+                      label: `${st.stationName}역`,
+                      sub: `도보 ${st.walkingTime}분`,
+                      color: st.lineColor,
+                    })}
+                    className={`w-full text-left bg-market-surface border rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 transition-all ${
+                      active ? 'ring-2' : 'border-market-border hover:border-market-text-faint'
+                    }`}
+                    style={active ? { borderColor: st.lineColor, ['--tw-ring-color' as string]: `${st.lineColor}33` } : undefined}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className="flex-shrink-0 w-5 h-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center"
+                        style={{ backgroundColor: st.lineColor }}
+                        title={st.lineName}
+                      >
+                        {st.lineNumber}
+                      </span>
+                      <span className="text-xs font-semibold text-market-text truncate">{st.stationName}</span>
+                      {st.isTransfer && (
+                        <span className="flex-shrink-0 text-[10px] text-deal-jeonse font-medium">(환승)</span>
+                      )}
+                      {active && <span className="flex-shrink-0 text-[10px] font-semibold" style={{ color: st.lineColor }}>📍 지도에 표시됨</span>}
+                    </div>
+                    <WalkBadge minutes={st.walkingTime} distance={st.distance} />
+                  </button>
+                );
+              })}
             </div>
           )}
+          <div className="text-[10px] text-market-text-faint mb-4 mt-1">정류장·역을 누르면 지도에 점선으로 경로가 표시됩니다</div>
 
           {/* 버스 */}
           <div className="flex items-center gap-1.5 mb-2">
@@ -635,20 +665,33 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
             <EmptyCard>반경 600m 내 정류장 정보가 없습니다</EmptyCard>
           ) : (
             <div className="space-y-1.5">
-              {surroundings.bus.map((b, i) => (
-                <div
-                  key={i}
-                  className="bg-market-surface border border-market-border rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 hover:border-market-text-faint transition-colors"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
-                      B
-                    </span>
-                    <span className="text-xs font-medium text-market-text truncate">{b.stationName}</span>
-                  </div>
-                  <WalkBadge minutes={b.walkingTime} distance={b.distance} />
-                </div>
-              ))}
+              {surroundings.bus.map((b, i) => {
+                const id = `bus:${i}`;
+                const active = activeRoute === id;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => toggleRoute(id, {
+                      lat: b.lat, lng: b.lng,
+                      label: b.stationName,
+                      sub: `도보 ${b.walkingTime}분`,
+                      color: '#10B981',
+                    })}
+                    className={`w-full text-left bg-market-surface border rounded-xl px-3 py-2.5 flex items-center justify-between gap-2 transition-all ${
+                      active ? 'border-emerald-500 ring-2 ring-emerald-100' : 'border-market-border hover:border-market-text-faint'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center">
+                        B
+                      </span>
+                      <span className="text-xs font-medium text-market-text truncate">{b.stationName}</span>
+                      {active && <span className="flex-shrink-0 text-[10px] font-semibold text-emerald-600">📍 지도에 표시됨</span>}
+                    </div>
+                    <WalkBadge minutes={b.walkingTime} distance={b.distance} />
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -703,29 +746,45 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
             }
             return (
               <div className="space-y-1.5">
-                {list.map((s, i) => (
-                  <div key={i} className="bg-market-surface border border-market-border rounded-xl px-3 py-2.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span
-                          className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
-                            s.walkingTime <= 5 ? 'bg-emerald-500' : s.walkingTime <= 10 ? 'bg-amber-400' : 'bg-orange-500'
-                          }`}
-                        />
-                        <span className="text-xs font-semibold text-market-text truncate">{s.schoolName}</span>
-                        <span className="flex-shrink-0 text-[9px] text-market-text-faint border border-market-border rounded px-1">
-                          {s.foundationType}
+                {list.map((s, i) => {
+                  const id = `school:${schoolTab}:${i}`;
+                  const active = activeRoute === id;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => toggleRoute(id, {
+                        lat: s.lat, lng: s.lng,
+                        label: s.schoolName,
+                        sub: `도보 ${s.walkingTime}분`,
+                        color: '#2563EB',
+                      })}
+                      className={`w-full text-left bg-market-surface border rounded-xl px-3 py-2.5 transition-all ${
+                        active ? 'border-deal-jeonse ring-2 ring-blue-100' : 'border-market-border hover:border-market-text-faint'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${
+                              s.walkingTime <= 5 ? 'bg-emerald-500' : s.walkingTime <= 10 ? 'bg-amber-400' : 'bg-orange-500'
+                            }`}
+                          />
+                          <span className="text-xs font-semibold text-market-text truncate">{s.schoolName}</span>
+                          <span className="flex-shrink-0 text-[9px] text-market-text-faint border border-market-border rounded px-1">
+                            {s.foundationType}
+                          </span>
+                          {active && <span className="flex-shrink-0 text-[10px] font-semibold text-deal-jeonse">📍 지도에 표시됨</span>}
+                        </div>
+                        <span className="flex-shrink-0 text-[10px] text-market-text-mute tabular-nums">
+                          {s.distance < 1 ? `${Math.round(s.distance * 1000)}m` : `${s.distance}km`} / 도보 {s.walkingTime}분
                         </span>
                       </div>
-                      <span className="flex-shrink-0 text-[10px] text-market-text-mute tabular-nums">
-                        {s.distance < 1 ? `${Math.round(s.distance * 1000)}m` : `${s.distance}km`} / 도보 {s.walkingTime}분
-                      </span>
-                    </div>
-                    {i === 0 && (
-                      <div className="text-[10px] text-deal-jeonse font-semibold mt-1 ml-3">가장 가까움</div>
-                    )}
-                  </div>
-                ))}
+                      {i === 0 && (
+                        <div className="text-[10px] text-deal-jeonse font-semibold mt-1 ml-3">가장 가까움</div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             );
           })()}

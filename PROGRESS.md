@@ -16,7 +16,13 @@
 - **집계 마커(구/동)**·리스트 가격·모바일 peek 모두 무채색+초록 톤 통일.
 - 로컬 검증 완료 (이번엔 localhost에서도 NCP 지도 인증 정상 — 마커 실물 확인).
 
-### ⚠️ 미푸시 커밋 2개 — `git push origin main` 필요 (ce10c59 + 이번 커밋)
+### 추가 작업 (2026-06-12 심야)
+- **건축물대장 파이프라인 복구**: pnu 백필(VWorld level4LC=표준 PNU 19자리) + BldRgstHubService 교체 + splitPnu 구분코드 변환 + cron keyset/스텁/스캔상한 수정. **9,997건 수집 완료, 잔여 ~2,400건은 data.go.kr 일일 쿼터(1만) 소진으로 내일 `node scripts/backfill-building-ledgers.mjs --ledger-only` 재실행 필요** (은마 포함)
+- **인근 탭 마피앱 수준**: 지하철(노선뱃지)/버스/학교(탭+범례) 카드 UI + **클릭 시 단지→시설 점선 안내**(RouteOverlay, 노선색 점선 + 📍라벨)
+- **서울 버스 정류장 11,253개 정적 데이터** (`src/data/seoul-bus-stops.json`, 서울 열린데이터광장) — odcloud의 서울 커버리지 부실 보완
+- **파크하비오 버그 2개**: 주상복합 누락(bounds 단지 조회의 type 필터 제거) + loadData 레이스(시퀀스 가드)
+
+### ⚠️ 미푸시 커밋 다수 — `git push origin main` 필요
 
 ---
 

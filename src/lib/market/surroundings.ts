@@ -11,6 +11,7 @@
 
 import schoolsData from '@/data/schools.json';
 import subwayStationsData from '@/data/subway-stations.json';
+import seoulBusStopsData from '@/data/seoul-bus-stops.json';
 
 // ── 공통 ──
 
@@ -50,6 +51,8 @@ export interface NearbySchool {
   schoolName: string;
   schoolType: string;
   foundationType: string;
+  lat: number;
+  lng: number;
   distance: number;     // km
   walkingTime: number;  // 분
 }
@@ -78,6 +81,8 @@ export function getNearbySchools(
         schoolName: x.s.schoolName,
         schoolType: x.s.schoolType,
         foundationType: x.s.foundationType,
+        lat: x.s.latitude,
+        lng: x.s.longitude,
         distance: Math.round(x.distance * 100) / 100,
         walkingTime: walkingMinutes(x.distance),
       }));
@@ -104,6 +109,8 @@ export interface NearbySubway {
   lineColor: string;
   isTransfer: boolean;
   transferLines: string | null;
+  lat: number;
+  lng: number;
   distance: number;
   walkingTime: number;
 }
@@ -158,6 +165,8 @@ export function getNearbySubway(lat: number, lng: number, radiusKm = 2, limit = 
       lineColor: lineColorOf(x.st.lineName),
       isTransfer: x.st.isTransfer,
       transferLines: x.st.transferLines,
+      lat: x.st.latitude,
+      lng: x.st.longitude,
       distance: Math.round(x.distance * 100) / 100,
       walkingTime: walkingMinutes(x.distance),
     }));
@@ -168,8 +177,40 @@ export function getNearbySubway(lat: number, lng: number, radiusKm = 2, limit = 
 export interface NearbyBus {
   stationName: string;
   cityName: string;
+  lat: number;
+  lng: number;
   distance: number;
   walkingTime: number;
+}
+
+interface SeoulBusStop {
+  name: string;
+  lat: number;
+  lng: number;
+  type: string;
+}
+
+// 서울 정류소 11,253개 — 서울 열린데이터광장 busStopLocationXyInfo 정적 변환
+// (전국버스정류장위치정보(odcloud)는 서울 커버리지가 부실해 정적 데이터로 대체)
+const seoulBusStops: SeoulBusStop[] = seoulBusStopsData as SeoulBusStop[];
+
+function nearbySeoulBusStops(lat: number, lng: number, radiusKm: number, limit: number): NearbyBus[] {
+  return seoulBusStops
+    .map((s) => {
+      const distance = haversineKm(lat, lng, s.lat, s.lng);
+      return { s, distance };
+    })
+    .filter((x) => x.distance <= radiusKm)
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, limit)
+    .map((x) => ({
+      stationName: x.s.name,
+      cityName: '서울특별시',
+      lat: x.s.lat,
+      lng: x.s.lng,
+      distance: Math.round(x.distance * 100) / 100,
+      walkingTime: walkingMinutes(x.distance),
+    }));
 }
 
 interface BusStopRow {
@@ -203,8 +244,15 @@ export async function getNearbyBusStops(
   radiusKm = 0.6,
   limit = 5,
 ): Promise<NearbyBus[]> {
-  const apiKey = process.env.DATA_GO_KR_API_KEY;
   const city = extractCityFromAddress(address);
+
+  // 서울은 정적 데이터 (커버리지 완전 + 즉시 응답)
+  if (city === '서울' || !city) {
+    const seoul = nearbySeoulBusStops(lat, lng, radiusKm, limit);
+    if (seoul.length > 0 || city === '서울') return seoul;
+  }
+
+  const apiKey = process.env.DATA_GO_KR_API_KEY;
   if (!apiKey || !city) return [];
 
   try {
@@ -223,6 +271,8 @@ export async function getNearbyBusStops(
         return {
           stationName: stop.정류장명,
           cityName: stop.도시명,
+          lat: sLat,
+          lng: sLng,
           distance: Math.round(distance * 100) / 100,
           walkingTime: walkingMinutes(distance),
         };

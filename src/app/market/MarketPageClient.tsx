@@ -6,7 +6,7 @@ import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MapPin, TrendingUp, Building2, Filter, Store, Briefcase, X, SlidersHorizontal } from 'lucide-react';
-import type { MapComplexPoint, DealTypeFilter, MarkerMode } from '@/components/market/MarketMap.client';
+import type { MapComplexPoint, DealTypeFilter, MarkerMode, RouteOverlay } from '@/components/market/MarketMap.client';
 import ComplexListPanel from '@/components/market/ComplexListPanel';
 import ComplexDetailView from '@/components/market/ComplexDetailView';
 import BottomSheet, { type SheetSnap } from '@/components/market/BottomSheet';
@@ -94,6 +94,12 @@ export default function MarketPageClient() {
   // 모바일 바텀시트 / 필터시트
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>('peek');
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+
+  // 인근 탭 대중교통/학교 클릭 → 단지→목적지 점선 안내
+  const [routeOverlay, setRouteOverlay] = useState<RouteOverlay | null>(null);
+  useEffect(() => {
+    setRouteOverlay(null); // 단지 변경/해제 시 안내선 제거
+  }, [selectedKey]);
 
   // ── 차별화 레이어 토글 (중개업소/구인공고) ──
   const [showBrokers, setShowBrokers] = useState(false);
@@ -425,6 +431,21 @@ export default function MarketPageClient() {
   const activeFilterCount =
     (areaBand !== 'all' ? 1 : 0) + (ageBand !== 'all' ? 1 : 0) + (householdBand !== 'all' ? 1 : 0);
 
+  // 인근 시설 클릭 → 점선 안내 (모바일에서는 시트를 반으로 내려 지도 노출)
+  const handleShowRoute = useCallback(
+    (dest: { lat: number; lng: number; label: string; sub?: string; color?: string } | null) => {
+      if (!dest) {
+        setRouteOverlay(null);
+        return;
+      }
+      const from = selectedPoint ? [selectedPoint.lat, selectedPoint.lng] as [number, number] : null;
+      if (!from) return;
+      setRouteOverlay({ from, to: [dest.lat, dest.lng], label: dest.label, sub: dest.sub, color: dest.color });
+      setSheetSnap((s) => (s === 'full' ? 'half' : s));
+    },
+    [selectedPoint],
+  );
+
   // 사이드 패널 내용 (데스크탑 좌측 / 모바일 바텀시트 공용)
   const sidePanelContent = selectedKey ? (
     <ComplexDetailView
@@ -432,6 +453,7 @@ export default function MarketPageClient() {
       point={selectedPoint}
       dealType={dealType}
       onClose={() => setSelectedKey(null)}
+      onShowRoute={handleShowRoute}
     />
   ) : (
     <ComplexListPanel
@@ -574,6 +596,7 @@ export default function MarketPageClient() {
             dealType={dealType}
             markerMode={markerMode}
             aggregates={aggregates}
+            routeOverlay={routeOverlay}
             onBoundsChanged={handleMapBoundsChanged}
             onViewChanged={handleMapViewChanged}
             brokers={showBrokers ? brokerMarkers : undefined}
