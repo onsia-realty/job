@@ -59,10 +59,11 @@ export async function GET(
       grnd_flr_cnt: number | null;
     } | null = null;
     let pnu: string | null = null;
+    let kapt_code: string | null = null;
     try {
       const { data: cm } = await supabaseAdmin
         .from('complexes')
-        .select('lat, lng, road_address, jibun_address, hhld_cnt, build_year, grnd_flr_cnt, pnu')
+        .select('lat, lng, road_address, jibun_address, hhld_cnt, build_year, grnd_flr_cnt, pnu, kapt_code')
         .eq('complex_key', complex_key)
         .maybeSingle();
       if (cm) {
@@ -73,6 +74,7 @@ export async function GET(
           hhld_cnt: cm.hhld_cnt, build_year: cm.build_year, grnd_flr_cnt: cm.grnd_flr_cnt,
         };
         pnu = cm.pnu;
+        kapt_code = cm.kapt_code ?? null;
       }
     } catch { /* 마이그 미적용 — 무시 */ }
 
@@ -117,6 +119,44 @@ export async function GET(
           };
         }
       } catch { /* 건축물대장 미적용 — graceful */ }
+    }
+
+    // 관리비 (K-apt) — kapt_code join, 최근 12개월. 공용 17 + 개별 10항목 + 총액.
+    type MgmtCostRow = {
+      search_date: string;
+      total_cost: number | null;   // 공용+개별 단지 월 합계
+      cmn_total: number | null;    // 공용관리비 합계
+      ind_total: number | null;    // 개별사용료 합계
+      cmn_labor: number | null; cmn_security: number | null; cmn_cleaning: number | null;
+      cmn_elevator: number | null; cmn_repair: number | null; cmn_consign: number | null;
+      cmn_disinfect: number | null; cmn_network: number | null; cmn_vehicle: number | null;
+      cmn_office: number | null; cmn_tax: number | null; cmn_clothing: number | null;
+      cmn_education: number | null; cmn_etc: number | null; cmn_facility: number | null;
+      cmn_safety: number | null; cmn_disaster: number | null;
+      // 개별사용료 — ind_heat = 난방비 버킷, 나머지 = 기타개별 버킷
+      ind_heat: number | null; ind_hotwater: number | null; ind_gas: number | null;
+      ind_elec: number | null; ind_water: number | null; ind_waste: number | null;
+      ind_insurance: number | null; ind_election: number | null;
+      ind_repr_council: number | null; ind_septic: number | null;
+    };
+    let mgmt_cost: {
+      kapt_code: string;
+      hhld_cnt: number | null;   // 세대당 환산용
+      latest: MgmtCostRow;
+      history: MgmtCostRow[];
+    } | null = null;
+    if (kapt_code) {
+      try {
+        const { data: amc } = await supabaseAdmin
+          .from('apt_mgmt_costs')
+          .select('search_date, total_cost, cmn_total, ind_total, cmn_labor, cmn_security, cmn_cleaning, cmn_elevator, cmn_repair, cmn_consign, cmn_disinfect, cmn_network, cmn_vehicle, cmn_office, cmn_tax, cmn_clothing, cmn_education, cmn_etc, cmn_facility, cmn_safety, cmn_disaster, ind_heat, ind_hotwater, ind_gas, ind_elec, ind_water, ind_waste, ind_insurance, ind_election, ind_repr_council, ind_septic')
+          .eq('kapt_code', kapt_code)
+          .order('search_date', { ascending: false })
+          .limit(12) as { data: MgmtCostRow[] | null };
+        if (amc && amc.length > 0) {
+          mgmt_cost = { kapt_code, hhld_cnt: complex_meta?.hhld_cnt ?? null, latest: amc[0], history: amc };
+        }
+      } catch { /* 028 미적용 — graceful */ }
     }
 
     // 최근 10거래 (매매만 — 표시용)
@@ -312,6 +352,7 @@ export async function GET(
       // 신규 필드
       complex_meta,
       building_meta,
+      mgmt_cost,
       nearby_complexes,
       unit_distribution,
       monthly_split,

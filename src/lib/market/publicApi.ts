@@ -25,6 +25,11 @@ export const API_BASE = {
   APPLYHOME: 'https://api.odcloud.kr/api/ApplyhomeInfoDetailSvc/v1',
   // ⚠️ 구 BldRgstService_v2는 폐기(500 고정) — 현행은 BldRgstHubService
   BLDG_LEDGER: 'https://apis.data.go.kr/1613000/BldRgstHubService',
+  // K-apt 공동주택관리정보시스템 — JSON 응답 (실거래가/건축물대장의 XML과 다름)
+  KAPT_LIST: 'https://apis.data.go.kr/1613000/AptListService3',                 // 단지목록 → kaptCode 매핑
+  KAPT_CMN_COST: 'https://apis.data.go.kr/1613000/AptCmnuseManageCostServiceV2', // 공용관리비 (17 오퍼레이션)
+  KAPT_IND_COST: 'https://apis.data.go.kr/1613000/AptIndvdlzManageCostServiceV2', // 개별사용료 (난방/전기/수도/가스 등 10 오퍼레이션)
+  KAPT_BASIS: 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4',           // 단지 기본정보 (세대수/부과면적)
 } as const;
 
 export function parseXmlResponse<T = unknown>(xmlData: string): T {

@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/geocode-complexes",
       "schedule": "30 19 * * *"
+    },
+    {
+      "path": "/api/cron/sync-mgmt-costs",
+      "schedule": "0 20 * * *"
     }
   ]
 }

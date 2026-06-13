@@ -3,6 +3,42 @@
  * (구 MarketDetailPanel.tsx에서 이동)
  */
 
+// K-apt 관리비 월별 행 (apt_mgmt_costs) — 공용 17 + 개별 10 + 총액
+export interface MgmtCostRow {
+  search_date: string; // YYYYMM
+  total_cost: number | null; // 공용+개별 단지 월 합계
+  cmn_total: number | null;  // 공용관리비 합계
+  ind_total: number | null;  // 개별사용료 합계
+  cmn_labor: number | null;
+  cmn_security: number | null;
+  cmn_cleaning: number | null;
+  cmn_elevator: number | null;
+  cmn_repair: number | null;
+  cmn_consign: number | null;
+  cmn_disinfect: number | null;
+  cmn_network: number | null;
+  cmn_vehicle: number | null;
+  cmn_office: number | null;
+  cmn_tax: number | null;
+  cmn_clothing: number | null;
+  cmn_education: number | null;
+  cmn_etc: number | null;
+  cmn_facility: number | null;
+  cmn_safety: number | null;
+  cmn_disaster: number | null;
+  // 개별사용료 — ind_heat = 난방비 버킷, 나머지 = 기타개별 버킷
+  ind_heat: number | null;
+  ind_hotwater: number | null;
+  ind_gas: number | null;
+  ind_elec: number | null;
+  ind_water: number | null;
+  ind_waste: number | null;
+  ind_insurance: number | null;
+  ind_election: number | null;
+  ind_repr_council: number | null;
+  ind_septic: number | null;
+}
+
 export interface ComplexDetail {
   complex_key: string;
   complex_name: string | null;
@@ -50,6 +86,12 @@ export interface ComplexDetail {
     ride_elvt_cnt: number | null;
     strct: string | null;
     main_purps: string | null;
+  } | null;
+  mgmt_cost?: {
+    kapt_code: string;
+    hhld_cnt: number | null; // 세대당 환산용
+    latest: MgmtCostRow;
+    history: MgmtCostRow[];
   } | null;
   nearby_complexes?: Array<{
     complex_key: string;

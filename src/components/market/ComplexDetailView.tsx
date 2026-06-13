@@ -591,6 +591,117 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
           </div>
         ))}
 
+        {/* ── 단지정보 탭: 관리비 (K-apt) — 네이버식 3버킷 세대당 + 계절통계 ── */}
+        {tab === 'info' && detail?.mgmt_cost?.latest && (() => {
+          const mcWrap = detail.mgmt_cost!;
+          const latest = mcWrap.latest;
+          const hist = mcWrap.history;
+          const ym = latest.search_date;
+          const hhld = mcWrap.hhld_cnt && mcWrap.hhld_cnt > 0 ? mcWrap.hhld_cnt : null;
+
+          // 세대당 환산 (원/세대/월). 세대수 없으면 단지 합계로 폴백.
+          const per = (n: number | null) => (hhld != null && n != null ? n / hhld : n);
+          const fmtWon = (n: number | null) => {
+            if (n == null) return '-';
+            const v = Math.round(n);
+            if (v >= 100000000) return `${(v / 100000000).toFixed(1)}억`;
+            if (v >= 10000) return `${Math.round(v / 10000).toLocaleString()}만원`;
+            return `${v.toLocaleString()}원`;
+          };
+
+          // 버킷 추출 (단지 합계 기준) — 난방비=ind_heat, 기타개별=개별−난방
+          const heatOf = (r: typeof latest) => r.ind_heat;
+          const etcOf = (r: typeof latest) =>
+            r.ind_total != null ? r.ind_total - (r.ind_heat ?? 0) : null;
+          const totalOf = (r: typeof latest) =>
+            r.total_cost ?? ((r.cmn_total ?? 0) + (r.ind_total ?? 0));
+
+          // 계절통계 (history): 월평균 / 하절기(6~8) / 동절기(12~2)
+          const mm = (r: typeof latest) => parseInt(r.search_date.slice(4, 6), 10);
+          const avg = (rows: typeof hist, sel: (r: typeof latest) => number | null) => {
+            const vals = rows.map(sel).filter((v): v is number => v != null);
+            return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+          };
+          const summer = hist.filter((r) => [6, 7, 8].includes(mm(r)));
+          const winter = hist.filter((r) => [12, 1, 2].includes(mm(r)));
+
+          const rowsDef: Array<{ ko: string; sel: (r: typeof latest) => number | null; bold?: boolean }> = [
+            { ko: '총 관리비', sel: totalOf, bold: true },
+            { ko: '공용관리비', sel: (r) => r.cmn_total },
+            { ko: '난방비', sel: heatOf },
+            { ko: '기타개별관리비', sel: etcOf },
+          ];
+
+          // 공용 17항목 세부 (세대당)
+          const cmnItems = ([
+            ['경비비', latest.cmn_security], ['청소비', latest.cmn_cleaning], ['인건비', latest.cmn_labor],
+            ['승강기', latest.cmn_elevator], ['수선비', latest.cmn_repair], ['위탁관리', latest.cmn_consign],
+            ['소독비', latest.cmn_disinfect], ['홈네트워크', latest.cmn_network], ['차량유지', latest.cmn_vehicle],
+            ['제사무비', latest.cmn_office], ['제세공과금', latest.cmn_tax], ['시설유지', latest.cmn_facility],
+            ['안전점검', latest.cmn_safety], ['재해예방', latest.cmn_disaster], ['교육훈련', latest.cmn_education],
+            ['피복비', latest.cmn_clothing], ['기타', latest.cmn_etc],
+          ] as Array<[string, number | null]>)
+            .filter((it) => it[1] != null && it[1] > 0)
+            .sort((a, b) => (b[1]! - a[1]!));
+
+          return (
+            <div className="px-5 py-4 border-b border-market-border">
+              <div className="flex items-baseline justify-between mb-1">
+                <span className="text-[11px] font-semibold text-market-text-mute uppercase tracking-wider">
+                  관리비
+                </span>
+                <span className="text-[10px] text-market-text-faint tabular-nums">
+                  {ym.slice(0, 4)}.{ym.slice(4, 6)} 기준 · K-apt
+                </span>
+              </div>
+              <div className="text-[10px] text-market-text-mute mb-2.5">
+                {hhld != null ? `세대당 월 (원) · 총 ${hhld.toLocaleString()}세대` : '단지 월 합계 (세대수 미상)'}
+              </div>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-market-text-faint text-[10px]">
+                    <th className="text-left font-medium pb-1.5">항목</th>
+                    <th className="text-right font-medium pb-1.5">{ym.slice(4, 6)}월</th>
+                    <th className="text-right font-medium pb-1.5">월평균</th>
+                    <th className="text-right font-medium pb-1.5">하절기</th>
+                    <th className="text-right font-medium pb-1.5">동절기</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rowsDef.map(({ ko, sel, bold }) => (
+                    <tr key={ko} className={bold ? 'border-t border-market-border' : ''}>
+                      <td className={`py-1 ${bold ? 'font-bold text-market-text' : 'text-market-text-mute'}`}>{ko}</td>
+                      <td className={`py-1 text-right tabular-nums ${bold ? 'font-bold text-blue-600' : 'text-market-text'}`}>{fmtWon(per(sel(latest)))}</td>
+                      <td className="py-1 text-right tabular-nums text-market-text-mute">{fmtWon(per(avg(hist, sel)))}</td>
+                      <td className="py-1 text-right tabular-nums text-market-text-mute">{summer.length ? fmtWon(per(avg(summer, sel))) : '-'}</td>
+                      <td className="py-1 text-right tabular-nums text-market-text-mute">{winter.length ? fmtWon(per(avg(winter, sel))) : '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {cmnItems.length > 0 && (
+                <details className="mt-3 group">
+                  <summary className="text-[10px] text-market-text-mute cursor-pointer select-none list-none flex items-center gap-1">
+                    <span className="group-open:rotate-90 transition-transform">▸</span>
+                    공용관리비 세부 ({ym.slice(4, 6)}월{hhld != null ? ', 세대당' : ''})
+                  </summary>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs mt-2">
+                    {cmnItems.map(([label, v]) => (
+                      <div key={label} className="flex justify-between">
+                        <span className="text-market-text-mute">{label}</span>
+                        <span className="text-market-text font-semibold tabular-nums">{fmtWon(per(v))}</span>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
+              <div className="mt-2.5 text-[10px] text-market-text-faint leading-relaxed">
+                ※ {hhld != null ? '세대당 추정(합계÷세대수). ' : ''}하절기(6~8월)·동절기(12~2월) 평균. 장기수선충당금 제외. 출처 국토부 K-apt.
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── 인근 탭 — 지하철/버스/학교 (마피앱 카드 스타일) + 인근 단지 비교 ── */}
         {tab === 'nearby' && (
         <>
