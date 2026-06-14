@@ -36,12 +36,14 @@ async function runSync(req: NextRequest) {
   const months_param = searchParams.get('months');
   const months = months_param ? months_param.split(',') : getLastNMonths(3);
   const concurrency = Math.max(1, Math.min(20, parseInt(searchParams.get('concurrency') || String(DEFAULT_CONCURRENCY), 10)));
+  // ?lawd=41597,41595 → 특정 시군구만 동기화 (신규 편입/구 분할 백필용). 미지정 시 is_mvp 전체.
+  const lawd_param = searchParams.get('lawd');
+  const lawdFilter = lawd_param ? lawd_param.split(',').map((s) => s.trim()).filter(Boolean) : null;
 
-  // MVP 지역 조회
-  const { data: regions, error: rErr } = await supabaseAdmin
-    .from('region_codes')
-    .select('lawd_cd, sigungu')
-    .eq('is_mvp', true);
+  // 동기화 지역: lawd 지정 시 해당 코드만, 아니면 MVP 전체
+  let regionQuery = supabaseAdmin.from('region_codes').select('lawd_cd, sigungu');
+  regionQuery = lawdFilter ? regionQuery.in('lawd_cd', lawdFilter) : regionQuery.eq('is_mvp', true);
+  const { data: regions, error: rErr } = await regionQuery;
 
   if (rErr || !regions) {
     return NextResponse.json({ error: 'failed to load regions', detail: rErr }, { status: 500 });

@@ -24,7 +24,7 @@ function loadEnv() {
   const envPath = join(__dirname, '..', '.env.local');
   const content = readFileSync(envPath, 'utf-8');
   const env = {};
-  for (const line of content.split('\n')) {
+  for (const line of content.split(/\r?\n/)) {
     const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
     if (m) env[m[1]] = m[2].trim();
   }
