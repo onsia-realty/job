@@ -67,26 +67,22 @@ export async function GET(
       }
     }
 
+    const stats = {
+      current_avg_price: monthly[0].avg_price_manwon,
+      current_trade_count: monthly[0].trade_count,
+      avg_pyeong_price: monthly[0].avg_pyeong_price,
+      growth_pct: growth,
+      broker_count: brokerCount,
+      job_count: jobCount,
+    };
+
     // Gemini 호출
     const gemini_key = process.env.GEMINI_API_KEY;
     if (!gemini_key) {
-      // Fallback: 룰 기반 요약
+      // Fallback: 룰 기반 요약 (키 미설정)
       const fallback = buildFallbackSummary(monthly[0], growth, brokerCount, jobCount);
-      return NextResponse.json({
-        insight: fallback,
-        source: 'rule-based',
-        stats: {
-          current_avg_price: monthly[0].avg_price_manwon,
-          current_trade_count: monthly[0].trade_count,
-          avg_pyeong_price: monthly[0].avg_pyeong_price,
-          growth_pct: growth,
-          broker_count: brokerCount,
-          job_count: jobCount,
-        },
-      });
+      return NextResponse.json({ insight: fallback, source: 'rule-based', stats });
     }
-
-    const ai = new GoogleGenAI({ apiKey: gemini_key });
 
     const prompt = `당신은 부동산 실무자(공인중개사)를 위한 데이터 분석가입니다.
 아래 데이터를 바탕으로 2-3문장으로 간결하게 요약해주세요. 실무자에게 도움이 되는 관점으로.
@@ -100,28 +96,36 @@ ${growth !== null ? `- 전월 대비 변동률: ${growth > 0 ? '+' : ''}${growth
 
 각 문장 사이 \\n로 구분. 이모지 사용 금지. 전문가 톤.`;
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
+    // Gemini 호출 실패(타임아웃/429/5xx) 시 500 대신 룰 기반 요약으로 우아하게 폴백
+    let text = '';
+    try {
+      const ai = new GoogleGenAI({ apiKey: gemini_key });
+      const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+      text = (result.text || '').trim();
+    } catch (aiErr) {
+      const aiMsg = aiErr instanceof Error ? aiErr.message : 'unknown';
+      console.error('[insights] Gemini 호출 실패, 룰 기반 폴백:', aiMsg);
+    }
 
-    const text = result.text || '';
+    if (!text) {
+      // AI 응답이 비었거나 호출 실패 → 룰 기반 요약으로 폴백 (200 유지)
+      const fallback = buildFallbackSummary(monthly[0], growth, brokerCount, jobCount);
+      return NextResponse.json(
+        { insight: fallback, source: 'rule-based-fallback', stats },
+        { headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=86400' } }
+      );
+    }
 
-    return NextResponse.json({
-      insight: text.trim(),
-      source: 'ai',
-      stats: {
-        current_avg_price: monthly[0].avg_price_manwon,
-        current_trade_count: monthly[0].trade_count,
-        avg_pyeong_price: monthly[0].avg_pyeong_price,
-        growth_pct: growth,
-        broker_count: brokerCount,
-        job_count: jobCount,
-      },
-    }, {
-      // 공개 응답으로 변경: 1시간 캐시
-      headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
-    });
+    return NextResponse.json(
+      { insight: text, source: 'ai', stats },
+      {
+        // 공개 응답: 1시간 캐시
+        headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+      }
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'unknown';
     console.error('[insights] error:', msg);

@@ -151,37 +151,26 @@ function getTodayKST(): string {
 export async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remaining: number }> {
   const todayKST = getTodayKST();
 
-  // 오늘 사용량 조회
-  const { data, error } = await supabaseAdmin
-    .from('ai_usage')
-    .select('count')
-    .eq('user_id', userId)
-    .eq('used_date', todayKST)
-    .single();
+  // 원자적 증가 RPC (migration 030) — SELECT→UPSERT 2-step의 race condition 방지.
+  // 반환: 증가 후 count(정수)=허용 / null=한도 도달(증가 안 함)=차단
+  const { data, error } = await supabaseAdmin.rpc('increment_ai_usage', {
+    p_user_id: userId,
+    p_date: todayKST,
+    p_limit: DAILY_LIMIT,
+  });
 
-  if (error && error.code !== 'PGRST116') {
-    // PGRST116 = no rows found (정상: 오늘 처음 사용)
+  if (error) {
+    // RPC 실패 시 fail-open (기존 동작 유지: 서비스 중단보다 통과 우선)
     console.error('Rate limit check error:', error);
     return { allowed: true, remaining: DAILY_LIMIT };
   }
 
-  const currentCount = data?.count || 0;
+  const newCount = data as number | null;
 
-  if (currentCount >= DAILY_LIMIT) {
+  if (newCount == null) {
+    // 한도 도달 → 차단
     return { allowed: false, remaining: 0 };
   }
 
-  // 사용량 증가 (upsert)
-  const { error: upsertError } = await supabaseAdmin
-    .from('ai_usage')
-    .upsert(
-      { user_id: userId, used_date: todayKST, count: currentCount + 1 },
-      { onConflict: 'user_id,used_date' }
-    );
-
-  if (upsertError) {
-    console.error('Rate limit update error:', upsertError);
-  }
-
-  return { allowed: true, remaining: DAILY_LIMIT - (currentCount + 1) };
+  return { allowed: true, remaining: Math.max(0, DAILY_LIMIT - newCount) };
 }
