@@ -9,6 +9,15 @@ import {
 } from '@/lib/market/realEstate';
 
 const CACHE_FRESHNESS_HOURS = 24;
+const MOLIT_TIMEOUT_MS = 9000; // 국토부 API 무응답 시 9초 컷 (30초 멈춤 방지)
+
+// Promise에 타임아웃 — 초과 시 reject (라우트는 즉시 폴백으로)
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error('MOLIT timeout')), ms)),
+  ]);
+}
 
 // GET /api/market/transactions
 //   모드 1 (bounds): ?bounds=sw_lat,sw_lng,ne_lat,ne_lng&type=apt&deal=trade[&months=6]
@@ -72,8 +81,25 @@ export async function GET(req: NextRequest) {
       rows = getSampleTransactions(lawd_cd, ym);
       source = 'sample';
     } else {
-      rows = await fetchByType(type, deal, lawd_cd, ym, service_key);
-      source = 'molit';
+      // 국토부 API는 간헐적으로 502/무응답 → 타임아웃 걸고, 실패 시 캐시 폴백 (30초 멈춤·500 방지)
+      try {
+        rows = await withTimeout(fetchByType(type, deal, lawd_cd, ym, service_key), MOLIT_TIMEOUT_MS);
+        source = 'molit';
+      } catch (molitErr) {
+        console.error('[market/transactions] MOLIT 실패 → 캐시 폴백:', molitErr instanceof Error ? molitErr.message : molitErr);
+        if (cached && cached.length > 0) {
+          const complex_coords = await loadComplexCoords(cached.map((c) => c.complex_key));
+          return NextResponse.json(
+            { source: 'cache-stale', count: cached.length, transactions: cached, complex_coords },
+            { headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600' } },
+          );
+        }
+        // 캐시도 없으면 빈 결과(200) — 지도가 멈추지 않게
+        return NextResponse.json(
+          { source: 'molit-unavailable', count: 0, transactions: [], complex_coords: {} },
+          { headers: { 'Cache-Control': 'public, s-maxage=60' } },
+        );
+      }
 
       // Upsert 캐시
       if (rows.length > 0) {

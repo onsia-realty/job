@@ -9,8 +9,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
-  BarChart,
-  Bar,
+  Legend,
 } from 'recharts';
 import Link from 'next/link';
 import {
@@ -148,7 +147,9 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
       : dealType === 'presale' ? (m.presale_count ?? 0)
       : m.rent_count,
   }));
-  const hasChart = chartData.length >= 2;
+  // 개별 실거래 시계열 (주식형 차트 — 매매 실선 / 전세 점선)
+  const deals = detail?.chart_deals ?? [];
+  const hasChart = deals.length >= 2;
 
   // 기간 대비 변동률 (매매 기준)
   const tradeSeries = chartData.map((d) => d.매매).filter((v): v is number => v != null && v > 0);
@@ -162,6 +163,9 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
     ? (detail?.recent_silv_transactions ?? []).slice(0, 5)
     : (detail?.recent_transactions ?? []).slice(0, 5);
   const showRecent = (dealType === 'trade' || dealType === 'presale') && recentTxs.length > 0;
+  // 실거래 내역 (전 유형: 매매/전세/월세/분양권)
+  const recentAll = detail?.recent_all ?? [];
+  void showRecent; void recentTxs;
 
   // 평형별 분포 (매매 한정 — 백엔드가 매매로만 집계)
   const unitDist = (detail?.unit_distribution ?? []).filter((u) => u.count > 0);
@@ -384,17 +388,21 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
                   </span>
                 </div>
               )}
-              <div className={`h-[240px] -ml-2 transition-opacity ${busy ? 'opacity-60' : ''}`}>
+              <div className={`h-[300px] -ml-2 transition-opacity ${busy ? 'opacity-60' : ''}`}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 8, right: 8, left: -4, bottom: 0 }}>
+                  <LineChart data={deals} margin={{ top: 8, right: 10, left: -4, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f1f3" vertical={false} />
                     <XAxis
-                      dataKey="ym"
+                      type="number"
+                      dataKey="ts"
+                      domain={['dataMin', 'dataMax']}
+                      scale="time"
                       tick={{ fontSize: 10, fill: '#9aa0a6' }}
                       axisLine={{ stroke: '#e4e7eb' }}
                       tickLine={false}
                       dy={4}
-                      minTickGap={24}
+                      minTickGap={44}
+                      tickFormatter={(ts) => { const d = new Date(Number(ts)); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}`; }}
                     />
                     <YAxis
                       tick={{ fontSize: 10, fill: '#9aa0a6' }}
@@ -402,23 +410,20 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
                       tickLine={false}
                       tickFormatter={formatEokUnit}
                       width={44}
+                      domain={['auto', 'auto']}
                     />
                     <Tooltip
                       contentStyle={tooltipStyle}
                       labelStyle={{ color: '#5a5d63', fontSize: '11px', marginBottom: '3px', fontWeight: 600 }}
-                      formatter={(v, n) => {
-                        const num = typeof v === 'number' ? v : 0;
-                        return num ? [formatKoreanPrice(num), n] : ['-', n];
-                      }}
+                      labelFormatter={(ts) => { const d = new Date(Number(ts)); return `${String(d.getFullYear()).slice(2)}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`; }}
+                      formatter={(v, n) => { const num = typeof v === 'number' ? v : 0; return num ? [formatKoreanPrice(num), n] : ['-', n]; }}
                     />
-                    <Line type="monotone" dataKey="매매" name="매매" stroke={LINE_TRADE} strokeWidth={2.2}
-                      dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
-                    <Line type="monotone" dataKey="전세" name="전세" stroke={LINE_RENT} strokeWidth={2.2}
-                      dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
-                    {showPresale && (
-                      <Line type="monotone" dataKey="분양권" name="분양권" stroke={LINE_PRESALE} strokeWidth={2.2}
-                        dot={false} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
-                    )}
+                    <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '4px' }} iconType="plainline" />
+                    {/* 매매 = 실선, 전세 = 점선 — 개별 실거래 점을 이어 주식형으로 */}
+                    <Line type="linear" dataKey={useP ? 'trade_py' : 'trade'} name="매매" stroke={LINE_TRADE} strokeWidth={2}
+                      dot={{ r: 1.8, fill: LINE_TRADE, strokeWidth: 0 }} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
+                    <Line type="linear" dataKey={useP ? 'jeonse_py' : 'jeonse'} name="전세" stroke={LINE_RENT} strokeWidth={2} strokeDasharray="5 4"
+                      dot={{ r: 1.8, fill: LINE_RENT, strokeWidth: 0 }} activeDot={{ r: 4, strokeWidth: 2, stroke: 'white' }} connectNulls />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -433,29 +438,6 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
             실거래가 기준 · {useP ? '평당가(전용면적)' : '거래금액'} 평균 · 출처: 국토교통부
           </div>
         </div>
-
-        {/* 월별 거래량 */}
-        {hasChart && (
-          <div className="px-5 py-4 border-b border-market-border">
-            <div className="flex items-baseline justify-between mb-2.5">
-              <div className="text-sm font-bold text-market-text">월별 거래량</div>
-              <div className="text-[11px] text-market-text-faint">{DEAL_LABELS[dealType]} · 건수</div>
-            </div>
-            <div className="h-[100px] -ml-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                  <XAxis dataKey="ym" tick={{ fontSize: 10, fill: '#9aa0a6' }} axisLine={false} tickLine={false} minTickGap={20} />
-                  <YAxis tick={{ fontSize: 10, fill: '#9aa0a6' }} axisLine={false} tickLine={false} width={32} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={(v) => [`${typeof v === 'number' ? v : 0}건`, '거래량']}
-                  />
-                  <Bar dataKey="거래량" fill={dealColor} opacity={0.65} radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        )}
 
         {/* 평형별 평균 — 매매만, 가로 스크롤 카드 */}
         {showUnitDist && (
@@ -487,33 +469,44 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
           </div>
         )}
 
-        {/* 최근 거래 (매매·분양권) */}
-        {showRecent && (
+        {/* 실거래 내역 — 매매·전세·월세·분양권 (날짜·동·층·최고가) */}
+        {recentAll.length > 0 && (
           <div className="px-5 py-4 border-b border-market-border">
             <div className="text-[11px] font-semibold text-market-text-mute mb-2.5 uppercase tracking-wider">
-              최근 {DEAL_LABELS[dealType]} 거래 {recentTxs.length}건
+              실거래 내역 {recentAll.length}건
             </div>
-            <div className="space-y-2">
-              {recentTxs.map((tx, i) => (
-                <div key={i} className="flex items-center justify-between text-xs gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-market-text-faint tabular-nums flex-shrink-0">
+            <div className="divide-y divide-market-border/50">
+              {recentAll.map((tx, i) => {
+                const label = tx.deal_type === 'trade' ? '매매'
+                  : tx.deal_type === 'presale_resale' ? '분양권'
+                  : tx.monthly_manwon ? '월세' : '전세';
+                const color = label === '매매' ? LINE_TRADE : label === '전세' ? LINE_RENT
+                  : label === '월세' ? '#059669' : LINE_PRESALE;
+                const priceStr = label === '월세'
+                  ? `${formatKoreanPrice(tx.deposit_manwon ?? 0, 'compact')}/${tx.monthly_manwon}`
+                  : label === '전세'
+                  ? formatKoreanPrice(tx.deposit_manwon ?? 0)
+                  : formatKoreanPrice(tx.price_manwon ?? 0);
+                return (
+                  <div key={i} className="flex items-center gap-2 py-2 text-xs">
+                    <span className="text-market-text-faint tabular-nums flex-shrink-0 w-14">
                       {tx.deal_date.slice(2).replace(/-/g, '.')}
                     </span>
-                    {tx.exclusive_area != null && (
-                      <span className="text-market-text-mute tabular-nums">
-                        {tx.exclusive_area.toFixed(1)}㎡
-                      </span>
+                    <span className="font-semibold flex-shrink-0 px-1.5 py-0.5 rounded text-[10px]" style={{ color, background: `${color}14` }}>
+                      {label}
+                    </span>
+                    {tx.is_highest && (
+                      <span className="flex-shrink-0 text-[9px] font-bold text-rose-600 bg-rose-50 px-1 py-0.5 rounded">최고가</span>
                     )}
-                    {tx.floor != null && (
-                      <span className="text-market-text-faint tabular-nums">{tx.floor}층</span>
-                    )}
+                    <span className="font-bold text-market-text tabular-nums">{priceStr}</span>
+                    <span className="ml-auto text-market-text-faint tabular-nums text-[11px] flex-shrink-0">
+                      {tx.exclusive_area != null ? `${Math.round(tx.exclusive_area / 3.3058)}평` : ''}
+                      {tx.dong ? ` · ${tx.dong}` : ''}
+                      {tx.floor != null ? ` · ${tx.floor}층` : ''}
+                    </span>
                   </div>
-                  <span className="font-bold text-market-text tabular-nums flex-shrink-0">
-                    {tx.price_manwon ? formatKoreanPrice(tx.price_manwon) : '-'}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -950,18 +943,9 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
         )}
       </div>
 
-      {/* 푸터 — 데이터 출처 + AI 분석 링크 */}
-      <div className="px-5 py-2.5 border-t border-market-border bg-market-surface flex-shrink-0 flex items-center justify-between">
-        <div className="text-[10px] text-market-text-faint">국토부 실거래가</div>
-        <Link
-          href={`/market/insights/${encodeURIComponent(complexKey)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[10px] font-semibold text-deal-jeonse hover:underline flex items-center gap-1"
-        >
-          <Sparkles className="w-3 h-3" />
-          AI 깊은 분석
-        </Link>
+      {/* 푸터 — 데이터 출처 */}
+      <div className="px-5 py-2.5 border-t border-market-border bg-market-surface flex-shrink-0">
+        <div className="text-[10px] text-market-text-faint">출처: 국토교통부 실거래가</div>
       </div>
     </div>
   );

@@ -5,7 +5,9 @@ interface RawTx {
   deal_date: string;
   price_manwon: number | null;
   deposit_manwon: number | null;
+  monthly_manwon?: number | null;
   exclusive_area: number | null;
+  floor?: number | null;
   deal_type: string;
   cancel_yn: boolean;
   complex_name?: string;
@@ -43,7 +45,7 @@ export async function GET(
 
     const { data: allTxs } = await supabaseAdmin
       .from('price_transactions')
-      .select('deal_date, price_manwon, deposit_manwon, exclusive_area, deal_type, cancel_yn, complex_name, dong, lawd_cd')
+      .select('deal_date, price_manwon, deposit_manwon, monthly_manwon, exclusive_area, floor, deal_type, cancel_yn, complex_name, dong, lawd_cd')
       .eq('complex_key', complex_key)
       .gte('deal_date', sinceStr)
       .eq('cancel_yn', false)
@@ -184,6 +186,39 @@ export async function GET(
         deal_type: t.deal_type,
         deal_channel: null as string | null,
       }));
+
+    // 실거래 내역 (전 유형: 매매/전세/월세/분양권) — 날짜·가격·동·층, 매매 최고가 표시 (아실식)
+    const tradePrices = (allTxs || []).filter((t) => t.deal_type === 'trade' && t.price_manwon).map((t) => t.price_manwon!);
+    const maxTradePrice = tradePrices.length ? Math.max(...tradePrices) : 0;
+    const recent_all = (allTxs || []).slice(0, 25).map((t) => ({
+      deal_date: t.deal_date,
+      deal_type: t.deal_type,
+      price_manwon: t.price_manwon,
+      deposit_manwon: t.deposit_manwon,
+      monthly_manwon: t.monthly_manwon ?? null,
+      exclusive_area: t.exclusive_area,
+      floor: t.floor ?? null,
+      dong: t.dong ?? null,
+      is_highest: t.deal_type === 'trade' && t.price_manwon != null && t.price_manwon === maxTradePrice && maxTradePrice > 0,
+    }));
+
+    // 개별 실거래 시계열 (주식형 차트용) — 매매/전세(전세만, 월세 제외), 거래금액 + 평당가
+    const PYY = 3.3058;
+    const chart_deals = (allTxs || [])
+      .filter((t) => t.deal_date && ((t.deal_type === 'trade' && t.price_manwon) || (t.deal_type === 'rent' && t.deposit_manwon && !t.monthly_manwon)))
+      .map((t) => {
+        const isTrade = t.deal_type === 'trade';
+        const price = (isTrade ? t.price_manwon : t.deposit_manwon) as number;
+        const area = t.exclusive_area && t.exclusive_area > 0 ? t.exclusive_area : null;
+        return {
+          ts: Date.parse(t.deal_date),
+          trade: isTrade ? price : null,
+          jeonse: isTrade ? null : price,
+          trade_py: isTrade && area ? Math.round((price / area) * PYY) : null,
+          jeonse_py: !isTrade && area ? Math.round((price / area) * PYY) : null,
+        };
+      })
+      .sort((a, b) => a.ts - b.ts);
 
     // 단지가 위치한 lawd_cd
     const lawd_cd = monthly?.[0]?.lawd_cd || allTxs?.[0]?.lawd_cd || null;
@@ -349,6 +384,8 @@ export async function GET(
       monthly: monthly || [],
       recent_transactions,
       recent_silv_transactions,
+      recent_all,
+      chart_deals,
       // 신규 필드
       complex_meta,
       building_meta,

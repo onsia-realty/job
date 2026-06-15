@@ -67,6 +67,24 @@ export interface ComplexDetail {
     deal_type: string;
     deal_channel: string | null;
   }>;
+  recent_all?: Array<{
+    deal_date: string;
+    deal_type: string;
+    price_manwon: number | null;
+    deposit_manwon: number | null;
+    monthly_manwon: number | null;
+    exclusive_area: number | null;
+    floor: number | null;
+    dong: string | null;
+    is_highest: boolean;
+  }>;
+  chart_deals?: Array<{
+    ts: number;
+    trade: number | null;
+    jeonse: number | null;
+    trade_py: number | null;
+    jeonse_py: number | null;
+  }>;
   complex_meta: {
     lat: number | null;
     lng: number | null;

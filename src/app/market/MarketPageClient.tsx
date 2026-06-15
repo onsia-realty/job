@@ -5,13 +5,14 @@ import dynamic from 'next/dynamic';
 import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, MapPin, TrendingUp, Building2, Filter, Store, Briefcase, X, SlidersHorizontal } from 'lucide-react';
+import { ArrowLeft, MapPin, TrendingUp, TrendingDown, BarChart3, Coins, Ruler, Crown, Building2, Filter, Store, Briefcase, X, SlidersHorizontal } from 'lucide-react';
 import type { MapComplexPoint, DealTypeFilter, MarkerMode, RouteOverlay } from '@/components/market/MarketMap.client';
 import ComplexListPanel from '@/components/market/ComplexListPanel';
 import ComplexDetailView from '@/components/market/ComplexDetailView';
 import BottomSheet, { type SheetSnap } from '@/components/market/BottomSheet';
 import MarketFilterSheet from '@/components/market/MarketFilterSheet';
 import MarketSearch, { type SearchResult } from '@/components/market/MarketSearch';
+import MarketIndicatorPanel, { type IndicatorMetric } from '@/components/market/MarketIndicatorPanel';
 import { useBrokersNearby, useJobsNearby, useGuAggregates } from '@/lib/market/queries';
 import { aggregateByDong } from '@/lib/market/aggregateMarkers';
 import { nearestLawdCd } from '@/lib/market/regions';
@@ -37,6 +38,16 @@ const MarketMap = dynamic(() => import('@/components/market/MarketMap.client'), 
 // 기본 지역: 서울 강남구
 const DEFAULT_CENTER: [number, number] = [37.5172, 127.0473];
 const DEFAULT_LAWD_CD = '11680';
+
+// 시세자료 지표 — 메인 노출용 칩 (탭하면 지표 허브로 딥링크)
+const INDICATOR_CHIPS = [
+  { metric: 'drop',    label: '최근하락', Icon: TrendingDown, color: '#2563eb' },
+  { metric: 'rise',    label: '최근상승', Icon: TrendingUp,   color: '#dc2626' },
+  { metric: 'highest', label: '신고가',   Icon: Crown,        color: '#7c3aed' },
+  { metric: 'count',   label: '거래량',   Icon: BarChart3,    color: '#2563eb' },
+  { metric: 'price',   label: '평균가',   Icon: Coins,        color: '#e11d48' },
+  { metric: 'pyeong',  label: '평당가',   Icon: Ruler,        color: '#ea580c' },
+] as const;
 
 // 줌 레벨 → 마커 모드 (구 집계 / 동 집계 / 단지 개별)
 function modeForZoom(z: number): MarkerMode {
@@ -85,6 +96,7 @@ export default function MarketPageClient() {
   const [dongByKey, setDongByKey] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(() => searchParams.get('sel') || null);
+  const [indicatorMetric, setIndicatorMetric] = useState<IndicatorMetric | null>('drop'); // 기본 열림 (아실식 항상표시)
 
   // 줌 레벨별 마커 모드 (idle 콜백에서 갱신)
   const [markerMode, setMarkerMode] = useState<MarkerMode>(() => modeForZoom(zoom));
@@ -419,6 +431,22 @@ export default function MarketPageClient() {
     handleSelect(key);
   }, [handleSelect]);
 
+  // 지표 패널 항목 클릭 — 좌표 조회 후 지도 이동 + 단지 선택
+  const handleIndicatorSelect = useCallback(async (key: string) => {
+    handleSelect(key);
+    try {
+      const res = await fetch(`/api/market/complex/${encodeURIComponent(key)}`);
+      const d = await res.json();
+      const lat = d?.complex_meta?.lat;
+      const lng = d?.complex_meta?.lng;
+      if (typeof lat === 'number' && typeof lng === 'number') {
+        mapViewRef.current = { ...mapViewRef.current, lat, lng };
+        setCenter([lat, lng]);
+        setZoom((z) => Math.max(15, z));
+      }
+    } catch { /* 좌표 못 찾으면 선택만 */ }
+  }, [handleSelect]);
+
   // 지도 idle 시 viewport bounds 갱신 → loadData(bounds 모드)로 자동 전환.
   const handleMapBoundsChanged = useCallback(
     (sw_lat: number, sw_lng: number, ne_lat: number, ne_lng: number) => {
@@ -496,9 +524,29 @@ export default function MarketPageClient() {
             href="/market/rankings"
             className="ml-auto text-xs px-3 py-1.5 bg-market-surface-2 hover:bg-market-border rounded-lg text-market-text-mute font-medium flex items-center gap-1 transition-colors flex-shrink-0"
           >
-            <TrendingUp className="w-3.5 h-3.5" />
-            랭킹
+            <BarChart3 className="w-3.5 h-3.5" />
+            전체 지표
           </Link>
+        </div>
+
+        {/* 시세자료 지표 — 칩 클릭 시 지도 위 패널 (페이지 이동 없음) */}
+        <div className="px-4 pb-2.5 -mt-0.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <span className="text-[11px] font-bold text-market-text-mute flex-shrink-0">부인(BOOIN) 시세자료 지표</span>
+          {INDICATOR_CHIPS.map(({ metric, label, Icon, color }) => {
+            const on = indicatorMetric === metric;
+            return (
+              <button
+                key={metric}
+                onClick={() => setIndicatorMetric(on ? null : metric)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold text-xs whitespace-nowrap flex-shrink-0 transition-colors border ${
+                  on ? 'bg-market-text text-white border-transparent shadow-sm' : 'bg-market-surface-2 hover:bg-market-border text-market-text border-market-border'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" style={{ color: on ? '#fff' : color }} />
+                {label}
+              </button>
+            );
+          })}
         </div>
       </header>
 
@@ -584,6 +632,18 @@ export default function MarketPageClient() {
         <aside className="hidden md:flex md:w-[400px] md:flex-col md:border-r md:border-market-border md:bg-market-surface md:shadow-sm flex-shrink-0 overflow-hidden">
           {sidePanelContent}
         </aside>
+
+        {/* 부인 시세자료 지표 — 단지목록 옆 도킹 패널 (항상 표시, X로 닫기). 항목 클릭 시 지도 이동 */}
+        {indicatorMetric && (
+          <div className="hidden md:flex md:w-[360px] md:flex-col md:border-r md:border-market-border flex-shrink-0 overflow-hidden">
+            <MarketIndicatorPanel
+              metric={indicatorMetric}
+              onMetricChange={setIndicatorMetric}
+              onClose={() => setIndicatorMetric(null)}
+              onSelectComplex={handleIndicatorSelect}
+            />
+          </div>
+        )}
 
         {/* 지도 영역 */}
         <div className="flex-1 relative min-w-0">
