@@ -100,7 +100,7 @@ function SignUpPageContent() {
   const [showPasswordConfirm, setShowPasswordConfirm] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpFormData, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<'form' | 'success'>('form');
+  const [step, setStep] = useState<'agree' | 'form' | 'success'>('agree');
   const [isFetchingBroker, setIsFetchingBroker] = useState(false);
   const [brokerVerified, setBrokerVerified] = useState(false);
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
@@ -382,6 +382,86 @@ function SignUpPageContent() {
       agreeMarketing: !allChecked,
     });
   };
+
+  // 1단계 — 약관 동의 화면 (필수 동의해야 가입 폼으로 진행)
+  if (step === 'agree') {
+    const allChecked = form.agreeTerms && form.agreePrivacy && form.agreeMarketing;
+    const requiredOk = form.agreeTerms && form.agreePrivacy;
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-8">
+        <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
+          <div className="max-w-md mx-auto px-4">
+            <div className="flex items-center justify-between h-14">
+              <Link href="/agent/auth/login" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+              </Link>
+              <h1 className="font-bold text-slate-900">약관 동의</h1>
+              <div className="w-5" />
+            </div>
+          </div>
+        </header>
+
+        <main className="max-w-md mx-auto px-4 py-6">
+          <h2 className="text-xl font-bold text-slate-900 mb-1">부동산인 시작하기</h2>
+          <p className="text-sm text-slate-500 mb-6">서비스 이용을 위해 약관에 동의해주세요.</p>
+
+          {/* 전체 동의 (크게 강조) */}
+          <button
+            type="button"
+            onClick={handleAgreeAll}
+            className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all mb-3 ${
+              allChecked ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 bg-white hover:border-slate-300'
+            }`}
+          >
+            <span className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${allChecked ? 'bg-emerald-500' : 'bg-slate-200'}`}>
+              <Check className="w-4 h-4 text-white" />
+            </span>
+            <span className="text-left">
+              <span className="block font-bold text-slate-900">전체 동의하기</span>
+              <span className="block text-[11px] text-slate-500 mt-0.5">선택 항목(마케팅 정보 수신) 동의를 포함합니다.</span>
+            </span>
+          </button>
+
+          <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-3.5">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.agreeTerms} onChange={(e) => setForm({ ...form, agreeTerms: e.target.checked })}
+                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              <span className="text-sm text-slate-700"><span className="text-red-500 font-semibold">[필수]</span> 이용약관 동의</span>
+              <Link href="/terms" target="_blank" className="ml-auto text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2">보기</Link>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.agreePrivacy} onChange={(e) => setForm({ ...form, agreePrivacy: e.target.checked })}
+                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              <span className="text-sm text-slate-700"><span className="text-red-500 font-semibold">[필수]</span> 개인정보 수집·이용 동의</span>
+              <Link href="/privacy" target="_blank" className="ml-auto text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2">보기</Link>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={form.agreeMarketing} onChange={(e) => setForm({ ...form, agreeMarketing: e.target.checked })}
+                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              <span className="text-sm text-slate-700"><span className="text-slate-400 font-semibold">[선택]</span> 마케팅 정보 수신 — 결제할인·프로모션 이벤트 알림</span>
+            </label>
+          </div>
+
+          <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
+            필수 항목에 동의하셔야 가입이 진행됩니다. 선택 항목은 동의하지 않아도 가입할 수 있어요.
+          </p>
+
+          <button
+            type="button"
+            disabled={!requiredOk}
+            onClick={() => setStep('form')}
+            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all mt-5 shadow-lg shadow-emerald-500/25"
+          >
+            다음
+          </button>
+          <p className="text-center text-sm text-slate-500 mt-6">
+            이미 회원이신가요?{' '}
+            <Link href="/agent/auth/login" className="text-emerald-600 font-semibold hover:text-emerald-700">로그인</Link>
+          </p>
+        </main>
+      </div>
+    );
+  }
 
   // 가입 완료 화면
   if (step === 'success') {
@@ -845,69 +925,7 @@ function SignUpPageContent() {
             </div>
           )}
 
-          {/* 약관 동의 */}
-          <div className="pt-4">
-            <div className="p-4 bg-slate-50 rounded-xl space-y-3">
-              {/* 전체 동의 */}
-              <label className="flex items-center gap-3 cursor-pointer pb-3 border-b border-slate-200">
-                <input
-                  type="checkbox"
-                  checked={form.agreeTerms && form.agreePrivacy && form.agreeMarketing}
-                  onChange={handleAgreeAll}
-                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="font-medium text-slate-900">전체 동의</span>
-              </label>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.agreeTerms}
-                  onChange={(e) => setForm({ ...form, agreeTerms: e.target.checked })}
-                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-sm text-slate-600">
-                  <span className="text-red-500">[필수]</span> 이용약관 동의
-                </span>
-                <Link href="/terms" className="ml-auto text-slate-400 hover:text-slate-600">
-                  <ChevronDown className="w-5 h-5 rotate-[-90deg]" />
-                </Link>
-              </label>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.agreePrivacy}
-                  onChange={(e) => setForm({ ...form, agreePrivacy: e.target.checked })}
-                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-sm text-slate-600">
-                  <span className="text-red-500">[필수]</span> 개인정보 처리방침 동의
-                </span>
-                <Link href="/privacy" className="ml-auto text-slate-400 hover:text-slate-600">
-                  <ChevronDown className="w-5 h-5 rotate-[-90deg]" />
-                </Link>
-              </label>
-
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.agreeMarketing}
-                  onChange={(e) => setForm({ ...form, agreeMarketing: e.target.checked })}
-                  className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span className="text-sm text-slate-600">
-                  <span className="text-gray-400">[선택]</span> 마케팅 정보 수신 동의
-                </span>
-              </label>
-            </div>
-            {(errors.agreeTerms || errors.agreePrivacy) && (
-              <p className="text-red-500 text-sm mt-2 flex items-center gap-1">
-                <AlertCircle className="w-4 h-4" />
-                필수 약관에 동의해주세요
-              </p>
-            )}
-          </div>
+          {/* 약관 동의는 1단계(약관 동의 화면)에서 완료 — 폼에는 표시 안 함 */}
 
           <button
             type="submit"

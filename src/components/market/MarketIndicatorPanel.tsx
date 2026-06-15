@@ -30,10 +30,10 @@ interface PanelItem {
 }
 
 const TABS: { key: IndicatorMetric; label: string; accent: string }[] = [
-  { key: 'drop', label: '최근하락', accent: '#2563eb' },
   { key: 'rise', label: '최근상승', accent: '#dc2626' },
   { key: 'highest', label: '신고가', accent: '#7c3aed' },
   { key: 'count', label: '거래량', accent: '#2563eb' },
+  { key: 'drop', label: '최근하락', accent: '#2563eb' },
   { key: 'price', label: '평균가', accent: '#e11d48' },
   { key: 'pyeong', label: '평당가', accent: '#ea580c' },
 ];

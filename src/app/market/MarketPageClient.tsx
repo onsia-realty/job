@@ -41,10 +41,10 @@ const DEFAULT_LAWD_CD = '11680';
 
 // 시세자료 지표 — 메인 노출용 칩 (탭하면 지표 허브로 딥링크)
 const INDICATOR_CHIPS = [
-  { metric: 'drop',    label: '최근하락', Icon: TrendingDown, color: '#2563eb' },
   { metric: 'rise',    label: '최근상승', Icon: TrendingUp,   color: '#dc2626' },
   { metric: 'highest', label: '신고가',   Icon: Crown,        color: '#7c3aed' },
   { metric: 'count',   label: '거래량',   Icon: BarChart3,    color: '#2563eb' },
+  { metric: 'drop',    label: '최근하락', Icon: TrendingDown, color: '#2563eb' },
   { metric: 'price',   label: '평균가',   Icon: Coins,        color: '#e11d48' },
   { metric: 'pyeong',  label: '평당가',   Icon: Ruler,        color: '#ea580c' },
 ] as const;
@@ -96,7 +96,7 @@ export default function MarketPageClient() {
   const [dongByKey, setDongByKey] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState<string | null>(() => searchParams.get('sel') || null);
-  const [indicatorMetric, setIndicatorMetric] = useState<IndicatorMetric | null>('drop'); // 기본 열림 (아실식 항상표시)
+  const [indicatorMetric, setIndicatorMetric] = useState<IndicatorMetric | null>('rise'); // 기본 열림 (최근상승부터)
 
   // 줌 레벨별 마커 모드 (idle 콜백에서 갱신)
   const [markerMode, setMarkerMode] = useState<MarkerMode>(() => modeForZoom(zoom));
