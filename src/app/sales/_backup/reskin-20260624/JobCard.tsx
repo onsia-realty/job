@@ -10,7 +10,7 @@ import type { CommissionItem } from '@/components/sales/ui/CommissionChips';
 
 interface JobCardProps {
   job: SalesJobListing;
-  variant?: 'default' | 'compact' | 'card' | 'row';
+  variant?: 'default' | 'compact' | 'card';
 }
 
 const TYPE_COLORS: Record<SalesJobType, string> = {
@@ -82,77 +82,6 @@ export default function JobCard({ job, variant = 'default' }: JobCardProps) {
 
   // CommissionChips: position + salary.amount로 단일 chip 생성
   const commissionItems: CommissionItem[] = [{ position: job.position, amount: job.salary.amount }];
-
-  // ── bunshin식 리스트 행 (썸네일 좌 + 텍스트 중앙 + 수수료 우) ──
-  if (variant === 'row') {
-    return (
-      <Link href={`/sales/jobs/${job.id}`}>
-        <div className={`flex bg-white rounded-xl border border-sales-border hover:shadow-md hover:border-sales-primary/30 transition-all cursor-pointer overflow-hidden ${styles.border} group`}>
-          {/* 썸네일 */}
-          <div className="relative w-28 md:w-36 shrink-0 overflow-hidden">
-            {thumbnailUrl ? (
-              <Image
-                src={thumbnailUrl}
-                alt={job.title}
-                fill
-                className="object-cover group-hover:scale-105 transition-transform duration-300"
-                sizes="(max-width: 768px) 33vw, 160px"
-              />
-            ) : (
-              <div className="w-full h-full min-h-[104px] flex flex-col items-center justify-center bg-sales-bg">
-                <Building2 className="w-7 h-7 text-sales-text-mute/35" />
-                <span className="mt-1 text-[11px] font-bold text-sales-text-mute/55">{job.company.charAt(0)}</span>
-              </div>
-            )}
-            {/* 상태 배지 */}
-            {job.badges.length > 0 && (
-              <div className="absolute top-2 left-2 flex flex-col gap-1">
-                {job.badges.slice(0, 2).map((badge) => (
-                  <Badge key={badge} variant="badge" value={badge as SalesJobBadge} size="sm" />
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* 중앙: 정보 */}
-          <div className="flex-1 min-w-0 p-3 md:p-4 flex flex-col justify-center">
-            <div className="flex items-center gap-1.5 mb-1">
-              <Badge variant="type" value={job.type} size="sm" />
-              <span className="text-xs text-sales-text-mute">{job.region}</span>
-            </div>
-            <h3 className="text-sm md:text-[15px] font-bold text-sales-text line-clamp-1 group-hover:text-sales-primary transition-colors">
-              {job.title}
-            </h3>
-            <p className="text-xs md:text-sm text-sales-text-mute line-clamp-1 mt-0.5">
-              {job.description}
-            </p>
-            {/* 혜택 + 조건 */}
-            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              <span className="text-[11px] px-2 py-0.5 rounded-md bg-sales-bg text-sales-text-mute">
-                {expLabel}
-              </span>
-              {job.benefits.slice(0, 3).map((benefit) => (
-                <span key={benefit} className="text-[11px] px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100 font-medium">
-                  {benefit}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* 우측: 수수료 강조 + 회사 + 조회수 */}
-          <div className="hidden sm:flex flex-col items-end justify-center shrink-0 pr-4 pl-2 py-4 text-right border-l border-sales-border/60 min-w-[150px]">
-            <CommissionChips items={commissionItems} />
-            <span className="mt-1.5 text-[11px] text-sales-text-mute">{SALARY_LABELS[job.salary.type]}</span>
-            <span className="mt-2 text-[11px] text-sales-text-mute truncate max-w-[140px]">{job.company}</span>
-            <span className="mt-0.5 flex items-center gap-1 text-[11px] text-sales-text-mute">
-              <Eye className="w-3 h-3" />
-              {job.views.toLocaleString()}
-            </span>
-          </div>
-        </div>
-      </Link>
-    );
-  }
 
   // ── PC 그리드용 카드 (썸네일 상단 + Badge + CommissionChips) ──
   if (variant === 'card') {

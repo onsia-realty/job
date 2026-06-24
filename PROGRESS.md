@@ -5,7 +5,44 @@
 
 ---
 
-## 마지막 작업 (2026-06-12) — 마커 네이버페이 부동산 스타일 (집 모양)
+## 마지막 작업 (2026-06-25) — /sales 메인 = Claude Design 핸드오프 충실 이식 + 실데이터 연동
+
+- **핸드오프 결정판**: `C:\Users\Dae\Desktop\design_handoff_booin_sales\` (README=토큰/레이아웃/데이터모델 정답지, `BOOIN 구인.dc.html`=읽기용 원본). bunshin 구조→BOOIN 브랜딩 hifi. **사용자 승인 "이거야. 대단하다".**
+- **구현**: `src/app/sales/page.tsx` 전면 교체(인라인스타일 1:1 React 포팅). 셸=다크 좌측네비(240px #11141C)+헤더(일반구인·분양인·대행관 탭/검색/통계/로그인)+메인그리드(1fr+340px)+우측사이드바(SPECIAL/실시간인기/빠른메뉴)+푸터+모바일하단탭. Pretendard. 반응형 1180/920/640.
+- **5섹션 tier분기**: 🏆unique(가로큰카드)/👍superior(4단세로)/🔍premium(2단가로)/⚡normal(컴팩트). 직책색배지(본부장핑크·팀장인디고·팀원시안·팀초록)·혜택칩(값빨강)·그라데이션썸네일(id해시%8). primary=#2563EB.
+- **실데이터 연동 완료**: page.tsx `toJob(SalesJobListing→Job)` 어댑터. `allJobs`(salesJobsSample) 즉시표시 + `fetchJobs('sales')` useEffect 병합·dedup. 지역칩=실데이터 distinct 동적. 금액=순수숫자만 '만원' 부착·우리단위('최대 400만') 보존. **0에러**.
+- 백업: `src/app/sales/_backup/handoff-20260625/`. 카드→`/sales/jobs/{id}`, 등록→`/sales/jobs/new`.
+- 메모리: `project_sales_handoff_redesign.md`(상세), `reference_design_handoff_workflow.md`(워크플로/스킬).
+- **다음(Phase 2)**: AI 이력서 흐름 — 구직자 이력서등록+DNA AI(`agent/mypage/resume`+`dna`), 기업 인재검색(`/sales/talents`)을 이 BOOIN 셸/톤으로. 이후 상세·등록 화면 톤통일 / 미사용 구컴포넌트(VipSlider·SalesFeaturedCard·SalesSidebar) 정리 / 실 썸네일 이미지 렌더.
+
+---
+
+## 이전 작업 (2026-06-24) — 경쟁사 분양의신 분석 + sales/jobs 구조 리스킨
+
+### 1) 경쟁사 분양의신(bunshin.kr) 전체 분석
+- 운영=㈜광고인(대표 문시욱, 268-88-01715, 광주북구). Next.js+Firebase+AWS. 구인구직·분신톡(익명채팅)·반값문자(㈜나셀프 SMS 재판매, 06-17오픈)·자판기(광고소재)·분신카트(자체 고객DB CRM).
+- 법무 핵심: 약관 제34조 "분신카트=자체 DB시스템 + 수집책임 회원 전가" → 개인정보 신고 포인트. 정찰계정 `realtors7` 가입.
+- 상세: 메모리 `project_competitor_bunshin.md`.
+
+### 2) sales/jobs(분양상담사) → 분양의신 구조로 리스킨 (진행중)
+- **백업 완료**: `src/app/sales/_backup/jobs/**` (원본 보존, 무조건).
+- **allJobs 분리**: `src/data/salesJobsSample.ts` (리스트+상세 공유). page.tsx `export { allJobs }` 재export. 상세는 거기서 import.
+- **토큰**: globals.css @theme `--color-sales-*`/`--color-tier-*`. **프리미티브**: `src/components/sales/ui/{Badge,Pill,SectionCard,CommissionChips,Tabs,BannerCarousel}.tsx`.
+- **버그수정**: 등록폼 salary_type → 정규 enum(commission/base_incentive/daily), 400 해소.
+- **리스트 구조=분양의신 2단**: 메인(배너→원형지역필터→프리미엄대표현장→추천4단→주황 광고대행사 배너 유지→적극채용2단→무료) + 우측사이드바(제휴/오늘의특별현장/구인메뉴). tier 가격별 매핑 유지.
+- **회색 썸네일 버그 해결**: JobCard Unsplash 폴백 제거 → gradientFor() 그라데이션+Building2.
+- dev=**localhost:3001**. 빌드·tsc 통과. 상세 메모리 `project_sales_jobs_bunshin_reskin.md`.
+- **다음**: 상단 보라 톤다운, 프리미엄카드 강화 → 상세/등록/광고상품/저장목록/공고관리(연장) 순차.
+
+### 3) CLI 디자인 셋업
+- Claude Design 프로젝트 생성(`부동산인(BOOIN) 디자인시스템`). Figma -32000 = settings.local.json 고아 `figma` 제거 → 재시작 후 /mcp "claude.ai Figma" 인증. 메모리 `reference_claude_design_figma_mcp.md`.
+
+### 작업방식 교훈
+- 경쟁사 벤치마킹은 "창의적 재해석" 말고 **구조 그대로 이식 후 one-by-one 다듬기**. 스크린샷으로 실제 확인. 메모리 `feedback_benchmark_faithful_first.md`.
+
+---
+
+## 이전 작업 (2026-06-12) — 마커 네이버페이 부동산 스타일 (집 모양)
 
 ### 결론: "눈 아픈" 컬러 마커 → 네이버식 집 모양 마커 + 탭형 상세 패널
 

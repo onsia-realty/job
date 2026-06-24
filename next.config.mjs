@@ -35,10 +35,11 @@ const nextConfig = {
         headers: [
           // XSS 방어
           { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'X-Frame-Options', value: 'DENY' },
+          // 같은 출처(self)만 프레이밍 허용 — 외부 클릭재킹은 계속 차단. (공고 등록 노출 미리보기에서 /sales 축소판 사용)
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
           { key: 'X-XSS-Protection', value: '1; mode=block' },
-          // 외부 사이트에서 iframe 삽입 차단
-          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+          // 외부 사이트의 iframe 삽입은 차단, 동일 출처는 허용
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'self'" },
           // Referrer 정보 최소화
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           // HTTPS 강제

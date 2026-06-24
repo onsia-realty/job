@@ -16,7 +16,7 @@ const BADGE_COLORS: Record<string, { bg: string; text: string }> = {
   new: { bg: 'bg-green-500', text: 'text-white' },
   hot: { bg: 'bg-red-500', text: 'text-white' },
   jackpot: { bg: 'bg-yellow-500', text: 'text-black' },
-  popular: { bg: 'bg-purple-500', text: 'text-white' },
+  popular: { bg: 'bg-blue-500', text: 'text-white' },
 };
 
 export default function VipSlider({ jobs }: VipSliderProps) {
@@ -66,7 +66,7 @@ export default function VipSlider({ jobs }: VipSliderProps) {
   const currentJob = jobs[currentIndex];
 
   return (
-    <div className="relative bg-gradient-to-r from-purple-900 via-purple-800 to-blue-900 rounded-xl overflow-hidden">
+    <div className="relative bg-gradient-to-r from-slate-900 via-slate-800 to-blue-900 rounded-xl overflow-hidden">
       {/* VIP 라벨 */}
       <div className="absolute top-3 left-3 z-10">
         <span className="bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full shadow-lg">
@@ -101,7 +101,7 @@ export default function VipSlider({ jobs }: VipSliderProps) {
                   unoptimized
                 />
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-purple-700 to-blue-700 flex items-center justify-center">
+                <div className="w-full h-full bg-gradient-to-br from-blue-700 to-cyan-700 flex items-center justify-center">
                   <Building2 className="w-20 h-20 text-white/30" />
                 </div>
               )}
