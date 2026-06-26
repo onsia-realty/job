@@ -118,11 +118,12 @@ describe('PRICING_TIERS', () => {
 // 가격 매트릭스 (스펙 확정값)
 // ============================================================
 describe('가격 매트릭스 (분양상담사)', () => {
-  it('베이직 7(+7)/20(+10)/30', () => {
+  it('베이직 7(+7=14일)/20/30 — 20일 보너스 없음', () => {
     expect(findOption('sales-premium', 7)!.price).toBe(49000);
+    expect(getExposureDays(findOption('sales-premium', 7)!)).toBe(14);
     expect(findOption('sales-premium', 20)!.price).toBe(98000);
+    expect(getExposureDays(findOption('sales-premium', 20)!)).toBe(20); // +10 없음
     expect(findOption('sales-premium', 30)!.price).toBe(147000);
-    expect(getExposureDays(findOption('sales-premium', 20)!)).toBe(30);
   });
   it('슈페리어 10/20/30', () => {
     expect(findOption('sales-superior', 10)!.price).toBe(99000);
