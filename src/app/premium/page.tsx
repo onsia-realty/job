@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/shared/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { resolveProduct, getTotalPrice } from '@/lib/toss';
+import { resolveProduct, getTotalPrice, PRICING_TIERS, findOption, getExposureDays, getDiscountRate } from '@/lib/toss';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
@@ -212,6 +212,14 @@ const PRICING_DATA = {
         recommended: false,
       },
       {
+        tier: 'dia', name: '다이아', badge: '상단 고정', icon: Crown,
+        gradientFrom: 'from-violet-500', gradientTo: 'to-fuchsia-500',
+        borderColor: 'border-violet-400', checkColor: 'text-violet-400',
+        originalPrice: 0, discountedPrice: 0, duration: '', perDay: '',
+        features: ['추천 영역 상단 고정 노출', '다이아 강조 배지', '조회수 5배 증가 효과', '현장 로고 강조', '지원자 우선 알림'],
+        recommended: false,
+      },
+      {
         tier: 'unique', name: '유니크', badge: '최상단 슬라이더', icon: Star,
         gradientFrom: 'from-purple-600', gradientTo: 'to-pink-500',
         borderColor: 'border-purple-400', checkColor: 'text-purple-400',
@@ -228,7 +236,8 @@ const PRICING_DATA = {
     ],
     faqs: [
       { q: '광고 효과는 언제부터 시작되나요?', a: '결제 완료 후 즉시 광고가 적용됩니다. 관리자 승인 없이 바로 상위 노출이 시작됩니다.' },
-      { q: '무료 공고와 프리미엄의 차이점은?', a: '무료 공고는 24시간 후 자동 만료됩니다. 프리미엄(₩4,900)은 5일간 반짝이 효과로 강조 노출됩니다.' },
+      { q: '무료 공고와 프리미엄의 차이점은?', a: '무료 공고는 24시간 후 자동 만료됩니다. 프리미엄은 10·20·30일 중 골라 반짝이 효과로 강조 노출됩니다.' },
+      { q: '기간(10·20·30일)은 어떻게 선택하나요?', a: '각 등급 카드에서 10·20·30일을 직접 고를 수 있으며, 20일 구매 시 10일을 무료로 더 드립니다(유니크 제외).' },
       { q: '유니크와 슈페리어의 차이점은?', a: '유니크는 최상단에 레인보우 네온 슬라이더 배너로 노출되며, 슈페리어는 유니크 다음 전용 그리드에 노출됩니다.' },
     ],
   },
@@ -250,8 +259,19 @@ function PremiumPricingContent() {
   const [jobPayments, setJobPayments] = useState<Record<string, JobPaymentInfo>>({});
   const [jobsLoading, setJobsLoading] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [adDaysByTier, setAdDaysByTier] = useState<Record<string, number>>({}); // 등급별 기간 선택 (10/20/30)
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
+
+  // 등급별 선택 일수(다중옵션 기본 20일), toss 옵션 조회
+  const daysFor = (productKey: string) => adDaysByTier[productKey] ?? 20;
+  const optionFor = (tier: string) => {
+    const productKey = `${selectedCategory}-${tier}`;
+    const t = PRICING_TIERS[productKey];
+    if (!t) return null;
+    return t.options.length === 1 ? t.options[0] : (findOption(productKey, daysFor(productKey)) ?? t.options[0]);
+  };
+  const hasDurationFor = (tier: string) => (PRICING_TIERS[`${selectedCategory}-${tier}`]?.options.length ?? 0) > 1;
 
   const currentData = PRICING_DATA[selectedCategory];
   const slideJobs = selectedCategory === 'agent' ? AGENT_VIP_JOBS : SALES_UNIQUE_JOBS;
@@ -378,6 +398,7 @@ function PremiumPricingContent() {
     // 체크아웃 페이지로 이동 (토스 위젯 렌더링)
     const checkoutUrl = new URL('/checkout', window.location.origin);
     checkoutUrl.searchParams.set('productKey', productKey);
+    if (hasDurationFor(tier)) checkoutUrl.searchParams.set('days', String(daysFor(productKey)));
     if (effectiveJobId) checkoutUrl.searchParams.set('jobId', effectiveJobId);
     window.location.href = checkoutUrl.toString();
   };
@@ -448,13 +469,13 @@ function PremiumPricingContent() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full border border-cyan-500/30 mb-6">
             <Tag className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-cyan-300 font-bold">오픈 기념 특별가! 경쟁사 대비 10분의 1 가격</span>
+            <span className="text-sm text-cyan-300 font-bold">오픈 기념 특별가! 경쟁사 대비 합리적인 가격</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             광고 상품 안내
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto">
-            커피 한 잔 값으로 5일간 공고를 노출하세요.<br />
+            필요한 기간(10·20·30일)만큼 골라 노출하세요.<br />
             부동산인에서 최고의 인재를 빠르게 만나보세요.
           </p>
         </div>
@@ -582,15 +603,23 @@ function PremiumPricingContent() {
         <div className="mb-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">상품 가격</h2>
-            <p className="text-gray-400 text-sm">오픈 기념 특별가! <span className="text-cyan-400 font-bold text-lg">경쟁사 대비 10분의 1 가격</span></p>
+            <p className="text-gray-400 text-sm">오픈 기념 특별가! <span className="text-cyan-400 font-bold text-lg">경쟁사 대비 합리적인 가격</span></p>
             <p className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium animate-pulse">
               <span>※</span> 표시 가격은 공급가액이며, <span className="font-bold text-amber-300">부가세(10%) 별도</span>
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {currentData.plans.map((plan) => {
               const Icon = plan.icon;
+              const opt = optionFor(plan.tier);          // toss 단일 출처
+              const price = opt?.price ?? plan.discountedPrice;
+              const list = opt?.listPrice ?? plan.originalPrice;
+              const disc = opt ? getDiscountRate(opt) : null;
+              const exposure = opt ? getExposureDays(opt) : 0;
+              const bonus = opt?.bonusDays ?? 0;
+              const hasDur = hasDurationFor(plan.tier);
+              const productKey = `${selectedCategory}-${plan.tier}`;
               return (
                 <div
                   key={plan.tier}
@@ -618,25 +647,42 @@ function PremiumPricingContent() {
                       <span className="text-[10px] text-gray-500">{plan.badge}</span>
                     </div>
 
-                    {/* 가격 */}
+                    {/* 가격 (toss 단일 출처) */}
                     <div className="mb-5">
-                      {plan.originalPrice > 0 ? (
+                      {price > 0 ? (
                         <>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm text-gray-500 line-through">
-                              {plan.originalPrice.toLocaleString()}원
-                            </span>
-                            <span className="text-xs font-black px-1.5 py-0.5 rounded bg-cyan-500 text-white">
-                              특별가
-                            </span>
+                          <div className="flex items-center gap-2 mb-1 min-h-[20px]">
+                            {list > 0 && (
+                              <span className="text-sm text-gray-500 line-through">{list.toLocaleString()}원</span>
+                            )}
+                            {bonus > 0 && (
+                              <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-amber-400 text-black">+{bonus}일 무료</span>
+                            )}
                           </div>
-                          <div className="flex items-end gap-1">
-                            <span className="text-2xl md:text-3xl font-black text-white">
-                              {plan.discountedPrice.toLocaleString()}
-                            </span>
-                            <span className="text-sm text-gray-400 mb-1">원/{plan.duration}</span>
+                          <div className="flex items-end gap-1 flex-wrap">
+                            {disc != null && <span className="text-base font-black text-rose-400 mb-0.5">{disc}%</span>}
+                            <span className="text-2xl md:text-3xl font-black text-white">{price.toLocaleString()}</span>
+                            <span className="text-sm text-gray-400 mb-1">원</span>
                           </div>
-                          <p className="text-xs text-gray-500 mt-1">일 {plan.perDay} <span className="text-amber-400/80 font-medium animate-pulse">· 부가세(10%) 별도</span></p>
+                          <p className="text-xs text-gray-400 mt-0.5">{exposure}일 노출 · <span className="text-amber-400/80 font-medium">부가세 별도</span></p>
+                          {hasDur && (
+                            <div className="flex gap-1.5 mt-3">
+                              {PRICING_TIERS[productKey].options.map((o) => {
+                                const active = daysFor(productKey) === o.days;
+                                return (
+                                  <button
+                                    key={o.days}
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); setAdDaysByTier((s) => ({ ...s, [productKey]: o.days })); }}
+                                    className={`relative flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${active ? `bg-gradient-to-r ${plan.gradientFrom} ${plan.gradientTo} text-white` : 'bg-slate-700/60 text-gray-300 hover:bg-slate-700'}`}
+                                  >
+                                    {o.days}일
+                                    {o.bonusDays > 0 && <span className="absolute -top-1.5 -right-1 text-[9px] font-black px-1 rounded bg-amber-400 text-black">+{o.bonusDays}</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
                         </>
                       ) : (
                         <>
@@ -899,7 +945,8 @@ function PremiumPricingContent() {
             {!jobsLoading && myJobs.length > 0 && (
               <div className="p-5 border-t border-slate-700">
                 {(() => {
-                  const product = resolveProduct(`${selectedCategory}-${selectedTier}`);
+                  const mProductKey = `${selectedCategory}-${selectedTier}`;
+                  const product = resolveProduct(mProductKey, hasDurationFor(selectedTier!) ? daysFor(mProductKey) : undefined);
                   return (
                     <button
                       onClick={() => {
