@@ -51,6 +51,14 @@ export default function LoginPage() {
   const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [resendingEmail, setResendingEmail] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
+  const [rememberId, setRememberId] = useState(false);
+  const [keepLoggedIn, setKeepLoggedIn] = useState(true);
+
+  // 저장된 이메일(아이디 기억하기) 불러오기
+  useEffect(() => {
+    const saved = localStorage.getItem('remembered_email');
+    if (saved) { setEmail(saved); setRememberId(true); }
+  }, []);
 
   const handleSetActiveRole = (role: LoginRole) => {
     setActiveRole(role);
@@ -161,6 +169,9 @@ export default function LoginPage() {
       return;
     }
 
+    if (rememberId) localStorage.setItem('remembered_email', email);
+    else localStorage.removeItem('remembered_email');
+
     setIsLoading(true);
 
     try {
@@ -233,187 +244,103 @@ export default function LoginPage() {
       <main className="max-w-md mx-auto px-4 py-8">
         {/* 로고 및 타이틀 */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl mb-4 shadow-lg shadow-emerald-500/25">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl mb-3 shadow-lg shadow-emerald-500/25">
+            <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-1">부동산<span className="text-cyan-500">인</span></h1>
-          <p className="text-slate-500">공인중개사를 위한 구인구직 플랫폼</p>
+          <p className="text-slate-500 text-sm">공인중개사를 위한 구인구직 플랫폼</p>
         </div>
 
         {/* 개인회원 / 기업회원 탭 */}
-        <div className="flex bg-slate-100 rounded-xl p-1 mb-8">
-          <button
-            type="button"
-            onClick={() => handleSetActiveRole('seeker')}
-            className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
-              activeRole === 'seeker'
-                ? 'bg-white text-emerald-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            개인회원
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSetActiveRole('employer')}
-            className={`flex-1 py-3 text-sm font-semibold rounded-lg transition-all ${
-              activeRole === 'employer'
-                ? 'bg-white text-emerald-600 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700'
-            }`}
-          >
-            기업회원
-          </button>
+        <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
+          <button type="button" onClick={() => handleSetActiveRole('seeker')} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${activeRole === 'seeker' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>개인회원</button>
+          <button type="button" onClick={() => handleSetActiveRole('employer')} className={`flex-1 py-2.5 text-sm font-semibold rounded-lg transition-all ${activeRole === 'employer' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>기업회원</button>
         </div>
 
-        {/* 에러 메시지 */}
+        {/* 에러 / 재발송 */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl">
             <div className="flex items-start gap-3 text-red-700">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <p className="text-sm">{error}</p>
             </div>
             {needsEmailConfirmation && (
-              <button
-                onClick={handleResendConfirmation}
-                disabled={resendingEmail}
-                className="mt-3 w-full py-2.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
-              >
-                {resendingEmail ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    발송 중...
-                  </>
-                ) : (
-                  '인증 메일 재발송'
-                )}
+              <button onClick={handleResendConfirmation} disabled={resendingEmail} className="mt-3 w-full py-2.5 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                {resendingEmail ? (<><Loader2 className="w-4 h-4 animate-spin" />발송 중...</>) : ('인증 메일 재발송')}
               </button>
             )}
           </div>
         )}
-
-        {/* 인증 메일 재발송 성공 */}
         {resendSuccess && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3 text-green-700">
+          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl flex items-start gap-3 text-green-700">
             <Mail className="w-5 h-5 flex-shrink-0 mt-0.5" />
             <p className="text-sm">인증 메일이 재발송되었습니다. 이메일을 확인해주세요.</p>
           </div>
         )}
 
-        {/* 소셜 로그인 (메인) */}
-        <div className="flex flex-col items-center gap-3 mb-8">
-          <button
-            onClick={() => handleSocialLogin('kakao')}
-            disabled={!!loadingProvider}
-            className="w-[400px] max-w-full h-[44px] bg-[#FEE500] text-[#191919] rounded font-semibold flex items-center justify-center gap-3 hover:bg-[#FADA0A] disabled:opacity-50 transition-all text-sm"
-          >
-            {loadingProvider === 'kakao' ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <KakaoLogo />
-            )}
-            카카오로 시작하기
-          </button>
-
-          {/* Google GIS 공식 버튼 */}
-          <div ref={googleBtnRef} className="w-full max-w-[400px] flex items-center justify-center overflow-hidden" />
-        </div>
-
-        {/* 구분선 */}
-        <div className="relative my-8">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-gradient-to-b from-slate-50 to-slate-100 text-slate-400">
-              또는 이메일로 로그인
-            </span>
-          </div>
-        </div>
-
-        {/* 이메일 로그인 폼 */}
-        <form onSubmit={handleSubmit} className="space-y-4 mb-6">
+        {/* 이메일 로그인 폼 (주) */}
+        <form onSubmit={handleSubmit} className="space-y-3.5">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">이메일</label>
             <div className="relative">
               <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="이메일을 입력하세요"
-                className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              />
+              <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="이메일을 입력하세요" className="w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">비밀번호</label>
             <div className="relative">
               <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="비밀번호를 입력하세요"
-                className="w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
-              >
+              <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="비밀번호를 입력하세요" className="w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors">
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center gap-2 cursor-pointer group">
-              <input
-                type="checkbox"
-                className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              <span className="text-slate-600 group-hover:text-slate-800 transition-colors">
-                로그인 상태 유지
-              </span>
+          {/* 로그인 상태 유지 / 아이디 기억하기 */}
+          <div className="flex items-center justify-between text-sm pt-0.5">
+            <label className="flex items-center gap-2 cursor-pointer text-slate-600">
+              <input type="checkbox" checked={keepLoggedIn} onChange={(e) => setKeepLoggedIn(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              로그인 상태 유지
             </label>
-            <Link
-              href="/agent/auth/forgot-password"
-              className="text-emerald-600 hover:text-emerald-700 font-medium transition-colors"
-            >
-              비밀번호 찾기
-            </Link>
+            <label className="flex items-center gap-2 cursor-pointer text-slate-600">
+              <input type="checkbox" checked={rememberId} onChange={(e) => setRememberId(e.target.checked)} className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
+              아이디 기억하기
+            </label>
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 flex items-center justify-center gap-2"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                로그인 중...
-              </>
-            ) : (
-              '로그인'
-            )}
+          <button type="submit" disabled={isLoading} className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold text-base hover:from-emerald-600 hover:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all shadow-lg shadow-emerald-500/25 flex items-center justify-center gap-2">
+            {isLoading ? (<><Loader2 className="w-5 h-5 animate-spin" />로그인 중...</>) : ('로그인')}
           </button>
         </form>
 
-        {/* 회원가입 링크 */}
-        <p className="text-center text-sm text-slate-500">
-          아직 회원이 아니신가요?{' '}
-          <Link
-            href={`/agent/auth/signup?role=${activeRole}`}
-            className="text-emerald-600 font-semibold hover:text-emerald-700 transition-colors"
-          >
-            회원가입
-          </Link>
-        </p>
+
+        {/* 간편 로그인 */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-200"></div></div>
+          <div className="relative flex justify-center"><span className="px-4 bg-gradient-to-b from-slate-50 to-slate-100 text-slate-400 text-xs">간편 로그인</span></div>
+        </div>
+        <div className="flex flex-col items-center gap-2.5">
+          <button onClick={() => handleSocialLogin('kakao')} disabled={!!loadingProvider} className="w-full max-w-[400px] h-[46px] bg-[#FEE500] text-[#191919] rounded-xl font-semibold flex items-center justify-center gap-2.5 hover:bg-[#FADA0A] disabled:opacity-50 transition-all text-sm">
+            {loadingProvider === 'kakao' ? <Loader2 className="w-5 h-5 animate-spin" /> : <KakaoLogo />}
+            카카오로 시작하기
+          </button>
+          <div ref={googleBtnRef} className="w-full max-w-[400px] flex items-center justify-center overflow-hidden" />
+        </div>
+
+        {/* 회원가입 */}
+        <Link href={`/agent/auth/signup?role=${activeRole}`} className="mt-4 w-full py-3.5 border border-slate-300 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-all flex items-center justify-center">
+          회원가입
+        </Link>
+        {/* 아이디 찾기 | 비밀번호 찾기 */}
+        <div className="mt-6 flex items-center justify-center gap-4 text-sm text-slate-500">
+          <Link href="/agent/auth/forgot-password" className="hover:text-slate-800 transition-colors">아이디 찾기</Link>
+          <span className="text-slate-300">|</span>
+          <Link href="/agent/auth/forgot-password" className="hover:text-slate-800 transition-colors">비밀번호 찾기</Link>
+        </div>
 
         {/* 안내 문구 */}
         <div className="mt-8 p-4 bg-slate-100 rounded-xl">
