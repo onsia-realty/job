@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { PAYMENT_PRODUCTS, getTotalPrice } from '@/lib/toss';
+import { resolveProduct, getTotalPrice } from '@/lib/toss';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,6 +20,8 @@ function PaymentSuccessContent() {
   const orderId = searchParams.get('orderId');
   const amount = searchParams.get('amount');
   const productKey = searchParams.get('productKey');
+  const daysParam = searchParams.get('days');
+  const days = daysParam ? Number(daysParam) : undefined;
   const jobId = searchParams.get('jobId');
 
   useEffect(() => {
@@ -38,7 +40,7 @@ function PaymentSuccessContent() {
       return;
     }
 
-    const product = PAYMENT_PRODUCTS[productKey];
+    const product = resolveProduct(productKey, days);
     if (!product) {
       setStatus('error');
       setMessage('유효하지 않은 상품입니다.');
@@ -71,6 +73,7 @@ function PaymentSuccessContent() {
             orderId,
             amount: parseInt(amount),
             productKey,
+            days: days ?? null,
             jobId: jobId || null,
           }),
         });
@@ -79,7 +82,7 @@ function PaymentSuccessContent() {
 
         if (result.success) {
           setStatus('success');
-          setMessage(`${product.name} 결제가 완료되었습니다!\n${product.duration}간 광고가 노출됩니다.`);
+          setMessage(`${product.name} 결제가 완료되었습니다!\n${product.durationLabel}간 광고가 노출됩니다.`);
 
           // 3초 후 자동 이동
           setTimeout(() => {

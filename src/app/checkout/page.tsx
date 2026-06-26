@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { TOSS_CONFIG, PAYMENT_PRODUCTS, generateOrderId, getVat, getTotalPrice } from '@/lib/toss';
+import { TOSS_CONFIG, resolveProduct, generateOrderId, getVat, getTotalPrice } from '@/lib/toss';
 import { ChevronLeft, Loader2, ShieldCheck } from 'lucide-react';
 import type { TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
 
@@ -12,6 +12,8 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const productKey = searchParams.get('productKey');
+  const daysParam = searchParams.get('days');
+  const days = daysParam ? Number(daysParam) : undefined;
   const jobId = searchParams.get('jobId');
 
   const [widgets, setWidgets] = useState<TossPaymentsWidgets | null>(null);
@@ -20,7 +22,7 @@ function CheckoutContent() {
   const [error, setError] = useState<string | null>(null);
   const initRef = useRef(false);
 
-  const product = productKey ? PAYMENT_PRODUCTS[productKey] : null;
+  const product = productKey ? resolveProduct(productKey, days) : null;
 
   useEffect(() => {
     if (!product || initRef.current) return;
@@ -71,6 +73,7 @@ function CheckoutContent() {
 
       const successUrl = new URL('/payment/success', window.location.origin);
       successUrl.searchParams.set('productKey', productKey);
+      if (days != null) successUrl.searchParams.set('days', String(days));
       if (jobId) successUrl.searchParams.set('jobId', jobId);
 
       const failUrl = new URL('/payment/fail', window.location.origin);
@@ -130,7 +133,7 @@ function CheckoutContent() {
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="font-medium">{product.name}</p>
-              <p className="text-sm text-gray-400">{product.duration} 이용권</p>
+              <p className="text-sm text-gray-400">{product.durationLabel} 노출</p>
             </div>
             <p className="text-lg font-medium text-gray-300">
               {product.price.toLocaleString()}원

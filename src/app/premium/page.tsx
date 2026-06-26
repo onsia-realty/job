@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/shared/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { PAYMENT_PRODUCTS, getTotalPrice } from '@/lib/toss';
+import { resolveProduct, getTotalPrice } from '@/lib/toss';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
@@ -366,7 +366,7 @@ function PremiumPricingContent() {
 
     const effectiveJobId = targetJobId || jobId;
     const productKey = `${selectedCategory}-${tier}`;
-    const product = PAYMENT_PRODUCTS[productKey];
+    const product = resolveProduct(productKey);
     if (!product) {
       alert('유효하지 않은 상품입니다.');
       return;
@@ -899,7 +899,7 @@ function PremiumPricingContent() {
             {!jobsLoading && myJobs.length > 0 && (
               <div className="p-5 border-t border-slate-700">
                 {(() => {
-                  const product = PAYMENT_PRODUCTS[`${selectedCategory}-${selectedTier}`];
+                  const product = resolveProduct(`${selectedCategory}-${selectedTier}`);
                   return (
                     <button
                       onClick={() => {

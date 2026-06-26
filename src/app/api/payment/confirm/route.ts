@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PAYMENT_PRODUCTS, getTotalPrice } from '@/lib/toss';
+import { resolveProduct, getTotalPrice } from '@/lib/toss';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { paymentKey, orderId, amount, productKey, jobId } = await req.json();
+    const { paymentKey, orderId, amount, productKey, days, jobId } = await req.json();
 
     if (!paymentKey || !orderId || !amount || !productKey) {
       return NextResponse.json(
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const product = PAYMENT_PRODUCTS[productKey];
+    const product = resolveProduct(productKey, typeof days === 'number' ? days : undefined);
     if (!product) {
       return NextResponse.json(
         { success: false, message: '유효하지 않은 상품입니다.' },
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
           productName: product.name,
           amount: totalPrice,
           tier: product.tier,
-          duration: product.duration,
+          duration: product.durationLabel,
         },
       });
     }
@@ -141,12 +141,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 만료일 계산
+    // 만료일 계산 — 노출일(구매일 + 보너스일) 기준
     const paidAt = payment.approvedAt ? new Date(payment.approvedAt) : new Date();
     const expiresAt = new Date(paidAt);
-    if (product.duration === '24시간') expiresAt.setHours(expiresAt.getHours() + 24);
-    else if (product.duration === '5일') expiresAt.setDate(expiresAt.getDate() + 5);
-    else if (product.duration === '1주일') expiresAt.setDate(expiresAt.getDate() + 7);
+    expiresAt.setDate(expiresAt.getDate() + product.exposureDays);
 
     // Supabase에 결제 내역 저장
     const { error: insertError } = await supabaseAdmin
@@ -162,7 +160,7 @@ export async function POST(req: NextRequest) {
         payment_method: payment.method || 'CARD',
         tier: product.tier,
         category: product.category,
-        duration: product.duration,
+        duration: product.durationLabel,
         pg_provider: 'tosspayments',
         paid_at: paidAt.toISOString(),
         start_date: paidAt.toISOString(),
@@ -201,7 +199,7 @@ export async function POST(req: NextRequest) {
         productName: product.name,
         amount: totalPrice,
         tier: product.tier,
-        duration: product.duration,
+        duration: product.durationLabel,
       },
     });
   } catch (error) {

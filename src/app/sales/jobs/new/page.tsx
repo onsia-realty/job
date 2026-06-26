@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadImage } from '@/lib/upload';
+import { PRICING_TIERS, findOption, getExposureDays, getDiscountRate, type DurationOption } from '@/lib/toss';
 import type { SalesJobType, SalesPosition, SalaryType } from '@/types';
 import { REGIONS } from '@/types';
 
@@ -53,13 +54,24 @@ const DEV_FIELDS = [
   { key: 'trust', label: '신탁사', req: false, ph: '신탁사명을 입력해주세요' },
 ] as const;
 
-// 가격은 우리 배포본 단가(toss.ts PAYMENT_PRODUCTS와 일치). list=정가(표시용), price=공급가액(VAT 별도).
-const AD_PRODUCTS = [
-  { name: 'VIP', tier: 'unique', productKey: 'sales-unique', accent: '#E5B968', tagline: '지역 단독 1자리 · 메인 최상단 고정 노출', period: '7일', list: 249000, price: 24900, slot: 0 },
-  { name: '슈페리어', tier: 'superior', productKey: 'sales-superior', accent: '#8AE5E5', tagline: '추천 영역 상단 · 썸네일 강조 노출', period: '7일', list: 99000, price: 9900, slot: 1 },
-  { name: '프리미엄', tier: 'premium', productKey: 'sales-premium', accent: '#9DBCFF', tagline: '적극 채용 영역 노출', period: '5일', list: 49000, price: 4900, slot: 2 },
-  { name: '일반', tier: 'normal', productKey: null, accent: '#7FE3D6', tagline: '기본 목록 노출', period: '상시', list: 0, price: 0, slot: 3 },
+// 광고 등급 표현 메타. 가격·기간은 toss.ts(PRICING_TIERS) 단일 출처에서 파생.
+// previewSection = /sales 미리보기에서 하이라이트할 data-section (다이아는 전용 섹션 전까지 superior 영역에 표기).
+const AD_META = [
+  { name: '유니크', tier: 'unique', productKey: 'sales-unique', previewSection: 'unique', accent: '#E5B968', tagline: '지역 단독 1자리 · 메인 최상단 고정 노출' },
+  { name: '다이아', tier: 'dia', productKey: 'sales-dia', previewSection: 'superior', accent: '#C9B6FF', tagline: '추천 영역 상단 고정 · 다이아 강조 노출' },
+  { name: '슈페리어', tier: 'superior', productKey: 'sales-superior', previewSection: 'superior', accent: '#8AE5E5', tagline: '추천 영역 상단 · 썸네일 강조 노출' },
+  { name: '프리미엄', tier: 'premium', productKey: 'sales-premium', previewSection: 'premium', accent: '#9DBCFF', tagline: '적극 채용 영역 노출' },
+  { name: '일반', tier: 'normal', productKey: null, previewSection: 'normal', accent: '#7FE3D6', tagline: '기본 목록 노출' },
 ] as const;
+type AdMeta = (typeof AD_META)[number];
+
+// 등급의 표시 옵션: 단일옵션(프리미엄/agent)은 그것, 다중옵션은 선택 일수(adDays) 기준.
+function adOption(productKey: string | null, adDays: number): DurationOption | null {
+  if (!productKey) return null;
+  const tier = PRICING_TIERS[productKey];
+  if (!tier) return null;
+  return tier.options.length === 1 ? tier.options[0] : (findOption(productKey, adDays) ?? tier.options[0]);
+}
 
 const DRAFT_KEY = 'sales-job-draft-v2';
 
@@ -87,6 +99,9 @@ export default function NewJobPage() {
   const { user: authUser, session, isLoading: authLoading } = useAuth();
 
   const [f, setF] = useState<Form>(INITIAL);
+  const [adDaysByTier, setAdDaysByTier] = useState<Record<string, number>>({}); // 광고 기간 선택 (등급별 독립)
+  const daysFor = (key: string | null) => (key ? (adDaysByTier[key] ?? 20) : 20);
+  const setDaysFor = (key: string, d: number) => setAdDaysByTier((s) => ({ ...s, [key]: d }));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showVerification, setShowVerification] = useState(false);
   const [draftPrompt, setDraftPrompt] = useState(false);
@@ -209,9 +224,16 @@ export default function NewJobPage() {
   const c3 = f.roles.length > 0 && (f.consultOnly || Object.values(f.pay).some((v) => v));
   const c4 = !!f.contact && !!f.phone;
 
-  // 선택 광고 등급 + 주문 요약
-  const selectedAd = AD_PRODUCTS.find((p) => p.name === f.adTier) ?? AD_PRODUCTS[3];
-  const adDiscount = selectedAd.list - selectedAd.price;
+  // 선택 광고 등급 + 주문 요약 (가격은 toss.ts 단일 출처에서)
+  const selMeta: AdMeta = AD_META.find((m) => m.name === f.adTier) ?? AD_META[AD_META.length - 1];
+  const selTier = selMeta.productKey ? PRICING_TIERS[selMeta.productKey] : null;
+  const selHasDuration = (selTier?.options.length ?? 0) > 1; // 10/20/30 토글 노출 여부
+  const selDays = daysFor(selMeta.productKey);
+  const selOpt = adOption(selMeta.productKey, selDays);
+  const selPrice = selOpt?.price ?? 0;
+  const selList = selOpt?.listPrice ?? 0;
+  const adDiscount = selList - selPrice;
+  const selExposure = selOpt ? getExposureDays(selOpt) : 0;
 
   // 미리보기 iframe(/sales 축소판)에서 선택 등급 섹션을 하이라이트
   useEffect(() => {
@@ -232,7 +254,7 @@ export default function NewJobPage() {
           const x = e as HTMLElement;
           x.style.outline = ''; x.style.outlineOffset = ''; x.style.boxShadow = ''; x.style.position = ''; x.style.zIndex = ''; x.style.borderRadius = ''; x.removeAttribute('data-adhl');
         });
-        const t = doc.querySelector(`[data-section="${selectedAd.tier}"]`) as HTMLElement | null;
+        const t = doc.querySelector(`[data-section="${selMeta.previewSection}"]`) as HTMLElement | null;
         if (t) {
           // 클릭 섹션 = 빨간 테두리 + 거대 box-shadow로 나머지를 어둡게(스포트라이트)
           t.style.position = 'relative';
@@ -251,7 +273,7 @@ export default function NewJobPage() {
     ifr.addEventListener('load', apply);
     const timer = setTimeout(apply, 700);
     return () => { ifr.removeEventListener('load', apply); clearTimeout(timer); };
-  }, [selectedAd]);
+  }, [selMeta.previewSection]);
 
   // 제출
   const handleSubmit = async () => {
@@ -326,8 +348,9 @@ export default function NewJobPage() {
       try { localStorage.removeItem(DRAFT_KEY); } catch { /* ignore */ }
 
       // 유료 등급 선택 시 토스 결제(checkout)로 이동 — 결제 성공 후 confirm API가 tier 승급
-      if (selectedAd.productKey && data?.id) {
-        router.push(`/checkout?productKey=${selectedAd.productKey}&jobId=${data.id}`);
+      if (selMeta.productKey && data?.id) {
+        const daysQs = selHasDuration ? `&days=${selDays}` : '';
+        router.push(`/checkout?productKey=${selMeta.productKey}${daysQs}&jobId=${data.id}`);
         return;
       }
       alert('공고가 등록되었습니다!');
@@ -350,7 +373,7 @@ export default function NewJobPage() {
   const sectionBadge = (n: number): CSSProperties => ({ width: 24, height: 24, borderRadius: 8, background: '#EFF4FF', color: C.primary, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800 });
 
   // 미리보기(미니 피드) 헬퍼
-  const ac = selectedAd.accent;
+  const ac = selMeta.accent;
   const pvLabel: CSSProperties = { fontSize: 10.5, fontWeight: 700, color: '#7C859B', marginBottom: 6 };
   const bar = (w: string, on: boolean): CSSProperties => ({ height: 6, width: w, borderRadius: 4, background: on ? ac : '#2A3142' });
   const meTag: CSSProperties = { fontSize: 9.5, fontWeight: 800, color: C.ink, background: ac, padding: '2px 6px', borderRadius: 99, flex: '0 0 auto' };
@@ -703,7 +726,7 @@ export default function NewJobPage() {
                           {/* 프리미엄 대표 현장 (unique) */}
                           <div>
                             <div style={pvLabel}>프리미엄 대표 현장</div>
-                            {(() => { const on = selectedAd.tier === 'unique'; return (
+                            {(() => { const on = selMeta.tier === 'unique'; return (
                               <div style={{ display: 'flex', gap: 8, alignItems: 'center', padding: 8, borderRadius: 8, border: on ? `1.5px solid ${ac}` : '1px solid #232B3A', background: on ? '#161C27' : 'transparent' }}>
                                 <div style={{ width: 40, height: 40, borderRadius: 6, background: on ? ac : '#2A3142', flex: '0 0 auto' }} />
                                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -719,7 +742,7 @@ export default function NewJobPage() {
                           <div>
                             <div style={pvLabel}>추천 현장</div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-                              {[0, 1, 2, 3].map((i) => { const on = selectedAd.tier === 'superior' && i === 0; return (
+                              {[0, 1, 2, 3].map((i) => { const on = (selMeta.tier === 'superior' || selMeta.tier === 'dia') && i === 0; return (
                                 <div key={i} style={{ borderRadius: 7, padding: 7, border: on ? `1.5px solid ${ac}` : '1px solid #232B3A', background: on ? '#161C27' : 'transparent', position: 'relative' }}>
                                   <div style={{ height: 24, borderRadius: 5, background: on ? ac : '#2A3142', marginBottom: 6 }} />
                                   <div style={bar('80%', on)} />
@@ -739,7 +762,7 @@ export default function NewJobPage() {
                           <div>
                             <div style={pvLabel}>적극 채용 중인 공고</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                              {[0, 1].map((i) => { const on = selectedAd.tier === 'premium' && i === 0; return (
+                              {[0, 1].map((i) => { const on = selMeta.tier === 'premium' && i === 0; return (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: 7, borderRadius: 7, border: on ? `1.5px solid ${ac}` : '1px solid #232B3A', background: on ? '#161C27' : 'transparent' }}>
                                   <div style={{ width: 26, height: 26, borderRadius: 5, background: on ? ac : '#2A3142', flex: '0 0 auto' }} />
                                   <div style={{ flex: 1 }}><div style={bar(on ? '70%' : '55%', on)} /></div>
@@ -753,7 +776,7 @@ export default function NewJobPage() {
                           <div>
                             <div style={pvLabel}>기본 목록</div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-                              {[0, 1, 2].map((i) => { const on = selectedAd.tier === 'normal' && i === 0; return (
+                              {[0, 1, 2].map((i) => { const on = selMeta.tier === 'normal' && i === 0; return (
                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '7px 8px', borderRadius: 6, border: on ? `1.5px solid ${ac}` : '1px solid transparent', background: on ? '#161C27' : 'transparent' }}>
                                   <div style={{ flex: 1 }}><div style={bar(on ? '62%' : '45%', on)} /></div>
                                   {on && <span style={meTag}>내 광고</span>}
@@ -767,31 +790,58 @@ export default function NewJobPage() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                         <span style={{ fontSize: 17 }}>🎁</span>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>노출 등급 상품 · 오픈 기념 90% 할인</span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>노출 등급 상품 · 오픈 기념 특별가</span>
                       </div>
-                      {AD_PRODUCTS.map((a) => {
-                        const sel = f.adTier === a.name;
+                      {AD_META.map((m) => {
+                        const sel = f.adTier === m.name;
+                        const tier = m.productKey ? PRICING_TIERS[m.productKey] : null;
+                        const mHasDuration = (tier?.options.length ?? 0) > 1;
+                        const opt = adOption(m.productKey, daysFor(m.productKey));
+                        const price = opt?.price ?? 0;
+                        const list = opt?.listPrice ?? 0;
+                        const disc = opt ? getDiscountRate(opt) : null;
+                        const exposure = opt ? getExposureDays(opt) : 0;
+                        const bonus = opt?.bonusDays ?? 0;
                         return (
-                          <button key={a.name} type="button" onClick={() => set({ adTier: a.name })}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 12, padding: 18, cursor: 'pointer', fontFamily: 'inherit', background: '#1A1F2B', border: sel ? `2px solid ${a.accent}` : '2px solid #2A3142' }}>
+                          <div key={m.name}>
+                          <button type="button" onClick={() => set({ adTier: m.name })}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 12, padding: 18, cursor: 'pointer', fontFamily: 'inherit', background: '#1A1F2B', border: sel ? `2px solid ${m.accent}` : '2px solid #2A3142' }}>
                             <span style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                               <span style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                                <span style={{ width: 18, height: 18, borderRadius: 99, flex: '0 0 auto', border: `1.5px solid ${sel ? a.accent : '#3A4256'}`, background: sel ? a.accent : 'transparent', display: 'inline-block', marginTop: 2 }} />
+                                <span style={{ width: 18, height: 18, borderRadius: 99, flex: '0 0 auto', border: `1.5px solid ${sel ? m.accent : '#3A4256'}`, background: sel ? m.accent : 'transparent', display: 'inline-block', marginTop: 2 }} />
                                 <span style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                  <span style={{ fontSize: 18, fontWeight: 800, color: sel ? a.accent : '#fff' }}>{a.name}</span>
-                                  <span style={{ fontSize: 12.5, color: '#9AA3B5' }}>{a.tagline}</span>
-                                  <span style={{ fontSize: 11.5, color: '#6B7280' }}>게재기간 {a.period}</span>
+                                  <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <span style={{ fontSize: 18, fontWeight: 800, color: sel ? m.accent : '#fff' }}>{m.name}</span>
+                                    {bonus > 0 && <span style={{ fontSize: 11, fontWeight: 800, color: '#0B1220', background: '#FBBF24', borderRadius: 5, padding: '1px 6px' }}>+{bonus}일 무료</span>}
+                                  </span>
+                                  <span style={{ fontSize: 12.5, color: '#9AA3B5' }}>{m.tagline}</span>
+                                  <span style={{ fontSize: 11.5, color: '#6B7280' }}>게재기간 {m.productKey ? `${exposure}일` : '상시'}</span>
                                 </span>
                               </span>
                               <span style={{ textAlign: 'right', flex: '0 0 auto' }}>
-                                <span style={{ display: 'block', fontSize: 11, color: C.sub, textDecoration: a.list > 0 ? 'line-through' : 'none' }}>{(a.list > 0 ? `${a.list.toLocaleString()}원` : '') || ' '}</span>
+                                <span style={{ display: 'block', fontSize: 11, color: C.sub, textDecoration: list > 0 ? 'line-through' : 'none' }}>{(list > 0 ? `${list.toLocaleString()}원` : '') || ' '}</span>
                                 <span style={{ display: 'flex', alignItems: 'baseline', gap: 5, justifyContent: 'flex-end' }}>
-                                  {a.list > 0 && <span style={{ fontSize: 13, fontWeight: 800, color: '#FB7185' }}>{Math.round(((a.list - a.price) / a.list) * 100)}%</span>}
-                                  <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: -.5 }}>{a.price > 0 ? `${a.price.toLocaleString()}원` : '무료'}</span>
+                                  {disc != null && <span style={{ fontSize: 13, fontWeight: 800, color: '#FB7185' }}>{disc}%</span>}
+                                  <span style={{ fontSize: 20, fontWeight: 800, color: '#fff', letterSpacing: -.5 }}>{price > 0 ? `${price.toLocaleString()}원` : '무료'}</span>
                                 </span>
                               </span>
                             </span>
                           </button>
+                          {mHasDuration && tier && m.productKey && (
+                            <div style={{ display: 'flex', gap: 7, marginTop: 8, marginBottom: 2 }}>
+                              {tier.options.map((o) => {
+                                const active = daysFor(m.productKey) === o.days;
+                                return (
+                                  <button key={o.days} type="button" onClick={() => { set({ adTier: m.name }); setDaysFor(m.productKey!, o.days); }}
+                                    style={{ flex: 1, position: 'relative', height: 42, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 800, color: active ? '#0B1220' : '#C7CEDA', background: active ? m.accent : '#222838', border: active ? `2px solid ${m.accent}` : '2px solid #2A3142' }}>
+                                    {o.days}일
+                                    {o.bonusDays > 0 && <span style={{ position: 'absolute', top: -8, right: -4, fontSize: 10, fontWeight: 800, color: '#0B1220', background: '#FBBF24', borderRadius: 6, padding: '1px 5px' }}>+{o.bonusDays}</span>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          </div>
                         );
                       })}
                       </div>
@@ -840,8 +890,12 @@ export default function NewJobPage() {
               <div style={{ fontSize: 14, fontWeight: 800, marginBottom: 12 }}>주문 요약</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9, marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                  <span style={{ color: C.sub }}>선택 등급 · 게재기간</span>
+                  <span style={{ color: C.title, fontWeight: 600 }}>{selMeta.name}{selMeta.productKey ? ` · ${selExposure}일` : ''}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                   <span style={{ color: C.sub }}>총 선택상품금액</span>
-                  <span style={{ color: C.title, fontWeight: 600 }}>{selectedAd.list.toLocaleString()}원</span>
+                  <span style={{ color: C.title, fontWeight: 600 }}>{selList.toLocaleString()}원</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                   <span style={{ color: C.sub }}>총 할인금액</span>
@@ -850,12 +904,12 @@ export default function NewJobPage() {
                 <div style={{ height: 1, background: '#F0F1F3', margin: '3px 0' }} />
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ fontSize: 14, fontWeight: 800 }}>총 주문금액</span>
-                  <span style={{ fontSize: 20, fontWeight: 800, color: C.primary }}>{selectedAd.price.toLocaleString()}원</span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: C.primary }}>{selPrice.toLocaleString()}원</span>
                 </div>
-                {selectedAd.price > 0 && <div style={{ fontSize: 11, color: C.muted, textAlign: 'right' }}>부가세(VAT) 별도 · 결제 단계에서 합산</div>}
+                {selPrice > 0 && <div style={{ fontSize: 11, color: C.muted, textAlign: 'right' }}>부가세(VAT) 별도 · 결제 단계에서 합산</div>}
               </div>
               <button type="button" onClick={handleSubmit} disabled={isSubmitting} style={{ width: '100%', height: 52, borderRadius: 10, border: 'none', background: C.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: isSubmitting ? 'wait' : 'pointer', fontFamily: 'inherit', marginBottom: 9, opacity: isSubmitting ? .6 : 1 }}>
-                {isSubmitting ? '처리 중...' : selectedAd.price > 0 ? '토스로 결제하고 등록' : '무료로 등록하기'}
+                {isSubmitting ? '처리 중...' : selPrice > 0 ? '토스로 결제하고 등록' : '무료로 등록하기'}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={saveDraft} style={{ flex: 1, height: 48, borderRadius: 10, border: `1px solid ${C.borderField}`, background: '#fff', color: C.body, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>임시저장</button>
@@ -883,7 +937,7 @@ export default function NewJobPage() {
       <div style={{ position: 'fixed', bottom: 64, left: 0, right: 0, zIndex: 65, padding: '0 16px' }} className="bn-mobile-submit">
         <style>{`.bn-mobile-submit{display:none} @media(max-width:1180px){.bn-mobile-submit{display:block!important}}`}</style>
         <button type="button" onClick={handleSubmit} disabled={isSubmitting} style={{ width: '100%', height: 52, borderRadius: 12, border: 'none', background: C.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 20px rgba(37,99,235,.35)', opacity: isSubmitting ? .6 : 1 }}>
-          {isSubmitting ? '처리 중...' : selectedAd.price > 0 ? `토스로 결제하고 등록 · ${selectedAd.price.toLocaleString()}원` : `무료로 등록 · 완성도 ${completion}%`}
+          {isSubmitting ? '처리 중...' : selPrice > 0 ? `토스로 결제하고 등록 · ${selPrice.toLocaleString()}원` : `무료로 등록 · 완성도 ${completion}%`}
         </button>
       </div>
     </div>
