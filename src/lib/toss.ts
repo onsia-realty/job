@@ -52,10 +52,10 @@ export function getDiscountRate(o: DurationOption): number | null {
 export const PRICING_TIERS: Record<string, PricingTier> = {
   // ── 분양상담사 (신규 4등급 + 기간선택) ──
   'sales-premium': {
-    id: 'premium', name: '프리미엄', category: 'sales', exclusive: false,
+    id: 'premium', name: '베이직', category: 'sales', exclusive: false,
     options: [
-      { days: 10, bonusDays: 0, price: 49000, listPrice: 70000 },
-      { days: 20, bonusDays: 10, price: 98000, listPrice: 140000 },
+      { days: 7, bonusDays: 7, price: 49000, listPrice: 70000 },   // 7일+7일=14일 (기본)
+      { days: 20, bonusDays: 10, price: 98000, listPrice: 140000 }, // 20일+10일=30일 노출
       { days: 30, bonusDays: 0, price: 147000, listPrice: 210000 },
     ],
   },

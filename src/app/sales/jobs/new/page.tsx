@@ -60,7 +60,7 @@ const AD_META = [
   { name: '유니크', tier: 'unique', productKey: 'sales-unique', previewSection: 'unique', accent: '#E5B968', tagline: '지역 단독 1자리 · 메인 최상단 고정 노출' },
   { name: '다이아', tier: 'dia', productKey: 'sales-dia', previewSection: 'superior', accent: '#C9B6FF', tagline: '추천 영역 상단 고정 · 다이아 강조 노출' },
   { name: '슈페리어', tier: 'superior', productKey: 'sales-superior', previewSection: 'superior', accent: '#8AE5E5', tagline: '추천 영역 상단 · 썸네일 강조 노출' },
-  { name: '프리미엄', tier: 'premium', productKey: 'sales-premium', previewSection: 'premium', accent: '#9DBCFF', tagline: '적극 채용 영역 노출' },
+  { name: '베이직', tier: 'premium', productKey: 'sales-premium', previewSection: 'premium', accent: '#9DBCFF', tagline: '적극 채용 영역 · 7일+7일 기본' },
   { name: '일반', tier: 'normal', productKey: null, previewSection: 'normal', accent: '#7FE3D6', tagline: '기본 목록 노출' },
 ] as const;
 type AdMeta = (typeof AD_META)[number];
@@ -100,7 +100,11 @@ export default function NewJobPage() {
 
   const [f, setF] = useState<Form>(INITIAL);
   const [adDaysByTier, setAdDaysByTier] = useState<Record<string, number>>({}); // 광고 기간 선택 (등급별 독립)
-  const daysFor = (key: string | null) => (key ? (adDaysByTier[key] ?? 20) : 20);
+  const daysFor = (key: string | null) => {
+    if (!key) return 20;
+    if (adDaysByTier[key] != null) return adDaysByTier[key];
+    return PRICING_TIERS[key]?.options[0]?.days === 7 ? 7 : 20; // 7+7 베이직은 7일 기본, 그 외 20일
+  };
   const setDaysFor = (key: string, d: number) => setAdDaysByTier((s) => ({ ...s, [key]: d }));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showVerification, setShowVerification] = useState(false);

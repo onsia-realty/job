@@ -103,10 +103,14 @@ describe('PRICING_TIERS', () => {
     expect(PRICING_TIERS['agent-vip'].exclusive).toBe(true);
     expect(PRICING_TIERS['sales-superior'].exclusive).toBe(false);
   });
-  it('분양상담사 유료 등급은 10/20/30 3옵션', () => {
-    for (const k of ['sales-premium', 'sales-superior', 'sales-dia', 'sales-unique']) {
+  it('베이직은 7/20/30 (7+7 기본), 나머지는 10/20/30', () => {
+    expect(PRICING_TIERS['sales-premium'].options.map((o) => o.days)).toEqual([7, 20, 30]);
+    for (const k of ['sales-superior', 'sales-dia', 'sales-unique']) {
       expect(PRICING_TIERS[k].options.map((o) => o.days)).toEqual([10, 20, 30]);
     }
+  });
+  it('베이직 기본(7일)은 7+7=14일 노출', () => {
+    expect(getExposureDays(findOption('sales-premium', 7)!)).toBe(14);
   });
 });
 
@@ -114,8 +118,8 @@ describe('PRICING_TIERS', () => {
 // 가격 매트릭스 (스펙 확정값)
 // ============================================================
 describe('가격 매트릭스 (분양상담사)', () => {
-  it('프리미엄 10/20/30 (20일 +10일 보너스)', () => {
-    expect(findOption('sales-premium', 10)!.price).toBe(49000);
+  it('베이직 7(+7)/20(+10)/30', () => {
+    expect(findOption('sales-premium', 7)!.price).toBe(49000);
     expect(findOption('sales-premium', 20)!.price).toBe(98000);
     expect(findOption('sales-premium', 30)!.price).toBe(147000);
     expect(getExposureDays(findOption('sales-premium', 20)!)).toBe(30);
@@ -173,10 +177,11 @@ describe('resolveProduct', () => {
     expect(p.tier).toBe('superior');
     expect(p.category).toBe('sales');
   });
-  it('프리미엄 10일 지정', () => {
-    const p = resolveProduct('sales-premium', 10)!;
+  it('베이직 기본(7일) 지정 → 14일 노출', () => {
+    const p = resolveProduct('sales-premium', 7)!;
     expect(p.price).toBe(49000);
-    expect(p.exposureDays).toBe(10);
+    expect(p.exposureDays).toBe(14);
+    expect(p.name).toBe('베이직');
   });
   it('공인중개사는 현행가 유지 (days 무시)', () => {
     expect(resolveProduct('agent-basic')!.price).toBe(4900);

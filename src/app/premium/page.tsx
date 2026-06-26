@@ -196,11 +196,11 @@ const PRICING_DATA = {
         recommended: false,
       },
       {
-        tier: 'premium', name: '프리미엄', badge: '반짝이 효과', icon: Sparkles,
+        tier: 'premium', name: '베이직', badge: '반짝이 효과', icon: Sparkles,
         gradientFrom: 'from-cyan-500', gradientTo: 'to-teal-500',
         borderColor: 'border-cyan-400/50', checkColor: 'text-cyan-400',
         originalPrice: 49000, discountedPrice: 4900, duration: '5일', perDay: '980원',
-        features: ['일반 목록에서 반짝이 효과', '프리미엄 시안 배지', '현장명 볼드 + 급여 컬러 강조', '시안 글로우 테두리', '5일간 노출 보장'],
+        features: ['일반 목록에서 반짝이 효과', '베이직 시안 배지', '현장명 볼드 + 급여 컬러 강조', '시안 글로우 테두리', '7일+7일=14일 기본 노출'],
         recommended: false,
       },
       {
@@ -236,8 +236,8 @@ const PRICING_DATA = {
     ],
     faqs: [
       { q: '광고 효과는 언제부터 시작되나요?', a: '결제 완료 후 즉시 광고가 적용됩니다. 관리자 승인 없이 바로 상위 노출이 시작됩니다.' },
-      { q: '무료 공고와 프리미엄의 차이점은?', a: '무료 공고는 24시간 후 자동 만료됩니다. 프리미엄은 10·20·30일 중 골라 반짝이 효과로 강조 노출됩니다.' },
-      { q: '기간(10·20·30일)은 어떻게 선택하나요?', a: '각 등급 카드에서 10·20·30일을 직접 고를 수 있으며, 20일 구매 시 10일을 무료로 더 드립니다(유니크 제외).' },
+      { q: '무료 공고와 베이직의 차이점은?', a: '무료 공고는 24시간 후 자동 만료됩니다. 베이직은 7일+7일=14일 기본 노출이며, 반짝이 효과로 강조됩니다.' },
+      { q: '기간은 어떻게 선택하나요?', a: '베이직은 7일+7일(14일)이 기본이고 20·30일도 고를 수 있으며, 슈페리어·다이아·유니크는 10·20·30일 중 선택합니다. 20일 구매 시 10일을 무료로 더 드립니다(유니크 제외).' },
       { q: '유니크와 슈페리어의 차이점은?', a: '유니크는 최상단에 레인보우 네온 슬라이더 배너로 노출되며, 슈페리어는 유니크 다음 전용 그리드에 노출됩니다.' },
     ],
   },
@@ -264,7 +264,8 @@ function PremiumPricingContent() {
   const touchEndX = useRef(0);
 
   // 등급별 선택 일수(다중옵션 기본 20일), toss 옵션 조회
-  const daysFor = (productKey: string) => adDaysByTier[productKey] ?? 20;
+  const daysFor = (productKey: string) =>
+    adDaysByTier[productKey] ?? (PRICING_TIERS[productKey]?.options[0]?.days === 7 ? 7 : 20);
   const optionFor = (tier: string) => {
     const productKey = `${selectedCategory}-${tier}`;
     const t = PRICING_TIERS[productKey];
