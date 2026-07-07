@@ -5,7 +5,18 @@
 
 ---
 
-## 마지막 작업 (2026-06-25) — /sales 메인 = Claude Design 핸드오프 충실 이식 + 실데이터 연동
+## 마지막 작업 (2026-07-06~07) — /agent 공인중개사 메인 v2 전면 리모델링 + 시세표 패널
+
+- **방향 확정(대표)**: "공고 메인 + 허브 레이어" — 랜딩/목록 2단 구조 폐지, /sales와 같은 BOOIN 뼈대(좌측네비+목록)로 통합. 페이지 성격 = "중개사 워크스페이스". 액센트 시안→에메랄드(#0891B2→#10B981).
+- **디자인**: Claude Design v1→v2 시안(브리핑 스트립·공고 꽉채움 8/15/30·실무 바로가기 8종·AI 미니챗·시세지도 카드) 검증 완료. 핸드오프 `E:\다운로드\export\` (README + dc-template.html 추출본 66KB·인라인 스타일 373개).
+- **이식 완료**: `src/app/agent/page.tsx` 전면 교체(dc-template 1:1). VIP 8/프리미엄 15/BASIC 30 fillTo 채움 + DB 머지·검색·필터 보존. `src/data/agentJobsSample.ts` 신설(8/15/30/normal 6). `/agent/jobs`→`/agent` redirect([id]·new 유지). 백업 `_backup/{landing-v1,jobs-v1}-page.tsx.bak`. 반응형 1220/820, 모바일 하단탭 5종.
+- **시세표(지인 벤치마크) Phase 2 완료**: 좌측네비 "아파트/오피스텔 시세" → 440px 슬라이드 패널(구인구직 오른쪽 밀림) + `src/components/market/PriceTable.tsx`(시도탭→구 요약→단지 드릴다운, 정렬, formatKoreanPrice, market 토큰) + `api/market/price-table`(region/complex 2레벨) + `033_price_table_rent_aggregates.sql`. 라이브 검증: 강남구 25.7억·신고가 21·드릴다운 단지 실거래 정상.
+- **⚠️ 남은 액션**: ① **033 마이그레이션 Supabase SQL Editor에서 실행** 후 `SELECT refresh_market_aggregates();` → 전세가·전세율 컬럼 활성화(현재 "-"), ② cron `refresh-aggregates`에 RPC 연결(자동 갱신), ③ 쇼츠·중개사 라운지 라우트(현재 #), ④ Phase 3 = 행안부 인구+청약홈 입주(공공데이터 검증 완료, `project_price_table_initiative.md`) + 부인 시세지표.
+- tsc 0에러. Playwright 데스크톱/패널/드릴다운/리다이렉트/모바일 검증 GREEN. dev=localhost:3001.
+
+---
+
+## 이전 작업 (2026-06-25) — /sales 메인 = Claude Design 핸드오프 충실 이식 + 실데이터 연동
 
 - **핸드오프 결정판**: `C:\Users\Dae\Desktop\design_handoff_booin_sales\` (README=토큰/레이아웃/데이터모델 정답지, `BOOIN 구인.dc.html`=읽기용 원본). bunshin 구조→BOOIN 브랜딩 hifi. **사용자 승인 "이거야. 대단하다".**
 - **구현**: `src/app/sales/page.tsx` 전면 교체(인라인스타일 1:1 React 포팅). 셸=다크 좌측네비(240px #11141C)+헤더(일반구인·분양인·대행관 탭/검색/통계/로그인)+메인그리드(1fr+340px)+우측사이드바(SPECIAL/실시간인기/빠른메뉴)+푸터+모바일하단탭. Pretendard. 반응형 1180/920/640.

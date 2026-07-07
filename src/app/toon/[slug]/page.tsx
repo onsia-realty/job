@@ -194,11 +194,11 @@ export default function ToonDetailPage() {
         </div>
       )}
 
-      {/* ── 메인 2컬럼 레이아웃 (기사 좌, 웹툰 우=크게) ── */}
-      <main className="max-w-[1400px] mx-auto px-5 py-8 md:py-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)] gap-8 lg:gap-10">
+      {/* ── 메인 2컬럼 레이아웃 (웹툰 좌=크게, 기사 우) ── */}
+      <main className="max-w-[1400px] mx-auto px-5 py-8 md:py-10 grid grid-cols-1 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] gap-8 lg:gap-10">
 
-        {/* ── 좌측: 기사 ── */}
-        <article className="min-w-0 order-2 lg:order-1">
+        {/* ── 우측: 기사 ── */}
+        <article className="min-w-0 order-2 lg:order-2">
           <span className={`inline-flex items-center gap-1.5 ${CATEGORY_COLORS[episode.category] || 'bg-[#e94560]'} text-white text-xs font-bold px-3 py-1 rounded-full mb-4 tracking-[0.5px]`}>
             <Zap className="w-3.5 h-3.5" />
             BOOIN NEWS TOON 해설
@@ -255,8 +255,8 @@ export default function ToonDetailPage() {
           </div>
         </article>
 
-        {/* ── 우측: 웹툰 ── */}
-        <aside className="lg:sticky lg:top-[80px] self-start order-1 lg:order-2">
+        {/* ── 좌측: 웹툰 ── */}
+        <aside className="lg:sticky lg:top-[80px] self-start order-1 lg:order-1">
           <div className="bg-white rounded-2xl overflow-hidden shadow-[0_4px_24px_rgba(0,0,0,0.08)] border border-gray-200">
             {/* 툰 헤더 */}
             <div className="bg-[#1a1a2e] px-5 py-4 flex items-center justify-between">
