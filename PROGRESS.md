@@ -11,8 +11,19 @@
 - **디자인**: Claude Design v1→v2 시안(브리핑 스트립·공고 꽉채움 8/15/30·실무 바로가기 8종·AI 미니챗·시세지도 카드) 검증 완료. 핸드오프 `E:\다운로드\export\` (README + dc-template.html 추출본 66KB·인라인 스타일 373개).
 - **이식 완료**: `src/app/agent/page.tsx` 전면 교체(dc-template 1:1). VIP 8/프리미엄 15/BASIC 30 fillTo 채움 + DB 머지·검색·필터 보존. `src/data/agentJobsSample.ts` 신설(8/15/30/normal 6). `/agent/jobs`→`/agent` redirect([id]·new 유지). 백업 `_backup/{landing-v1,jobs-v1}-page.tsx.bak`. 반응형 1220/820, 모바일 하단탭 5종.
 - **시세표(지인 벤치마크) Phase 2 완료**: 좌측네비 "아파트/오피스텔 시세" → 440px 슬라이드 패널(구인구직 오른쪽 밀림) + `src/components/market/PriceTable.tsx`(시도탭→구 요약→단지 드릴다운, 정렬, formatKoreanPrice, market 토큰) + `api/market/price-table`(region/complex 2레벨) + `033_price_table_rent_aggregates.sql`. 라이브 검증: 강남구 25.7억·신고가 21·드릴다운 단지 실거래 정상.
-- **⚠️ 남은 액션**: ① **033 마이그레이션 Supabase SQL Editor에서 실행** 후 `SELECT refresh_market_aggregates();` → 전세가·전세율 컬럼 활성화(현재 "-"), ② cron `refresh-aggregates`에 RPC 연결(자동 갱신), ③ 쇼츠·중개사 라운지 라우트(현재 #), ④ Phase 3 = 행안부 인구+청약홈 입주(공공데이터 검증 완료, `project_price_table_initiative.md`) + 부인 시세지표.
-- tsc 0에러. Playwright 데스크톱/패널/드릴다운/리다이렉트/모바일 검증 GREEN. dev=localhost:3001.
+- **뉴스툰 2.0 포토툰**: 나노바나나2 수작업 컷 + `compose-phototoon-ep.mjs`(2×3 그리드 합성·업로드·draft) 워크플로 확립. EP.01 "규제 찍자, 옆동네가 부풀었다" draft 등록(id 36cd3918…). 상세 페이지 좌우 스왑(왼쪽 툰/오른쪽 기사). 메모리 `project_newstoon_phototoon_workflow.md`.
+- **✅ 배포 완료 (2026-07-07)**: feature/ad-pricing-duration-2026-06-26 → main 머지·푸시 (48파일 +17k, 광고 가격개편·sales 리디자인·로그인 단순화 포함 전량). 라이브 검증 GREEN — /agent v2+시세표 패널, /toon 좌우 스왑.
+- **⚠️ 남은 액션 (사무실 노트북에서 이어서, 2026-07-07 저녁 기준)**:
+  1. **Supabase SQL Editor — 반드시 3단계 분할 실행** (한 방 배치는 60초 upstream 타임아웃으로 전체 롤백됨 — 이미 1회 실패. 채팅 복붙도 특수문자 섞여 실패 — **반드시 파일에서 복사**):
+     - ①  `supabase/migrations/033_price_table_rent_aggregates.sql` 파일을 에디터로 열어 **전체 복사** → Run (MV+인덱스+함수, ~10초. 파일에 refresh 호출 없음 — 그게 타임아웃 범인이었으니 오늘은 refresh 실행 금지)
+     - ② `NOTIFY pgrst, 'reload schema';` 단독 Run
+     - ③ EP.01 발행: `UPDATE news_toon_episodes SET status='published', published_at=NOW() WHERE id='36cd3918-ba55-4678-8ed8-c3d7a7939b75';` 단독 Run
+     - 검증: 라이브 /agent 시세표 전세·전세율 컬럼 채워짐 + booin.co.kr/toon 목록에 EP.01 노출
+  2. **NCP 화이트리스트**: console.ncloud.com/maps/application → Client ID `2v2hncoi4d` Application 수정 → Web 서비스 URL에 `http://localhost:3000`(+3001) 추가 (로컬 지도 401 해소. 라이브는 정상)
+  3. cron `api/cron/refresh-aggregates`를 `SELECT refresh_market_aggregates()` RPC 호출로 연결 (전세 집계 자동 갱신)
+  4. 쇼츠·중개사 라운지 라우트 (좌측 네비 현재 `#`)
+  5. 시세표 Phase 3: 행안부 법정동 인구 API + 청약홈 분양정보 API (공공데이터포털 검증 완료) + "부인 시세지표"(신고가 비율+거래량 증감)
+- dev=localhost:3000 (3000 점유했던 mapiapp dev 서버 종료해둠). 뉴스툰 다음 에피소드: 컨셉 프롬프트 생성 → 나노바나나2 수작업 → `scripts/compose-phototoon-ep.mjs`의 EP/CUTS/ARTICLE_HTML만 교체 후 실행.
 
 ---
 
