@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { User, LogIn, Building2, HardHat, Crown, Sparkles, ClipboardList, PenSquare, MapPin } from 'lucide-react';
+import { User, LogIn, Building2, HardHat, Crown, Sparkles, ClipboardList, PenSquare, MapPin, Home } from 'lucide-react';
 
 const MARKET_ENABLED = process.env.NEXT_PUBLIC_MARKET_ENABLED === 'true';
 import { useAuth } from '@/contexts/AuthContext';
@@ -75,6 +75,13 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <HardHat className="w-4 h-4" />
                   <span>분양상담사</span>
                 </Link>
+                <a
+                  href="https://stay.booin.co.kr"
+                  className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
+                >
+                  <Home className="w-4 h-4" />
+                  <span>단기임대</span>
+                </a>
               </>
             )}
             {variant === 'agent' && (() => {
