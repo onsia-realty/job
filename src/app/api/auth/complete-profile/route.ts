@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import {
+  getConfirmedVerificationByToken,
+  isDiTaken,
+  markVerificationConsumed,
+} from '@/lib/danal';
 
 // POST /api/auth/complete-profile - 소셜 로그인 후 프로필 완성
 export async function POST(req: NextRequest) {
@@ -15,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, nickname, phone, role, brokerOfficeName, businessNo, brokerRegNo, brokerAddress, brokerRegDate } = body;
+    const { name, nickname, phone, role, brokerOfficeName, businessNo, brokerRegNo, brokerAddress, brokerRegDate, danalToken } = body;
 
     // 필수 필드 존재 확인
     if (!name || !nickname || !phone) {
@@ -50,15 +55,39 @@ export async function POST(req: NextRequest) {
 
     const userType = ['employer', 'seeker'].includes(role) ? role : 'seeker';
 
+    // 다날 본인인증 토큰 소비 (전달된 경우) — CI/DI 는 서버에서만 기록
+    let danalPhone: string | null = null;
+    let danalFields: Record<string, unknown> = {};
+    if (danalToken) {
+      if (typeof danalToken !== 'string') {
+        return NextResponse.json({ error: '본인인증 정보가 유효하지 않습니다' }, { status: 400 });
+      }
+      const verification = await getConfirmedVerificationByToken(danalToken);
+      if (!verification || !verification.di) {
+        return NextResponse.json({ error: '본인인증 정보가 유효하지 않습니다. 다시 인증해주세요.' }, { status: 400 });
+      }
+      if (await isDiTaken(verification.di, user.id)) {
+        return NextResponse.json({ error: '이미 본인인증으로 가입된 계정입니다' }, { status: 409 });
+      }
+      danalFields = {
+        ci: verification.ci,
+        di: verification.di,
+        realname_verified: true,
+        verified_at: new Date().toISOString(),
+      };
+      danalPhone = verification.phone; // 응답에 번호가 있으면 사용
+    }
+
     // users 테이블 업데이트 (소셜 로그인 이메일 포함)
     const updateData: Record<string, unknown> = {
       email: user.email,
       name: trimmedName,
       nickname: trimmedNickname,
-      phone: cleanPhone,
+      phone: danalPhone ? danalPhone.replace(/[^0-9]/g, '') : cleanPhone,
       user_type: userType,
       company_name: brokerOfficeName ? String(brokerOfficeName).trim() : null,
       business_no: businessNo ? String(businessNo).replace(/[^0-9-]/g, '') : null,
+      ...danalFields,
     };
 
     // 기업회원 중개사무소 정보
@@ -74,8 +103,17 @@ export async function POST(req: NextRequest) {
       .eq('id', user.id);
 
     if (updateError) {
+      // DI 유니크 위반 → 동일인 재가입
+      if (updateError.code === '23505' && String(updateError.message || '').includes('users_di_unique')) {
+        return NextResponse.json({ error: '이미 본인인증으로 가입된 계정입니다' }, { status: 409 });
+      }
       console.error('Profile update error:', updateError);
       return NextResponse.json({ error: '프로필 업데이트 실패' }, { status: 500 });
+    }
+
+    // 본인인증 토큰 소비 완료 처리 (재사용 방지)
+    if (danalToken) {
+      await markVerificationConsumed(danalToken as string);
     }
 
     // Auth 메타데이터도 업데이트

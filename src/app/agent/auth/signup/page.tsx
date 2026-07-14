@@ -20,6 +20,7 @@ import {
   MapPin,
   Calendar,
   CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 import { signUpWithEmail, supabase, updateUserMetadata, getSession } from '@/lib/auth';
@@ -110,6 +111,10 @@ function SignUpPageContent() {
   const [isCheckingPhone, setIsCheckingPhone] = useState(false);
   const [phoneChecked, setPhoneChecked] = useState(false);
   const [phoneDuplicate, setPhoneDuplicate] = useState(false);
+  // 다날 휴대폰 본인인증
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+  const [isVerified, setIsVerified] = useState(false);
+  const [phoneLocked, setPhoneLocked] = useState(false);
 
   // 중개사무소 정보 조회
   const fetchBrokerInfo = async () => {
@@ -220,6 +225,44 @@ function SignUpPageContent() {
     return `${numbers.slice(0, 3)}-${numbers.slice(3, 7)}-${numbers.slice(7, 11)}`;
   };
 
+  // 다날 본인인증 팝업 열기
+  const openDanalAuth = () => {
+    setErrors(prev => ({ ...prev, phone: undefined, name: undefined }));
+    window.open('/api/auth/danal/ready', 'danalAuth', 'width=430,height=640,scrollbars=yes');
+  };
+
+  // 팝업(콜백/취소 라우트)에서 오는 postMessage 수신
+  useEffect(() => {
+    const handler = (event: MessageEvent) => {
+      // origin 검증: 현재 페이지 origin 또는 운영 도메인만 허용
+      const allowed = [window.location.origin, 'https://booin.co.kr'];
+      if (!allowed.includes(event.origin)) return;
+
+      const data = event.data;
+      if (!data || data.source !== 'danal-uas') return;
+
+      if (data.ok) {
+        setIsVerified(true);
+        setVerificationToken(typeof data.token === 'string' ? data.token : null);
+        setPhoneDuplicate(false);
+        setPhoneLocked(!!data.phone);
+        setForm(prev => ({
+          ...prev,
+          ...(data.name ? { name: String(data.name) } : {}),
+          // 응답에 휴대폰번호가 오면 자동입력+잠금, 없으면 사용자 입력 유지
+          ...(data.phone ? { phone: formatPhoneNumber(String(data.phone)) } : {}),
+        }));
+        setErrors(prev => ({ ...prev, phone: undefined, name: undefined }));
+      } else if (data.cancelled) {
+        // 사용자가 취소 — 조용히 무시
+      } else {
+        setErrors(prev => ({ ...prev, phone: data.msg || '본인인증에 실패했습니다' }));
+      }
+    };
+    window.addEventListener('message', handler);
+    return () => window.removeEventListener('message', handler);
+  }, []);
+
   // 사업자번호 포맷 (000-00-00000)
   const formatBusinessNo = (value: string) => {
     const numbers = value.replace(/[^\d]/g, '');
@@ -287,6 +330,11 @@ function SignUpPageContent() {
       newErrors.phone = '이미 등록된 연락처입니다';
     }
 
+    // 휴대폰 본인인증 필수 (다날 UAS) — 미인증 시 가입 차단
+    if (!isVerified || !verificationToken) {
+      newErrors.phone = '휴대폰 본인인증을 완료해주세요';
+    }
+
     if (!form.agreeTerms) {
       newErrors.agreeTerms = '이용약관에 동의해주세요';
     }
@@ -327,6 +375,7 @@ function SignUpPageContent() {
             phone: form.phone,
             role: form.role,
             businessNo: form.businessNo || null,
+            ...(verificationToken ? { danalToken: verificationToken } : {}),
             brokerOfficeName: form.role === 'employer' && brokerVerified ? form.brokerOfficeName : null,
             ...(form.role === 'employer' && brokerVerified && {
               brokerRegNo: form.brokerRegNo,
@@ -351,6 +400,7 @@ function SignUpPageContent() {
           phone: form.phone,
           role: form.role,
           userType: 'agent',
+          ...(verificationToken ? { danalToken: verificationToken } : {}),
           ...(form.role === 'employer' && brokerVerified && {
             brokerRegNo: form.brokerRegNo,
             brokerOfficeName: form.brokerOfficeName,
@@ -718,9 +768,11 @@ function SignUpPageContent() {
               <input
                 type="text"
                 value={form.name || ''}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                onChange={(e) => { if (!isVerified) setForm({ ...form, name: e.target.value }); }}
+                readOnly={isVerified}
                 placeholder={form.role === 'employer' ? '이름 또는 기업명을 입력하세요' : '이름을 입력하세요'}
                 className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                  isVerified ? 'bg-slate-50 text-slate-600 border-green-400 cursor-not-allowed' :
                   errors.name ? 'border-red-300' : 'border-slate-200'
                 }`}
               />
@@ -762,23 +814,46 @@ function SignUpPageContent() {
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               연락처 <span className="text-red-500">*</span>
+              {isVerified && (
+                <span className="text-green-600 font-normal ml-2 inline-flex items-center gap-1">
+                  <ShieldCheck className="w-4 h-4" /> 본인인증 완료
+                </span>
+              )}
             </label>
-            <div className="relative">
-              <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="tel"
-                value={form.phone || ''}
-                onChange={(e) => {
-                  setForm({ ...form, phone: formatPhoneNumber(e.target.value) });
-                  setPhoneChecked(false);
-                  setPhoneDuplicate(false);
-                }}
-                onBlur={(e) => checkPhoneDuplicate(e.target.value)}
-                placeholder="010-0000-0000"
-                className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
-                  errors.phone ? 'border-red-300' : 'border-slate-200'
-                }`}
-              />
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="tel"
+                  value={form.phone || ''}
+                  onChange={(e) => {
+                    if (phoneLocked) return;
+                    setForm({ ...form, phone: formatPhoneNumber(e.target.value) });
+                    setPhoneChecked(false);
+                    setPhoneDuplicate(false);
+                  }}
+                  onBlur={(e) => { if (!phoneLocked) checkPhoneDuplicate(e.target.value); }}
+                  readOnly={phoneLocked}
+                  placeholder="010-0000-0000"
+                  className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    phoneLocked ? 'bg-slate-50 text-slate-600 border-green-400 cursor-not-allowed' :
+                    isVerified ? 'border-green-400' :
+                    errors.phone ? 'border-red-300' : 'border-slate-200'
+                  }`}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={openDanalAuth}
+                disabled={isVerified}
+                className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-emerald-500 disabled:cursor-default transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
+              >
+                {isVerified ? (
+                  <><CheckCircle2 className="w-4 h-4" /> 인증완료</>
+                ) : (
+                  <><ShieldCheck className="w-4 h-4" /> 본인인증</>
+                )}
+              </button>
             </div>
             {errors.phone && (
               <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -790,6 +865,11 @@ function SignUpPageContent() {
               <p className="text-gray-400 text-sm mt-1 flex items-center gap-1">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 연락처 확인 중...
+              </p>
+            )}
+            {!isVerified && (
+              <p className="text-xs text-slate-400 mt-1">
+                휴대폰 본인인증으로 이름·연락처가 자동 확인됩니다.
               </p>
             )}
           </div>

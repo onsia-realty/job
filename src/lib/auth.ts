@@ -68,6 +68,8 @@ export async function signUpWithEmail(
     brokerOfficeName?: string;
     brokerAddress?: string;
     brokerRegDate?: string;
+    // 다날 휴대폰 본인인증 1회성 토큰
+    danalToken?: string;
   }
 ) {
   const { data, error } = await supabase.auth.signUp({

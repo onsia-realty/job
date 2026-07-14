@@ -52,8 +52,10 @@ function checkBurstRequest(ip: string): boolean {
 
 // 외부 서비스 콜백 경로 (봇 탐지/UA 체크/Referer 체크 면제)
 const EXTERNAL_API_PATHS = [
-  '/api/payment/webhook',  // 토스페이먼츠 웹훅
-  '/api/cron/',            // Vercel Cron
+  '/api/payment/webhook',      // 토스페이먼츠 웹훅
+  '/api/cron/',                // Vercel Cron
+  '/api/auth/danal/callback',  // 다날 본인인증 콜백 (wauth.teledit.com 교차출처 POST — TID로 자체검증)
+  '/api/auth/danal/cancel',    // 다날 본인인증 취소 콜백 (BackURL, 교차출처)
 ];
 
 function isExternalApiPath(pathname: string): boolean {
