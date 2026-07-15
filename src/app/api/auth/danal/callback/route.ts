@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { callTrans } from '@/lib/danal';
+import { callTrans, isDiTaken } from '@/lib/danal';
 
 // TARGETURL: 다날 인증창이 인증 완료 후 TID 를 POST 로 전달
 // → Confirm(CPCGI) 호출 → 성공 시 1회성 token 발급 후 팝업이 opener 로 postMessage
@@ -31,6 +31,23 @@ function postMessageHtml(origin: string, payload: Record<string, unknown>): Next
     status: 200,
     headers: { 'Content-Type': 'text/html; charset=utf-8' },
   });
+}
+
+// 다날 confirm 응답 키를 대소문자·변형 무시하고 후보군에서 탐색
+// (다날이 리턴값을 phoneNumber/phone, operator/carrier 등으로 반환하므로 정확한 키명이 유동적)
+function pickField(map: Map<string, string>, candidates: string[]): string | null {
+  const wanted = new Set(candidates.map((c) => c.toLowerCase()));
+  for (const [k, v] of map) {
+    if (v && wanted.has(k.toLowerCase())) return v;
+  }
+  return null;
+}
+
+// PII 로그 마스킹: 뒤 4자리만 노출
+function maskPhone(v: string | null): string {
+  if (!v) return '-';
+  const d = v.replace(/[^0-9]/g, '');
+  return d.length >= 4 ? `***${d.slice(-4)}` : '****';
 }
 
 async function parseTid(req: NextRequest): Promise<string> {
@@ -97,8 +114,33 @@ export async function POST(req: NextRequest) {
     const sex = res.get('SEX') || null;
     const ci = res.get('CI') || null;
     const di = res.get('DI') || null;
-    // 기본 리턴에 휴대폰번호는 없음 — 있을 때만 저장
-    const phone = res.get('PHONE') || res.get('PHONENO') || null;
+    // 다날 리턴값 추가적용(2026-07) 후: phoneNumber/phone(번호), operator/carrier(통신사)
+    // 정확한 키명이 유동적이라 대소문자·변형을 모두 흡수
+    const phone = pickField(res, ['PHONE', 'PHONENO', 'PHONENUMBER']);
+    const carrier = pickField(res, ['OPERATOR', 'CARRIER', 'TELECOM']);
+
+    // 어떤 키로 값이 오는지 확인용(값은 마스킹, CI/DI 는 로그 금지)
+    console.log(
+      '[danal confirm] keys=%s phone=%s carrier=%s',
+      Array.from(res.keys()).join(','),
+      maskPhone(phone),
+      carrier || '-'
+    );
+
+    // L1) 이미 가입된 번호(DI)면 재차 인증 차단 — 토큰 발급하지 않음 (다날 인증은 가입 전용)
+    if (di && (await isDiTaken(di))) {
+      await supabaseAdmin
+        .from('danal_verifications')
+        .update({ status: 'duplicate' })
+        .eq('tid', tid)
+        .eq('status', 'ready');
+      return postMessageHtml(origin, {
+        source: 'danal-uas',
+        ok: false,
+        code: 'DUPLICATE',
+        msg: '이미 가입된 휴대폰번호입니다. 로그인해 주세요.',
+      });
+    }
 
     // 1회성 소비 토큰
     const token = crypto.randomUUID();
