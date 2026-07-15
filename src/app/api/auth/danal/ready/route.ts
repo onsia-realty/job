@@ -51,7 +51,7 @@ export async function GET(_req: NextRequest) {
       CPID,
       CPPWD,
       TARGETURL: targetUrl,
-      CPTITLE: 'booin.co.kr',
+      CPTITLE: 'BOOIN(부인)',
       ORDERID: orderId,
     });
 
