@@ -5,7 +5,25 @@
 
 ---
 
-## 마지막 작업 (2026-07-06~07) — /agent 공인중개사 메인 v2 전면 리모델링 + 시세표 패널
+## 마지막 작업 (2026-07-28) — 구글 로그인 장애 복구 + /sales 썸네일 파이프라인
+
+- **✅ 구글 로그인 복구 (origin_mismatch)**: 증상은 GIS 버튼은 뜨는데 계정 선택 시 `400 origin_mismatch`. 원인은 코드가 아니라 **GCP OAuth 클라이언트 설정**. `onsia-job 20260210`(client ID `856766890364-4bt9afmvj…`, 프로젝트 `onsia-job`)의 **승인된 JavaScript 원본**에 `https://www.booin.co.kr`만 있고 **apex `https://booin.co.kr`이 누락**돼 있었음. 서비스는 www로 들어와도 apex로 리다이렉트하므로 브라우저 최종 출처는 항상 apex → 구글이 거부. apex 추가로 즉시 해결.
+  - 로그인은 `signInWithIdToken`(GIS 토큰 직교환) 방식이라 **리디렉션 URI가 아니라 JavaScript 원본만** 검증에 쓰인다. 다음에 같은 증상이면 여기부터 볼 것.
+  - 사전 확인 완료: 프로덕션 번들에 client ID 정상 주입, Supabase Google provider `enabled:true`, `token?grant_type=id_token` 엔드포인트 정상. 즉 Supabase 쪽은 무결.
+  - 현재 등록된 원본 4개: apex / www / `http://localhost:3000` / `https://onsia-job.vercel.app`. 리디렉션 URI는 `https://pkbnudkbkhzqjhwffkbj.supabase.co/auth/v1/callback` 1건.
+- **/sales 썸네일 — 배관은 이미 완비, 빠진 건 이미지뿐**: `/sales/jobs/new`에 업로드 UI(`page.tsx:589`) → `uploadImage(file,'thumbnails')` → `jobs.thumbnail` 저장까지 동작. 카드도 `thumbnail` 있으면 `<Image>`, 없으면 그라디언트 8종 폴백(`sales/jobs/page.tsx:755-773`). 새로 만들 코드 없음.
+  - **목록 데이터는 DB가 아니라 정적 샘플**: `src/data/salesJobsSample.ts` 28건(`allJobs`). 라이브 /sales/jobs에 보이는 힐스테이트·세종 지산이 이것. DB `jobs` 테이블의 category='sales'는 4건뿐이고 전부 thumbnail 있음.
+- **`scripts/generate-sales-thumbs.mjs` 신설(미실행)**: Gemini `gemini-2.5-flash-image`로 제너릭 조감도 배경 생성 → `sharp`로 등급배지·헤드라인·현장명·조건칩 오버레이 합성 → `public/images/sales-thumbs/{id}.jpg`. 대상 5건(unique 2 + superior 3). 배경 프롬프트에 "실존 단지 특정 불가 + 문자·로고·인물 배제" 금지조건 포함(샘플에 힐스테이트·아이파크 등 실브랜드명이 있어서 필요).
+  - **막힌 지점**: 로컬에 `GEMINI_API_KEY` 없음 — `.env.local`·시스템 환경변수 모두 부재, **프로덕션 Vercel env에만 존재**. GCP 사용자 인증 정보의 API 키 `onsia-job`(Gemini API 제한)이 그 키.
+  - **대표 결정: 이미지는 직접 제작**. 스크립트는 보류 상태로 남겨둠. 재개 시 키만 넣고 `node scripts/generate-sales-thumbs.mjs`.
+  - 검증 완료: `sharp` 0.34.5 + 맑은 고딕으로 한글 SVG 렌더 정상 → **별도 폰트 파일 불필요**. 다만 카드 슬롯이 128px 폭이라 헤드라인만 가독되고 보조문구는 뭉갬(분양의신도 동일).
+  - 대안 경로: 포토툰처럼 배경만 수작업으로 만들고 합성만 자동화 — Gemini 호출부만 로컬 파일 읽기로 교체하면 됨.
+- **미커밋 잔여물**: `claudedocs/thumb-preview/`(레이아웃 미리보기 2장), `.understand-anything/`, `public/Capture_2026_0613_161837.png`, `.claude/settings.local.json` 수정분 — 커밋에서 제외함.
+- **백로그(미조치)**: `src/components/security/SecurityShield.tsx:144` devtools 감지가 `outerWidth/Height - inner > 160` 휴리스틱이라 브라우저 사이드패널·확장만 열어도 "콘텐츠 정보를 보호하고 있습니다" 전체화면 오탐. 진단 중 실제 발생. 로그인 페이지에서 뜨면 사용자가 로그인 자체를 못 함. 우회키: `?devmode=onsia-dev-2026`.
+
+---
+
+## 이전 작업 (2026-07-06~07) — /agent 공인중개사 메인 v2 전면 리모델링 + 시세표 패널
 
 - **방향 확정(대표)**: "공고 메인 + 허브 레이어" — 랜딩/목록 2단 구조 폐지, /sales와 같은 BOOIN 뼈대(좌측네비+목록)로 통합. 페이지 성격 = "중개사 워크스페이스". 액센트 시안→에메랄드(#0891B2→#10B981).
 - **디자인**: Claude Design v1→v2 시안(브리핑 스트립·공고 꽉채움 8/15/30·실무 바로가기 8종·AI 미니챗·시세지도 카드) 검증 완료. 핸드오프 `E:\다운로드\export\` (README + dc-template.html 추출본 66KB·인라인 스타일 373개).
