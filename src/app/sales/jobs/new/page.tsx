@@ -444,8 +444,8 @@ export default function NewJobPage() {
         <div style={{ padding: '0 14px', display: 'flex', flexDirection: 'column', gap: 2 }}>
           {[
             { ic: '⌂', label: '홈', href: '/sales' }, { ic: '◆', label: '구인구직', href: '/sales', active: true },
-            { ic: '◇', label: '커뮤니티', href: '/sales' }, { ic: '◈', label: 'BOOIN톡', href: '/sales' },
-            { ic: '✦', label: '서비스', href: '/sales' }, { ic: '○', label: 'MY', href: '/sales/mypage' },
+            { ic: '◇', label: '커뮤니티', href: '/sales' }, { ic: '✦', label: '서비스', href: '/sales' },
+            { ic: '○', label: 'MY', href: '/sales/mypage' },
           ].map((n) => (
             <Link key={n.label} href={n.href} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: 'none', background: n.active ? 'rgba(255,255,255,.08)' : 'transparent', color: n.active ? '#fff' : C.muted }}>
               <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{n.ic}</span><span>{n.label}</span>

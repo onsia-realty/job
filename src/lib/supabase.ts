@@ -30,6 +30,12 @@ export function mapDbJobToListing(job: any): SalesJobListing {
       day: '2-digit',
     }).replace(/\. /g, '.').replace(/\.$/, ''),
     thumbnail: job.thumbnail || undefined,
+    // 상세 화면용 필드 (jobs 테이블 실제 컬럼)
+    phone: job.phone || undefined,
+    address: job.address || undefined,
+    contactName: job.contact_name || undefined,
+    htmlContent: job.html_content || undefined,
+    deadline: job.deadline || undefined,
   };
 }
 
@@ -73,15 +79,22 @@ export async function fetchJobs(category: 'sales' | 'agent' = 'sales') {
   return activeJobs.map(mapDbJobToListing);
 }
 
-// 단일 공고 가져오기
+// jobs.id 는 UUID 컬럼. 샘플 데이터의 '1','8' 같은 id 로 조회하면
+// Postgres 가 22P02(invalid input syntax for type uuid)를 뱉으므로 미리 걸러낸다.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// 단일 공고 가져오기 (UUID 가 아니면 조회하지 않고 null → 호출부가 샘플로 폴백)
 export async function fetchJobById(id: string) {
+  if (!UUID_RE.test(id)) return null;
+
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
     .eq('id', id);
 
   if (error) {
-    console.error('Error fetching job:', error);
+    // PostgrestError 는 그대로 찍으면 {} 로 보이므로 필드를 펼쳐서 남긴다
+    console.error('Error fetching job:', error.code, error.message, error.details ?? '');
     return null;
   }
 

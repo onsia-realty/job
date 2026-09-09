@@ -28,6 +28,7 @@ type Job = {
   wel: Wel[];
   company: string;
   badge?: 'NEW' | 'HOT';
+  thumb?: string; // 현장 썸네일. 없으면 seed 그라데이션으로 폴백
 };
 
 // 썸네일 그라데이션 (seed % 8 순환) — 실제 서비스에선 현장 이미지로 교체
@@ -71,6 +72,7 @@ function toJob(l: SalesJobListing): Job {
     wel: (l.benefits || []).map((b) => ({ l: b })),
     company: l.company,
     badge: pickBadge(l.badges),
+    thumb: l.thumbnail,
   };
 }
 
@@ -101,6 +103,11 @@ const payText = (c: Comp) => {
   return /^[\d,]+$/.test(t) ? t + '만원' : t;
 };
 const grad = (seed: number) => GRADS[seed % GRADS.length];
+// 썸네일 있으면 이미지, 없으면 기존 그라데이션 폴백
+const thumbBg = (j: { seed: number; thumb?: string }): CSSProperties =>
+  j.thumb
+    ? { backgroundImage: `url(${j.thumb})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : { background: grad(j.seed) };
 const amountNum = (s?: string | null) => Number((s || '').replace(/[^\d]/g, '')) || 0;
 
 // 광고대행사 전문 노출 (분양 광고 파트너 카드)
@@ -183,7 +190,6 @@ export default function SalesListPage() {
     { ic: '⌂', label: '홈', href: '/' },
     { ic: '◆', label: '구인구직', href: '/sales', active: true },
     { ic: '◇', label: '커뮤니티', href: '#' },
-    { ic: '◈', label: 'BOOIN톡', href: '#', dot: true },
     { ic: '✦', label: '서비스', href: '#' },
     { ic: '○', label: 'MY', href: '/sales/mypage' },
   ];
@@ -198,7 +204,6 @@ export default function SalesListPage() {
     { ic: '⌂', label: '홈', href: '/sales' },
     { ic: '◆', label: '구인', href: '/sales', active: true },
     { ic: '＋', label: '등록', href: '/sales/jobs/new' },
-    { ic: '◈', label: 'BOOIN톡', href: '#' },
     { ic: '○', label: 'MY', href: '/sales/mypage' },
   ];
 
@@ -233,16 +238,8 @@ export default function SalesListPage() {
             <Link key={n.label} href={n.href} style={{ ...navBase, background: n.active ? 'rgba(255,255,255,.08)' : 'transparent', color: n.active ? '#fff' : '#9098A4' }}>
               <span style={{ fontSize: 16, width: 20, textAlign: 'center' }}>{n.ic}</span>
               <span>{n.label}</span>
-              {n.dot ? <span style={{ marginLeft: 'auto', width: 6, height: 6, borderRadius: 99, background: '#EF4444' }} /> : null}
             </Link>
           ))}
-        </div>
-        <div style={{ marginTop: 'auto', padding: 16 }}>
-          <div style={{ background: 'linear-gradient(135deg,#1E293B,#0F1623)', border: '1px solid #232B3A', borderRadius: 14, padding: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, marginBottom: 3 }}>올인원 분양 솔루션</div>
-            <div style={{ fontSize: 11, color: '#8B93A7', lineHeight: 1.5, marginBottom: 12 }}>구인부터 광고·교육까지<br />한 곳에서</div>
-            <Link href="/sales/jobs/new" style={{ display: 'block', textAlign: 'center', background: ACCENT, color: '#fff', borderRadius: 9, padding: 9, fontSize: 12.5, fontWeight: 700, textDecoration: 'none' }}>공고 등록하기</Link>
-          </div>
         </div>
       </aside>
 
@@ -320,7 +317,7 @@ export default function SalesListPage() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                   {unique.map((j) => (
                     <div key={j.id} className="bn-card bn-bighcard" onClick={() => open(j.id)} style={{ cursor: 'pointer', display: 'grid', gridTemplateColumns: '220px minmax(0,1fr)', background: '#fff', border: '1px solid #ECEEF1', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 16px rgba(17,23,41,.05)' }}>
-                      <div className="bn-bigthumb" style={{ height: '100%', minHeight: 168, background: grad(j.seed), position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 13 }}>
+                      <div className="bn-bigthumb" style={{ height: '100%', minHeight: 168, ...thumbBg(j), position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 13 }}>
                         <span style={{ position: 'absolute', top: 13, left: 13, background: 'linear-gradient(135deg,#E0A93B,#C8832A)', color: '#fff', fontSize: 10, fontWeight: 800, padding: '4px 9px', borderRadius: 6 }}>VIP</span>
                         <span style={{ background: 'rgba(0,0,0,.42)', color: '#fff', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 99, backdropFilter: 'blur(4px)' }}>{j.type} · {j.region}</span>
                       </div>
@@ -362,7 +359,7 @@ export default function SalesListPage() {
                 <div className="bn-grid4">
                   {superior.map((j) => (
                     <div key={j.id} className="bn-card" onClick={() => open(j.id)} style={{ cursor: 'pointer', background: '#fff', border: '1px solid #ECEEF1', borderRadius: 14, overflow: 'hidden', boxShadow: '0 3px 12px rgba(17,23,41,.04)' }}>
-                      <div style={{ height: 124, background: grad(j.seed), position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: 11 }}>
+                      <div style={{ height: 124, ...thumbBg(j), position: 'relative', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: 11 }}>
                         <span style={{ background: 'rgba(0,0,0,.42)', color: '#fff', fontSize: 10.5, fontWeight: 600, padding: '3px 8px', borderRadius: 99, backdropFilter: 'blur(4px)' }}>{j.type} · {j.region}</span>
                         {j.badge ? <span style={stateBadge(j.badge)}>{j.badge}</span> : null}
                       </div>
@@ -423,7 +420,7 @@ export default function SalesListPage() {
                 <div className="bn-grid2">
                   {fillTo(premium, 8).map((j) => (
                     <div key={j.id} className="bn-card" onClick={() => open(j.id)} style={{ cursor: 'pointer', display: 'flex', gap: 13, background: '#fff', border: '1px solid #ECEEF1', borderRadius: 14, padding: 12, boxShadow: '0 3px 12px rgba(17,23,41,.04)' }}>
-                      <div style={{ flex: '0 0 96px', height: 96, borderRadius: 10, background: grad(j.seed), position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 7 }}>
+                      <div style={{ flex: '0 0 96px', height: 96, borderRadius: 10, ...thumbBg(j), position: 'relative', display: 'flex', alignItems: 'flex-end', padding: 7 }}>
                         <span style={{ background: 'rgba(0,0,0,.42)', color: '#fff', fontSize: 9.5, fontWeight: 600, padding: '2px 6px', borderRadius: 99 }}>{j.type}</span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
@@ -453,6 +450,7 @@ export default function SalesListPage() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(330px,1fr))', gap: 10 }}>
                   {fillTo(normal, 6).map((j) => (
                     <div key={j.id} onClick={() => open(j.id)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 13, background: '#fff', border: '1px solid #ECEEF1', borderRadius: 12, padding: '12px 14px' }}>
+                      <div style={{ flex: '0 0 56px', height: 56, borderRadius: 8, ...thumbBg(j) }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 10.5, color: '#9098A4', fontWeight: 700, marginBottom: 4 }}>{j.type} · {j.region}</div>
                         <div style={{ fontSize: 13.5, fontWeight: 700, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{j.title}</div>

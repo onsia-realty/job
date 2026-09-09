@@ -19,6 +19,7 @@ export const allJobs: SalesJobListing[] = [
     region: '경기',
     views: 487,
     createdAt: '2026.01.17',
+    thumbnail: '/images/thumbnails/sales-1.jpg',
   },
   {
     id: '8',

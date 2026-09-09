@@ -4,20 +4,43 @@ import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Search, MapPin } from 'lucide-react';
 
+// Daum Postcode 결과 데이터 (Daum Postcode API 실제 필드명)
+interface DaumPostcodeData {
+  address: string;
+  roadAddress: string;
+  jibunAddress: string;
+  zonecode: string;
+  bcode: string;
+  sido: string;
+  sigungu: string;
+  bname: string;
+  buildingName: string;
+}
+
 // Daum Postcode 타입 선언
 declare global {
   interface Window {
     daum: {
       Postcode: new (options: {
-        oncomplete: (data: {
-          address: string;
-          roadAddress: string;
-          jibunAddress: string;
-          zonecode: string;
-        }) => void;
+        oncomplete: (data: DaumPostcodeData) => void;
       }) => { open: () => void };
     };
   }
+}
+
+/**
+ * Daum 우편번호 검색으로 선택된 주소의 부가 정보.
+ * 사용자가 Daum 팝업을 거치지 않은 경우(직접 입력 등)에는 전달되지 않는다(undefined).
+ */
+export interface AddressSearchMeta {
+  roadAddress: string;
+  jibunAddress: string;
+  bcode: string;        // 법정동코드 10자리
+  zonecode: string;     // 우편번호
+  sido: string;
+  sigungu: string;
+  bname: string;        // 법정동/리 명
+  buildingName: string;
 }
 
 // VWorldMap SSR 비활성화
@@ -26,7 +49,8 @@ const VWorldMap = dynamic(() => import('./VWorldMap'), { ssr: false });
 interface AddressSearchProps {
   address: string;
   detailAddress?: string;
-  onAddressChange: (address: string) => void;
+  /** 첫 인자는 표시용 주소 문자열. 두 번째 인자는 Daum 검색 결과일 때만 채워진다. */
+  onAddressChange: (address: string, meta?: AddressSearchMeta) => void;
   onDetailAddressChange?: (detail: string) => void;
   accentColor?: 'blue' | 'purple';
 }
@@ -105,7 +129,17 @@ export default function AddressSearch({
     new window.daum.Postcode({
       oncomplete: (data) => {
         const fullAddress = data.roadAddress || data.jibunAddress || data.address;
-        onAddressChange(fullAddress);
+        const meta: AddressSearchMeta = {
+          roadAddress: data.roadAddress || '',
+          jibunAddress: data.jibunAddress || '',
+          bcode: data.bcode || '',
+          zonecode: data.zonecode || '',
+          sido: data.sido || '',
+          sigungu: data.sigungu || '',
+          bname: data.bname || '',
+          buildingName: data.buildingName || '',
+        };
+        onAddressChange(fullAddress, meta);
       },
     }).open();
   };

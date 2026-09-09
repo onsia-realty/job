@@ -1,5 +1,15 @@
 // 부동산인 BOOIN Job Matching 타입 정의
 
+// 단기임대/공실임대(stays) 타입 re-export
+export type {
+  Stay,
+  StayServerControlledField,
+  StayCreateInput,
+  StayUpdateInput,
+  StayListFilter,
+  StayListResponse,
+} from './stay';
+
 // 공통 타입
 export type UserType = 'agent' | 'sales';
 export type UserRole = 'employer' | 'seeker';
@@ -43,6 +53,9 @@ export interface SalesJobListing {
   requirements?: string;
   headcount?: string;
   recruitPeriod?: string;
+  // DB(jobs) 전용 상세 필드
+  htmlContent?: string;
+  deadline?: string;
 }
 
 // 공인중개사 구인공고 타입 (부동산 카테고리 확장)
