@@ -9,15 +9,21 @@ import {
   ArrowLeft, ToggleLeft, ToggleRight,
   Activity, Bell, Image as ImageIcon, Shield, Loader2,
   Lock, Mail, KeyRound, ShieldCheck, UserCog,
-  Wallet, ExternalLink, BarChart3,
+  Wallet, ExternalLink, BarChart3, Building2,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import {
+  STAY_TYPE_LABELS, STAY_DEAL_TYPE_LABELS, STAY_OWNER_TYPE_LABELS,
+  STAY_STATUS_LABELS, STAY_STATUSES,
+  type StayType, type StayDealType, type StayOwnerType, type StayStatus,
+} from '@/lib/stay/constants';
+import { formatDepositMonthly } from '@/lib/stay/format';
 
 // ============================================================
 // TYPES
 // ============================================================
-type TabId = 'dashboard' | 'members' | 'jobs' | 'payments' | 'ads' | 'settings';
+type TabId = 'dashboard' | 'members' | 'jobs' | 'stays' | 'payments' | 'ads' | 'settings';
 
 interface DbMember {
   id: string;
@@ -47,6 +53,29 @@ interface DbJob {
   updated_at: string;
   deadline: string | null;
   application_count: number;
+}
+
+interface DbStay {
+  id: string;
+  title: string;
+  stay_type: string;
+  deal_type: string;
+  address: string | null;
+  region: string | null;
+  sigungu: string | null;
+  deposit_won: number | null;
+  monthly_fee_won: number | null;
+  daily_fee_won: number | null;
+  weekly_fee_won: number | null;
+  owner_type: 'agent' | 'owner';
+  status: string;
+  is_active: boolean;
+  is_approved: boolean;
+  views: number;
+  source: string;
+  contact_name: string | null;
+  phone: string | null;
+  created_at: string;
 }
 
 interface DailyPoint {
@@ -151,6 +180,7 @@ const tabs: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
   { id: 'members', label: '회원관리', icon: Users },
   { id: 'jobs', label: '공고관리', icon: Briefcase },
+  { id: 'stays', label: '단기임대', icon: Building2 },
   { id: 'payments', label: '결제관리', icon: CreditCard },
   { id: 'ads', label: '광고관리', icon: Megaphone },
   { id: 'settings', label: '사이트설정', icon: Settings },
@@ -284,6 +314,7 @@ function StatusBadge({ status }: { status: string }) {
     '반려': 'bg-red-500/20 text-red-400',
     '취소': 'bg-red-500/20 text-red-400',
     '마감': 'bg-gray-500/20 text-gray-400',
+    '미노출': 'bg-gray-500/20 text-gray-400',
     '만료': 'bg-gray-500/20 text-gray-400',
     '일시중지': 'bg-orange-500/20 text-orange-400',
   };
@@ -331,6 +362,12 @@ function getJobStatus(job: DbJob): string {
     const deadline = new Date(job.deadline);
     if (deadline < now) return '마감';
   }
+  return '게시중';
+}
+
+function getStayListStatus(s: DbStay): string {
+  if (!s.is_approved) return '승인대기';
+  if (!s.is_active) return '미노출';
   return '게시중';
 }
 
@@ -480,6 +517,13 @@ export default function AdminDashboardPage() {
   const [jobTierFilter, setJobTierFilter] = useState('전체');
   const [jobStatusFilter, setJobStatusFilter] = useState('전체');
 
+  // Stays state
+  const [stays, setStays] = useState<DbStay[]>([]);
+  const [staysLoading, setStaysLoading] = useState(false);
+  const [staySearch, setStaySearch] = useState('');
+  const [stayDealTypeFilter, setStayDealTypeFilter] = useState('전체');
+  const [stayStatusFilter, setStayStatusFilter] = useState('전체');
+
   // Payment state (real)
   const [payments, setPayments] = useState<DbPayment[]>([]);
   const [paymentsLoading, setPaymentsLoading] = useState(false);
@@ -536,6 +580,18 @@ export default function AdminDashboardPage() {
     }
   }, []);
 
+  const loadStays = useCallback(async () => {
+    setStaysLoading(true);
+    try {
+      const data = await adminFetch('/api/admin/stays');
+      setStays(data);
+    } catch (err) {
+      console.error('Failed to load stays:', err);
+    } finally {
+      setStaysLoading(false);
+    }
+  }, []);
+
   const loadPayments = useCallback(async () => {
     setPaymentsLoading(true);
     try {
@@ -555,8 +611,9 @@ export default function AdminDashboardPage() {
     if (activeTab === 'dashboard') loadStats();
     if (activeTab === 'members') loadMembers();
     if (activeTab === 'jobs') loadJobs();
+    if (activeTab === 'stays') loadStays();
     if (activeTab === 'payments') loadPayments();
-  }, [activeTab, user, loadStats, loadMembers, loadJobs, loadPayments]);
+  }, [activeTab, user, loadStats, loadMembers, loadJobs, loadStays, loadPayments]);
 
   // ---- Action handlers ----
   const handleJobAction = async (jobId: string, action: 'approve' | 'reject') => {
@@ -582,6 +639,37 @@ export default function AdminDashboardPage() {
       await loadJobs();
     } catch (err) {
       console.error('Job delete failed:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleStayPatch = async (
+    stayId: string,
+    patch: { is_approved?: boolean; is_active?: boolean; status?: string }
+  ) => {
+    setActionLoading(stayId);
+    try {
+      await adminFetch(`/api/admin/stays/${stayId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(patch),
+      });
+      await loadStays();
+    } catch (err) {
+      console.error('Stay patch failed:', err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleDeleteStay = async (stayId: string) => {
+    if (!confirm('정말 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+    setActionLoading(stayId);
+    try {
+      await adminFetch(`/api/admin/stays/${stayId}`, { method: 'DELETE' });
+      await loadStays();
+    } catch (err) {
+      console.error('Stay delete failed:', err);
     } finally {
       setActionLoading(null);
     }
@@ -662,6 +750,19 @@ export default function AdminDashboardPage() {
       return matchSearch && matchCategory && matchTier && matchStatus;
     });
   }, [jobs, jobSearch, jobCategoryFilter, jobTierFilter, jobStatusFilter]);
+
+  const filteredStays = useMemo(() => {
+    return stays.filter(s => {
+      const listStatus = getStayListStatus(s);
+      const matchSearch = !staySearch
+        || s.title?.includes(staySearch)
+        || s.address?.includes(staySearch)
+        || s.region?.includes(staySearch);
+      const matchDealType = stayDealTypeFilter === '전체' || s.deal_type === stayDealTypeFilter;
+      const matchStatus = stayStatusFilter === '전체' || listStatus === stayStatusFilter;
+      return matchSearch && matchDealType && matchStatus;
+    });
+  }, [stays, staySearch, stayDealTypeFilter, stayStatusFilter]);
 
   const filteredAds = useMemo(() => {
     if (adFilter === '전체') return mockAds;
@@ -1216,6 +1317,203 @@ export default function AdminDashboardPage() {
     );
   };
 
+  const renderStays = () => {
+    if (staysLoading && stays.length === 0) return renderLoading();
+
+    return (
+      <div className="space-y-4">
+        {/* Filters */}
+        <div className="bg-[#1C1D1F] rounded-xl p-4 border border-white/5">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <input
+                type="text"
+                placeholder="제목 또는 주소 검색..."
+                value={staySearch}
+                onChange={e => setStaySearch(e.target.value)}
+                className="w-full bg-[#252628] text-white text-sm rounded-lg pl-10 pr-4 py-2.5 border border-white/10 focus:border-cyan-500 focus:outline-none"
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <select
+                value={stayDealTypeFilter}
+                onChange={e => setStayDealTypeFilter(e.target.value)}
+                className="bg-[#252628] text-white text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-cyan-500 focus:outline-none appearance-none cursor-pointer"
+              >
+                <option value="전체">거래유형: 전체</option>
+                <option value="short_term">단기임대</option>
+                <option value="vacancy">공실임대</option>
+              </select>
+              <select
+                value={stayStatusFilter}
+                onChange={e => setStayStatusFilter(e.target.value)}
+                className="bg-[#252628] text-white text-sm rounded-lg px-3 py-2.5 border border-white/10 focus:border-cyan-500 focus:outline-none appearance-none cursor-pointer"
+              >
+                <option value="전체">상태: 전체</option>
+                <option value="게시중">게시중</option>
+                <option value="승인대기">승인대기</option>
+                <option value="미노출">미노출</option>
+              </select>
+            </div>
+          </div>
+          <p className="text-xs text-gray-600 mt-2">총 {filteredStays.length}건</p>
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block bg-[#1C1D1F] rounded-xl border border-white/5 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">제목</th>
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">주소</th>
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">유형</th>
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">금액</th>
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">등록주체</th>
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">상태</th>
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">노출</th>
+                  <th className="text-left text-gray-500 font-medium px-4 py-3">등록일</th>
+                  <th className="text-right text-gray-500 font-medium px-4 py-3">액션</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredStays.map(s => {
+                  const addr = s.address ?? [s.region, s.sigungu].filter(Boolean).join(' ');
+                  return (
+                    <tr key={s.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
+                      <td className="px-4 py-3 text-white font-medium max-w-[200px] truncate">{s.title}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs max-w-[180px] truncate">{addr || '-'}</td>
+                      <td className="px-4 py-3">
+                        <p className="text-gray-300 text-xs">{STAY_DEAL_TYPE_LABELS[s.deal_type as StayDealType] ?? s.deal_type}</p>
+                        <p className="text-gray-600 text-[11px]">{STAY_TYPE_LABELS[s.stay_type as StayType] ?? s.stay_type}</p>
+                      </td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{formatDepositMonthly(s.deposit_won, s.monthly_fee_won)}</td>
+                      <td className="px-4 py-3 text-gray-400 text-xs">{STAY_OWNER_TYPE_LABELS[s.owner_type as StayOwnerType] ?? s.owner_type}</td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={s.status}
+                          onChange={e => handleStayPatch(s.id, { status: e.target.value })}
+                          disabled={actionLoading === s.id}
+                          className="bg-[#252628] text-white text-xs rounded-lg px-2 py-1 border border-white/10 focus:border-cyan-500 focus:outline-none appearance-none cursor-pointer disabled:opacity-50"
+                        >
+                          {STAY_STATUSES.map(st => (
+                            <option key={st} value={st}>{STAY_STATUS_LABELS[st as StayStatus]}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge status={getStayListStatus(s)} /></td>
+                      <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(s.created_at)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleStayPatch(s.id, { is_approved: !s.is_approved })}
+                            disabled={actionLoading === s.id}
+                            className={`p-1.5 rounded-md transition-colors disabled:opacity-50 ${
+                              s.is_approved
+                                ? 'text-amber-400 hover:bg-amber-500/10'
+                                : 'text-green-400 hover:bg-green-500/10'
+                            }`}
+                            title={s.is_approved ? '승인취소' : '승인'}
+                          >
+                            {actionLoading === s.id
+                              ? <Loader2 className="w-4 h-4 animate-spin" />
+                              : s.is_approved ? <XCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => handleStayPatch(s.id, { is_active: !s.is_active })}
+                            disabled={actionLoading === s.id}
+                            className="p-1.5 rounded-md text-cyan-400 hover:bg-cyan-500/10 transition-colors disabled:opacity-50"
+                            title={s.is_active ? '노출 끄기' : '노출 켜기'}
+                          >
+                            {s.is_active ? <ToggleRight className="w-4 h-4" /> : <ToggleLeft className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteStay(s.id)}
+                            disabled={actionLoading === s.id}
+                            className="p-1.5 rounded-md text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            title="삭제"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {filteredStays.length === 0 && (
+            <div className="text-center py-10 text-gray-500 text-sm">
+              {staysLoading ? '로딩 중...' : '검색 결과가 없습니다'}
+            </div>
+          )}
+        </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden space-y-3">
+          {filteredStays.map(s => {
+            const addr = s.address ?? [s.region, s.sigungu].filter(Boolean).join(' ');
+            return (
+              <div key={s.id} className="bg-[#1C1D1F] rounded-xl p-4 border border-white/5">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-400">
+                        {STAY_DEAL_TYPE_LABELS[s.deal_type as StayDealType] ?? s.deal_type}
+                      </span>
+                      <StatusBadge status={getStayListStatus(s)} />
+                    </div>
+                    <h4 className="text-white font-medium text-sm truncate">{s.title}</h4>
+                    <p className="text-xs text-gray-500 truncate">
+                      {addr || '-'} | {STAY_TYPE_LABELS[s.stay_type as StayType] ?? s.stay_type}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-gray-500 mb-3">
+                  <span>{formatDepositMonthly(s.deposit_won, s.monthly_fee_won)}</span>
+                  <span>{STAY_OWNER_TYPE_LABELS[s.owner_type as StayOwnerType] ?? s.owner_type}</span>
+                  <span>{formatDate(s.created_at)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleStayPatch(s.id, { is_approved: !s.is_approved })}
+                    disabled={actionLoading === s.id}
+                    className={`flex-1 text-xs py-1.5 rounded-lg border transition-colors disabled:opacity-50 ${
+                      s.is_approved
+                        ? 'border-amber-500/30 text-amber-400 hover:bg-amber-500/10'
+                        : 'border-green-500/30 text-green-400 hover:bg-green-500/10'
+                    }`}
+                  >
+                    {s.is_approved ? '승인취소' : '승인'}
+                  </button>
+                  <button
+                    onClick={() => handleStayPatch(s.id, { is_active: !s.is_active })}
+                    disabled={actionLoading === s.id}
+                    className="flex-1 text-xs py-1.5 rounded-lg border border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 transition-colors disabled:opacity-50"
+                  >
+                    {s.is_active ? '노출 끄기' : '노출 켜기'}
+                  </button>
+                  <button
+                    onClick={() => handleDeleteStay(s.id)}
+                    disabled={actionLoading === s.id}
+                    className="flex-1 text-xs py-1.5 rounded-lg border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                  >
+                    삭제
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          {filteredStays.length === 0 && (
+            <div className="text-center py-10 text-gray-500 text-sm">검색 결과가 없습니다</div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const getPaymentStatusLabel = (status: string): string => {
     const map: Record<string, string> = { completed: '완료', pending: '대기', cancelled: '취소', failed: '실패' };
     return map[status] || status;
@@ -1472,6 +1770,7 @@ export default function AdminDashboardPage() {
       case 'dashboard': return renderDashboard();
       case 'members': return renderMembers();
       case 'jobs': return renderJobs();
+      case 'stays': return renderStays();
       case 'payments': return renderPayments();
       case 'ads': return renderAds();
       case 'settings': return renderSettings();
