@@ -200,3 +200,46 @@ export interface StayListResponse {
   limit: number;
   offset: number;
 }
+
+// ---------- 주변 시세 비교 (GET /api/stays/[id]/nearby-price) ----------
+// 국토부 전월세 실거래(price_transactions)의 지역 평균과 이 매물을 비교한다.
+//
+// ⚠️ price_transactions 는 만원 단위지만, 이 응답의 금액은 전부 "원 단위" 다.
+//    만원→원(×10000) 변환은 API 라우트 경계에서 딱 한 번만 한다.
+//    필드명의 `Won` 접미사가 그 규약이다 — 컴포넌트에서 다시 곱하지 마라.
+
+/** 비교를 만들 수 없는 이유 */
+export type StayNearbyPriceUnavailableReason =
+  /** lawd_cd 가 없어 지역을 특정할 수 없음 */
+  | 'no_region'
+  /** 국토부 전월세 실거래가 없는 매물 유형 (사무실/상가/빌라/생활숙박시설) */
+  | 'unsupported_type'
+  /** 비교 기준(월차임)이 없거나 지역 표본이 최소 건수 미만 */
+  | 'insufficient_sample';
+
+export interface StayNearbyPriceUnavailable {
+  available: false;
+  reason: StayNearbyPriceUnavailableReason;
+}
+
+export interface StayNearbyPriceAvailable {
+  available: true;
+  /** 집계에 실제로 쓰인 실거래 건수 */
+  sampleCount: number;
+  /** 실제 표본이 걸친 개월수 (최초~최종 deal_date 기준, 최소 1) */
+  months: number;
+  /** 전용면적 ±30% 밴드가 적용됐는지. false 면 면적 무관 전체 표본이다. */
+  areaFiltered: boolean;
+  /** region_codes.sigungu (실패 시 stays.sigungu 폴백) */
+  regionLabel: string;
+  /** STAY_TYPE_LABELS 기준 한글 유형명 */
+  propertyTypeLabel: string;
+  /** 지역 실거래 월차임 단순 평균 (원 단위) */
+  average: { monthlyWon: number };
+  /** 이 매물의 월차임 (원 단위) */
+  subject: { monthlyWon: number };
+  /** 평균 대비 증감률(%). 음수면 이 매물이 더 쌈 */
+  monthlyDiffPct: number;
+}
+
+export type StayNearbyPriceResponse = StayNearbyPriceAvailable | StayNearbyPriceUnavailable;

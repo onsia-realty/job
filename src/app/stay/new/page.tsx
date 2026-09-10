@@ -43,7 +43,7 @@ export default function StayNewPage() {
       <main className="mx-auto max-w-4xl px-4 py-6 pb-20">
         <StayCreateForm />
         <p className="mt-10 text-xs leading-relaxed text-slate-400">
-          온시아잡은 통신판매중개자로서 임대차 계약의 당사자가 아니며, 계약과 입주 관리는 등록자(개업공인중개사 또는 임대인)가 수행합니다.
+          부인은 통신판매중개자로서 임대차 계약의 당사자가 아니며, 계약과 입주 관리는 등록자(개업공인중개사 또는 임대인)가 수행합니다.
         </p>
       </main>
     </div>

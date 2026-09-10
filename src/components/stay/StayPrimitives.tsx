@@ -86,13 +86,17 @@ export function StayImage({
       )}
       {src && status !== 'failed' && (
         // 자산이 외부/미확정 경로라 next/image 대신 img 를 쓴다. 자산 확정 후 교체 대상.
-        // 로드 전에는 hidden 이지만 display:none 이어도 요청은 나가므로 onLoad/onError 는 정상 동작한다.
+        // loading="lazy" 를 쓰면 안 된다: 로드 전 hidden(display:none) 이라 뷰포트에 절대 안 들어가고,
+        // 브라우저가 fetch 자체를 안 해서 onLoad 가 영원히 안 떨어진다(폴백에 갇힘).
+        // 캐시된 이미지는 React 마운트 전에 이미 로드가 끝나 onLoad 를 못 받으므로 ref 로 보정한다.
         // eslint-disable-next-line @next/next/no-img-element
         <img
+          ref={(el) => {
+            if (el?.complete && el.naturalWidth > 0) setStatus('loaded');
+          }}
           src={src}
           alt={alt}
           sizes={sizes}
-          loading="lazy"
           onLoad={() => setStatus('loaded')}
           onError={() => setStatus('failed')}
           className={showFallback ? 'hidden' : className}

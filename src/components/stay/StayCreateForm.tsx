@@ -754,7 +754,7 @@ export default function StayCreateForm() {
               type="text"
               value={buildingName}
               onChange={(e) => setBuildingName(e.target.value)}
-              placeholder="예: 온시아타워"
+              placeholder="예: 한빛타워"
               maxLength={200}
               className={inputBase}
             />

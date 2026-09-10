@@ -21,6 +21,7 @@ import StayGallery from '@/components/stay/StayGallery';
 import StayAgentBlock from '@/components/stay/StayAgentBlock';
 import StayInquiryBar from '@/components/stay/StayInquiryBar';
 import StayLocationMap from '@/components/stay/StayLocationMap.client';
+import StayNearbyPrice, { StayNearbyPriceSkeleton } from '@/components/stay/StayNearbyPrice';
 import { StayExclusiveBadge, StayStatusBadge } from '@/components/stay/StayPrimitives';
 import { formatArea, formatMinStay, formatWon } from '@/lib/stay/format';
 import {
@@ -268,6 +269,12 @@ export default async function StayDetailPage({
   // (현재 목데이터엔 없지만 라벨 상수는 다른 도메인과 공유되므로 방어적으로 제외한다)
   const amenityCodes = stay.amenities.filter((code) => code !== 'selfcheckin');
 
+  // 주변 시세 블록에 넘길 절대 origin.
+  // StayNearbyPrice 안에서 headers() 를 부르면 그 컴포넌트가 동적 API 에 묶여
+  // Suspense 경계 밖의 셸까지 지연될 수 있다. 페이지 본문은 이미 fetchStay 로
+  // headers() 를 읽은 뒤라 여기서 한 번 더 뽑아도 추가 비용이 없다.
+  const origin = await apiOrigin();
+
   const roomStructureLabel = stay.room_structure
     ? STAY_ROOM_STRUCTURE_LABELS[stay.room_structure]
     : '-';
@@ -500,6 +507,11 @@ export default async function StayDetailPage({
 
             {/* 담당 중개사 (제18조의2) 또는 임대인 직접등록 안내 */}
             <StayAgentBlock stay={stay} />
+
+            {/* 주변 시세 — 국토부 전월세 실거래 평균 비교. 표본 부족/미지원 유형이면 렌더 안 됨 */}
+            <Suspense fallback={<StayNearbyPriceSkeleton />}>
+              <StayNearbyPrice stayId={stay.id} origin={origin} />
+            </Suspense>
 
             {/* 이 지역 다른 매물 — 별도 API 호출이라 본문을 막지 않게 Suspense 로 분리 */}
             {stay.sigungu && (

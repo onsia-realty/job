@@ -18,7 +18,7 @@
  * 주의:
  *   - 금액은 전부 원 단위(_won). 시세 도메인의 만원 단위와 다르다.
  *   - user_id 는 NULL (users 테이블을 건드리지 않기 위해). RLS 는 service_role 로 우회한다.
- *   - images 는 전부 빈 배열. `public/images/stay/` 에 자산이 0장이라 폴백을 태운다.
+ *   - thumbnail/images 는 `/images/stay/stay-NN.jpg` 1장 (scripts/generate-stay-images.mjs 생성).
  *   - living_facility(생활숙박시설) 는 넣지 않는다 (기존 목데이터도 0건이었다).
  *   - lat/lng 는 각 행의 도로명주소를 NCP 네이버 지오코딩 API로 실제 조회한 값이다
  *     (geocode_source: 'naver'). 임의 추정값이 아니다.
@@ -423,14 +423,22 @@ const SEED_ROWS = [
 
 const SEED_IDS = SEED_ROWS.map((r) => r.id);
 
+/**
+ * 시드 행의 데모 사진 경로.
+ * `public/images/stay/stay-NN.jpg` (NN = 시드 id 끝 2자리, 01~12).
+ * scripts/generate-stay-images.mjs 가 매물종류에 맞춰 생성한 자산이며 매물당 1장이다.
+ * 파일이 없으면 StayImage 의 onError 폴백이 그대로 동작한다.
+ */
+const seedImage = (id) => `/images/stay/stay-${id.slice(-2)}.jpg`;
+
 /** 공통 기본값 — 명시하지 않은 컬럼을 안전한 값으로 채운다. */
 function withDefaults(row) {
   return {
     user_id: null,
     source: 'self',
     views: 0,
-    thumbnail: null,
-    images: [],           // public/images/stay/ 에 자산 0장 → 폴백 유도
+    thumbnail: seedImage(row.id),
+    images: [seedImage(row.id)],
     kakao_url: null,
     building_verified: false,
     broker_office_id: null,

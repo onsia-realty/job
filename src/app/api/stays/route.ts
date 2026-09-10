@@ -7,11 +7,13 @@ import {
   STAY_TYPES,
   STAY_DEAL_TYPES,
   STAY_AMENITIES,
+  STAY_STATUSES,
   STAY_SORT_OPTIONS,
   STAY_LIST_DEFAULT_LIMIT,
   STAY_LIST_MAX_LIMIT,
   STAY_IN_FILTER_MAX_VALUES,
   type StayAmenity,
+  type StayStatus,
   type StaySortOption,
 } from '@/lib/stay/constants';
 
@@ -124,6 +126,34 @@ function parseEnumParam<T extends readonly string[]>(
   return (allowed as readonly string[]).includes(raw) ? (raw as T[number]) : null;
 }
 
+/**
+ * 지도 viewport 범위 파라미터 파싱.
+ *
+ * 규약은 시세지도 쪽에서 이미 쓰고 있는 것을 그대로 따른다:
+ *   `bounds=sw_lat,sw_lng,ne_lat,ne_lng` (쉼표로 이어붙인 문자열 1개)
+ * 출처: `src/app/api/market/transactions/route.ts` 의 handleBoundsMode (23줄 주석 / 171줄 파싱).
+ * 새 파라미터 이름을 만들지 않고 재사용해야 클라이언트 지도 코드가 두 도메인에서 동일하게 동작한다.
+ *
+ * 단, /market 과 달리 여기는 공개 목록 엔드포인트라 값이 이상하면 400 을 내지 않고 null 을
+ * 돌려준다 → 호출부가 bounds 없는 쿼리로 그대로 폴백한다.
+ * sw/ne 가 뒤집혀 들어오면 실패시키지 않고 서로 바꿔서 살려준다.
+ */
+function parseBoundsParam(
+  raw: string | null
+): { swLat: number; swLng: number; neLat: number; neLng: number } | null {
+  if (!raw) return null;
+  const parts = raw.split(',').map((v) => parseFloat(v));
+  if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) return null;
+
+  const [aLat, aLng, bLat, bLng] = parts;
+  return {
+    swLat: Math.min(aLat, bLat),
+    neLat: Math.max(aLat, bLat),
+    swLng: Math.min(aLng, bLng),
+    neLng: Math.max(aLng, bLng),
+  };
+}
+
 // GET /api/stays - 공개 목록 (인증 불필요)
 // 기본 조건: is_active = true AND is_approved = true
 export async function GET(req: NextRequest) {
@@ -184,6 +214,31 @@ export async function GET(req: NextRequest) {
     )
   ).slice(0, STAY_IN_FILTER_MAX_VALUES);
   if (amenities.length > 0) query = query.contains('amenities', amenities);
+
+  // 임대 진행 상태 다중 필터 (status IN (...)) — amenities 와 동일한 파싱 규약:
+  // 반복 파라미터(?status=a&status=b) + 쉼표 이어붙이기(?status=a,b) 둘 다 받는다.
+  // ✅ .in() 을 써도 안전하다: STAY_STATUSES 는 값이 5개뿐이라 URL 한도 30개 청크 제한
+  //    (feedback_supabase_in_query_chunk)에 한참 못 미친다.
+  const statusRaw = sp.getAll('status').flatMap((v) => v.split(','));
+  const statuses = Array.from(
+    new Set(
+      statusRaw
+        .map((v) => v.trim())
+        .filter((v): v is StayStatus => (STAY_STATUSES as readonly string[]).includes(v))
+    )
+  ).slice(0, STAY_IN_FILTER_MAX_VALUES);
+  if (statuses.length > 0) query = query.in('status', statuses);
+
+  // 지도 viewport 범위 (lat/lng 컬럼 — latitude/longitude 아님, types/stay.ts:37-38)
+  // 값이 깨져 있으면 parseBoundsParam 이 null → 필터 없이 기존 동작 그대로.
+  const bounds = parseBoundsParam(sp.get('bounds'));
+  if (bounds) {
+    query = query
+      .gte('lat', bounds.swLat)
+      .lte('lat', bounds.neLat)
+      .gte('lng', bounds.swLng)
+      .lte('lng', bounds.neLng);
+  }
 
   // 정렬
   const sort = (parseEnumParam(sp.get('sort'), STAY_SORT_OPTIONS) ?? 'latest') as StaySortOption;

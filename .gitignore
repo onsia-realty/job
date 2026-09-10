@@ -29,6 +29,7 @@ nul
 *.mp4
 
 # debug
+.playwright-mcp/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

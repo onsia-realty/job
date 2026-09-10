@@ -14,6 +14,8 @@ export interface AggregatePoint {
   avg_price_manwon: number;
   trade_count: number;
   complex_count: number;
+  /** 월세 레이어 전용 — 보증금(avg_price_manwon) 옆에 병기할 월세 가중평균. 월세 데이터가 없으면 undefined. */
+  avg_monthly_manwon?: number;
 }
 
 /** /api/market/aggregates 응답 행 */
@@ -34,7 +36,15 @@ export function aggregateByDong(
 ): AggregatePoint[] {
   const byDong = new Map<
     string,
-    { latSum: number; lngSum: number; priceSum: number; tradeCount: number; complexCount: number }
+    {
+      latSum: number;
+      lngSum: number;
+      priceSum: number;
+      tradeCount: number;
+      complexCount: number;
+      monthlySum: number;
+      monthlyCount: number;
+    }
   >();
 
   for (const p of points) {
@@ -42,7 +52,7 @@ export function aggregateByDong(
     if (!dong) continue;
     let g = byDong.get(dong);
     if (!g) {
-      g = { latSum: 0, lngSum: 0, priceSum: 0, tradeCount: 0, complexCount: 0 };
+      g = { latSum: 0, lngSum: 0, priceSum: 0, tradeCount: 0, complexCount: 0, monthlySum: 0, monthlyCount: 0 };
       byDong.set(dong, g);
     }
     g.latSum += p.lat;
@@ -50,6 +60,11 @@ export function aggregateByDong(
     g.priceSum += p.avg_price_manwon * p.trade_count;
     g.tradeCount += p.trade_count;
     g.complexCount += 1;
+    // 월세는 값이 있는 단지만 별도 분모로 가중평균 — 매매/전세 단지가 섞여도 월세 평균이 희석되지 않는다.
+    if (p.avg_monthly_manwon) {
+      g.monthlySum += p.avg_monthly_manwon * p.trade_count;
+      g.monthlyCount += p.trade_count;
+    }
   }
 
   const out: AggregatePoint[] = [];
@@ -63,6 +78,7 @@ export function aggregateByDong(
       avg_price_manwon: Math.round(g.priceSum / g.tradeCount),
       trade_count: g.tradeCount,
       complex_count: g.complexCount,
+      ...(g.monthlyCount > 0 ? { avg_monthly_manwon: Math.round(g.monthlySum / g.monthlyCount) } : {}),
     });
   }
   return out.sort((a, b) => b.trade_count - a.trade_count);
