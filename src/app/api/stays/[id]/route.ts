@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import { verifyUser, isAdminUserId } from '@/lib/auth-server';
 import { stayUpdateSchema, STAY_FIELD_MESSAGES } from '@/lib/validations/stay';
 import { buildAgentSnapshot } from '@/lib/stay/agent-snapshot';
+import { PUBLIC_STAY_SELECT, toPublicStay } from '@/lib/stay/public-dto';
 
 // GET /api/stays/[id] - 매물 단건 조회
 // 공개(is_active && is_approved)면 누구나. 비공개 행은 소유자 또는 관리자만.
@@ -12,9 +13,9 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const { data, error } = await supabaseAdmin
+  const { data: access, error } = await supabaseAdmin
     .from('stays')
-    .select('*')
+    .select('id,user_id,is_active,is_approved')
     .eq('id', id)
     .maybeSingle();
 
@@ -23,28 +24,32 @@ export async function GET(
     return NextResponse.json({ error: '매물을 불러올 수 없습니다' }, { status: 500 });
   }
 
-  if (!data) {
+  if (!access) {
     return NextResponse.json({ error: '매물을 찾을 수 없습니다' }, { status: 404 });
   }
 
-  const isPublic = data.is_active === true && data.is_approved === true;
-  if (isPublic) {
-    return NextResponse.json(data);
-  }
-
-  // 비공개 행: 소유자 또는 관리자만
+  // Even public rows need authentication before returning private edit fields.
   const user = await verifyUser(req);
-  if (!user) {
-    return NextResponse.json({ error: '매물을 찾을 수 없습니다' }, { status: 404 });
-  }
-
-  const isOwner = data.user_id === user.id;
-  if (!isOwner && !(await isAdminUserId(user.id))) {
+  const canManage = !!user && (access.user_id === user.id || await isAdminUserId(user.id));
+  const isPublic = access.is_active === true && access.is_approved === true;
+  if (!canManage && !isPublic) {
     // 존재 여부를 흘리지 않도록 404 로 통일
     return NextResponse.json({ error: '매물을 찾을 수 없습니다' }, { status: 404 });
   }
 
-  return NextResponse.json(data);
+  let query = supabaseAdmin.from('stays')
+    .select(canManage ? '*' : PUBLIC_STAY_SELECT).eq('id', id);
+  // Repeat visibility checks on the actual read so a concurrent withdrawal is respected.
+  if (!canManage) query = query.eq('is_active', true).eq('is_approved', true);
+  else if (access.user_id === user?.id) query = query.eq('user_id', user.id);
+  const { data, error: readError } = await query.maybeSingle();
+  if (readError) {
+    return NextResponse.json({ error: '매물을 불러올 수 없습니다' }, { status: 500 });
+  }
+  if (!data) return NextResponse.json({ error: '매물을 찾을 수 없습니다' }, { status: 404 });
+  return NextResponse.json(canManage ? data : toPublicStay(data), {
+    headers: { 'Cache-Control': 'private, no-store', Vary: 'Authorization' },
+  });
 }
 
 // PATCH /api/stays/[id] - 매물 수정 (소유자만)
@@ -124,6 +129,10 @@ export async function PATCH(
 
   const updateData = {
     ...sanitized,
+    // Status/visibility-only changes keep the review decision. Any submitted
+    // advertising content requires fresh rights/content review before exposure.
+    ...(Object.keys(sanitized).some((field) => field !== 'status' && field !== 'is_active')
+      ? { is_approved: false } : {}),
     // ---- 서버 강제 값은 반드시 마지막에 스프레드 ----
     agent_office_name: agentSnapshot?.agent_office_name ?? null,
     agent_office_address: agentSnapshot?.agent_office_address ?? null,

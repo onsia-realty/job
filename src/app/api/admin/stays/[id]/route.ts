@@ -1,23 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { STAY_STATUSES, type StayStatus } from '@/lib/stay/constants';
-
-async function verifyAdmin(req: NextRequest) {
-  const token = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (!token) return null;
-
-  const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-  if (error || !user) return null;
-
-  const { data: dbUser } = await supabaseAdmin
-    .from('users')
-    .select('user_type')
-    .eq('id', user.id)
-    .maybeSingle();
-
-  if (!dbUser || dbUser.user_type !== 'admin') return null;
-  return user;
-}
+import { verifyAdmin } from '@/lib/auth-server';
+import { isWorkflowMigrationMissing, workflowUnavailable } from '@/lib/stay/owner-lead';
 
 // 관리자가 바꿀 수 있는 필드는 이 3개뿐이다.
 // 요금·주소·연락처 등 매물 내용은 등록자만 수정할 수 있어야 하므로
@@ -44,6 +29,9 @@ export async function PATCH(
   try {
     body = await req.json();
   } catch {
+    return NextResponse.json({ error: '잘못된 요청 본문입니다' }, { status: 400 });
+  }
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return NextResponse.json({ error: '잘못된 요청 본문입니다' }, { status: 400 });
   }
 
@@ -78,22 +66,35 @@ export async function PATCH(
     return NextResponse.json({ error: '변경할 필드가 없습니다' }, { status: 400 });
   }
 
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('stays')
-      .update(patch)
-      .eq('id', id)
-      .select('id, is_approved, is_active, status')
-      .maybeSingle();
+  const note = body.note;
+  if (note !== undefined && (typeof note !== 'string' || note.length > 1000)) {
+    return NextResponse.json({ error: '검토 메모는 1000자 이내여야 합니다' }, { status: 400 });
+  }
 
-    if (error) throw error;
+  try {
+    // The database locks the stay, checks delegated-owner confirmation before
+    // approval, applies the patch and writes its audit record in one transaction.
+    const { data, error } = await supabaseAdmin.rpc('review_stay', {
+      p_stay_id: id, p_admin_user_id: admin.id, p_patch: patch,
+      p_note: typeof note === 'string' ? note.trim() || null : null,
+    });
+
+    if (error) {
+      if (isWorkflowMigrationMissing(error)) return NextResponse.json(workflowUnavailable(), { status: 503 });
+      if (error.message?.includes('OWNER_CONFIRMATION_REQUIRED')) return NextResponse.json(
+        { error: '집주인의 매물 내용 확인이 필요합니다', code: 'OWNER_CONFIRMATION_REQUIRED' }, { status: 409 });
+      if (error.message?.includes('DRAFT_CHANGED')) return NextResponse.json(
+        { error: '집주인 확인 후 매물 내용이 변경되었습니다', code: 'DRAFT_CHANGED' }, { status: 409 });
+      throw error;
+    }
     if (!data) {
       return NextResponse.json({ error: '매물을 찾을 수 없습니다' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, stay: data });
-  } catch (error) {
-    console.error('Admin stay patch error:', error);
+    return NextResponse.json({ success: true, stay: data }, {
+      headers: { 'Cache-Control': 'private, no-store', Vary: 'Authorization' },
+    });
+  } catch {
     return NextResponse.json({ error: '작업 실패' }, { status: 500 });
   }
 }

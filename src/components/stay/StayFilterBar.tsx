@@ -7,9 +7,8 @@
 // 그대로 옮기되, 칩의 동작(다중선택·URL 동기화)은 기존 /stay 필터 동작을 그대로 유지한다.
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Home, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import {
   STAY_DEAL_TYPES,
   STAY_DEAL_TYPE_LABELS,
@@ -122,12 +121,12 @@ export default function StayFilterBar({
               onClick={() => setDealType(value)}
               aria-pressed={active}
               className={`-mb-px min-w-[124px] border-b-2 px-3 pb-2 pt-1.5 text-left transition-colors ${
-                active ? 'border-blue-600' : 'border-transparent hover:bg-gray-50'
+                active ? 'border-cyan-600' : 'border-transparent hover:bg-gray-50'
               }`}
             >
               <span
                 className={`block text-sm font-extrabold leading-tight ${
-                  active ? 'text-blue-600' : 'text-gray-500'
+                  active ? 'text-cyan-700' : 'text-gray-500'
                 }`}
               >
                 {STAY_DEAL_TYPE_LABELS[value]}
@@ -166,7 +165,7 @@ export default function StayFilterBar({
             value={sort}
             onChange={(e) => setSort(e.target.value as StayListSort)}
             aria-label="정렬 기준"
-            className="flex-shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-shrink-0 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-cyan-500"
           >
             {STAY_LIST_SORTS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -190,14 +189,6 @@ export default function StayFilterBar({
             총 <span className="font-bold tabular-nums text-gray-700">{totalCount}</span>건
           </p>
 
-          {/* 소유주 유입 CTA — 히어로를 걷어내면서 사라진 진입점을 네모의 헤더 우측 CTA 자리로 옮겼다 */}
-          <Link
-            href="/stay/owner"
-            className="flex flex-shrink-0 items-center gap-1 rounded-full bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-          >
-            <Home className="h-3.5 w-3.5 flex-shrink-0" />
-            소유주 등록
-          </Link>
         </div>
       </div>
     </div>
@@ -246,7 +237,7 @@ function MultiSelectChip<T extends string>({
         aria-expanded={open}
         className={`flex items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
           active
-            ? 'border-blue-600 bg-blue-600 text-white'
+            ? 'border-cyan-600 bg-slate-900 text-white'
             : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700'
         }`}
       >
@@ -266,7 +257,7 @@ function MultiSelectChip<T extends string>({
                 onClick={() => onToggle(opt.value)}
                 aria-pressed={isOn}
                 className={`flex w-full items-center justify-between px-3.5 py-2 text-left text-xs transition-colors hover:bg-gray-50 ${
-                  isOn ? 'font-bold text-blue-600' : 'text-gray-600'
+                  isOn ? 'font-bold text-cyan-700' : 'text-gray-600'
                 }`}
               >
                 <span>{opt.label}</span>

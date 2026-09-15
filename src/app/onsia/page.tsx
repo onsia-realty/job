@@ -1322,6 +1322,10 @@ export default function AdminDashboardPage() {
 
     return (
       <div className="space-y-4">
+        <Link href="/stay/admin" className="flex items-center justify-between rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-4 text-sm font-semibold text-cyan-300 hover:bg-cyan-500/20">
+          부인 STAY · 호스트 등록 신청 및 대리 등록 관리
+          <ExternalLink className="h-4 w-4" aria-hidden />
+        </Link>
         {/* Filters */}
         <div className="bg-[#1C1D1F] rounded-xl p-4 border border-white/5">
           <div className="flex flex-col sm:flex-row gap-3">

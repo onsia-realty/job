@@ -165,7 +165,7 @@ export default function StayAgentFields({
 
       {ownerType === 'owner' && (
         <p className="rounded-lg bg-slate-50 px-4 py-3 text-xs leading-relaxed text-slate-600">
-          임대인 직접등록 매물은 중개사 표기 없이 게시되며, 문의는 등록자 연락처로 연결됩니다.
+          임대인 직접등록 매물은 중개사 표기 없이 게시됩니다. 게스트 문의는 문의함으로 받아 답변할 수 있습니다.
         </p>
       )}
 

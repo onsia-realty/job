@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import type { UserRole } from '@/types';
 import { signUpWithEmail, supabase, updateUserMetadata, getSession } from '@/lib/auth';
+import { safeStayRedirect } from '@/lib/auth-redirect';
 import type { BrokerOfficeInfo } from '@/app/api/broker/route';
 
 interface SignUpFormData {
@@ -71,6 +72,10 @@ function SignUpPageContent() {
   const searchParams = useSearchParams();
   const [form, setForm] = useState<SignUpFormData>(INITIAL_FORM);
   const isSocialSignup = searchParams.get('social') === 'true';
+  const stayRedirect = safeStayRedirect(searchParams.get('redirect'));
+  const loginHref = stayRedirect
+    ? `/agent/auth/login?redirect=${encodeURIComponent(stayRedirect)}`
+    : '/agent/auth/login';
 
   // URL ?role= 파라미터로 초기 역할 설정
   useEffect(() => {
@@ -538,7 +543,7 @@ function SignUpPageContent() {
                 </p>
               </div>
               <Link
-                href="/agent/auth/login"
+                href={loginHref}
                 className="block w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-500/25"
               >
                 로그인 페이지로 이동
@@ -558,7 +563,7 @@ function SignUpPageContent() {
               </p>
               <div className="space-y-3">
                 <Link
-                  href={form.role === 'employer' ? '/agent/employer' : '/agent/jobs'}
+                  href={stayRedirect || (form.role === 'employer' ? '/agent/employer' : '/agent/jobs')}
                   className="block w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 transition-all shadow-lg shadow-emerald-500/25"
                 >
                   {form.role === 'employer' ? '구인 시작하기' : '채용공고 둘러보기'}

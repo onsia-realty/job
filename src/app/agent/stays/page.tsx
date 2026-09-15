@@ -31,7 +31,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { StayStatusBadge, StayExclusiveBadge, StayImage } from '@/components/stay/StayPrimitives';
 // 포맷 유틸은 반드시 '@/lib/stay/format' 에서. stays 는 원 단위라 formatKoreanPrice(만원 가정) 금지.
-import { formatDepositMonthly } from '@/lib/stay/format';
+import { formatStayPrice } from '@/lib/stay/format';
 import { STAY_TYPE_LABELS } from '@/lib/stay/constants';
 import type { Stay, StayListResponse } from '@/types/stay';
 
@@ -305,6 +305,9 @@ export default function AgentStaysPage() {
         </div>
 
         {/* 등록 CTA */}
+        <Link href="/stay/inquiries" className="mb-4 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-5 py-4 text-sm font-semibold text-slate-700 hover:border-cyan-500">
+          단기임대 문의함 <span aria-hidden>→</span>
+        </Link>
         <Link
           href="/stay/new"
           className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-2xl p-5 mb-6 hover:from-blue-700 hover:to-cyan-700 transition-all shadow-md hover:shadow-lg group"
@@ -404,7 +407,7 @@ export default function AgentStaysPage() {
                         <h4 className="font-bold text-gray-900 truncate">{stay.title}</h4>
 
                         <p className="mt-0.5 truncate text-sm font-extrabold tracking-tight text-gray-900">
-                          {formatDepositMonthly(stay.deposit_won, stay.monthly_fee_won)}
+                          {formatStayPrice(stay)}
                         </p>
 
                         {region && (

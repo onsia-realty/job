@@ -16,7 +16,6 @@ import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, ArrowRight, Home, List, MapPin, Search, SearchX, X } from 'lucide-react';
-import Header from '@/components/shared/Header';
 import StayCard from '@/components/stay/StayCard';
 import StayFilterBar from '@/components/stay/StayFilterBar';
 import StayBottomSheet, { type StaySheetSnap } from '@/components/stay/StayBottomSheet';
@@ -194,7 +193,7 @@ export default function StayMapPageClient() {
 
   // 목록 텍스트 검색 — 네모의 "지역·역 검색" 자리. stays 는 검색 API 가 없어
   // 조회된 결과를 제목/주소/시군구로 좁히는 클라이언트 필터로 구현했다.
-  const [q, setQ] = useState('');
+  const [q, setQ] = useState(() => searchParams.get('q') ?? '');
 
   // ── 지도 idle → bounds 갱신 ──
   const handleBoundsChanged = useCallback(
@@ -480,6 +479,9 @@ export default function StayMapPageClient() {
           lng: s.lng,
           deposit_won: s.deposit_won,
           monthly_fee_won: s.monthly_fee_won,
+          weekly_fee_won: s.weekly_fee_won,
+          owner_type: s.owner_type,
+          deal_type: s.deal_type,
           floor: s.floor,
         })),
     [stays]
@@ -510,9 +512,12 @@ export default function StayMapPageClient() {
   // 목록 화면 링크 — 필터 쿼리 규약이 동일하므로 현재 쿼리스트링을 그대로 넘긴다.
   // (lat/lng/zoom 등 지도 전용 키는 목록이 무시하고, 되돌아올 때 지도 위치가 살아 있다.)
   const listHref = useMemo(() => {
-    const qs = searchParams.toString();
+    const params = new URLSearchParams(searchParams.toString());
+    if (q.trim()) params.set('q', q.trim());
+    else params.delete('q');
+    const qs = params.toString();
     return qs ? `/stay/list?${qs}` : '/stay/list';
-  }, [searchParams]);
+  }, [searchParams, q]);
 
   // 마커 클릭 → 좌측 패널에서 해당 카드로 스크롤
   const listRef = useRef<HTMLDivElement>(null);
@@ -532,9 +537,9 @@ export default function StayMapPageClient() {
       {/* 패널 헤더 — 지역명 + 건수 (네모: "서초동 5025") */}
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-3.5 py-2.5">
         <p className="flex min-w-0 items-center gap-1.5 text-sm font-bold text-gray-900">
-          <MapPin className="h-4 w-4 flex-shrink-0 text-blue-600" />
+          <MapPin className="h-4 w-4 flex-shrink-0 text-cyan-700" />
           <span className="truncate">{regionLabel}</span>
-          <span className="flex-shrink-0 tabular-nums text-blue-600">
+          <span className="flex-shrink-0 tabular-nums text-cyan-700">
             {loading ? '…' : stays.length.toLocaleString()}
           </span>
         </p>
@@ -543,7 +548,7 @@ export default function StayMapPageClient() {
             현재 필터 쿼리스트링을 그대로 넘겨 같은 조건으로 이어보게 한다. */}
         <Link
           href={listHref}
-          className="flex flex-shrink-0 items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-blue-500 hover:text-blue-600"
+          className="flex flex-shrink-0 items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs font-semibold text-gray-600 transition-colors hover:border-blue-500 hover:text-cyan-700"
         >
           <List className="h-3.5 w-3.5" />
           목록으로 보기
@@ -580,14 +585,14 @@ export default function StayMapPageClient() {
           </div>
         ) : (
           <div className="px-4 py-16 text-center">
-            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-blue-50">
+            <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-cyan-50">
               <SearchX className="h-7 w-7 text-blue-300" />
             </div>
             <h2 className="mb-1.5 text-sm font-bold text-gray-700">이 지역에 매물이 없습니다</h2>
             <p className="mb-4 text-xs text-gray-400">지도를 움직이거나 조건을 줄여보세요.</p>
             <Link
-              href="/stay/owner"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+              href="/stay/new?role=host"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-slate-700"
             >
               <Home className="h-3.5 w-3.5 flex-shrink-0" />
               소유주 직접 등록
@@ -608,7 +613,7 @@ export default function StayMapPageClient() {
         onChange={(e) => setQ(e.target.value)}
         placeholder="지역·건물명으로 검색"
         aria-label="매물 검색"
-        className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-8 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-8 text-sm text-gray-700 placeholder:text-gray-400 focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
       />
       {q && (
         <button
@@ -633,7 +638,15 @@ export default function StayMapPageClient() {
         />
       )}
 
-      <Header variant="landing" />
+      <nav aria-label="단기임대 탐색" className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+        <Link href="/stay" className="text-base font-bold tracking-tight text-slate-900">부인 <span className="ml-2 text-xs font-medium text-cyan-700">단기임대</span></Link>
+        <div className="flex flex-wrap items-center gap-3 text-xs font-semibold text-slate-500 sm:gap-6">
+          <Link href={listHref} className="hidden sm:inline">목록으로 보기</Link>
+          <Link href="/stay/agents">안심중개사</Link>
+          <Link href="/stay/inquiries">문의함</Link>
+          <Link href="/stay/new?role=host" className="rounded-lg bg-slate-900 px-3 py-2 text-white">호스트 등록</Link>
+        </div>
+      </nav>
 
       <StayFilterBar
         dealType={dealType}
@@ -668,11 +681,9 @@ export default function StayMapPageClient() {
           />
 
           {/* 레이어 토글 — 네이버 부동산식 우상단 세로 스택. 줌 컨트롤은 우하단으로 비켜 두었다. */}
-          <div
-            role="radiogroup"
-            aria-label="지도 레이어"
-            className="absolute right-3 top-3 z-10 flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md"
-          >
+          <details className="absolute right-3 top-3 z-10 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <summary className="cursor-pointer px-3 py-2.5 text-xs font-semibold text-slate-700">시세 비교{layer === 'deals' ? ' · 켜짐' : ''}</summary>
+            <div role="radiogroup" aria-label="지도 레이어" className="flex border-t border-slate-100">
             {([
               { value: 'stays' as const, label: '매물' },
               { value: 'deals' as const, label: '실거래' },
@@ -686,7 +697,7 @@ export default function StayMapPageClient() {
                   aria-checked={active}
                   onClick={() => handleLayerChange(opt.value)}
                   className={`px-3 py-2 text-xs font-semibold transition-colors ${
-                    active ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                    active ? 'bg-slate-900 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
                   }`}
                 >
                   {opt.label}
@@ -697,7 +708,8 @@ export default function StayMapPageClient() {
                 </button>
               );
             })}
-          </div>
+            </div>
+          </details>
 
           {layer === 'stays' && !loading && mapPoints.length === 0 && (
             <div className="pointer-events-none absolute inset-x-0 top-4 z-10 flex justify-center">
@@ -740,9 +752,9 @@ export default function StayMapPageClient() {
           onSnapChange={setSheetSnap}
           peekContent={
             <div className="flex items-center gap-1.5 text-sm font-semibold text-gray-800">
-              <MapPin className="h-4 w-4 text-blue-600" />
+              <MapPin className="h-4 w-4 text-cyan-700" />
               {regionLabel} 매물{' '}
-              <span className="tabular-nums text-blue-600">
+              <span className="tabular-nums text-cyan-700">
                 {loading ? '…' : stays.length.toLocaleString()}
               </span>
               건

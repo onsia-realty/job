@@ -11,12 +11,12 @@
 //
 // 데이터는 038 stays 의 평면 컬럼(agent_office_name … is_exclusive)을 그대로 읽는다.
 
-import { useState } from 'react';
+import Link from 'next/link';
 import { BadgeCheck, Building2, MapPin, Phone, ShieldCheck, User } from 'lucide-react';
 import { StayExclusiveBadge } from '@/components/stay/StayPrimitives';
 import type { Stay } from '@/types/stay';
 
-const PENDING_MESSAGE = '문의 기능은 준비 중입니다';
+
 
 function Row({
   icon: Icon,
@@ -37,13 +37,6 @@ function Row({
 }
 
 export default function StayAgentBlock({ stay }: { stay: Stay }) {
-  const [notice, setNotice] = useState<string | null>(null);
-
-  const showNotice = () => {
-    setNotice(PENDING_MESSAGE);
-    window.setTimeout(() => setNotice(null), 2400);
-  };
-
   // ── 임대인 직접등록 ──
   if (stay.owner_type !== 'agent') {
     return (
@@ -57,19 +50,13 @@ export default function StayAgentBlock({ stay }: { stay: Stay }) {
           중개사무소를 통하지 않은 매물이라 계약서 작성과 권리관계 확인을 직접 하셔야 합니다.
           안전하게 진행하고 싶으시면 아래에서 중개사 연결을 요청하실 수 있습니다.
         </p>
-        <button
-          type="button"
-          onClick={showNotice}
+        <Link
+          href="/stay/agents"
           className="mt-4 flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100"
         >
           <ShieldCheck className="h-4 w-4" />
           중개사와 안전하게 계약 진행하기
-        </button>
-        {notice && (
-          <p role="status" className="mt-2 rounded-lg bg-slate-900/90 px-3 py-2 text-center text-xs font-medium text-white">
-            {notice}
-          </p>
-        )}
+        </Link>
       </section>
     );
   }

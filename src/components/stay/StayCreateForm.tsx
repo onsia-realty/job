@@ -7,10 +7,8 @@
 //    반드시 data.user_id === user.id 를 확인한 뒤에만 폼을 채운다(아니면 접근 불가 화면).
 //    최종 권한은 서버 PATCH 의 .eq('user_id', ...) 가 강제한다.
 //
-// ⚠️ 요금 정책: 이 서비스는 월 임대료 + 보증금 상품만 취급한다.
-//    일 단가·주 단가 입력란을 만들지 않고, 월 임대료(monthly_fee_won)를 필수로 받아
-//    서버 스키마의 "요금 3종 중 1개 이상" 제약을 충족한다.
-//    '숙박/예약/체크인/1박' 어휘를 쓰지 않는다 (부동산 임대차 어휘: 월 임대료, 입주, 계약).
+// 요금 정책: 호스트 직접 단기임대는 주 임대료, 중개사 매물은 기존 월 임대료.
+// 관리비는 기존 DB와 동일한 월 금액이며 호스트 예상 금액에서 30일 기준 일할 계산한다.
 //
 // ⚠️ 금액은 전부 만원 단위로 입력받아 manwonToWon 으로 원 단위 정수로 바꿔 보낸다 (_won 접미사).
 // ⚠️ agent_* 법정표기 5항목은 서버(lib/stay/agent-snapshot.ts)가 채운다. 폼은 owner_type / is_exclusive 만 보낸다.
@@ -79,7 +77,6 @@ import type { Stay, StayCreateInput, StayAgentSnapshot } from '@/types/stay';
 
 const LOOKUP_ENDPOINT = '/api/stays/lookup-building';
 const CREATE_ENDPOINT = '/api/stays';
-const LOGIN_PATH = '/agent/auth/login?redirect=/stay/new';
 
 const inputBase =
   'w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-500';
@@ -176,14 +173,42 @@ type EditLoadState = 'loading' | 'ready' | 'forbidden' | 'notfound' | 'error';
 interface StayCreateFormProps {
   /** /stay/new?edit={id} — 있으면 수정 모드 */
   editId?: string | null;
+  initialOwnerType?: StayOwnerType;
+  /** 관리자 접수 전환 모드. editId 와 함께 사용할 수 없다. */
+  delegatedLeadId?: number | null;
+  leadPrefill?: {
+    contactName?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    detailAddress?: string | null;
+    buildingName?: string | null;
+    privacyAgreed?: boolean;
+    publicationAgreed?: boolean;
+  };
+  onDelegatedCreated?: (stay: Stay) => void;
 }
 
 // ---------- 컴포넌트 ----------
 
-export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
+export default function StayCreateForm({
+  editId = null,
+  initialOwnerType = 'agent',
+  delegatedLeadId = null,
+  leadPrefill,
+  onDelegatedCreated,
+}: StayCreateFormProps) {
   const { user, session, isLoading: authLoading } = useAuth();
   const router = useRouter();
   const isEdit = Boolean(editId);
+  const isDelegated = delegatedLeadId != null;
+  const hasDelegatedConsent = leadPrefill?.privacyAgreed === true && leadPrefill?.publicationAgreed === true;
+  const returnPath = isDelegated
+    ? '/stay/admin'
+    : editId
+      ? `/stay/new?edit=${encodeURIComponent(editId)}`
+      : `/stay/new?role=${initialOwnerType === 'owner' ? 'host' : 'agent'}`;
+  const loginPath = `/agent/auth/login?redirect=${encodeURIComponent(returnPath)}`;
+  const [addressMeta, setAddressMeta] = useState<AddressSearchMeta | null>(null);
 
   // 1. 거래유형
   const [dealType, setDealType] = useState<StayDealType>('short_term');
@@ -192,8 +217,8 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
   const [description, setDescription] = useState('');
 
   // 2. 위치
-  const [address, setAddress] = useState('');
-  const [detailAddress, setDetailAddress] = useState('');
+  const [address, setAddress] = useState(leadPrefill?.address ?? '');
+  const [detailAddress, setDetailAddress] = useState(leadPrefill?.detailAddress ?? '');
   const [jibunAddress, setJibunAddress] = useState('');
   const [region, setRegion] = useState('');
   const [sigungu, setSigungu] = useState('');
@@ -208,7 +233,7 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
 
   // 3. 건물정보
   const [mgmBldrgstPk, setMgmBldrgstPk] = useState<string | null>(null);
-  const [buildingName, setBuildingName] = useState('');
+  const [buildingName, setBuildingName] = useState(leadPrefill?.buildingName ?? '');
   const [mainPurps, setMainPurps] = useState('');
   const [useAprDay, setUseAprDay] = useState('');
   const [totalFloors, setTotalFloors] = useState('');
@@ -227,10 +252,14 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
   // 5. 임대조건 (만원 단위 입력)
   const [depositManwon, setDepositManwon] = useState('');
   const [monthlyManwon, setMonthlyManwon] = useState('');
+  const [weeklyManwon, setWeeklyManwon] = useState('');
+  const [dailyManwon, setDailyManwon] = useState('');
+  const [legacyMonthlyHost, setLegacyMonthlyHost] = useState(false);
+  const [keepMonthlyHost, setKeepMonthlyHost] = useState(false);
   const [maintenanceManwon, setMaintenanceManwon] = useState('');
   const [maintenanceIncluded, setMaintenanceIncluded] = useState(false);
   const [utilitiesIncluded, setUtilitiesIncluded] = useState(false);
-  const [minStayDays, setMinStayDays] = useState('');
+  const [minStayDays, setMinStayDays] = useState(initialOwnerType === 'owner' || isDelegated ? '7' : '');
   const [maxStayDays, setMaxStayDays] = useState('');
   const [availableFrom, setAvailableFrom] = useState('');
   const [availableTo, setAvailableTo] = useState('');
@@ -247,13 +276,14 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
   const [imagesUploading, setImagesUploading] = useState(false);
 
   // 8. 등록주체
-  const [ownerType, setOwnerType] = useState<StayOwnerType>('agent');
+  const [ownerType, setOwnerType] = useState<StayOwnerType>(isDelegated ? 'owner' : initialOwnerType);
+  const isHostPricing = ownerType === 'owner' && dealType === 'short_term' && !keepMonthlyHost;
   const [isExclusive, setIsExclusive] = useState(false);
   const [agentSnapshot, setAgentSnapshot] = useState<StayAgentSnapshot | null>(null);
 
   // 9. 연락처
-  const [contactName, setContactName] = useState('');
-  const [phone, setPhone] = useState('');
+  const [contactName, setContactName] = useState(leadPrefill?.contactName ?? '');
+  const [phone, setPhone] = useState(leadPrefill?.phone ? formatPhone(leadPrefill.phone) : '');
   const [kakaoUrl, setKakaoUrl] = useState('');
   const [contactHours, setContactHours] = useState('');
 
@@ -278,11 +308,11 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
   // 수정 모드에서는 건너뛴다. 서버가 준 연락처가 진실이고, prefill 과 경쟁하면
   // 빈 연락처로 저장된 매물이 회원정보로 슬쩍 바뀌어버린다.
   useEffect(() => {
-    if (!user || isEdit) return;
+    if (!user || isEdit || isDelegated) return;
     const m = user.user_metadata as Record<string, unknown> | undefined;
     setContactName((prev) => prev || (typeof m?.name === 'string' ? m.name : ''));
     setPhone((prev) => prev || (typeof m?.phone === 'string' ? formatPhone(m.phone) : ''));
-  }, [user, isEdit]);
+  }, [user, isEdit, isDelegated]);
 
   // ---------- 수정 모드: 기존 매물 불러오기 ----------
   useEffect(() => {
@@ -352,6 +382,11 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
         // 원 단위 → 만원 단위 입력값
         setDepositManwon(wonToManwonInput(data.deposit_won));
         setMonthlyManwon(wonToManwonInput(data.monthly_fee_won));
+        setWeeklyManwon(wonToManwonInput(data.weekly_fee_won));
+        setDailyManwon(wonToManwonInput(data.daily_fee_won));
+        const monthlyHost = data.owner_type === 'owner' && data.deal_type === 'short_term' && data.weekly_fee_won == null && data.monthly_fee_won != null;
+        setLegacyMonthlyHost(monthlyHost);
+        setKeepMonthlyHost(monthlyHost);
         setMaintenanceManwon(wonToManwonInput(data.maintenance_fee_won));
         setMaintenanceIncluded(data.maintenance_included === true);
         setUtilitiesIncluded(data.utilities_included === true);
@@ -461,6 +496,8 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
   }
 
   function handleAddressChange(nextAddress: string, m?: AddressSearchMeta) {
+    lookupAbortRef.current?.abort();
+    setAddressMeta(m ?? null);
     setAddress(nextAddress);
     setErrors((prev) => ({ ...prev, address: '' }));
 
@@ -472,6 +509,13 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
     setPnu(null);
     setMgmBldrgstPk(null);
     setBuildingVerified(false);
+
+    setBuildingName('');
+    setMainPurps('');
+    setUseAprDay('');
+    setTotalFloors('');
+    setElevatorCnt('');
+    setParkingTotal('');
 
     if (!m) {
       setJibunAddress('');
@@ -489,7 +533,25 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
     setBcode(m.bcode);
     if (m.buildingName) setBuildingName(m.buildingName);
 
-    void runLookup(nextAddress, m);
+    setLawdCd(m.bcode.slice(0, 5));
+    setLookupState('idle');
+    setLookupWarnings([]);
+    const controller = new AbortController();
+    lookupAbortRef.current = controller;
+    void fetch(`/api/geocode?address=${encodeURIComponent(nextAddress)}`, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('geocode failed');
+        const point = await res.json();
+        if (controller.signal.aborted) return;
+        if (!Number.isFinite(point.lat) || !Number.isFinite(point.lng)) throw new Error('invalid coordinates');
+        setLat(point.lat);
+        setLng(point.lng);
+        // 이 API는 road/parcel 성공 경로를 반환하지 않아 상세 출처를 추정하지 않는다.
+        setGeocodeSource(null);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setLookupWarnings(['지도 위치를 확인하지 못했습니다. 주소를 다시 검색해 주세요.']);
+      });
   }
 
   useEffect(() => () => lookupAbortRef.current?.abort(), []);
@@ -527,13 +589,19 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
     const bt = toNumberOrNull(baths);
     if (baths && (bt == null || !Number.isInteger(bt) || bt < 0 || bt > 100)) next.baths = '욕실 개수는 0~100 사이 정수로 입력해 주세요.';
 
-    // 월 임대료 필수 — 서버 "요금 3종 중 1개" 제약을 월 임대료로 충족
-    if (!monthlyManwon.trim()) next.monthly_fee_won = '월 임대료를 입력해 주세요.';
-    else if (manwonToWon(monthlyManwon) == null) next.monthly_fee_won = '월 임대료는 0 이상 숫자(만원)로 입력해 주세요.';
+    if (isHostPricing) {
+      if ((manwonToWon(weeklyManwon) ?? 0) <= 0) next.weekly_fee_won = '주 임대료는 0보다 큰 숫자(만원)로 입력해 주세요.';
+      if (dailyManwon.trim() && manwonToWon(dailyManwon) == null) next.daily_fee_won = '추가 일 임대료는 0 이상 숫자(만원)로 입력해 주세요.';
+      if (!maintenanceIncluded && !maintenanceManwon.trim()) next.maintenance_fee_won = '월 관리비를 입력하거나 임대료 포함을 선택해 주세요. 관리비가 없으면 0을 입력합니다.';
+    } else {
+      if (!monthlyManwon.trim()) next.monthly_fee_won = '월 임대료를 입력해 주세요.';
+      else if (manwonToWon(monthlyManwon) == null) next.monthly_fee_won = '월 임대료는 0 이상 숫자(만원)로 입력해 주세요.';
+    }
     if (depositManwon.trim() && manwonToWon(depositManwon) == null) next.deposit_won = '보증금은 0 이상 숫자(만원)로 입력해 주세요.';
     if (maintenanceManwon.trim() && manwonToWon(maintenanceManwon) == null) next.maintenance_fee_won = '관리비는 0 이상 숫자(만원)로 입력해 주세요.';
 
     const minD = toNumberOrNull(minStayDays);
+    if (isHostPricing && !minStayDays.trim()) next.min_stay_days = '게스트에게 안내할 최소 계약기간을 입력해 주세요.';
     if (minStayDays && (minD == null || !Number.isInteger(minD) || minD < 1 || minD > 3650)) next.min_stay_days = '최소 계약기간은 1~3650일 사이 정수로 입력해 주세요.';
     const maxD = toNumberOrNull(maxStayDays);
     if (maxStayDays && (maxD == null || !Number.isInteger(maxD) || maxD < 1 || maxD > 3650)) next.max_stay_days = '최대 계약기간은 1~3650일 사이 정수로 입력해 주세요.';
@@ -562,10 +630,11 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
       !!stayType &&
       title.trim().length > 0 &&
       address.trim().length > 0 &&
-      monthlyManwon.trim().length > 0 &&
+      (isHostPricing ? weeklyManwon.trim().length > 0 : monthlyManwon.trim().length > 0) &&
       contactName.trim().length > 0 &&
-      PHONE_PATTERN.test(phone),
-    [accessToken, submitting, imagesUploading, stayType, title, address, monthlyManwon, contactName, phone]
+      PHONE_PATTERN.test(phone) &&
+      (!isDelegated || hasDelegatedConsent),
+    [accessToken, submitting, imagesUploading, stayType, title, address, isHostPricing, weeklyManwon, monthlyManwon, contactName, phone, isDelegated, hasDelegatedConsent]
   );
 
   // ---------- 제출 ----------
@@ -606,11 +675,11 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
       // 인원 입력란은 없다 (숙박 개념 배제)
       max_guests: null,
 
-      // 만원 → 원 단위 정수. 일·주 단가는 사업모델상 없다.
+      // 만원 → 원 단위 정수. 호스트 주 요금과 기존 월 요금 방식을 구분한다.
       deposit_won: manwonToWon(depositManwon),
-      daily_fee_won: null,
-      weekly_fee_won: null,
-      monthly_fee_won: manwonToWon(monthlyManwon),
+      daily_fee_won: isHostPricing || (keepMonthlyHost && ownerType === 'owner') ? manwonToWon(dailyManwon) : null,
+      weekly_fee_won: isHostPricing ? manwonToWon(weeklyManwon) : null,
+      monthly_fee_won: isHostPricing ? null : manwonToWon(monthlyManwon),
       maintenance_fee_won: manwonToWon(maintenanceManwon),
       maintenance_included: maintenanceIncluded,
       utilities_included: utilitiesIncluded,
@@ -657,20 +726,30 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
       setSubmitError('로그인 정보를 확인할 수 없습니다. 다시 로그인해 주세요.');
       return;
     }
+    if (isDelegated && !hasDelegatedConsent) {
+      setSubmitError('개인정보 및 매물 공개 동의가 확인된 접수만 초안으로 저장할 수 있습니다.');
+      return;
+    }
 
     setSubmitting(true);
     try {
       // 수정 모드도 body 는 buildPayload() 그대로 — agent_* 는 여전히 보내지 않는다(서버가 채운다).
-      const res = await fetch(isEdit ? `${CREATE_ENDPOINT}/${editId}` : CREATE_ENDPOINT, {
+      const endpoint = isDelegated ? '/api/admin/stay-leads' : isEdit ? `${CREATE_ENDPOINT}/${editId}` : CREATE_ENDPOINT;
+      const res = await fetch(endpoint, {
         method: isEdit ? 'PATCH' : 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(buildPayload()),
+        body: JSON.stringify(
+          isDelegated ? { lead_id: delegatedLeadId, stay: buildPayload() } : buildPayload()
+        ),
       });
 
-      const data = (await res.json().catch(() => null)) as (Stay & { error?: string }) | null;
+      const data = (await res.json().catch(() => null)) as
+        | (Stay & { error?: string })
+        | { success?: boolean; stay?: Stay; error?: string }
+        | null;
 
       if (!res.ok) {
         setSubmitError(
@@ -692,13 +771,21 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
         return;
       }
 
-      setCreated(data as Stay);
+      const createdStay = isDelegated && data && 'stay' in data ? data.stay : (data as Stay | null);
+      if (!createdStay?.id) {
+        setSubmitError('저장 응답을 확인할 수 없습니다. 목록을 새로고침해 상태를 확인해 주세요.');
+        return;
+      }
+      setCreated(createdStay);
+      if (isDelegated) onDelegatedCreated?.(createdStay);
     } catch (err) {
       console.error('[stay/new] submit failed', err);
       setSubmitError(
         isEdit
           ? '네트워크 오류로 수정하지 못했습니다. 다시 시도해 주세요.'
-          : '네트워크 오류로 등록하지 못했습니다. 다시 시도해 주세요.'
+          : isDelegated
+            ? '네트워크 오류로 위임 초안을 저장하지 못했습니다. 다시 시도해 주세요.'
+            : '네트워크 오류로 등록하지 못했습니다. 다시 시도해 주세요.'
       );
     } finally {
       setSubmitting(false);
@@ -728,11 +815,21 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
           로그인 후 이 페이지로 돌아옵니다.
         </p>
         <Link
-          href={LOGIN_PATH}
+          href={loginPath}
           className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           로그인하러 가기
         </Link>
+      </div>
+    );
+  }
+
+  if (isEdit && isDelegated) {
+    return (
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+        <ShieldAlert className="mx-auto h-7 w-7 text-red-600" aria-hidden />
+        <h3 className="mt-3 text-lg font-bold text-slate-900">잘못된 등록 요청입니다</h3>
+        <p className="mt-2 text-sm text-slate-600">매물 수정과 접수 위임 등록은 동시에 진행할 수 없습니다.</p>
       </div>
     );
   }
@@ -778,11 +875,15 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
           <CheckCircle2 className="h-7 w-7 text-emerald-600" aria-hidden />
         </div>
-        <h3 className="mt-4 text-lg font-bold text-slate-900">매물이 등록되었습니다</h3>
+        <h3 className="mt-4 text-lg font-bold text-slate-900">
+          {isDelegated ? '소유주 확인 대기 초안이 저장되었습니다' : '매물이 등록되었습니다'}
+        </h3>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
-          {created.is_approved
+          {isDelegated
+            ? '소유주가 현재 초안 내용을 확인한 뒤 관리자가 별도로 승인해야 공개됩니다.'
+            : created.is_approved
             ? '등록한 매물이 목록에 노출됩니다.'
-            : '사업자 인증 전 등록 매물은 관리자 승인 후 목록에 노출됩니다.'}
+            : '등록한 매물은 검토를 거쳐 공개됩니다.'}
         </p>
         <div className="mt-5 inline-flex flex-col items-center rounded-xl bg-slate-50 px-6 py-3">
           <span className="text-xs text-slate-500">매물 번호</span>
@@ -790,10 +891,10 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
         </div>
         <div className="mt-6 flex flex-col justify-center gap-2 sm:flex-row">
           <Link
-            href={`/stay/${created.id}`}
+            href={isDelegated ? '/stay/admin' : '/agent/stays'}
             className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
-            등록한 매물 보기
+            {isDelegated ? '접수 관리로' : '내 매물 관리로'}
           </Link>
           <Link
             href="/stay"
@@ -810,11 +911,11 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       {/* 사업자 미인증 배너 — 상시 노출 */}
-      {!isVerified && (
+      {!isVerified && !isDelegated && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <p className="leading-relaxed">
-            사업자 인증 전 계정입니다. 등록 후 승인을 거쳐 목록에 노출됩니다.
+            등록한 매물은 검토를 거쳐 공개됩니다. 입력한 내용과 임대 조건을 확인해 주세요.
           </p>
         </div>
       )}
@@ -919,6 +1020,11 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
           {errors.detail_address && <p className={errorText}>{errors.detail_address}</p>}
         </div>
 
+        {addressMeta && (
+          <button type="button" disabled={lookupState === 'loading'} onClick={() => void runLookup(address, addressMeta)} className="mt-3 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:border-cyan-500 disabled:opacity-50">
+            건물 정보 불러오기 (선택)
+          </button>
+        )}
         {lookupState === 'loading' && (
           <p className="mt-3 inline-flex items-center gap-2 text-xs text-slate-500" role="status">
             <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
@@ -1151,7 +1257,29 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
 
       {/* 5. 임대조건 */}
       <FormSection icon={Wallet} title="임대조건">
+        {legacyMonthlyHost && ownerType === 'owner' && dealType === 'short_term' && <div className="mb-4 rounded-xl border border-slate-200 p-4">
+          <label htmlFor="stay-host-price-mode" className={labelBase}>기존 호스트 매물의 요금 방식</label>
+          <select id="stay-host-price-mode" value={keepMonthlyHost ? 'monthly' : 'weekly'} onChange={(e) => setKeepMonthlyHost(e.target.value === 'monthly')} className={inputBase}>
+            <option value="monthly">기존 월 임대료 유지</option>
+            <option value="weekly">주 임대료로 전환</option>
+          </select>
+          <p className="mt-2 text-xs text-slate-500">월 임대료를 유지하면 기존 문의 방식으로 안내됩니다. 날짜별 예상 금액을 제공하려면 주 임대료를 직접 설정하세요.</p>
+        </div>}
+        {isHostPricing && <p className="mb-4 rounded-xl bg-blue-50 p-4 text-sm leading-6 text-blue-800">호스트 직접 임대는 주 임대료로 안내합니다. 게스트가 입주·퇴실일을 선택하면 7일 단위 요금과 남은 일수 요금을 계산합니다. 문의 후 실제 임대 가능 여부와 계약 조건을 확정하세요.</p>}
         <div className="grid gap-4 sm:grid-cols-2">
+          {isHostPricing ? <>
+            <div id="stay-field-weekly_fee_won">
+              <label htmlFor="stay-weekly" className={labelBase}>주 임대료 · 7일 (만원) <span className="text-red-500">*</span></label>
+              <input id="stay-weekly" type="text" inputMode="decimal" value={weeklyManwon} onChange={(e) => setWeeklyManwon(e.target.value)} placeholder="예: 25" className={inputBase} />
+              {errors.weekly_fee_won && <p className={errorText}>{errors.weekly_fee_won}</p>}
+            </div>
+            <div id="stay-field-daily_fee_won">
+              <label htmlFor="stay-daily" className={labelBase}>남은 일수의 1일 임대료 (만원 · 선택)</label>
+              <input id="stay-daily" type="text" inputMode="decimal" value={dailyManwon} onChange={(e) => setDailyManwon(e.target.value)} placeholder="미입력 시 주 임대료 ÷ 7" className={inputBase} />
+              <p className="mt-1 text-xs text-slate-500">예: 8일은 주 임대료 + 1일 임대료. 미입력 시 7분의 1로 계산합니다.</p>
+              {errors.daily_fee_won && <p className={errorText}>{errors.daily_fee_won}</p>}
+            </div>
+          </> : (
           <div id="stay-field-monthly_fee_won">
             <label htmlFor="stay-monthly" className={labelBase}>
               월 임대료 (만원) <span className="text-red-500">*</span>
@@ -1167,6 +1295,7 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
             />
             {errors.monthly_fee_won && <p className={errorText}>{errors.monthly_fee_won}</p>}
           </div>
+          )}
           <div id="stay-field-deposit_won">
             <label htmlFor="stay-deposit" className={labelBase}>
               보증금 (만원)
@@ -1184,7 +1313,7 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
           </div>
           <div id="stay-field-maintenance_fee_won">
             <label htmlFor="stay-maintenance" className={labelBase}>
-              관리비 (만원)
+              {isHostPricing ? '월 관리비 (만원 · 30일 기준 일할 계산)' : '관리비 (만원)'}
             </label>
             <input
               id="stay-maintenance"
@@ -1196,6 +1325,7 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
               className={inputBase}
             />
             {errors.maintenance_fee_won && <p className={errorText}>{errors.maintenance_fee_won}</p>}
+            {isHostPricing && <p className="mt-1 text-xs text-slate-500">관리비 없음은 0, 임대료에 포함이면 아래 포함 항목을 선택하세요.</p>}
           </div>
           <div className="flex flex-col justify-end gap-2">
             <label htmlFor="stay-maintenance-included" className="flex cursor-pointer items-start gap-3">
@@ -1265,7 +1395,7 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
           </div>
           <div id="stay-field-available_to">
             <label htmlFor="stay-available-to" className={labelBase}>
-              임대 종료일
+              {isHostPricing ? '퇴실 가능한 마지막 날짜' : '임대 종료일'}
             </label>
             <input
               id="stay-available-to"
@@ -1378,32 +1508,48 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
 
       {/* 7. 사진 */}
       <FormSection icon={Images} title="사진">
-        <div id="stay-field-images">
-          <StayImageUploader
-            value={images}
-            onChange={setImages}
-            onUploadingChange={setImagesUploading}
-            error={errors.images}
-          />
-        </div>
+        {isDelegated && !hasDelegatedConsent ? (
+          <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+            매물 공개 동의가 확인되지 않아 사진을 등록할 수 없습니다.
+          </p>
+        ) : (
+          <div id="stay-field-images">
+            <StayImageUploader
+              value={images}
+              onChange={setImages}
+              onUploadingChange={setImagesUploading}
+              error={errors.images}
+            />
+          </div>
+        )}
       </FormSection>
 
       {/* 8. 등록주체 · 중개사표기 */}
       <FormSection icon={UserCheck} title="등록 주체 · 중개사 표기">
         <div id="stay-field-owner_type">
-          <StayAgentFields
-            ownerType={ownerType}
-            onOwnerTypeChange={setOwnerType}
-            isExclusive={isExclusive}
-            onIsExclusiveChange={setIsExclusive}
-            onSnapshotLoaded={setAgentSnapshot}
-            error={errors.owner_type}
-          />
+          {isDelegated ? (
+            <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <p className="text-sm font-semibold text-blue-900">임대인 직접 등록 · 위임 초안</p>
+              <p className="mt-1 text-xs leading-5 text-blue-700">
+                등록 주체와 소유 계정은 서버가 접수 신청자로 고정합니다. 저장 후 소유주 확인과 관리자 승인이 모두 끝나야 공개됩니다.
+              </p>
+            </div>
+          ) : (
+            <StayAgentFields
+              ownerType={ownerType}
+              onOwnerTypeChange={setOwnerType}
+              isExclusive={isExclusive}
+              onIsExclusiveChange={setIsExclusive}
+              onSnapshotLoaded={setAgentSnapshot}
+              error={errors.owner_type}
+            />
+          )}
         </div>
       </FormSection>
 
       {/* 9. 연락처 */}
       <FormSection icon={Phone} title="연락처">
+        <p className="mb-4 text-xs leading-6 text-slate-500">이 연락처는 운영 확인용이며 공개 매물에 표시되지 않습니다. 게스트 문의는 문의함에서 확인하세요. 중개사무소 업무 연락처는 중개사 정보에 별도로 표시됩니다.</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <div id="stay-field-contact_name">
             <label htmlFor="stay-contact-name" className={labelBase}>
@@ -1510,18 +1656,20 @@ export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
         {submitting ? (
           <span className="inline-flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            {isEdit ? '저장 중...' : '등록 중...'}
+            {isEdit ? '저장 중...' : isDelegated ? '초안 저장 중...' : '등록 중...'}
           </span>
         ) : imagesUploading ? (
           '사진 등록이 끝나면 제출할 수 있습니다'
         ) : isEdit ? (
           '수정 내용 저장하기'
+        ) : isDelegated ? (
+          '소유주 확인 대기 초안 저장하기'
         ) : (
           '매물 등록하기'
         )}
       </button>
       <p className="text-center text-xs text-slate-500">
-        매물 유형 · 제목 · 주소 · 월 임대료 · 담당자 이름 · 휴대폰 번호는 필수입니다.
+        매물 유형 · 제목 · 주소 · {isHostPricing ? '주 임대료' : '월 임대료'} · 담당자 이름 · 휴대폰 번호는 필수입니다.
       </p>
     </form>
   );

@@ -7,6 +7,8 @@
 // 그래서 순수 포맷 유틸은 반드시 클라이언트 경계 밖(이 파일)에 둔다.
 // 원래 StayPrimitives.tsx('use client') 안에 있던 것을 옮겨온 것이다.
 
+import type { Stay } from '@/types/stay';
+
 // ---------- 금액 포맷 ----------
 // stays 도메인은 전부 "원 단위" 정수다. (시세 도메인의 만원 단위와 혼동 금지)
 
@@ -33,15 +35,28 @@ export function formatDepositMonthly(
   return parts.join(' / ') || '가격 문의';
 }
 
+/** 호스트 단기임대는 등록된 주 요금을 그대로, 중개 매물은 기존 월 조건으로 표시한다. */
+export function formatStayPrice(
+  stay: Pick<Stay, 'owner_type' | 'deal_type' | 'weekly_fee_won' | 'monthly_fee_won' | 'deposit_won'>
+): string {
+  if (stay.owner_type === 'owner' && stay.deal_type === 'short_term' &&
+    stay.weekly_fee_won != null && Number.isFinite(stay.weekly_fee_won) && stay.weekly_fee_won > 0) {
+    const price = `주 ${stay.weekly_fee_won.toLocaleString('ko-KR')}원`;
+    return stay.deposit_won != null
+      ? `${price} / 보증금 ${stay.deposit_won.toLocaleString('ko-KR')}원`
+      : price;
+  }
+  return formatDepositMonthly(stay.deposit_won, stay.monthly_fee_won);
+}
+
 /** ㎡ → 평 (소수 1자리). 면적 표기는 항상 "㎡(평)" 병기한다. */
 export function formatArea(m2: number | null | undefined): string {
   if (m2 == null) return '-';
   return `${m2}㎡ (${(m2 / 3.3058).toFixed(1)}평)`;
 }
 
-/** 최소 계약기간 일수 → "3개월 이상" */
+/** 최소 계약기간은 저장된 일수 그대로 표시한다. */
 export function formatMinStay(days: number | null | undefined): string {
   if (days == null) return '기간 협의';
-  const months = Math.round(days / 30);
-  return months >= 12 ? `${Math.round(months / 12)}년 이상` : `${months}개월 이상`;
+  return `${days}일 이상`;
 }

@@ -9,7 +9,7 @@ import {
 // StayPrimitives 는 'use client' 라 거기서 re-export 하면 서버에서 호출 불가(런타임 폭발).
 import {
   formatArea,
-  formatDepositMonthly,
+  formatStayPrice,
   formatMinStay,
   formatWon,
 } from '@/lib/stay/format';
@@ -76,11 +76,11 @@ export default function StayCard({
   const tier1 = joinDot([STAY_TYPE_LABELS[stay.stay_type], region || null]);
 
   // ── 2단: 가격 (카드의 주인공) ──
-  const price = formatDepositMonthly(stay.deposit_won, stay.monthly_fee_won);
+  const price = formatStayPrice(stay);
 
   // ── 3단: 관리비 · 최소 계약기간 ──
   const tier3 = joinDot([
-    stay.maintenance_fee_won != null ? `관리비 ${formatWon(stay.maintenance_fee_won)}` : null,
+    stay.maintenance_included === true ? '관리비 포함' : stay.maintenance_fee_won != null ? `월 관리비 ${formatWon(stay.maintenance_fee_won)}` : '관리비 확인 필요',
     stay.min_stay_days != null ? formatMinStay(stay.min_stay_days) : null,
   ]);
 
@@ -96,7 +96,7 @@ export default function StayCard({
   // DB 행은 amenities 가 null 로 올 수 있다(타입은 NOT NULL 이지만 방어).
   const amenities = (stay.amenities ?? []).slice(0, AMENITY_VISIBLE).map(amenityLabel);
   const tier5 = isOwner
-    ? '임대인 직접등록'
+    ? (stay.deal_type === 'short_term' ? '호스트 직접 임대' : '임대인 직접등록')
     : (stay.agent_office_name ?? (amenities.length > 0 ? amenities.join(' · ') : '중개사무소'));
   const Tier5Icon = isOwner ? UserRound : stay.agent_office_name ? Building2 : BadgeCheck;
 
@@ -109,12 +109,12 @@ export default function StayCard({
       onMouseLeave={onMouseLeave}
       className={
         isTile
-          ? `flex w-full flex-col overflow-hidden rounded-xl border border-gray-200 transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
-              active ? 'bg-blue-50 ring-2 ring-inset ring-blue-500' : 'bg-white hover:shadow-md'
+          ? `flex w-full flex-col overflow-hidden rounded-xl border border-gray-200 transition-shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-500 ${
+              active ? 'bg-cyan-50 ring-2 ring-inset ring-cyan-500' : 'bg-white hover:shadow-md'
             }`
-          : `flex h-[120px] w-full items-stretch gap-3 overflow-hidden border-b border-gray-100 pr-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 ${
+          : `flex h-[120px] w-full items-stretch gap-3 overflow-hidden border-b border-gray-100 pr-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-500 ${
               active
-                ? 'bg-blue-50 ring-2 ring-inset ring-blue-500'
+                ? 'bg-cyan-50 ring-2 ring-inset ring-cyan-500'
                 : 'bg-white hover:bg-gray-50'
             }`
       }
@@ -165,9 +165,9 @@ export default function StayCard({
           <p className="truncate text-[11px] leading-[14px] text-gray-400">{tier1}</p>
         )}
 
-        {/* 2단 — 가격. 일/주 단가는 사업모델상 취급하지 않으므로 렌더하지 않는다. */}
+        {/* 등록 유형에 맞는 주·월 요금과 보증금을 구분한다. */}
         <p
-          className={`truncate font-extrabold tracking-tight text-gray-900 ${
+          className={`font-extrabold tracking-tight text-gray-900 ${
             isTile ? 'text-[17px] leading-[22px]' : 'text-[15px] leading-[20px]'
           }`}
         >
@@ -187,11 +187,11 @@ export default function StayCard({
         {/* 5단 — 작은 컬러 아이콘 + 한 줄 */}
         <p
           className={`flex items-center gap-1 text-[11px] leading-[14px] ${
-            isOwner ? 'text-blue-600' : 'text-gray-400'
+            isOwner ? 'text-cyan-700' : 'text-gray-400'
           }`}
         >
           <Tier5Icon
-            className={`h-3 w-3 flex-shrink-0 ${isOwner ? 'text-blue-600' : 'text-cyan-600'}`}
+            className={`h-3 w-3 flex-shrink-0 ${isOwner ? 'text-cyan-700' : 'text-cyan-600'}`}
           />
           <span className="truncate">{tier5}</span>
         </p>

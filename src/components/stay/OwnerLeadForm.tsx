@@ -1,486 +1,149 @@
 'use client';
 
-// 소유주(임대인) 매물 접수 폼.
-//
-// ⚠️ 이 폼은 우체국 무주소 광고우편 → QR → 랜딩 경로로 들어온 소유주가
-//    "자발적으로" 개인정보를 제공하는 지점이다. 동의 기반 수집의 시작점이므로
-//    필수동의(privacy_agreed)와 선택동의(marketing_agreed)를 절대 합치지 않는다.
-//    (근거: 개인정보보호법 제22조, supabase/migrations/036_stay_owner_leads.sql)
-//
-// ⚠️ 요금 정책: 이 서비스는 월 임대료 + 보증금 상품만 취급한다.
-//    일 단가·주 단가 입력란을 만들지 않고, '숙박/예약/체크인/1박' 어휘를 쓰지 않는다.
-//
-// v1 은 DB 저장을 하지 않는다. 제출 시 payload 를 console.log 하고 완료 화면으로 교체한다.
-
 import { useMemo, useState } from 'react';
-import {
-  User,
-  MapPin,
-  Building2,
-  Wallet,
-  ShieldCheck,
-  CheckCircle2,
-  Loader2,
-} from 'lucide-react';
+import Link from 'next/link';
+import { CheckCircle2, Loader2, LockKeyhole } from 'lucide-react';
 import AddressSearch from '@/components/shared/AddressSearch';
-import FormSection from '@/components/shared/FormSection';
-import {
-  STAY_TYPE_LABELS,
-  STAY_ROOM_STRUCTURES,
-  STAY_ROOM_STRUCTURE_LABELS,
-  type StayType,
-  type StayRoomStructure,
-} from '@/lib/stay/constants';
-import {
-  SELECTABLE_STAY_TYPES,
-  PHONE_PATTERN,
-  formatPhone,
-  manwonToWon,
-  toNumberOrNull,
-} from '@/lib/stay/form-utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { STAY_TYPE_LABELS, type StayType } from '@/lib/stay/constants';
+import { SELECTABLE_STAY_TYPES, PHONE_PATTERN, formatPhone, manwonToWon } from '@/lib/stay/form-utils';
 
-/** 접수번호 (임시 난수 — DB 저장 전이므로 화면 안내용) */
-function makeReceiptNo(): string {
-  const d = new Date();
-  const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
-  const rand = Math.floor(Math.random() * 900000) + 100000;
-  return `OL-${ymd}-${rand}`;
+interface OwnerLeadFormProps { sourceCode: string | null }
+interface AuthenticatedOwnerLeadFormProps extends OwnerLeadFormProps { accessToken: string }
+
+type FormErrors = Partial<Record<'name' | 'phone' | 'address' | 'stayType' | 'deposit' | 'weeklyFee' | 'privacy' | 'publication', string>>;
+
+const inputClass = 'w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100';
+const labelClass = 'mb-1.5 block text-sm font-semibold text-slate-700';
+
+function parseOptionalWon(value: string) {
+  return value.trim() ? manwonToWon(value) : undefined;
 }
-
-interface OwnerLeadFormProps {
-  /** 랜딩의 ?src= 캠페인 코드. 036.source_code 로 들어간다. */
-  sourceCode: string | null;
-}
-
-const inputBase =
-  'w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none';
-const labelBase = 'block text-sm font-medium text-slate-700 mb-1';
 
 export default function OwnerLeadForm({ sourceCode }: OwnerLeadFormProps) {
-  // 연락처
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
+  const { user, session, isLoading: authLoading } = useAuth();
+  const loginPath = `/agent/auth/login?redirect=${encodeURIComponent(`/stay/owner${sourceCode ? `?src=${sourceCode}` : ''}#assisted-registration`)}`;
 
-  // 위치
-  const [address, setAddress] = useState('');
-  const [detailAddress, setDetailAddress] = useState('');
+  if (authLoading) return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center" aria-busy="true"><Loader2 className="mx-auto h-6 w-6 animate-spin text-blue-600" /><p className="mt-3 text-sm text-slate-600">로그인 정보를 확인하는 중입니다…</p></div>;
 
-  // 개요
-  const [stayType, setStayType] = useState<Exclude<StayType, 'living_facility'> | ''>('');
-  const [roomStructure, setRoomStructure] = useState<StayRoomStructure | ''>('');
-  const [areaM2, setAreaM2] = useState('');
-  const [floor, setFloor] = useState('');
-
-  // 희망 조건 (만원 단위 입력)
-  const [depositManwon, setDepositManwon] = useState('');
-  const [monthlyManwon, setMonthlyManwon] = useState('');
-  const [availableFrom, setAvailableFrom] = useState('');
-
-  const [memo, setMemo] = useState('');
-
-  // 동의 — 필수/선택 완전 분리
-  const [privacyAgreed, setPrivacyAgreed] = useState(false);
-  const [marketingAgreed, setMarketingAgreed] = useState(false);
-
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const [receiptNo, setReceiptNo] = useState<string | null>(null);
-
-  const canSubmit = useMemo(
-    () =>
-      privacyAgreed &&
-      name.trim().length > 0 &&
-      PHONE_PATTERN.test(phone) &&
-      address.trim().length > 0 &&
-      !submitting,
-    [privacyAgreed, name, phone, address, submitting]
+  if (!user || !session) return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+      <LockKeyhole className="mx-auto h-9 w-9 text-blue-600" aria-hidden />
+      <h3 className="mt-4 text-lg font-bold">로그인이 필요합니다</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600">실제 호스트의 신청으로 연결하기 위해 로그인 후 접수할 수 있습니다.</p>
+      <Link href={loginPath} className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">로그인하고 신청하기</Link>
+    </div>
   );
 
-  function validate(): Record<string, string> {
-    const next: Record<string, string> = {};
+  return <AuthenticatedOwnerLeadForm key={user.id} sourceCode={sourceCode} accessToken={session.access_token} />;
+}
+
+function AuthenticatedOwnerLeadForm({ sourceCode, accessToken }: AuthenticatedOwnerLeadFormProps) {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+  const [detailAddress, setDetailAddress] = useState('');
+  const [stayType, setStayType] = useState<Exclude<StayType, 'living_facility'> | ''>('');
+  const [depositManwon, setDepositManwon] = useState('');
+  const [weeklyManwon, setWeeklyManwon] = useState('');
+  const [memo, setMemo] = useState('');
+  const [privacyAgreed, setPrivacyAgreed] = useState(false);
+  const [publicationAgreed, setPublicationAgreed] = useState(false);
+  const [marketingAgreed, setMarketingAgreed] = useState(false);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [requestError, setRequestError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [savedId, setSavedId] = useState<number | null>(null);
+
+  const canSubmit = useMemo(() => !submitting, [submitting]);
+
+  function validate() {
+    const next: FormErrors = {};
     if (!name.trim()) next.name = '이름을 입력해 주세요.';
     else if (name.trim().length > 50) next.name = '이름은 50자 이내로 입력해 주세요.';
-
-    if (!phone.trim()) next.phone = '휴대폰 번호를 입력해 주세요.';
-    else if (!PHONE_PATTERN.test(phone)) next.phone = '010-0000-0000 형식으로 입력해 주세요.';
-
+    if (!PHONE_PATTERN.test(phone)) next.phone = '010-0000-0000 형식으로 입력해 주세요.';
     if (!address.trim()) next.address = '주소를 검색해 주세요.';
-    if (!privacyAgreed) next.privacyAgreed = '개인정보 수집·이용 동의가 필요합니다.';
+    if (!stayType) next.stayType = '공간 유형을 선택해 주세요.';
+    if (depositManwon.trim() && parseOptionalWon(depositManwon) === null) next.deposit = '0 이상의 숫자로 입력해 주세요.';
+    if (weeklyManwon.trim() && parseOptionalWon(weeklyManwon) === null) next.weeklyFee = '0 이상의 숫자로 입력해 주세요.';
+    if (!privacyAgreed) next.privacy = '개인정보 수집·이용 동의가 필요합니다.';
+    if (!publicationAgreed) next.publication = '초안 작성·게시 위임 동의가 필요합니다.';
     return next;
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    const found = validate();
-    setErrors(found);
-    if (Object.keys(found).length > 0) return;
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const nextErrors = validate();
+    setErrors(nextErrors);
+    setRequestError('');
+    if (Object.keys(nextErrors).length) return;
 
+    const desiredDepositWon = parseOptionalWon(depositManwon);
+    const desiredWeeklyFeeWon = parseOptionalWon(weeklyManwon);
     setSubmitting(true);
-    const now = new Date().toISOString();
-
-    const payload = {
-      // ---- 036 stay_owner_leads 컬럼 ----
-      name: name.trim(),
-      phone: phone.trim(),
-      address: [address.trim(), detailAddress.trim()].filter(Boolean).join(' '),
-      building_name: null as string | null, // v1 미수집 (소유주 입력 부담 최소화)
-      unit_count: null as number | null, // v1 미수집 (1호실 접수 기준)
-      memo: memo.trim() || null,
-      privacy_agreed: privacyAgreed,
-      privacy_agreed_at: privacyAgreed ? now : null,
-      marketing_agreed: marketingAgreed,
-      marketing_agreed_at: marketingAgreed ? now : null,
-      source_code: sourceCode,
-      // status / converted_stay_id / ip_hash / created_at 은 서버·DB가 정한다.
-
-      // ---- 036 에는 없는 매물 개요 (035 stays 로 전환할 때 쓰는 참고 정보) ----
-      detail: {
-        road_address: address.trim() || null,
-        unit_detail: detailAddress.trim() || null,
-        stay_type: stayType || null,
-        room_structure: roomStructure || null,
-        area_m2: toNumberOrNull(areaM2),
-        floor: toNumberOrNull(floor),
-        // 만원 단위 입력 → 원 단위 정수 (stays 도메인은 전부 원 단위)
-        deposit: manwonToWon(depositManwon),
-        monthly_fee: manwonToWon(monthlyManwon),
-        available_from: availableFrom || null,
-      },
-    };
-
-    // v1: API 호출 없음. 저장 연동 시 이 payload 를 그대로 서버로 보낸다.
-    console.log('[stay/owner] lead payload', payload);
-
-    setReceiptNo(makeReceiptNo());
-    setSubmitting(false);
+    try {
+      const response = await fetch('/api/stay-owner-leads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          name: name.trim(),
+          phone,
+          address: address.trim(),
+          ...(detailAddress.trim() && { detail_address: detailAddress.trim() }),
+          stay_type: stayType,
+          ...(desiredDepositWon !== undefined && { desired_deposit_won: desiredDepositWon }),
+          ...(desiredWeeklyFeeWon !== undefined && { desired_weekly_fee_won: desiredWeeklyFeeWon }),
+          ...(memo.trim() && { memo: memo.trim() }),
+          ...(sourceCode && { source_code: sourceCode }),
+          privacy_agreed: true,
+          publication_agreed: true,
+          marketing_agreed: marketingAgreed,
+        }),
+      });
+      const result = await response.json().catch(() => null) as { lead?: { id?: number }; error?: string } | null;
+      if (!response.ok || typeof result?.lead?.id !== 'number') throw new Error(result?.error || '신청을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      setSavedId(result.lead.id);
+    } catch (error) {
+      setRequestError(error instanceof Error ? error.message : '신청을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
-  // ---------- 완료 화면 ----------
-  if (receiptNo) {
-    return (
-      <div className="rounded-2xl bg-white border border-slate-200 p-8 text-center">
-        <div className="mx-auto w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center">
-          <CheckCircle2 className="w-7 h-7 text-emerald-600" />
-        </div>
-        <h3 className="mt-4 text-lg font-bold text-slate-900">접수되었습니다</h3>
-        <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-          담당 중개사가 1영업일 이내 연락드립니다.
-          <br />
-          접수 내용은 담당 중개사 배정 목적으로만 사용됩니다.
-        </p>
-        <div className="mt-5 inline-flex flex-col items-center rounded-xl bg-slate-50 px-6 py-3">
-          <span className="text-xs text-slate-500">접수번호</span>
-          <span className="mt-0.5 font-mono text-base font-semibold text-slate-900">{receiptNo}</span>
-        </div>
-      </div>
-    );
-  }
+  if (savedId !== null) return (
+    <div className="rounded-2xl border border-emerald-200 bg-white p-8 text-center">
+      <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-600" aria-hidden />
+      <h3 className="mt-4 text-xl font-bold">등록 도움 신청이 저장되었습니다</h3>
+      <p className="mt-2 text-sm leading-6 text-slate-600">신청 번호 #{savedId}로 저장했습니다. 운영자가 사진과 상세 조건을 확인하기 위해 연락드립니다.</p>
+      <Link href="/stay/requests" className="mt-6 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">내 등록 신청 확인</Link>
+    </div>
+  );
 
-  // ---------- 입력 폼 ----------
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-4">
-      {/* 연락처 */}
-      <FormSection icon={User} title="연락처">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="owner-name" className={labelBase}>
-              이름 <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="owner-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="홍길동"
-              autoComplete="name"
-              maxLength={50}
-              className={inputBase}
-            />
-            {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
-          </div>
-          <div>
-            <label htmlFor="owner-phone" className={labelBase}>
-              휴대폰 번호 <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="owner-phone"
-              type="tel"
-              inputMode="numeric"
-              value={phone}
-              onChange={(e) => setPhone(formatPhone(e.target.value))}
-              placeholder="010-0000-0000"
-              autoComplete="tel"
-              maxLength={13}
-              className={inputBase}
-            />
-            {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
-          </div>
-        </div>
-      </FormSection>
+    <form onSubmit={handleSubmit} noValidate className="space-y-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div><label htmlFor="owner-name" className={labelClass}>이름 <span className="text-red-600">*</span></label><input id="owner-name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" maxLength={50} className={inputClass} />{errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}</div>
+        <div><label htmlFor="owner-phone" className={labelClass}>연락처 <span className="text-red-600">*</span></label><input id="owner-phone" type="tel" inputMode="numeric" value={phone} onChange={(e) => setPhone(formatPhone(e.target.value))} autoComplete="tel" placeholder="010-0000-0000" maxLength={13} className={inputClass} />{errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}</div>
+      </div>
 
-      {/* 매물 위치 */}
-      <FormSection icon={MapPin} title="매물 위치">
-        <AddressSearch
-          address={address}
-          detailAddress={detailAddress}
-          onAddressChange={setAddress}
-          onDetailAddressChange={setDetailAddress}
-        />
-        {errors.address && <p className="mt-1 text-xs text-red-600">{errors.address}</p>}
-      </FormSection>
+      <div><span className={labelClass}>공간 주소 <span className="text-red-600">*</span></span><AddressSearch address={address} detailAddress={detailAddress} onAddressChange={setAddress} onDetailAddressChange={setDetailAddress} />{errors.address && <p className="mt-1 text-xs text-red-600">{errors.address}</p>}</div>
 
-      {/* 매물 개요 */}
-      <FormSection icon={Building2} title="매물 개요">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="owner-stay-type" className={labelBase}>
-              유형
-            </label>
-            <select
-              id="owner-stay-type"
-              value={stayType}
-              onChange={(e) =>
-                setStayType(e.target.value as Exclude<StayType, 'living_facility'> | '')
-              }
-              className={inputBase}
-            >
-              <option value="">선택해 주세요</option>
-              {SELECTABLE_STAY_TYPES.map((t) => (
-                <option key={t} value={t}>
-                  {STAY_TYPE_LABELS[t]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="owner-room-structure" className={labelBase}>
-              방 구조
-            </label>
-            <select
-              id="owner-room-structure"
-              value={roomStructure}
-              onChange={(e) => setRoomStructure(e.target.value as StayRoomStructure | '')}
-              className={inputBase}
-            >
-              <option value="">선택해 주세요</option>
-              {STAY_ROOM_STRUCTURES.map((s) => (
-                <option key={s} value={s}>
-                  {STAY_ROOM_STRUCTURE_LABELS[s]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="owner-area" className={labelBase}>
-              전용면적 (㎡)
-            </label>
-            <input
-              id="owner-area"
-              type="text"
-              inputMode="decimal"
-              value={areaM2}
-              onChange={(e) => setAreaM2(e.target.value)}
-              placeholder="예: 33.5"
-              className={inputBase}
-            />
-          </div>
-          <div>
-            <label htmlFor="owner-floor" className={labelBase}>
-              층
-            </label>
-            <input
-              id="owner-floor"
-              type="text"
-              inputMode="numeric"
-              value={floor}
-              onChange={(e) => setFloor(e.target.value)}
-              placeholder="예: 5"
-              className={inputBase}
-            />
-          </div>
-        </div>
-      </FormSection>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <div><label htmlFor="owner-stay-type" className={labelClass}>공간 유형 <span className="text-red-600">*</span></label><select id="owner-stay-type" value={stayType} onChange={(e) => setStayType(e.target.value as Exclude<StayType, 'living_facility'> | '')} className={inputClass}><option value="">선택해 주세요</option>{SELECTABLE_STAY_TYPES.map((type) => <option key={type} value={type}>{STAY_TYPE_LABELS[type]}</option>)}</select>{errors.stayType && <p className="mt-1 text-xs text-red-600">{errors.stayType}</p>}</div>
+        <div><label htmlFor="owner-deposit" className={labelClass}>희망 보증금 (만원)</label><input id="owner-deposit" inputMode="numeric" value={depositManwon} onChange={(e) => setDepositManwon(e.target.value)} placeholder="상담 후 결정 가능" className={inputClass} />{errors.deposit && <p className="mt-1 text-xs text-red-600">{errors.deposit}</p>}</div>
+        <div><label htmlFor="owner-weekly" className={labelClass}>희망 주 임대료 (만원)</label><input id="owner-weekly" inputMode="numeric" value={weeklyManwon} onChange={(e) => setWeeklyManwon(e.target.value)} placeholder="상담 후 결정 가능" className={inputClass} />{errors.weeklyFee && <p className="mt-1 text-xs text-red-600">{errors.weeklyFee}</p>}</div>
+      </div>
 
-      {/* 희망 조건 */}
-      <FormSection icon={Wallet} title="희망 조건">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label htmlFor="owner-deposit" className={labelBase}>
-              희망 보증금 (만원)
-            </label>
-            <input
-              id="owner-deposit"
-              type="text"
-              inputMode="numeric"
-              value={depositManwon}
-              onChange={(e) => setDepositManwon(e.target.value)}
-              placeholder="예: 300"
-              className={inputBase}
-            />
-          </div>
-          <div>
-            <label htmlFor="owner-monthly" className={labelBase}>
-              희망 월 임대료 (만원)
-            </label>
-            <input
-              id="owner-monthly"
-              type="text"
-              inputMode="numeric"
-              value={monthlyManwon}
-              onChange={(e) => setMonthlyManwon(e.target.value)}
-              placeholder="예: 90"
-              className={inputBase}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="owner-available-from" className={labelBase}>
-              입주 가능일
-            </label>
-            <input
-              id="owner-available-from"
-              type="date"
-              value={availableFrom}
-              onChange={(e) => setAvailableFrom(e.target.value)}
-              className={inputBase}
-            />
-          </div>
-          <div className="sm:col-span-2">
-            <label htmlFor="owner-memo" className={labelBase}>
-              메모 (선택)
-            </label>
-            <textarea
-              id="owner-memo"
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              rows={4}
-              placeholder="담당 중개사에게 전달할 내용이 있으면 적어주세요."
-              className={`${inputBase} resize-y`}
-            />
-          </div>
-        </div>
-        <p className="mt-3 text-xs text-slate-500">
-          희망 조건은 참고용이며, 실제 계약 조건은 담당 중개사와 협의해 정합니다.
-        </p>
-      </FormSection>
+      <div><label htmlFor="owner-memo" className={labelClass}>메모 (선택)</label><textarea id="owner-memo" value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={2000} rows={4} placeholder="운영자에게 미리 알릴 내용을 적어주세요." className={`${inputClass} resize-y`} /></div>
 
-      {/* 동의 — 필수/선택 분리 */}
-      <FormSection icon={ShieldCheck} title="동의">
-        {/* 필수 */}
-        <div className="rounded-xl border border-slate-200 p-4">
-          <label htmlFor="agree-privacy" className="flex items-start gap-3 cursor-pointer">
-            <input
-              id="agree-privacy"
-              type="checkbox"
-              checked={privacyAgreed}
-              onChange={(e) => setPrivacyAgreed(e.target.checked)}
-              className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-slate-800">
-              <span className="font-semibold text-blue-700">[필수]</span> 개인정보 수집·이용에 동의합니다.
-            </span>
-          </label>
-          <details className="mt-3">
-            <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
-              동의 내용 전문 보기
-            </summary>
-            <div className="mt-2 space-y-2 rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
-              <p>
-                <strong className="text-slate-800">① 수집·이용 목적</strong>
-                <br />
-                단기임대 매물 등록 접수 처리, 담당 공인중개사 배정 및 연결, 매물 정보 확인을 위한 연락,
-                접수 이력 관리.
-              </p>
-              <p>
-                <strong className="text-slate-800">② 수집 항목</strong>
-                <br />
-                (필수) 이름, 휴대폰 번호, 매물 주소 · (선택) 상세주소, 매물 유형·방 구조·전용면적·층,
-                희망 보증금·월 임대료·입주 가능일, 메모, 유입 캠페인 코드.
-              </p>
-              <p>
-                <strong className="text-slate-800">③ 보유·이용 기간</strong>
-                <br />
-                동의일로부터 매물 등록이 종료된 날로부터 1년까지 보유 후 파기합니다. 매물 등록으로
-                이어지지 않은 접수는 접수일로부터 6개월 후 파기합니다. 관계 법령이 별도 보존 기간을
-                정한 경우 그 기간을 따릅니다.
-              </p>
-              <p>
-                <strong className="text-slate-800">④ 동의 거부 권리 및 거부 시 불이익</strong>
-                <br />
-                귀하는 이 동의를 거부할 권리가 있습니다. 다만 위 필수 항목에 동의하지 않으시면 매물
-                접수와 담당 공인중개사 배정이 불가능합니다. 동의 후에도 언제든지 동의를 철회하고
-                개인정보의 열람·정정·삭제를 요청하실 수 있습니다.
-              </p>
-            </div>
-          </details>
-          {errors.privacyAgreed && (
-            <p className="mt-2 text-xs text-red-600">{errors.privacyAgreed}</p>
-          )}
-        </div>
+      <fieldset className="space-y-3"><legend className="mb-2 text-base font-bold">동의</legend>
+        <div className="rounded-xl border border-slate-200 p-4"><label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={privacyAgreed} onChange={(e) => setPrivacyAgreed(e.target.checked)} className="mt-0.5 h-5 w-5" /><span className="text-sm font-semibold"><span className="text-blue-700">[필수]</span> 개인정보 수집·이용 동의</span></label><div className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-6 text-slate-600"><p>수집·이용 주체: 온시아 공인중개사(부인 STAY 운영자)</p><p>목적: 등록 상담, 운영자의 매물 초안 대리 작성 및 호스트 검토 진행</p><p>항목: 이름, 연락처, 공간 주소, 공간 유형과 희망 임대 조건, 선택 메모</p><p>열람: 등록 업무를 담당하는 운영자가 신청 내용을 열람합니다.</p><p>보유 기간: 신청 처리 종료일로부터 1년 후 파기합니다.</p><p>동의를 거부할 수 있으나, 거부하면 등록 도움을 신청할 수 없습니다.</p></div>{errors.privacy && <p className="mt-2 text-xs text-red-600">{errors.privacy}</p>}</div>
+        <div className="rounded-xl border border-slate-200 p-4"><label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={publicationAgreed} onChange={(e) => setPublicationAgreed(e.target.checked)} className="mt-0.5 h-5 w-5" /><span className="text-sm font-semibold"><span className="text-blue-700">[필수]</span> 초안 작성·사진 게시 위임 동의</span></label><p className="mt-2 pl-8 text-xs leading-6 text-slate-600">운영자에게 매물 초안 작성과 제공한 사진의 게시를 요청·허락합니다. 공개 전 초안의 정보와 사진을 직접 확인한 뒤 게시를 승인합니다. 이 동의는 임대차 계약 체결 동의가 아닙니다.</p>{errors.publication && <p className="mt-2 text-xs text-red-600">{errors.publication}</p>}</div>
+        <div className="rounded-xl border border-slate-200 p-4"><label className="flex cursor-pointer items-start gap-3"><input type="checkbox" checked={marketingAgreed} onChange={(e) => setMarketingAgreed(e.target.checked)} className="mt-0.5 h-5 w-5" /><span className="text-sm font-semibold"><span className="text-slate-500">[선택]</span> 마케팅 정보 수신 동의</span></label><div className="mt-2 pl-8 text-xs leading-6 text-slate-600"><p>신규 서비스, 임대 관련 정보와 이벤트·혜택을 문자메시지, 알림톡 또는 이메일로 받을 수 있습니다. 동의 철회 시까지 이용하며 언제든 철회할 수 있습니다.</p><p className="mt-1">등록 상담 연락과 별개의 선택 항목이며, 동의하지 않아도 신청 처리에는 영향이 없습니다.</p></div></div>
+      </fieldset>
 
-        {/* 선택 — 필수와 절대 합치지 않는다 */}
-        <div className="mt-3 rounded-xl border border-slate-200 p-4">
-          <label htmlFor="agree-marketing" className="flex items-start gap-3 cursor-pointer">
-            <input
-              id="agree-marketing"
-              type="checkbox"
-              checked={marketingAgreed}
-              onChange={(e) => setMarketingAgreed(e.target.checked)}
-              className="mt-0.5 h-5 w-5 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-slate-800">
-              <span className="font-semibold text-slate-500">[선택]</span> 마케팅 정보 수신에 동의합니다.
-            </span>
-          </label>
-          <details className="mt-3">
-            <summary className="cursor-pointer text-xs font-medium text-slate-500 hover:text-slate-700">
-              동의 내용 전문 보기
-            </summary>
-            <div className="mt-2 space-y-2 rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
-              <p>
-                <strong className="text-slate-800">① 수집·이용 목적</strong>
-                <br />
-                신규 서비스 및 임대 관련 정보, 이벤트·혜택 안내를 문자메시지·알림톡·이메일로 발송.
-              </p>
-              <p>
-                <strong className="text-slate-800">② 수집 항목</strong>
-                <br />
-                이름, 휴대폰 번호.
-              </p>
-              <p>
-                <strong className="text-slate-800">③ 보유·이용 기간</strong>
-                <br />
-                동의 철회 시까지 보유하며, 철회 즉시 발송을 중단하고 해당 목적의 정보를 파기합니다.
-              </p>
-              <p>
-                <strong className="text-slate-800">④ 동의 거부 권리 및 거부 시 불이익</strong>
-                <br />
-                선택 항목이므로 동의하지 않으셔도 매물 접수와 담당 중개사 배정에 아무런 불이익이
-                없습니다. 동의하지 않으실 경우 광고성 정보만 받지 못합니다.
-              </p>
-            </div>
-          </details>
-        </div>
-      </FormSection>
-
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4 text-base font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {submitting ? (
-          <span className="inline-flex items-center gap-2">
-            <Loader2 className="w-4 h-4 animate-spin" />
-            접수 중...
-          </span>
-        ) : (
-          '무료로 매물 접수하기'
-        )}
-      </button>
-      {!privacyAgreed && (
-        <p className="text-center text-xs text-slate-500">
-          개인정보 수집·이용(필수)에 동의하셔야 접수할 수 있습니다.
-        </p>
-      )}
+      {requestError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{requestError}</p>}
+      <button type="submit" disabled={!canSubmit} className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4 font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50">{submitting ? <span className="inline-flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" />저장 중…</span> : '등록 도움 신청하기'}</button>
     </form>
   );
 }

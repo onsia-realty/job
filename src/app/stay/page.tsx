@@ -1,9 +1,15 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import Header from '@/components/shared/Header';
 import StayHomeClient from './StayHomeClient';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: '부인 STAY | 나의 일상이 이어지는 단기임대',
+  description: '필요한 기간, 원하는 동네에서 단기임대 공간을 찾아보세요. 사진과 임대 조건을 비교하고 호스트와 중개사에게 문의할 수 있습니다.',
+};
 
 /**
  * /stay — 단기임대 메인(랜딩).

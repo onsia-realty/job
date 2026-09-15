@@ -20,6 +20,7 @@ import Header from '@/components/shared/Header';
 import StayGallery from '@/components/stay/StayGallery';
 import StayAgentBlock from '@/components/stay/StayAgentBlock';
 import StayInquiryBar from '@/components/stay/StayInquiryBar';
+import StayHostQuote from '@/components/stay/StayHostQuote';
 import StayLocationMap from '@/components/stay/StayLocationMap.client';
 import StayNearbyPrice, { StayNearbyPriceSkeleton } from '@/components/stay/StayNearbyPrice';
 import { StayExclusiveBadge, StayStatusBadge } from '@/components/stay/StayPrimitives';
@@ -87,8 +88,7 @@ async function fetchNearby(sigungu: string, excludeId: string): Promise<Stay[]> 
   }
 }
 
-// ⚠️ 사업모델/법적 제약: 예약·결제·숙박·체크인 개념을 화면에 노출하지 않는다.
-//    일단가(daily_fee_won)·주단가(weekly_fee_won) 는 전 건 null 이며 렌더 대상이 아니다.
+// 호스트 직접 단기임대는 날짜별 예상 견적·문의, 중개사 매물은 기존 중개 문의를 사용한다.
 
 // ---------- 포맷 헬퍼 (이 페이지 전용) ----------
 
@@ -208,7 +208,7 @@ async function NearbyStays({ sigungu, excludeId }: { sigungu: string; excludeId:
               <div className="flex-shrink-0 text-right">
                 <p className="text-xs text-slate-400">보증금 {formatWon(item.deposit_won)}</p>
                 <p className="text-sm font-extrabold text-blue-700">
-                  월 {formatWon(item.monthly_fee_won)}
+                  {item.owner_type === 'owner' && item.deal_type === 'short_term' && item.weekly_fee_won != null ? `주 ${formatWon(item.weekly_fee_won)}` : `월 ${formatWon(item.monthly_fee_won)}`}
                 </p>
               </div>
             </Link>
@@ -264,6 +264,8 @@ export default async function StayDetailPage({
   }
 
   const stay = result.stay;
+  const isHost = stay.owner_type === 'owner' && stay.deal_type === 'short_term';
+  const hasWeeklyRate = isHost && stay.weekly_fee_won != null;
 
   // 'selfcheckin' 의 라벨은 '셀프 체크인' 이다. 숙박업 어휘라 임대차 화면에 노출하지 않는다.
   // (현재 목데이터엔 없지만 라벨 상수는 다른 도메인과 공유되므로 방어적으로 제외한다)
@@ -303,6 +305,7 @@ export default async function StayDetailPage({
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
                 <StayStatusBadge status={stay.status} />
+                {stay.owner_type === 'agent' ? <Chip>안심임대 공인중개사</Chip> : stay.owner_type === 'owner' ? <Chip>호스트 직접 임대</Chip> : null}
                 {stay.is_exclusive && <StayExclusiveBadge />}
                 <Chip>{STAY_DEAL_TYPE_LABELS[stay.deal_type]}</Chip>
                 <Chip>{STAY_TYPE_LABELS[stay.stay_type]}</Chip>
@@ -347,9 +350,9 @@ export default async function StayDetailPage({
                   </p>
                 </div>
                 <div className="rounded-xl bg-gradient-to-r from-blue-50 to-cyan-50 p-4">
-                  <p className="text-xs font-medium text-blue-700">월 임대료</p>
+                  <p className="text-xs font-medium text-blue-700">{hasWeeklyRate ? '1주 임대료' : '월 임대료'}</p>
                   <p className="mt-0.5 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-2xl font-extrabold text-transparent sm:text-3xl">
-                    {formatWon(stay.monthly_fee_won)}
+                    {formatWon(hasWeeklyRate ? stay.weekly_fee_won : stay.monthly_fee_won)}
                   </p>
                 </div>
               </div>
@@ -359,8 +362,8 @@ export default async function StayDetailPage({
                   label="관리비"
                   value={
                     stay.maintenance_included
-                      ? '월 임대료에 포함'
-                      : `${formatWon(stay.maintenance_fee_won)} (별도)`
+                      ? '임대료에 포함'
+                      : `월 ${formatWon(stay.maintenance_fee_won)} (별도)`
                   }
                 />
                 <Field label="공과금" value={stay.utilities_included ? '포함' : '별도 부담'} />
@@ -372,7 +375,7 @@ export default async function StayDetailPage({
             <Section icon={CalendarDays} title="계약 조건">
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
                 <Field label="최소 계약기간" value={formatMinStay(stay.min_stay_days)} />
-                <Field label="최장 계약기간" value={formatMaxStay(stay.max_stay_days)} />
+                <Field label="최장 계약기간" value={isHost && stay.max_stay_days != null ? `${stay.max_stay_days}일까지` : formatMaxStay(stay.max_stay_days)} />
                 <Field label="입주 가능일" value={formatDate(stay.available_from)} />
                 <Field
                   label="임대 종료 예정일"
@@ -509,9 +512,9 @@ export default async function StayDetailPage({
             <StayAgentBlock stay={stay} />
 
             {/* 주변 시세 — 국토부 전월세 실거래 평균 비교. 표본 부족/미지원 유형이면 렌더 안 됨 */}
-            <Suspense fallback={<StayNearbyPriceSkeleton />}>
+            {!hasWeeklyRate && <Suspense fallback={<StayNearbyPriceSkeleton />}>
               <StayNearbyPrice stayId={stay.id} origin={origin} />
-            </Suspense>
+            </Suspense>}
 
             {/* 이 지역 다른 매물 — 별도 API 호출이라 본문을 막지 않게 Suspense 로 분리 */}
             {stay.sigungu && (
@@ -522,34 +525,36 @@ export default async function StayDetailPage({
           </div>
 
           {/* ── 우측 sticky 사이드바 (lg+) ── */}
-          <aside className="hidden w-[312px] flex-shrink-0 lg:block">
+          <aside className={isHost ? 'w-full flex-shrink-0 lg:w-[360px]' : 'hidden w-[312px] flex-shrink-0 lg:block'}>
             <div className="sticky top-24 space-y-3">
-              <StayInquiryBar
+              {isHost ? <StayHostQuote stay={stay} /> : <StayInquiryBar
+        stayId={stay.id}
                 variant="sidebar"
                 ownerType={stay.owner_type}
-                phone={stay.phone}
-                kakaoUrl={stay.kakao_url}
-                contactName={stay.contact_name}
+                phone={stay.owner_type === 'agent' ? stay.agent_phone : null}
+                kakaoUrl={null}
+                contactName={null}
                 contactHours={stay.contact_hours}
                 depositWon={stay.deposit_won}
                 monthlyFeeWon={stay.monthly_fee_won}
-              />
+              />}
             </div>
           </aside>
         </div>
       </main>
 
       {/* ── 모바일 하단 고정 CTA ── */}
-      <StayInquiryBar
+      {isHost ? <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:hidden"><a href="#host-dates" className="block rounded-xl bg-slate-900 p-3 text-center text-sm font-bold text-white">날짜 선택 · 예상 금액 확인</a></div> : <StayInquiryBar
+        stayId={stay.id}
         variant="mobile"
         ownerType={stay.owner_type}
-        phone={stay.phone}
-        kakaoUrl={stay.kakao_url}
-        contactName={stay.contact_name}
+        phone={stay.owner_type === 'agent' ? stay.agent_phone : null}
+        kakaoUrl={null}
+        contactName={null}
         contactHours={stay.contact_hours}
         depositWon={stay.deposit_won}
         monthlyFeeWon={stay.monthly_fee_won}
-      />
+      />}
     </div>
   );
 }

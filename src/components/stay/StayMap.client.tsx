@@ -10,7 +10,8 @@
 //    (스크립트 태그 자체는 부모 페이지가 <Script strategy="afterInteractive"> 로 넣는다)
 
 import { useEffect, useRef, useState } from 'react';
-import { formatWon } from '@/lib/stay/format';
+import { formatStayPrice, formatWon } from '@/lib/stay/format';
+import type { Stay } from '@/types/stay';
 import {
   buildAggMarkerHTML,
   buildMarkerHTML as buildDealMarkerHTML,
@@ -59,6 +60,9 @@ export interface StayMapPoint {
   lng: number;
   deposit_won: number | null;
   monthly_fee_won: number | null;
+  weekly_fee_won: number | null;
+  owner_type: Stay['owner_type'];
+  deal_type: Stay['deal_type'];
   floor: number | null;
 }
 
@@ -123,12 +127,17 @@ const MARKER_FONT = `'Plus Jakarta Sans', Pretendard, -apple-system, BlinkMacSys
  * 없어 지붕에 넣을 값이 없기 때문이다.
  */
 function buildMarkerHTML(p: StayMapPoint, isActive: boolean): string {
-  // 1줄: 월세 (없으면 보증금을 주인공으로 올린다 — 공실임대 등 월세 미기재 케이스)
-  const primary = p.monthly_fee_won != null ? `월 ${formatWon(p.monthly_fee_won)}` : formatWon(p.deposit_won);
+  const isWeeklyHost = p.owner_type === 'owner' && p.deal_type === 'short_term' &&
+    p.weekly_fee_won != null && Number.isFinite(p.weekly_fee_won) && p.weekly_fee_won > 0;
+  const primary = isWeeklyHost
+    ? formatStayPrice({ ...p, deposit_won: null })
+    : p.monthly_fee_won != null ? `월 ${formatWon(p.monthly_fee_won)}` : formatWon(p.deposit_won);
 
   // 2줄: 보증금 + 층. 월세가 주인공일 때만 보증금을 보조로 내린다.
   const subParts: string[] = [];
-  if (p.monthly_fee_won != null && p.deposit_won != null) subParts.push(`보증 ${formatWon(p.deposit_won)}`);
+  if ((isWeeklyHost || p.monthly_fee_won != null) && p.deposit_won != null) {
+    subParts.push(isWeeklyHost ? `보증 ${p.deposit_won.toLocaleString('ko-KR')}원` : `보증 ${formatWon(p.deposit_won)}`);
+  }
   if (p.floor != null) subParts.push(`${p.floor}층`);
   const secondaryHtml = subParts.length
     ? `<div style="font-size:10px;font-weight:600;line-height:1.25;opacity:0.72;white-space:nowrap;">${subParts.join(' · ')}</div>`

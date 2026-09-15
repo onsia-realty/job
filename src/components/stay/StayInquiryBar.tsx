@@ -3,16 +3,19 @@
 // 단기임대 상세 CTA 블록. 데스크톱 사이드바 / 모바일 하단 고정 두 형태로 쓴다.
 //
 // ⚠️ 사업모델 제약: 예약·결제·숙박 개념을 노출하지 않는다. 임대차 계약 문의만 다룬다.
-// ⚠️ 문의 기능 미구현 — 브라우저 alert 금지. 컴포넌트 내 state 로 인라인 안내만 띄운다.
+// 로그인한 게스트의 문의를 저장하고 문의함에서 답변을 확인한다.
 
 import { useState } from 'react';
+import Link from 'next/link';
+import StayInquiryForm from './StayInquiryForm';
 import { MessageCircle, Phone, ShieldCheck } from 'lucide-react';
 import { formatWon } from '@/lib/stay/format';
 import type { StayOwnerType } from '@/lib/stay/constants';
 
-const PENDING_MESSAGE = '문의 기능은 준비 중입니다';
+
 
 export default function StayInquiryBar({
+  stayId,
   ownerType,
   phone,
   kakaoUrl,
@@ -22,6 +25,7 @@ export default function StayInquiryBar({
   monthlyFeeWon,
   variant,
 }: {
+  stayId: string;
   ownerType: StayOwnerType | null;
   phone: string | null;
   kakaoUrl: string | null;
@@ -34,21 +38,13 @@ export default function StayInquiryBar({
   const [notice, setNotice] = useState<string | null>(null);
 
   const isOwner = ownerType === 'owner';
-  const primaryLabel = isOwner ? '소유주에게 문의' : '입주 문의';
+  const primaryLabel = isOwner ? '호스트에게 문의' : '입주 문의';
 
   const showNotice = () => {
-    setNotice(PENDING_MESSAGE);
-    window.setTimeout(() => setNotice(null), 2400);
+    setNotice(notice ? null : 'open');
   };
 
-  const noticeBox = notice ? (
-    <p
-      role="status"
-      className="rounded-lg bg-slate-900/90 px-3 py-2 text-center text-xs font-medium text-white"
-    >
-      {notice}
-    </p>
-  ) : null;
+  const noticeBox = notice ? <div className="max-h-[60vh] overflow-y-auto"><StayInquiryForm stayId={stayId} /></div> : null;
 
   // ── 모바일 하단 고정 ──
   if (variant === 'mobile') {
@@ -86,14 +82,13 @@ export default function StayInquiryBar({
             </button>
           </div>
           {isOwner && (
-            <button
-              type="button"
-              onClick={showNotice}
+            <Link
+              href="/stay/agents"
               className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100"
             >
               <ShieldCheck className="h-4 w-4" />
-              중개사와 안전 계약으로 진행
-            </button>
+              안심 중개사 살펴보기
+            </Link>
           )}
         </div>
       </div>
@@ -120,14 +115,13 @@ export default function StayInquiryBar({
         </button>
 
         {isOwner && (
-          <button
-            type="button"
-            onClick={showNotice}
+          <Link
+            href="/stay/agents"
             className="flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100"
           >
             <ShieldCheck className="h-4 w-4" />
-            중개사와 안전 계약으로 진행
-          </button>
+            안심 중개사 살펴보기
+          </Link>
         )}
 
         {phone ? (

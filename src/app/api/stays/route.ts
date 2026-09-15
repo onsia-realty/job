@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { verifyUser, isVerifiedBusinessUser } from '@/lib/auth-server';
+import { verifyUser } from '@/lib/auth-server';
 import { stayCreateSchema, STAY_FIELD_MESSAGES } from '@/lib/validations/stay';
 import { buildAgentSnapshot } from '@/lib/stay/agent-snapshot';
+import { PUBLIC_STAY_SELECT, toPublicStay } from '@/lib/stay/public-dto';
 import {
   STAY_TYPES,
   STAY_DEAL_TYPES,
@@ -60,9 +61,8 @@ export async function POST(req: NextRequest) {
     ...safeBody
   } = parsed.data as Record<string, unknown>;
 
-  // 승인 정책: 클라이언트 값을 신뢰하지 않고 서버에서 인증 여부를 재확인한다.
-  // (sales/jobs/new/page.tsx:121-125 의 brokerVerified || businessVerified 게이트를 서버 재현)
-  const verified = await isVerifiedBusinessUser(user);
+  // 사무소 인증은 개별 매물 광고·사진 사용 권한의 증명이 아니다.
+  // 신규 매물은 모두 관리자 권리 확인 후 공개한다.
 
   // 038 중개사 법정표기 스냅샷 — 서버가 users/broker_offices 에서 채운다 (038:46-49).
   // owner(임대인 직접등록)면 클라이언트가 뭘 보냈든 7개 전부 명시적으로 null.
@@ -83,7 +83,7 @@ export async function POST(req: NextRequest) {
     user_id: user.id,
     views: 0,
     is_active: true,
-    is_approved: verified,  // 미인증이면 false → 관리자 승인 대기
+    is_approved: false,
     source: 'self',
     lead_id: null,
     agent_office_name: agentSnapshot?.agent_office_name ?? null,
@@ -189,7 +189,7 @@ export async function GET(req: NextRequest) {
     ownerId = user.id;
   }
 
-  const base = supabaseAdmin.from('stays').select('*', { count: 'exact' });
+  const base = supabaseAdmin.from('stays').select(ownerId ? '*' : PUBLIC_STAY_SELECT, { count: 'exact' });
 
   let query =
     ownerId != null
@@ -296,9 +296,9 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json({
-    items: data ?? [],
+    items: ownerId ? (data ?? []) : (data ?? []).map(toPublicStay),
     total: count ?? null,
     limit,
     offset,
-  });
+  }, { headers: { 'Cache-Control': 'private, no-store', Vary: 'Authorization' } });
 }

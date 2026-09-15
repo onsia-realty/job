@@ -28,12 +28,13 @@ export default async function StayNewPage({
   // 배열(?edit=a&edit=b)로 올 수 있으니 문자열만 취한다
   const editId = typeof rawEdit === 'string' && rawEdit.trim() ? rawEdit.trim() : null;
   const isEdit = !!editId;
+  const initialOwnerType = params.role === 'host' ? 'owner' : 'agent';
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Header variant="landing" />
 
-      <section className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white">
+      <section className="bg-slate-900 text-white">
         <div className="mx-auto max-w-4xl px-4 py-8 sm:py-10">
           <Link
             href={isEdit ? '/agent/stays' : '/stay'}
@@ -46,17 +47,19 @@ export default async function StayNewPage({
             <ClipboardList className="h-3.5 w-3.5" aria-hidden />
             단기임대 · 공실임대
           </div>
-          <h1 className="mt-3 text-2xl font-bold leading-snug sm:text-3xl">{isEdit ? '매물 수정' : '매물 등록'}</h1>
+          <h1 className="mt-3 text-2xl font-bold leading-snug sm:text-3xl">{isEdit ? '매물 수정' : initialOwnerType === 'owner' ? '호스트 공간 등록' : '안심임대 공인중개사 매물 등록'}</h1>
           <p className="mt-2 text-sm leading-relaxed text-white/85">
             {isEdit
-              ? '등록한 매물의 내용을 고칩니다. 주소를 다시 검색하면 좌표와 건축물대장 정보를 새로 채웁니다. 금액은 만원 단위로 입력합니다.'
-              : '주소를 검색하면 좌표와 건축물대장 정보를 자동으로 채웁니다. 금액은 만원 단위로 입력합니다.'}
+              ? '등록한 매물의 내용을 수정합니다. 주소 검색으로 지도 위치를 채우고, 건물 정보는 필요할 때 조회할 수 있습니다. 금액은 만원 단위로 입력합니다.'
+              : initialOwnerType === 'owner'
+                ? '주 임대료와 관리비, 보증금, 입주 가능한 기간을 설정해 주세요. 게스트가 날짜를 선택하면 예상 금액을 확인할 수 있습니다. 금액은 만원 단위로 입력합니다.'
+                : '중개사무소 정보와 월 임대료·보증금 등 기존 중개 조건으로 등록합니다. 건물 정보 조회는 선택 사항이며, 금액은 만원 단위로 입력합니다.'}
           </p>
         </div>
       </section>
 
       <main className="mx-auto max-w-4xl px-4 py-6 pb-20">
-        <StayCreateForm editId={editId} />
+        <StayCreateForm editId={editId} initialOwnerType={initialOwnerType} />
         <p className="mt-10 text-xs leading-relaxed text-slate-400">
           부인은 통신판매중개자로서 임대차 계약의 당사자가 아니며, 계약과 입주 관리는 등록자(개업공인중개사 또는 임대인)가 수행합니다.
         </p>
