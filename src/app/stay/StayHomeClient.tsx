@@ -11,7 +11,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, ChevronRight, Home, MapPin, Search } from 'lucide-react';
+import { ArrowRight, ChevronRight, Home, MapPin, PenSquare, Search } from 'lucide-react';
 import { STAY_HOME_CATEGORIES, stayCategoryHref } from '@/lib/stay/home-categories';
 import StayCategoryArt from '@/components/stay/StayCategoryArt';
 
@@ -146,6 +146,30 @@ export default function StayHomeClient() {
           >
             <Home className="h-3.5 w-3.5 flex-shrink-0" />
             소유주 등록
+            <ArrowRight className="h-3.5 w-3.5 flex-shrink-0" />
+          </Link>
+        </div>
+      </section>
+
+      {/* ── 중개사 등록 CTA ──
+          소유주 CTA(집주인 접수 → 중개사 확인 후 등록)와 헷갈리지 않게
+          "개업공인중개사가 직접 올린다" 는 점을 문구로 분리한다.
+          미로그인이면 /stay/new 가 자체적으로 로그인 유도 화면을 띄우므로
+          여기서 로그인 게이트는 걸지 않는다. */}
+      <section className="mt-3">
+        <div className="flex flex-col items-start justify-between gap-4 rounded-xl border border-gray-200 bg-white px-5 py-5 sm:flex-row sm:items-center">
+          <div className="min-w-0">
+            <p className="text-sm font-bold text-gray-900">중개사이신가요?</p>
+            <p className="mt-0.5 text-[11px] text-gray-500">
+              보유하신 단기임대 매물을 직접 등록하고 관리하실 수 있습니다.
+            </p>
+          </div>
+          <Link
+            href="/stay/new"
+            className="flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-teal-600 px-4 py-2.5 text-xs font-semibold text-white transition-colors hover:bg-teal-700"
+          >
+            <PenSquare className="h-3.5 w-3.5 flex-shrink-0" />
+            매물 등록
             <ArrowRight className="h-3.5 w-3.5 flex-shrink-0" />
           </Link>
         </div>

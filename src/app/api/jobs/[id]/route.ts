@@ -52,6 +52,7 @@ export async function GET(
     .from('jobs')
     .select('*')
     .eq('id', id)
+    .eq('is_approved', true)
     .maybeSingle();
 
   if (error) {

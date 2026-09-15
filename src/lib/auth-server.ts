@@ -40,17 +40,15 @@ export async function verifyAdmin(req: NextRequest): Promise<User | null> {
 /**
  * 기업회원 인증 여부(중개사무소 또는 사업자)를 서버에서 재확인한다.
  *
- * ⚠️ 실제 스키마 확인 결과: users 테이블에는 broker_verified / business_verified 같은
- *    boolean 컬럼이 존재하지 않는다(001 + 031 전수 확인). 프로젝트의 인증 플래그는
- *    auth.users 의 user_metadata 에 brokerVerified / businessVerified 로만 저장된다
- *    (src/app/agent/mypage/verification/page.tsx:165, 사업자.md:505/518).
- *    → 여기서 쓰는 user 객체는 supabaseAdmin.auth.getUser(token) 이 auth DB 에서
- *      직접 읽어온 값이므로, 클라이언트 요청 본문이 아니라 서버 측 조회 결과다.
- *    → 추가로 users.user_type === 'admin' 이면 인증된 것으로 본다.
+ * 서버에서 관리하는 app_metadata만 신뢰한다. user_metadata는 사용자 수정이 가능하며
+ * 서버가 다시 읽어도 권한 근거가 되지 않는다. 기존 플래그는 자동 이전하지 않는다.
+ * 추가로 users.user_type === 'admin' 이면 인증된 것으로 본다.
  */
 export async function isVerifiedBusinessUser(user: User): Promise<boolean> {
-  const meta = user.user_metadata as Record<string, unknown> | undefined;
-  if (meta?.brokerVerified === true || meta?.businessVerified === true) return true;
+  const meta = user.app_metadata as Record<string, unknown> | undefined;
+  const hasBrokerBinding = meta?.brokerVerified === true
+    && typeof meta.brokerRegNo === 'string' && meta.brokerRegNo.trim().length > 0;
+  if (hasBrokerBinding || meta?.businessVerified === true) return true;
 
   const { data: dbUser } = await supabaseAdmin
     .from('users')

@@ -71,6 +71,10 @@ export async function POST(req: NextRequest) {
       ? await buildAgentSnapshot(user.id)
       : null;
 
+  if (parsed.data.owner_type === 'agent' && (!agentSnapshot || agentSnapshot.missing.length > 0)) {
+    return NextResponse.json({ error: '확인된 중개사무소 정보가 필요합니다' }, { status: 403 });
+  }
+
   const stayData = {
     ...safeBody,
     status: parsed.data.status ?? 'available',
@@ -156,6 +160,16 @@ function parseBoundsParam(
 
 // GET /api/stays - 공개 목록 (인증 불필요)
 // 기본 조건: is_active = true AND is_approved = true
+//
+// `?mine=1` 이면 "내 매물" 모드로 바뀐다 (인증 필요):
+//   - Authorization: Bearer <token> 을 verifyUser(req) 로 검증, 실패 시 401
+//     (문구는 같은 파일 POST 핸들러 24줄과 동일하게 맞춘다)
+//   - is_active / is_approved 조건을 걸지 않고 `user_id = 본인` 만 건다.
+//     소유자 본인은 승인 대기(is_approved=false)·비활성(is_active=false) 매물도
+//     전부 봐야 하기 때문 — POST 가 미인증 사용자 매물을 is_approved=false 로
+//     넣기 때문에(82줄) 이 조건을 걸면 방금 등록한 매물이 사라진다.
+//   - 그 외 파라미터(필터/정렬/페이지네이션)는 두 모드에서 동일하게 적용된다.
+// mine 값이 '1' 이 아니면(부재 포함) 기존 공개 목록 동작 그대로다.
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
 
@@ -164,11 +178,23 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(limitRaw && limitRaw > 0 ? limitRaw : STAY_LIST_DEFAULT_LIMIT, STAY_LIST_MAX_LIMIT);
   const offset = parseIntParam(sp.get('offset')) ?? 0;
 
-  let query = supabaseAdmin
-    .from('stays')
-    .select('*', { count: 'exact' })
-    .eq('is_active', true)
-    .eq('is_approved', true);
+  const mine = sp.get('mine') === '1';
+
+  let ownerId: string | null = null;
+  if (mine) {
+    const user = await verifyUser(req);
+    if (!user) {
+      return NextResponse.json({ error: '인증이 필요합니다' }, { status: 401 });
+    }
+    ownerId = user.id;
+  }
+
+  const base = supabaseAdmin.from('stays').select('*', { count: 'exact' });
+
+  let query =
+    ownerId != null
+      ? base.eq('user_id', ownerId)
+      : base.eq('is_active', true).eq('is_approved', true);
 
   // 분류 필터
   const dealType = parseEnumParam(sp.get('deal_type'), STAY_DEAL_TYPES);

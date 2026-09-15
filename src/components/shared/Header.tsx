@@ -128,6 +128,12 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                       <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-cyan-100 text-cyan-700 ml-0.5">NEW</span>
                     </Link>
                   )}
+                  {STAY_ENABLED && user && (
+                    <Link href="/agent/stays" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                      <Home className="w-3.5 h-3.5" />
+                      단기임대 관리
+                    </Link>
+                  )}
                   <Link href="/premium?category=agent" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
                     <Crown className="w-3.5 h-3.5" />
                     상품안내

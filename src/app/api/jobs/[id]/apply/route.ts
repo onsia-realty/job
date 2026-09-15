@@ -25,6 +25,8 @@ export async function POST(
     .from('jobs')
     .select('id, is_active')
     .eq('id', jobId)
+    .eq('is_active', true)
+    .eq('is_approved', true)
     .maybeSingle();
 
   if (!job) {
@@ -41,6 +43,15 @@ export async function POST(
 
   // resume_id가 있으면 추가
   if (resumeId) {
+    const { data: resume, error: resumeError } = await supabaseAdmin
+      .from('resumes')
+      .select('id')
+      .eq('id', resumeId)
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (resumeError || !resume) {
+      return NextResponse.json({ error: '본인의 이력서만 제출할 수 있습니다' }, { status: 403 });
+    }
     insertData.resume_id = resumeId;
   }
 

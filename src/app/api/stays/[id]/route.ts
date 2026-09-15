@@ -118,6 +118,10 @@ export async function PATCH(
   const agentSnapshot =
     resultOwnerType === 'agent' ? await buildAgentSnapshot(user.id) : null;
 
+  if (resultOwnerType === 'agent' && (!agentSnapshot || agentSnapshot.missing.length > 0)) {
+    return NextResponse.json({ error: '확인된 중개사무소 정보가 필요합니다' }, { status: 403 });
+  }
+
   const updateData = {
     ...sanitized,
     // ---- 서버 강제 값은 반드시 마지막에 스프레드 ----

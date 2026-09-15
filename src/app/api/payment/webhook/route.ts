@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
     const webhookSecret = process.env.TOSS_WEBHOOK_SECRET;
     if (webhookSecret) {
       const headerSecret = req.headers.get('x-webhook-secret');
-      if (headerSecret && headerSecret !== webhookSecret) {
+      if (headerSecret !== webhookSecret) {
         console.warn('웹훅: 시크릿 불일치');
         return NextResponse.json({ success: false }, { status: 401 });
       }
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const auth = Buffer.from(`${secretKey}:`).toString('base64');
 
     const paymentResponse = await fetch(
-      `https://api.tosspayments.com/v1/payments/${data.paymentKey}`,
+      `https://api.tosspayments.com/v1/payments/${encodeURIComponent(data.paymentKey)}`,
       {
         headers: {
           Authorization: `Basic ${auth}`,

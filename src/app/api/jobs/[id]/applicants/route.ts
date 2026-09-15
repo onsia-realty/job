@@ -49,24 +49,22 @@ export async function GET(
     return NextResponse.json([]);
   }
 
-  // 지원자들의 user_id로 이력서 조회
-  const userIds = [...new Set(apps.map(a => a.user_id).filter(Boolean))];
+  // 제출된 이력서만 조회. 지원자가 나중에 만든 다른 비공개 이력서는 공유하지 않는다.
+  const resumeIds = [...new Set(apps.map(a => a.resume_id).filter(Boolean))];
 
-  const { data: resumes } = await supabaseAdmin
+  const { data: resumes } = resumeIds.length ? await supabaseAdmin
     .from('resumes')
     .select('id, user_id, name, phone, email, photo, total_experience, preferred_regions, preferred_types, license_number, birth_year, gender, created_at')
-    .in('user_id', userIds);
+    .in('id', resumeIds) : { data: [] };
 
   // user_id → resume 매핑
-  const resumeByUserId: Record<string, any> = {};
-  for (const r of resumes || []) {
-    resumeByUserId[r.user_id] = r;
-  }
+  const resumeById = new Map((resumes || []).map(r => [r.id, r]));
 
   // 지원자 + 이력서 합치기
   const result = apps.map(app => ({
     ...app,
-    resume: resumeByUserId[app.user_id] || null,
+    resume: resumeById.get(app.resume_id)?.user_id === app.user_id
+      ? resumeById.get(app.resume_id) : null,
   }));
 
   return NextResponse.json(result);
@@ -85,7 +83,8 @@ export async function PATCH(
   const { id } = await params;
   const { applicationId, status } = await req.json();
 
-  if (!applicationId || !status) {
+  const allowedStatuses = ['pending', 'viewed', 'contacted', 'rejected', 'hired'] as const;
+  if (typeof applicationId !== 'string' || !allowedStatuses.includes(status)) {
     return NextResponse.json({ error: 'applicationId와 status가 필요합니다' }, { status: 400 });
   }
 

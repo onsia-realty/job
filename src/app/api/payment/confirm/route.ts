@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveProduct, getTotalPrice } from '@/lib/toss';
+import { resolveProduct, getTotalPrice, isProductPurchasable } from '@/lib/toss';
 import { supabaseAdmin } from '@/lib/supabase-server';
 
 export async function POST(req: NextRequest) {
@@ -17,6 +17,13 @@ export async function POST(req: NextRequest) {
     if (!product) {
       return NextResponse.json(
         { success: false, message: '유효하지 않은 상품입니다.' },
+        { status: 400 }
+      );
+    }
+
+    if (!isProductPurchasable(productKey)) {
+      return NextResponse.json(
+        { success: false, message: '현재 구매할 수 없는 상품입니다.' },
         { status: 400 }
       );
     }
@@ -48,36 +55,15 @@ export async function POST(req: NextRequest) {
     }
     const userId = user.id;
 
-    // 멱등성 체크: 이미 처리된 결제인지 확인
-    const { data: existingPayment } = await supabaseAdmin
-      .from('payments')
-      .select('id, payment_status')
-      .eq('payment_id', paymentKey)
-      .maybeSingle();
-
-    if (existingPayment) {
-      // 이미 처리된 결제 → 성공 응답 (중복 호출 방지)
-      return NextResponse.json({
-        success: true,
-        message: '이미 처리된 결제입니다.',
-        data: {
-          paymentKey,
-          orderId,
-          productName: product.name,
-          amount: totalPrice,
-          tier: product.tier,
-          duration: product.durationLabel,
-        },
-      });
-    }
-
-    // jobId가 있으면 소유자 검증
+    // 공고 결제는 소유자와 상품 카테고리가 모두 일치해야 한다.
+    let job: { id: string; user_id: string; category: string | null; tier: string } | null = null;
     if (jobId) {
-      const { data: job } = await supabaseAdmin
+      const { data } = await supabaseAdmin
         .from('jobs')
-        .select('id, user_id')
+        .select('id, user_id, category, tier')
         .eq('id', jobId)
         .maybeSingle();
+      job = data;
 
       if (!job) {
         return NextResponse.json(
@@ -91,6 +77,58 @@ export async function POST(req: NextRequest) {
           { status: 403 }
         );
       }
+      if (job.category !== product.category) {
+        return NextResponse.json(
+          { success: false, message: '공고와 상품의 카테고리가 일치하지 않습니다.' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 멱등성 체크: 이미 처리된 결제인지 확인
+    const { data: existingPayment } = await supabaseAdmin
+      .from('payments')
+      .select('id, user_id, job_id, product_key, amount, payment_status')
+      .eq('payment_id', paymentKey)
+      .maybeSingle();
+
+    if (existingPayment) {
+      if (existingPayment.user_id !== userId) {
+        return NextResponse.json({ success: false, message: '결제 내역을 찾을 수 없습니다.' }, { status: 404 });
+      }
+      if (existingPayment.payment_status !== 'completed'
+        || existingPayment.job_id !== (jobId || null)
+        || existingPayment.product_key !== productKey
+        || existingPayment.amount !== totalPrice) {
+        return NextResponse.json({ success: false, message: '기존 결제 정보와 일치하지 않습니다.' }, { status: 409 });
+      }
+      if (jobId && job?.tier !== product.tier) {
+        const { error: retryUpdateError } = await supabaseAdmin
+          .from('jobs')
+          .update({ tier: product.tier })
+          .eq('id', jobId)
+          .eq('user_id', userId);
+        if (retryUpdateError) {
+          console.error('결제 후 공고 반영 재시도 실패:', retryUpdateError);
+          return NextResponse.json(
+            { success: false, message: '결제 처리 상태를 확인 중입니다. 고객센터에 문의해주세요.' },
+            { status: 500 }
+          );
+        }
+      }
+      // 이미 처리된 결제 → 성공 응답 (중복 호출 방지)
+      return NextResponse.json({
+        success: true,
+        message: '이미 처리된 결제입니다.',
+        data: {
+          paymentKey,
+          orderId,
+          productName: product.name,
+          amount: totalPrice,
+          tier: product.tier,
+          duration: product.durationLabel,
+        },
+      });
     }
 
     // 토스페이먼츠 결제 승인 API 호출
@@ -186,7 +224,11 @@ export async function POST(req: NextRequest) {
         .eq('user_id', userId);
 
       if (jobUpdateError) {
-        console.error('공고 티어 업데이트 실패:', jobUpdateError);
+        console.error('결제 후 공고 반영 실패:', jobUpdateError);
+        return NextResponse.json(
+          { success: false, message: '결제 처리 상태를 확인 중입니다. 고객센터에 문의해주세요.' },
+          { status: 500 }
+        );
       }
     }
 

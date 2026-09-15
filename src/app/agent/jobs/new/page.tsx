@@ -120,10 +120,11 @@ function NewAgentJobContent() {
 
   // 인증 상태 확인
   const meta = authUser?.user_metadata;
-  const isVerified = meta?.brokerVerified === true || meta?.businessVerified === true || meta?.cardVerified === true;
-  const hasBrokerVerified = meta?.brokerVerified === true;
-  const hasBusinessVerified = meta?.businessVerified === true;
-  const hasCardVerified = meta?.cardVerified === true;
+  const verifiedMeta = authUser?.app_metadata;
+  const hasBrokerVerified = verifiedMeta?.brokerVerified === true && typeof verifiedMeta.brokerRegNo === 'string' && verifiedMeta.brokerRegNo.trim().length > 0;
+  const hasBusinessVerified = verifiedMeta?.businessVerified === true;
+  const isVerified = hasBrokerVerified || hasBusinessVerified;
+  const hasCardVerified = verifiedMeta?.cardVerified === true;
   const canPostSales = hasBusinessVerified || hasCardVerified; // 분양상담사 구인: 사업자 or 명함
 
   // 인증된 회사/사무소명 가져오기
@@ -405,7 +406,7 @@ function NewAgentJobContent() {
         : '';
 
       // 기존 html_content에서 이전에 append된 extra info/이미지 데이터 제거 (중복 방지)
-      let cleanHtml = formData.html_content
+      const cleanHtml = formData.html_content
         .replace(/\n*상세주소: .+/g, '')
         .replace(/\n*근무시간: .+/g, '')
         .replace(/\n*근무요일: .+/g, '')

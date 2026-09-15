@@ -18,13 +18,17 @@ export async function POST(
       .from('stays')
       .select('views')
       .eq('id', id)
+      .eq('is_active', true)
+      .eq('is_approved', true)
       .maybeSingle();
 
     if (stay) {
       await supabaseAdmin
         .from('stays')
         .update({ views: (stay.views || 0) + 1 })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('is_active', true)
+        .eq('is_approved', true);
     }
   }
 

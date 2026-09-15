@@ -48,18 +48,18 @@ describe('composeAgentSnapshot', () => {
     expect(snap.source).toBe('broker_offices');
   });
 
-  it('② 미매칭 시 users 폴백 + source users + 등록번호는 정규화본', () => {
+  it('② 미매칭 시 사용자 연락처만 유지하고 사무소 법정표기는 누락 처리', () => {
     const snap = composeAgentSnapshot(usersRow, null, NOW);
 
-    expect(snap.agent_office_name).toBe('온시아공인중개사사무소');
-    expect(snap.agent_office_address).toBe('서울특별시 송파구 올림픽로 1');
-    expect(snap.agent_reg_no).toBe('11710-2022-00250'); // 전각 → 반각
-    expect(snap.agent_representative).toBe('홍길동');
+    expect(snap.agent_office_name).toBeNull();
+    expect(snap.agent_office_address).toBeNull();
+    expect(snap.agent_reg_no).toBeNull();
+    expect(snap.agent_representative).toBeNull();
     expect(snap.agent_phone).toBe('010-1234-5678');
 
     expect(snap.broker_office_id).toBeNull();
     expect(snap.source).toBe('users');
-    expect(snap.missing).toEqual([]);
+    expect(snap.missing).toEqual(['agent_office_name', 'agent_office_address', 'agent_reg_no', 'agent_representative']);
   });
 
   it('③ 둘 다 빈 값이면 source none + missing 5개', () => {
@@ -90,13 +90,14 @@ describe('composeAgentSnapshot', () => {
       NOW
     );
 
-    expect(snap.agent_office_name).toBe('온시아');
+    expect(snap.agent_office_name).toBeNull();
     expect(snap.agent_representative).toBeNull();
     expect(snap.agent_phone).toBeNull();
     expect(snap.agent_reg_no).toBeNull();
     expect(snap.agent_office_address).toBeNull();
-    expect(snap.source).toBe('users');
+    expect(snap.source).toBe('none');
     expect(snap.missing).toEqual([
+      'agent_office_name',
       'agent_office_address',
       'agent_phone',
       'agent_reg_no',
@@ -104,14 +105,14 @@ describe('composeAgentSnapshot', () => {
     ]);
   });
 
-  it('④ -b 레지스트리 값이 빈 문자열이면 users 값으로 폴백', () => {
+  it('④ -b 레지스트리 값이 빈 문자열이면 사용자 값으로 대체하지 않는다', () => {
     const snap = composeAgentSnapshot(
       usersRow,
       { ...brokerRow, med_office_nm: '', rprsv_nm: '   ' },
       NOW
     );
-    expect(snap.agent_office_name).toBe('온시아공인중개사사무소');
-    expect(snap.agent_representative).toBe('홍길동');
+    expect(snap.agent_office_name).toBeNull();
+    expect(snap.agent_representative).toBeNull();
     expect(snap.source).toBe('broker_offices');
   });
 });

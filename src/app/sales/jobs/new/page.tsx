@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadImage } from '@/lib/upload';
-import { PRICING_TIERS, findOption, getExposureDays, getDiscountRate, type DurationOption } from '@/lib/toss';
+import { PRICING_TIERS, findOption, getExposureDays, getDiscountRate, isProductPurchasable, type DurationOption } from '@/lib/toss';
 import type { SalesJobType, SalesPosition, SalaryType } from '@/types';
 import { REGIONS } from '@/types';
 
@@ -119,7 +119,8 @@ export default function NewJobPage() {
 
   // 인증 게이트
   const meta = authUser?.user_metadata as Record<string, unknown> | undefined;
-  const isVerified = meta?.brokerVerified === true || meta?.businessVerified === true;
+  const verifiedMeta = authUser?.app_metadata;
+  const isVerified = (verifiedMeta?.brokerVerified === true && typeof verifiedMeta.brokerRegNo === 'string' && verifiedMeta.brokerRegNo.trim().length > 0) || verifiedMeta?.businessVerified === true;
   useEffect(() => {
     if (!authLoading && authUser && !isVerified) setShowVerification(true);
   }, [authUser, authLoading, isVerified]);
@@ -238,6 +239,7 @@ export default function NewJobPage() {
   const selList = selOpt?.listPrice ?? 0;
   const adDiscount = selList - selPrice;
   const selExposure = selOpt ? getExposureDays(selOpt) : 0;
+  const selPurchaseEnabled = !selMeta.productKey || isProductPurchasable(selMeta.productKey);
 
   // 미리보기 iframe(/sales 축소판)에서 선택 등급 섹션을 하이라이트
   useEffect(() => {
@@ -282,6 +284,7 @@ export default function NewJobPage() {
   // 제출
   const handleSubmit = async () => {
     if (isSubmitting) return;
+    if (!selPurchaseEnabled) { alert('선택한 상품은 준비 중입니다.'); return; }
     if (!f.title.trim()) { alert('현장명을 입력해주세요'); return; }
     if (f.type === '') { alert('종류를 선택해주세요'); return; }
     if (!f.addr.trim()) { alert('사업지 주소를 입력해주세요'); return; }
@@ -806,16 +809,18 @@ export default function NewJobPage() {
                         const disc = opt ? getDiscountRate(opt) : null;
                         const exposure = opt ? getExposureDays(opt) : 0;
                         const bonus = opt?.bonusDays ?? 0;
+                        const purchaseEnabled = !m.productKey || isProductPurchasable(m.productKey);
                         return (
                           <div key={m.name}>
-                          <button type="button" onClick={() => set({ adTier: m.name })}
-                            style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 12, padding: 18, cursor: 'pointer', fontFamily: 'inherit', background: '#1A1F2B', border: sel ? `2px solid ${m.accent}` : '2px solid #2A3142' }}>
+                          <button type="button" onClick={() => set({ adTier: m.name })} disabled={!purchaseEnabled}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 12, padding: 18, cursor: purchaseEnabled ? 'pointer' : 'not-allowed', opacity: purchaseEnabled ? 1 : .55, fontFamily: 'inherit', background: '#1A1F2B', border: sel ? `2px solid ${m.accent}` : '2px solid #2A3142' }}>
                             <span style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                               <span style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                                 <span style={{ width: 18, height: 18, borderRadius: 99, flex: '0 0 auto', border: `1.5px solid ${sel ? m.accent : '#3A4256'}`, background: sel ? m.accent : 'transparent', display: 'inline-block', marginTop: 2 }} />
                                 <span style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                   <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <span style={{ fontSize: 18, fontWeight: 800, color: sel ? m.accent : '#fff' }}>{m.name}</span>
+                                    {!purchaseEnabled && <span style={{ fontSize: 11, fontWeight: 800, color: '#CBD5E1', background: '#334155', borderRadius: 5, padding: '1px 6px' }}>준비 중</span>}
                                     {bonus > 0 && <span style={{ fontSize: 11, fontWeight: 800, color: '#0B1220', background: '#FBBF24', borderRadius: 5, padding: '1px 6px' }}>+{bonus}일 무료</span>}
                                   </span>
                                   <span style={{ fontSize: 12.5, color: '#9AA3B5' }}>{m.tagline}</span>
@@ -836,8 +841,8 @@ export default function NewJobPage() {
                               {tier.options.map((o) => {
                                 const active = daysFor(m.productKey) === o.days;
                                 return (
-                                  <button key={o.days} type="button" onClick={() => { set({ adTier: m.name }); setDaysFor(m.productKey!, o.days); }}
-                                    style={{ flex: 1, position: 'relative', height: 42, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, fontWeight: 800, color: active ? '#0B1220' : '#C7CEDA', background: active ? m.accent : '#222838', border: active ? `2px solid ${m.accent}` : '2px solid #2A3142' }}>
+                                  <button key={o.days} type="button" disabled={!purchaseEnabled} onClick={() => { set({ adTier: m.name }); setDaysFor(m.productKey!, o.days); }}
+                                    style={{ flex: 1, position: 'relative', height: 42, borderRadius: 10, cursor: purchaseEnabled ? 'pointer' : 'not-allowed', opacity: purchaseEnabled ? 1 : .55, fontFamily: 'inherit', fontSize: 13.5, fontWeight: 800, color: active ? '#0B1220' : '#C7CEDA', background: active ? m.accent : '#222838', border: active ? `2px solid ${m.accent}` : '2px solid #2A3142' }}>
                                     {o.days}일
                                     {o.bonusDays > 0 && <span style={{ position: 'absolute', top: -8, right: -4, fontSize: 10, fontWeight: 800, color: '#0B1220', background: '#FBBF24', borderRadius: 6, padding: '1px 5px' }}>+{o.bonusDays}</span>}
                                   </button>
@@ -912,8 +917,8 @@ export default function NewJobPage() {
                 </div>
                 {selPrice > 0 && <div style={{ fontSize: 11, color: C.muted, textAlign: 'right' }}>부가세(VAT) 별도 · 결제 단계에서 합산</div>}
               </div>
-              <button type="button" onClick={handleSubmit} disabled={isSubmitting} style={{ width: '100%', height: 52, borderRadius: 10, border: 'none', background: C.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: isSubmitting ? 'wait' : 'pointer', fontFamily: 'inherit', marginBottom: 9, opacity: isSubmitting ? .6 : 1 }}>
-                {isSubmitting ? '처리 중...' : selPrice > 0 ? '토스로 결제하고 등록' : '무료로 등록하기'}
+              <button type="button" onClick={handleSubmit} disabled={isSubmitting || !selPurchaseEnabled} style={{ width: '100%', height: 52, borderRadius: 10, border: 'none', background: C.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: isSubmitting ? 'wait' : selPurchaseEnabled ? 'pointer' : 'not-allowed', fontFamily: 'inherit', marginBottom: 9, opacity: isSubmitting || !selPurchaseEnabled ? .6 : 1 }}>
+                {!selPurchaseEnabled ? '준비 중인 상품입니다' : isSubmitting ? '처리 중...' : selPrice > 0 ? '토스로 결제하고 등록' : '무료로 등록하기'}
               </button>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button type="button" onClick={saveDraft} style={{ flex: 1, height: 48, borderRadius: 10, border: `1px solid ${C.borderField}`, background: '#fff', color: C.body, fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>임시저장</button>
@@ -940,8 +945,8 @@ export default function NewJobPage() {
       {/* 모바일 하단 등록바 */}
       <div style={{ position: 'fixed', bottom: 64, left: 0, right: 0, zIndex: 65, padding: '0 16px' }} className="bn-mobile-submit">
         <style>{`.bn-mobile-submit{display:none} @media(max-width:1180px){.bn-mobile-submit{display:block!important}}`}</style>
-        <button type="button" onClick={handleSubmit} disabled={isSubmitting} style={{ width: '100%', height: 52, borderRadius: 12, border: 'none', background: C.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 20px rgba(37,99,235,.35)', opacity: isSubmitting ? .6 : 1 }}>
-          {isSubmitting ? '처리 중...' : selPrice > 0 ? `토스로 결제하고 등록 · ${selPrice.toLocaleString()}원` : `무료로 등록 · 완성도 ${completion}%`}
+        <button type="button" onClick={handleSubmit} disabled={isSubmitting || !selPurchaseEnabled} style={{ width: '100%', height: 52, borderRadius: 12, border: 'none', background: C.primary, color: '#fff', fontSize: 16, fontWeight: 800, cursor: selPurchaseEnabled ? 'pointer' : 'not-allowed', fontFamily: 'inherit', boxShadow: '0 6px 20px rgba(37,99,235,.35)', opacity: isSubmitting || !selPurchaseEnabled ? .6 : 1 }}>
+          {!selPurchaseEnabled ? '준비 중인 상품입니다' : isSubmitting ? '처리 중...' : selPrice > 0 ? `토스로 결제하고 등록 · ${selPrice.toLocaleString()}원` : `무료로 등록 · 완성도 ${completion}%`}
         </button>
       </div>
     </div>

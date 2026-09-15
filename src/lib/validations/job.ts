@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 // 공고 등록 입력 검증 (POST /api/jobs)
 // - 필수/선택지(enum) 필드만 검증해 친절한 한글 메시지를 돌려준다.
-// - passthrough(): 그 외 정상 컬럼은 그대로 통과 (기존 폼 동작 보존).
+// - 허용한 폼 필드만 전달하고 id/타임스탬프 등 서버 필드는 제거한다.
 // - 서버 강제 필드(tier/is_approved/is_active/user_id/views/deadline)는 라우트에서 별도 처리.
 export const jobCreateSchema = z
   .object({
@@ -18,8 +18,17 @@ export const jobCreateSchema = z
     experience: z.enum(['none', '1month', '3month', '6month', '12month']).optional(),
     description: z.string().max(20000, '상세 내용이 너무 깁니다').nullish(),
     salary_amount: z.string().max(100).nullish(),
+    html_content: z.string().max(200000).nullish(),
+    benefits: z.array(z.string()).optional(),
+    address: z.string().nullish(),
+    thumbnail: z.string().nullish(),
+    images: z.array(z.string()).optional(),
+    phone: z.string().max(20).nullish(),
+    office_phone: z.string().max(20).nullish(),
+    contact_name: z.string().max(50).nullish(),
+    property_category: z.string().nullish(),
   })
-  .passthrough();
+  ;
 
 // 필드별 친절 메시지 (enum 실패 등 기본 메시지를 한글로 치환)
 export const JOB_FIELD_MESSAGES: Record<string, string> = {

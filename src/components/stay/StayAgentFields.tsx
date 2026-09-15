@@ -27,7 +27,12 @@ export interface StayAgentFieldsProps {
 }
 
 const SNAPSHOT_ENDPOINT = '/api/stays/agent-snapshot';
-const COMPANY_EDIT_PATH = '/agent/mypage/company';
+// ⚠️ 반드시 중개사 인증 화면이어야 한다.
+//    /agent/mypage/company 는 company_profiles 에만 upsert 하고 public.users 를 건드리지 않아,
+//    거기서 저장해도 agent-snapshot(users.broker_reg_no 기준)은 계속 빈 채로 남는다.
+//    #broker 해시는 verification 페이지가 읽어 중개사무소 탭을 열고 폼을 펼친다
+//    (agent/mypage/verification/page.tsx 의 hash effect).
+const BROKER_VERIFY_PATH = '/agent/mypage/verification#broker';
 
 const OWNER_TYPE_DESCRIPTIONS: Record<StayOwnerType, string> = {
   agent: '중개사무소 명의로 등록합니다',
@@ -195,7 +200,8 @@ export default function StayAgentFields({
               담당 중개사 표기
             </h3>
             <p className="mt-1.5 text-xs leading-relaxed text-slate-500">
-              공인중개사법 제18조의2에 따라 아래 정보가 매물에 표기됩니다. 내 정보에서 수정할 수 있습니다.
+              공인중개사법 제18조의2에 따라 아래 정보가 매물에 표기됩니다. 값은 부인이 개설등록번호로 조회한
+              공적 등록 정보라 직접 입력할 수 없고, 중개사 인증을 마치면 자동으로 채워집니다.
             </p>
 
             <div className="mt-4">
@@ -270,10 +276,10 @@ function SnapshotPreview({ snap }: { snap: StayAgentSnapshot }) {
 
       {(hasMissing || snap.source === 'none') && (
         <Link
-          href={COMPANY_EDIT_PATH}
+          href={BROKER_VERIFY_PATH}
           className="mt-4 flex min-h-[44px] w-full items-center justify-center rounded-xl border border-blue-200 bg-blue-50 text-sm font-bold text-blue-700 transition-colors hover:bg-blue-100"
         >
-          내 정보 수정
+          중개사 인증하기
         </Link>
       )}
 

@@ -6,7 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/shared/Footer';
 import { useAuth } from '@/contexts/AuthContext';
-import { resolveProduct, getTotalPrice, PRICING_TIERS, findOption, getExposureDays, getDiscountRate } from '@/lib/toss';
+import { resolveProduct, getTotalPrice, PRICING_TIERS, findOption, getExposureDays, getDiscountRate, isProductPurchasable } from '@/lib/toss';
 import {
   Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
@@ -317,6 +317,8 @@ function PremiumPricingContent() {
       return;
     }
 
+    if (!isProductPurchasable(`${selectedCategory}-${tier}`)) return;
+
     setSelectedTier(tier);
     setSelectedJobId(null);
     setShowJobModal(true);
@@ -387,6 +389,7 @@ function PremiumPricingContent() {
 
     const effectiveJobId = targetJobId || jobId;
     const productKey = `${selectedCategory}-${tier}`;
+    if (!isProductPurchasable(productKey)) return;
     const product = resolveProduct(productKey);
     if (!product) {
       alert('유효하지 않은 상품입니다.');
@@ -621,6 +624,7 @@ function PremiumPricingContent() {
               const bonus = opt?.bonusDays ?? 0;
               const hasDur = hasDurationFor(plan.tier);
               const productKey = `${selectedCategory}-${plan.tier}`;
+              const purchaseEnabled = plan.tier === 'normal' || isProductPurchasable(productKey);
               return (
                 <div
                   key={plan.tier}
@@ -708,7 +712,7 @@ function PremiumPricingContent() {
                     {/* CTA 버튼 */}
                     <button
                       onClick={() => handleSelectJob(plan.tier)}
-                      disabled={payingTier !== null}
+                      disabled={payingTier !== null || !purchaseEnabled}
                       className={`w-full py-2.5 rounded-xl font-bold transition-all flex items-center justify-center gap-1.5 text-sm disabled:opacity-50 ${
                       plan.tier === 'normal'
                         ? 'border border-slate-600 text-slate-400 hover:bg-slate-700'
@@ -721,8 +725,8 @@ function PremiumPricingContent() {
                         </>
                       ) : (
                         <>
-                          {plan.tier === 'normal' ? '무료로 시작' : '신청하기'}
-                          <ArrowRight className="w-3.5 h-3.5" />
+                          {purchaseEnabled ? (plan.tier === 'normal' ? '무료로 시작' : '신청하기') : '준비 중'}
+                          {purchaseEnabled && <ArrowRight className="w-3.5 h-3.5" />}
                         </>
                       )}
                     </button>

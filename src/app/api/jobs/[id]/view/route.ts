@@ -8,7 +8,7 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  const { error } = await supabaseAdmin.rpc('increment_job_views', { job_id: id });
+  const { error } = await supabaseAdmin.rpc('increment_public_job_views', { job_id: id });
 
   if (error) {
     // rpc가 없으면 직접 update fallback
@@ -16,13 +16,17 @@ export async function POST(
       .from('jobs')
       .select('views')
       .eq('id', id)
+      .eq('is_active', true)
+      .eq('is_approved', true)
       .maybeSingle();
 
     if (job) {
       await supabaseAdmin
         .from('jobs')
         .update({ views: (job.views || 0) + 1 })
-        .eq('id', id);
+        .eq('id', id)
+        .eq('is_active', true)
+        .eq('is_approved', true);
     }
   }
 

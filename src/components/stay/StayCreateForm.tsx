@@ -1,6 +1,11 @@
 'use client';
 
-// 단기임대(/stay) 매물 등록 폼.
+// 단기임대(/stay) 매물 등록 폼. editId 가 오면 수정 폼으로 동작한다(/stay/new?edit={id}).
+//
+// ⚠️ 수정 모드: GET /api/stays/{id} 로 기존 값을 복원하고 PATCH 로 저장한다.
+//    GET 은 공개 매물이면 누구에게나 200 을 주므로 GET 성공 = 소유권 아니다.
+//    반드시 data.user_id === user.id 를 확인한 뒤에만 폼을 채운다(아니면 접근 불가 화면).
+//    최종 권한은 서버 PATCH 의 .eq('user_id', ...) 가 강제한다.
 //
 // ⚠️ 요금 정책: 이 서비스는 월 임대료 + 보증금 상품만 취급한다.
 //    일 단가·주 단가 입력란을 만들지 않고, 월 임대료(monthly_fee_won)를 필수로 받아
@@ -14,6 +19,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   AlertCircle,
   Building2,
@@ -28,6 +34,7 @@ import {
   LockKeyhole,
   MapPin,
   Phone,
+  ShieldAlert,
   UserCheck,
   Wallet,
 } from 'lucide-react';
@@ -49,6 +56,7 @@ import {
   STAY_STATUSES,
   STAY_STATUS_LABELS,
   STAY_GEOCODE_SOURCES,
+  STAY_OWNER_TYPES,
   type StayDealType,
   type StayType,
   type StayRoomStructure,
@@ -129,10 +137,53 @@ function toggleInList<T extends string>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((v) => v !== item) : [...list, item];
 }
 
+/**
+ * 원 단위 정수 → 만원 단위 입력 문자열. manwonToWon 의 역함수 (form-utils 에는 없다).
+ *
+ * 부동소수 오차를 피하려고 나눗셈 대신 문자열로 소수점을 네 자리 옮긴다.
+ * (1_250_000 → "125", 125_000 → "12.5", 1 → "0.0001")
+ * manwonToWon 이 Math.round 로 원 단위 정수를 만들므로 값 손실 없이 되돌아온다.
+ */
+function wonToManwonInput(won: number | null | undefined): string {
+  if (won == null || !Number.isFinite(won)) return '';
+  const abs = Math.abs(Math.round(won));
+  const padded = String(abs).padStart(5, '0');
+  const intPart = padded.slice(0, -4).replace(/^0+(?=\d)/, '');
+  const fracPart = padded.slice(-4).replace(/0+$/, '');
+  const sign = won < 0 ? '-' : '';
+  return `${sign}${intPart}${fracPart ? `.${fracPart}` : ''}`;
+}
+
+/** 서버가 준 값이 허용 목록 안에 있을 때만 통과 (모르는 값은 폼에 넣지 않는다) */
+function pickFromList<T extends string>(allowed: readonly T[], raw: unknown): T | null {
+  return typeof raw === 'string' && (allowed as readonly string[]).includes(raw) ? (raw as T) : null;
+}
+
+/** 문자열 배열 중 허용 목록에 있는 값만 남긴다 */
+function filterList<T extends string>(allowed: readonly T[], raw: unknown): T[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.filter((v): v is T => typeof v === 'string' && (allowed as readonly string[]).includes(v));
+}
+
+/** number|null 컬럼 → 텍스트 입력값 */
+function numToInput(v: number | null | undefined): string {
+  return v == null || !Number.isFinite(v) ? '' : String(v);
+}
+
+/** 수정 데이터 로딩 상태 */
+type EditLoadState = 'loading' | 'ready' | 'forbidden' | 'notfound' | 'error';
+
+interface StayCreateFormProps {
+  /** /stay/new?edit={id} — 있으면 수정 모드 */
+  editId?: string | null;
+}
+
 // ---------- 컴포넌트 ----------
 
-export default function StayCreateForm() {
+export default function StayCreateForm({ editId = null }: StayCreateFormProps) {
   const { user, session, isLoading: authLoading } = useAuth();
+  const router = useRouter();
+  const isEdit = Boolean(editId);
 
   // 1. 거래유형
   const [dealType, setDealType] = useState<StayDealType>('short_term');
@@ -215,18 +266,131 @@ export default function StayCreateForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [created, setCreated] = useState<Stay | null>(null);
 
+  // 수정 모드 로딩 — editId 가 있으면 기존 값을 채우기 전까지 폼을 보여주지 않는다
+  const [editLoadState, setEditLoadState] = useState<EditLoadState>(isEdit ? 'loading' : 'ready');
+
   // ---------- 인증 ----------
-  const meta = user?.user_metadata as Record<string, unknown> | undefined;
-  const isVerified = meta?.brokerVerified === true || meta?.businessVerified === true;
+  const meta = user?.app_metadata as Record<string, unknown> | undefined;
+  const isVerified = (meta?.brokerVerified === true && typeof meta.brokerRegNo === 'string' && meta.brokerRegNo.trim().length > 0) || meta?.businessVerified === true;
   const accessToken = session?.access_token ?? null;
 
-  // 회원정보 prefill (sales/jobs/new 관행) — 사용자가 이미 입력한 값은 덮지 않는다
+  // 회원정보 prefill (sales/jobs/new 관행) — 사용자가 이미 입력한 값은 덮지 않는다.
+  // 수정 모드에서는 건너뛴다. 서버가 준 연락처가 진실이고, prefill 과 경쟁하면
+  // 빈 연락처로 저장된 매물이 회원정보로 슬쩍 바뀌어버린다.
   useEffect(() => {
-    if (!user) return;
+    if (!user || isEdit) return;
     const m = user.user_metadata as Record<string, unknown> | undefined;
     setContactName((prev) => prev || (typeof m?.name === 'string' ? m.name : ''));
     setPhone((prev) => prev || (typeof m?.phone === 'string' ? formatPhone(m.phone) : ''));
-  }, [user]);
+  }, [user, isEdit]);
+
+  // ---------- 수정 모드: 기존 매물 불러오기 ----------
+  useEffect(() => {
+    if (!editId) return;
+    if (authLoading) return;
+    if (!user || !accessToken) return; // 미로그인 게이트가 먼저 걸린다
+
+    let cancelled = false;
+    const controller = new AbortController();
+
+    (async () => {
+      setEditLoadState('loading');
+      try {
+        const res = await fetch(`${CREATE_ENDPOINT}/${editId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: controller.signal,
+        });
+
+        if (!res.ok) {
+          if (cancelled) return;
+          setEditLoadState(res.status === 404 ? 'notfound' : res.status === 403 ? 'forbidden' : 'error');
+          return;
+        }
+
+        const data = (await res.json()) as Stay;
+        if (cancelled) return;
+
+        // ⚠️ GET 은 공개 매물이면 누구에게나 200 이다. 소유자가 아니면 폼을 채우지 않는다.
+        if (!data || data.user_id !== user.id) {
+          setEditLoadState('forbidden');
+          return;
+        }
+
+        setDealType(pickFromList(STAY_DEAL_TYPES, data.deal_type) ?? 'short_term');
+        setStayType(pickFromList(SELECTABLE_STAY_TYPES, data.stay_type) ?? '');
+        setTitle(data.title ?? '');
+        setDescription(data.description ?? '');
+
+        setAddress(data.address ?? '');
+        setDetailAddress(data.detail_address ?? '');
+        setJibunAddress(data.jibun_address ?? '');
+        setRegion(data.region ?? '');
+        setSigungu(data.sigungu ?? '');
+        setBcode(data.bcode ?? '');
+        setLawdCd(data.lawd_cd ?? null);
+        setPnu(data.pnu ?? null);
+        setLat(data.lat ?? null);
+        setLng(data.lng ?? null);
+        setGeocodeSource(toGeocodeSource(data.geocode_source ?? null));
+
+        setMgmBldrgstPk(data.mgm_bldrgst_pk ?? null);
+        setBuildingName(data.building_name ?? '');
+        setMainPurps(data.main_purps_cd_nm ?? '');
+        setUseAprDay(data.use_apr_day ?? '');
+        setTotalFloors(numToInput(data.total_floors));
+        setElevatorCnt(numToInput(data.elevator_cnt));
+        setParkingTotal(numToInput(data.parking_total));
+        setBuildingVerified(data.building_verified === true);
+
+        setFloor(numToInput(data.floor));
+        setExclusiveArea(numToInput(data.exclusive_area));
+        setSupplyArea(numToInput(data.supply_area));
+        setRooms(numToInput(data.rooms));
+        setBaths(numToInput(data.baths));
+        setRoomStructure(pickFromList(STAY_ROOM_STRUCTURES, data.room_structure) ?? '');
+
+        // 원 단위 → 만원 단위 입력값
+        setDepositManwon(wonToManwonInput(data.deposit_won));
+        setMonthlyManwon(wonToManwonInput(data.monthly_fee_won));
+        setMaintenanceManwon(wonToManwonInput(data.maintenance_fee_won));
+        setMaintenanceIncluded(data.maintenance_included === true);
+        setUtilitiesIncluded(data.utilities_included === true);
+        setMinStayDays(numToInput(data.min_stay_days));
+        setMaxStayDays(numToInput(data.max_stay_days));
+        setAvailableFrom(data.available_from ?? '');
+        setAvailableTo(data.available_to ?? '');
+
+        setAmenities(filterList(STAY_AMENITIES, data.amenities));
+        setAppliances(filterList(STAY_APPLIANCES, data.appliances));
+        setParkingAvailable(data.parking_available === true);
+        setPetsAllowed(data.pets_allowed === true);
+        setSmokingAllowed(data.smoking_allowed === true);
+
+        setImages(Array.isArray(data.images) ? data.images.filter((v): v is string => typeof v === 'string') : []);
+
+        setOwnerType(pickFromList(STAY_OWNER_TYPES, data.owner_type) ?? 'agent');
+        setIsExclusive(data.is_exclusive === true);
+
+        setContactName(data.contact_name ?? '');
+        setPhone(data.phone ? formatPhone(data.phone) : '');
+        setKakaoUrl(data.kakao_url ?? '');
+        setContactHours(data.contact_hours ?? '');
+
+        setStatus(pickFromList(STAY_STATUSES, data.status) ?? 'available');
+
+        setEditLoadState('ready');
+      } catch (err) {
+        if (cancelled || controller.signal.aborted) return;
+        console.error('[stay/new] load for edit failed', err);
+        setEditLoadState('error');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [editId, accessToken, user, authLoading]);
 
   // ---------- 주소 확정 → 좌표·건축물대장 프리필 ----------
   const lookupAbortRef = useRef<AbortController | null>(null);
@@ -496,8 +660,9 @@ export default function StayCreateForm() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(CREATE_ENDPOINT, {
-        method: 'POST',
+      // 수정 모드도 body 는 buildPayload() 그대로 — agent_* 는 여전히 보내지 않는다(서버가 채운다).
+      const res = await fetch(isEdit ? `${CREATE_ENDPOINT}/${editId}` : CREATE_ENDPOINT, {
+        method: isEdit ? 'PATCH' : 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
@@ -512,15 +677,29 @@ export default function StayCreateForm() {
           data?.error ||
             (res.status === 401
               ? '로그인이 만료되었습니다. 다시 로그인해 주세요.'
-              : '매물 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.')
+              : res.status === 403
+                ? '이 매물을 수정할 권한이 없습니다.'
+                : isEdit
+                  ? '매물 수정에 실패했습니다. 잠시 후 다시 시도해 주세요.'
+                  : '매물 등록에 실패했습니다. 잠시 후 다시 시도해 주세요.')
         );
+        return;
+      }
+
+      if (isEdit) {
+        // 수정은 완료 화면 없이 내 매물 관리로 돌아간다
+        router.push('/agent/stays');
         return;
       }
 
       setCreated(data as Stay);
     } catch (err) {
       console.error('[stay/new] submit failed', err);
-      setSubmitError('네트워크 오류로 등록하지 못했습니다. 다시 시도해 주세요.');
+      setSubmitError(
+        isEdit
+          ? '네트워크 오류로 수정하지 못했습니다. 다시 시도해 주세요.'
+          : '네트워크 오류로 등록하지 못했습니다. 다시 시도해 주세요.'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -553,6 +732,40 @@ export default function StayCreateForm() {
           className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
         >
           로그인하러 가기
+        </Link>
+      </div>
+    );
+  }
+
+  // ---------- 수정 모드 게이트 ----------
+  if (isEdit && editLoadState === 'loading') {
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center" aria-busy="true">
+        <Loader2 className="mx-auto h-6 w-6 animate-spin text-blue-600" aria-hidden />
+        <p className="mt-3 text-sm text-slate-500">매물 정보를 불러오는 중입니다...</p>
+      </div>
+    );
+  }
+
+  if (isEdit && editLoadState !== 'ready') {
+    const message =
+      editLoadState === 'notfound'
+        ? '매물을 찾을 수 없습니다. 이미 삭제되었거나 잘못된 주소입니다.'
+        : editLoadState === 'forbidden'
+          ? '이 매물을 수정할 권한이 없습니다. 본인이 등록한 매물만 수정할 수 있습니다.'
+          : '매물 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
+    return (
+      <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+          <ShieldAlert className="h-7 w-7 text-red-600" aria-hidden />
+        </div>
+        <h3 className="mt-4 text-lg font-bold text-slate-900">수정할 수 없습니다</h3>
+        <p className="mt-2 text-sm leading-relaxed text-slate-600">{message}</p>
+        <Link
+          href="/agent/stays"
+          className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+        >
+          내 매물 관리로
         </Link>
       </div>
     );
@@ -1297,10 +1510,12 @@ export default function StayCreateForm() {
         {submitting ? (
           <span className="inline-flex items-center gap-2">
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-            등록 중...
+            {isEdit ? '저장 중...' : '등록 중...'}
           </span>
         ) : imagesUploading ? (
           '사진 등록이 끝나면 제출할 수 있습니다'
+        ) : isEdit ? (
+          '수정 내용 저장하기'
         ) : (
           '매물 등록하기'
         )}

@@ -22,7 +22,7 @@
 
 ## 남은 작업
 - **admin 토큰 실검증 (미완)** — 승인/노출 토글·status 변경이 실제 DB에 반영되는지. 현재는 무토큰 403 경로만 검증됨. 관리자 계정 자격 증명 필요
-- **주입차단 실증 (미완)** — 로그인 토큰으로 POST 시 `agent_*` / `is_approved` 강제 주입이 무시되는지
+- **주입차단 로컬 회귀 완료 / 실계정 검증 미완** — API 핸들러 테스트에서 `agent_*` / `is_approved` / `user_id` / `views` 강제 주입 무시 확인. 로그인 테스트 계정과 운영·스테이징 DB 검증은 남음
 - **Phase 9** — `NEXT_PUBLIC_STAY_ENABLED=true` 플래그 on + 스테이징 전체 1회전
 - (선택) `stay-leads` 는 API만 있고 `/onsia` 탭 UI 미연결
 
@@ -35,6 +35,7 @@
 - `stayCreateSchema`는 `.passthrough()` 금지 (명시 화이트리스트만)
 - curl 검증 시 **User-Agent 헤더 필수** — middleware가 UA 없으면 403 오탐
 - 중개사 법정표기 6항목은 **서버 스냅샷**. anon RLS로 조인 불가
+- 중개사 자동 승인은 서버 관리 `app_metadata.brokerVerified + brokerRegNo` 연결이 필요하다. `user_metadata`의 기존 플래그나 users 프로필 등록번호를 권한 근거로 사용하지 않는다.
 - Supabase 프로젝트 2개 혼동 주의: 앱은 `pkbnudkbkhzqjhwffkbj`(onsia-job, FREE). `uwddeseqwdsryvuoulsm`은 별개 앱(onsia-crm)
 - dev 포트 `3007` + `NEXT_PUBLIC_STAY_ENABLED=true`
 - **`npm run lint` 는 리포 전체 106 errors / 217 warnings 가 사전 베이스라인**이다. "lint 0" 은 달성 불가 → 변경한 파일만 대상으로 eslint 돌려 비교할 것

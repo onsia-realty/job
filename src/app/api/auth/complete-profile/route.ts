@@ -97,10 +97,12 @@ export async function POST(req: NextRequest) {
       updateData.broker_reg_date = brokerRegDate || null;
     }
 
-    const { error: updateError } = await supabaseAdmin
+    const { data: updatedUser, error: updateError } = await supabaseAdmin
       .from('users')
       .update(updateData)
-      .eq('id', user.id);
+      .eq('id', user.id)
+      .select('id')
+      .maybeSingle();
 
     if (updateError) {
       // DI 유니크 위반 → 동일인 재가입
@@ -109,6 +111,10 @@ export async function POST(req: NextRequest) {
       }
       console.error('Profile update error:', updateError);
       return NextResponse.json({ error: '프로필 업데이트 실패' }, { status: 500 });
+    }
+
+    if (!updatedUser) {
+      return NextResponse.json({ error: '사용자 프로필이 없습니다. 다시 로그인해주세요.' }, { status: 409 });
     }
 
     // 본인인증 토큰 소비 완료 처리 (재사용 방지)
