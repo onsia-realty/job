@@ -1,0 +1,7 @@
+# Vercel CLI 업로드 제외 (환경변수는 Vercel 대시보드에서 관리)
+.env*
+!.env.example
+.playwright-mcp
+.toon-out
+*.tsbuildinfo
+claudedocs
