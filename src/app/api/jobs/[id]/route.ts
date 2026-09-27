@@ -109,8 +109,9 @@ export async function PATCH(
   }
 
   // 허용된 필드만 업데이트 (tier, is_approved, user_id, views 등 보호)
+  // category는 아래에서 별도 처리 (유료 등급은 카테고리별 가격이라 결제 후 변경 금지)
   const ALLOWED_FIELDS = [
-    'title', 'description', 'html_content', 'type', 'category',
+    'title', 'description', 'html_content', 'type',
     'company', 'region', 'region_detail', 'address',
     'salary_type', 'salary_amount', 'work_days', 'work_start', 'work_end',
     'deadline', 'contact_name', 'contact_phone', 'contact_email',
@@ -122,20 +123,35 @@ export async function PATCH(
     if (key in body) sanitized[key] = body[key];
   }
 
-  if (Object.keys(sanitized).length === 0) {
+  if (Object.keys(sanitized).length === 0 && !('category' in body)) {
     return NextResponse.json({ error: '수정할 내용이 없습니다' }, { status: 400 });
   }
 
   // 소유권 확인
   const { data: existing } = await supabaseAdmin
     .from('jobs')
-    .select('id')
+    .select('id, tier, category')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!existing) {
     return NextResponse.json({ error: '수정 권한이 없거나 공고를 찾을 수 없습니다' }, { status: 403 });
+  }
+
+  // category 변경: 무료(normal) 공고만 허용. 유료 공고는 같은 값이면 무시, 다르면 거부
+  if ('category' in body && body.category !== existing.category) {
+    if (existing.tier && existing.tier !== 'normal') {
+      return NextResponse.json({ error: '유료 공고는 구분(분양상담사/공인중개사)을 변경할 수 없습니다' }, { status: 400 });
+    }
+    if (body.category !== 'agent' && body.category !== 'sales') {
+      return NextResponse.json({ error: '구분(분양상담사/공인중개사)을 확인해주세요' }, { status: 400 });
+    }
+    sanitized.category = body.category;
+  }
+
+  if (Object.keys(sanitized).length === 0) {
+    return NextResponse.json({ error: '수정할 내용이 없습니다' }, { status: 400 });
   }
 
   const { data, error } = await supabaseAdmin

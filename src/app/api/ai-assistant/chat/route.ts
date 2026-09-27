@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { streamChatResponse, checkRateLimit } from '@/lib/ai-assistant';
-import type { ChatMessage } from '@/lib/ai-assistant';
+import { streamChatResponse, checkRateLimit, sanitizeChatMessages } from '@/lib/ai-assistant';
 
 export const maxDuration = 60;
 
@@ -72,11 +71,12 @@ export async function POST(request: NextRequest) {
 
     // 2. Parse request body
     const body = await request.json();
-    const messages: ChatMessage[] = body.messages;
+    // 역할 user/assistant만, 최근 20개, 개당 4000자, 총 30000자로 trim
+    const messages = sanitizeChatMessages(body.messages);
     const sessionId: string | undefined = body.sessionId;
     const isFirstMessage: boolean = body.isFirstMessage || false;
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    if (messages.length === 0) {
       return NextResponse.json(
         { error: 'INVALID_REQUEST', message: '메시지를 입력해주세요' },
         { status: 400 }

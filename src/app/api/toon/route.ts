@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')));
-    const status = searchParams.get('status') || 'published';
+    // 공개 API: 초안(draft 등) 노출 방지 — status 쿼리 무시, published만 반환
+    const status = 'published';
     const offset = (page - 1) * limit;
 
     const { data: episodes, error, count } = await supabaseAdmin

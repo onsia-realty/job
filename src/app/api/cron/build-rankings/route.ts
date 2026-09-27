@@ -5,14 +5,12 @@ import { buildSlowRankings, RANK_SIDOS, RANK_TYPES, SLOW_METRICS, cacheKey } fro
 export const maxDuration = 300; // 사전계산은 다소 무거움
 
 // GET /api/cron/build-rankings — 느린 지표(신고가/최근하락/최근상승) 사전계산 → market_rankings 저장
-// Vercel Cron(일 1회) 또는 수동 호출. CRON_SECRET 있으면 Bearer 검증.
+// Vercel Cron(일 1회) 또는 수동 호출. CRON_SECRET 필수 + Bearer 검증 (미설정 시 401).
 export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization') || '';
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = req.headers.get('authorization');
-    if (auth !== `Bearer ${secret}`) {
-      return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-    }
+  if (!secret || authHeader !== `Bearer ${secret}`) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
   const started = Date.now();
