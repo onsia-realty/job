@@ -24,7 +24,36 @@ describe('buildSupportSystemPrompt', () => {
     expect(prompt).toContain(`${opt.days}일 구매 + ${opt.bonusDays}일 무료`);
     for (const o of PRICING_TIERS['sales-premium'].options) {
       expect(prompt).toContain(won(getTotalPrice(o.price)));
+      // 공급가를 먼저, 부가세 별도 명시 후 결제금액을 괄호로
+      expect(prompt).toContain(`공급가 ${won(o.price)} (부가세 별도, 결제금액 ${won(getTotalPrice(o.price))}`);
     }
+  });
+
+  it('가격 섹션은 "부가세 별도" 기준이며 "부가세 포함"이라고 하지 않는다', () => {
+    const prompt = buildSupportSystemPrompt();
+    const start = prompt.indexOf('## 유료 광고상품 가격');
+    const end = prompt.indexOf('## 환불·취소 정책');
+    expect(start).toBeGreaterThanOrEqual(0);
+    expect(end).toBeGreaterThan(start);
+    const pricing = prompt.slice(start, end);
+    expect(pricing).toContain('부가세 별도');
+    expect(pricing).not.toContain('부가세 포함');
+    // 답변 규칙에도 공급가 우선 안내 + 실제 toss.ts 숫자로 만든 예시
+    const opt = PRICING_TIERS['sales-premium'].options[0];
+    expect(prompt).toContain(`${won(opt.price)} (부가세 별도, 결제금액 ${won(getTotalPrice(opt.price))})`);
+    expect(prompt).not.toContain('부가세 포함 결제금액');
+  });
+
+  it('위젯 FAQ 가격 요약도 공급가 + 부가세 별도 기준이다', () => {
+    const faq = buildPricingFaqText();
+    for (const tier of Object.values(PRICING_TIERS)) {
+      if (tier.purchaseEnabled === false) continue;
+      for (const o of tier.options) {
+        expect(faq).toContain(`${won(o.price)} (부가세 별도, 결제금액 ${won(getTotalPrice(o.price))})`);
+      }
+    }
+    expect(faq).toContain('부가세(10%)는 별도');
+    expect(faq).not.toContain('부가세 포함');
   });
 
   it('낡은 정보(포트원, 분양 4,900원/5일)를 포함하지 않는다', () => {

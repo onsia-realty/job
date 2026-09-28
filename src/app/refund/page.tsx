@@ -1,5 +1,22 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { PRICING_TIERS, getExposureDays, type PricingTier } from '@/lib/toss';
+
+// 1.1 표 — 가격·기간은 toss.ts PRICING_TIERS(공급가) 에서 생성
+const PRICE_GROUPS: { category: PricingTier['category']; label: string }[] = [
+  { category: 'agent', label: '공인중개사 상품' },
+  { category: 'sales', label: '분양상담사 상품' },
+];
+
+const SERVICE_DESC: Record<string, string> = {
+  'agent-basic': '검색 상위 노출, BASIC 배지',
+  'agent-premium': '상단 고정 노출, 프리미엄 배지, 인재추천',
+  'agent-vip': '최상단 고정, VIP 배지, 긴급채용 표시, 맞춤인재 매칭 (지역 독점)',
+  'sales-premium': '일반 목록 반짝이 효과, 베이직 배지',
+  'sales-superior': '전용 그리드 노출, 슈페리어 배지',
+  'sales-dia': '추천 영역 상단 고정 노출, 다이아 배지',
+  'sales-unique': '최상단 슬라이더 + 전용 그리드 노출, 유니크 배지 (지역 독점)',
+};
 
 export const metadata: Metadata = {
   title: '환불·취소 정책 | 온시아 JOB',
@@ -57,32 +74,49 @@ export default function RefundPage() {
                   <th className="border border-blue-200 px-4 py-3 text-left font-bold text-blue-900">상품명</th>
                   <th className="border border-blue-200 px-4 py-3 text-left font-bold text-blue-900">서비스 내용</th>
                   <th className="border border-blue-200 px-4 py-3 text-center font-bold text-blue-900">제공기간</th>
-                  <th className="border border-blue-200 px-4 py-3 text-right font-bold text-blue-900">이용요금</th>
+                  <th className="border border-blue-200 px-4 py-3 text-right font-bold text-blue-900">이용요금(공급가)</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td className="border border-gray-200 px-4 py-3 font-medium">BASIC</td>
-                  <td className="border border-gray-200 px-4 py-3 text-gray-600">검색 상위 노출, BASIC 배지</td>
-                  <td className="border border-gray-200 px-4 py-3 text-center">결제 즉시 ~ 5일</td>
-                  <td className="border border-gray-200 px-4 py-3 text-right font-medium">4,900원</td>
-                </tr>
-                <tr className="bg-gray-50/50">
-                  <td className="border border-gray-200 px-4 py-3 font-medium">PREMIUM</td>
-                  <td className="border border-gray-200 px-4 py-3 text-gray-600">상단 고정 노출, PREMIUM 배지, 인재추천</td>
-                  <td className="border border-gray-200 px-4 py-3 text-center">결제 즉시 ~ 7일</td>
-                  <td className="border border-gray-200 px-4 py-3 text-right font-medium">9,900원</td>
-                </tr>
-                <tr>
-                  <td className="border border-gray-200 px-4 py-3 font-medium">VIP</td>
-                  <td className="border border-gray-200 px-4 py-3 text-gray-600">최상단 고정, VIP 배지, 긴급채용 표시, 맞춤인재 매칭</td>
-                  <td className="border border-gray-200 px-4 py-3 text-center">결제 즉시 ~ 7일</td>
-                  <td className="border border-gray-200 px-4 py-3 text-right font-medium">24,900원</td>
-                </tr>
-              </tbody>
+              {PRICE_GROUPS.map((group) => (
+                <tbody key={group.category}>
+                  <tr className="bg-gray-100">
+                    <td colSpan={4} className="border border-gray-200 px-4 py-2 font-bold text-gray-800">{group.label}</td>
+                  </tr>
+                  {Object.entries(PRICING_TIERS)
+                    .filter(([, tier]) => tier.category === group.category)
+                    .map(([key, tier]) =>
+                      tier.options.map((o, i) => (
+                        <tr key={`${key}-${o.days}`}>
+                          {i === 0 && (
+                            <>
+                              <td rowSpan={tier.options.length} className="border border-gray-200 px-4 py-3 font-medium align-top">
+                                {tier.name}
+                                {tier.purchaseEnabled === false && (
+                                  <span className="block text-xs font-normal text-gray-500 mt-1">판매 준비 중</span>
+                                )}
+                              </td>
+                              <td rowSpan={tier.options.length} className="border border-gray-200 px-4 py-3 text-gray-600 align-top">
+                                {SERVICE_DESC[key] ?? '유료 공고 노출'}
+                              </td>
+                            </>
+                          )}
+                          <td className="border border-gray-200 px-4 py-3 text-center">
+                            결제 즉시 ~ {getExposureDays(o)}일
+                            {o.bonusDays > 0 && (
+                              <span className="block text-xs text-gray-500">({o.days}일 + 무료 {o.bonusDays}일)</span>
+                            )}
+                          </td>
+                          <td className="border border-gray-200 px-4 py-3 text-right font-medium">
+                            {tier.purchaseEnabled === false ? '판매 준비 중' : `${o.price.toLocaleString('ko-KR')}원`}
+                          </td>
+                        </tr>
+                      )),
+                    )}
+                </tbody>
+              ))}
             </table>
           </div>
-          <p className="text-sm text-gray-500 mt-2">※ 모든 금액은 부가가치세(VAT) 포함 금액입니다.</p>
+          <p className="text-sm text-gray-500 mt-2">※ 표시 금액은 공급가액이며 부가세(10%)는 별도입니다. 결제 시 부가세가 더해진 금액이 청구됩니다.</p>
           <p className="text-sm text-gray-500">※ 서비스 제공기간은 <strong>결제 완료 즉시 개시</strong>되며, 해당 기간 만료 시 자동 종료됩니다.</p>
 
           <h3 className="text-xl font-bold text-gray-900 mt-8 mb-4 pb-2 border-b border-gray-200">1.2 무료서비스</h3>

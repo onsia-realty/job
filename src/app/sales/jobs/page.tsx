@@ -20,6 +20,18 @@ import type { BannerSlide } from '@/components/sales/ui/BannerCarousel';
 import type { SalesJobListing, SalesJobType, SalesJobTier, SalaryType, SalesJobBadge } from '@/types';
 import { REGIONS } from '@/types';
 import { allJobs } from '@/data/salesJobsSample';
+import { PRICING_TIERS, getExposureDays } from '@/lib/toss';
+
+// 업그레이드 안내 문구 — 분양 입문 등급(베이직) 첫 옵션, 공급가 기준 (toss.ts 단일 출처)
+const SALES_ENTRY = (() => {
+  const tier = PRICING_TIERS['sales-premium'];
+  const o = tier.options[0];
+  return {
+    name: tier.name,
+    priceText: `₩${o.price.toLocaleString('ko-KR')}`,
+    periodText: o.bonusDays > 0 ? `${o.days}일+${o.bonusDays}일(${getExposureDays(o)}일)` : `${o.days}일`,
+  };
+})();
 
 // allJobs 샘플은 @/data/salesJobsSample 로 분리. 하위호환 재export:
 export { allJobs };
@@ -434,7 +446,7 @@ export default function SalesJobsPage() {
                 </div>
                 <div className="mt-3 text-center">
                   <Link href="/sales/premium" className="text-xs text-cyan-600 hover:text-cyan-700 font-semibold">
-                    프리미엄 광고 신청하기 (₩4,900/5일) →
+                    {SALES_ENTRY.name} 광고 신청하기 ({SALES_ENTRY.priceText}~/{SALES_ENTRY.periodText}, 부가세 별도) →
                   </Link>
                 </div>
               </section>
@@ -458,7 +470,7 @@ export default function SalesJobsPage() {
                   <AlertCircle className="w-4 h-4 text-violet-500 flex-shrink-0" />
                   <p className="text-xs text-violet-700">
                     무료 공고는 24시간 후 자동 만료됩니다.{' '}
-                    <strong>프리미엄 ₩4,900</strong>으로 5일간 노출하세요 →
+                    <strong>{SALES_ENTRY.name} {SALES_ENTRY.priceText}~</strong>으로 {SALES_ENTRY.periodText} 노출하세요 (부가세 별도) →
                   </p>
                 </div>
                 <Link href="/sales/premium" className="text-xs text-violet-700 font-bold hover:text-violet-900 whitespace-nowrap">

@@ -108,7 +108,7 @@ function formatTierLines(tier: PricingTier): string[] {
       ? `${o.days}일 구매 + ${o.bonusDays}일 무료 = 총 ${exposure}일 노출`
       : `${o.days}일 노출`;
     lines.push(
-      `  · ${period}: 결제금액 ${won(getTotalPrice(o.price))} (부가세 포함 / 공급가 ${won(o.price)} + 부가세 ${won(getVat(o.price))})`,
+      `  · ${period}: 공급가 ${won(o.price)} (부가세 별도, 결제금액 ${won(getTotalPrice(o.price))} = 공급가 + 부가세 ${won(getVat(o.price))})`,
     );
   }
   return lines;
@@ -128,7 +128,17 @@ export function buildPricingSection(): string {
   return out.join('\n').trim();
 }
 
-/** 위젯 FAQ 용 짧은 가격 요약 (부가세 포함 결제금액 기준) */
+/** 답변 규칙용 가격 안내 예시 — 분양 베이직 첫 옵션에서 생성 (숫자 하드코딩 금지) */
+function pricingExample(): string {
+  const tier = PRICING_TIERS['sales-premium'];
+  const o = tier.options[0];
+  const period = o.bonusDays > 0
+    ? `${getExposureDays(o)}일(${o.days}일+${o.bonusDays}일 무료)`
+    : `${o.days}일`;
+  return `${tier.name} ${period}: ${won(o.price)} (부가세 별도, 결제금액 ${won(getTotalPrice(o.price))})`;
+}
+
+/** 위젯 FAQ 용 짧은 가격 요약 (공급가 기준, 부가세 별도 — 결제금액은 괄호로 병기) */
 export function buildPricingFaqText(): string {
   const out: string[] = [];
   for (const category of ['agent', 'sales'] as const) {
@@ -141,13 +151,13 @@ export function buildPricingFaqText(): string {
         continue;
       }
       const opts = tier.options
-        .map((o) => `${o.bonusDays > 0 ? `${o.days}+${o.bonusDays}일` : `${o.days}일`} ${won(getTotalPrice(o.price))}`)
+        .map((o) => `${o.bonusDays > 0 ? `${o.days}+${o.bonusDays}일` : `${o.days}일`} ${won(o.price)} (부가세 별도, 결제금액 ${won(getTotalPrice(o.price))})`)
         .join(' / ');
       out.push(`• ${tier.name}${tier.exclusive ? '(지역 독점)' : ''}: ${opts}`);
     }
     out.push('');
   }
-  out.push('※ 부가세 포함 결제금액이에요. 결제는 토스페이먼츠로 진행돼요.');
+  out.push('※ 표시 금액은 공급가이고 부가세(10%)는 별도예요. 결제할 때 부가세가 더해진 결제금액이 청구돼요. 결제는 토스페이먼츠로 진행돼요.');
   return out.join('\n');
 }
 
@@ -228,7 +238,7 @@ ${buildFeatureSection()}
 ## 회원가입 / 계정
 ${buildSignupSection()}
 
-## 유료 광고상품 가격 (결제 화면과 동일하게 부가세 포함 결제금액으로 안내)
+## 유료 광고상품 가격 (가격표 금액은 공급가, 부가세 10% 별도 — 결제금액은 공급가 + 부가세)
 ${buildPricingSection()}
 - 분양상담사 상품은 베이직·슈페리어·다이아·유니크 4등급이에요. 고객이 분양 쪽에서 '프리미엄'이라고 물으면 "분양상담사 상품은 베이직·슈페리어·다이아·유니크로 나뉘어요"라고 안내하고, 가장 기본 등급인 베이직 가격을 알려 주세요. 내부 상품 코드(premium 등)는 절대 언급하지 마세요.
 - 공인중개사 상품은 BASIC·프리미엄·VIP 3등급이에요.
@@ -246,7 +256,7 @@ ${memberBlock ? `\n## 회원 정보 (지금 대화 중인 로그인 회원 본�
 ## 답변 규칙
 1. 처음부터 끝까지 해요체로 친절하고 짧게 답해요('~습니다/~드리겠습니다' 같은 합니다체는 쓰지 않아요). 5문장 이내, 필요하면 "- " 로 시작하는 짧은 목록을 써요. 채팅창은 마크다운을 표시하지 못하니 **굵게**, # 제목, 표 같은 마크다운 문법은 쓰지 않아요.
 2. 위에 적힌 정보만 사실로 말해요. 가격·기간·정책·기능을 절대 지어내지 말고, 모르는 내용은 모른다고 말해요.
-3. 가격은 부가세 포함 결제금액으로 말하고, 필요하면 공급가도 함께 알려 줘요.
+3. 가격은 항상 "공급가 N원 (부가세 별도)"를 먼저 말하고, 이어서 괄호 안에 결제금액을 알려 줘요. 예: "${pricingExample()}". 결제금액만 단독으로 가격처럼 말하지 않아요.
 4. 부동산 법률·세금 같은 전문 상담 질문은 일반적인 방향만 짧게 말하고, 변호사·세무사 등 전문가 상담을 권해요. (중개 실무 질문은 회원 전용 AI 실무비서도 안내할 수 있어요.)
 5. 다음 경우에는 답변 마지막 줄에 정확히 ${HANDOFF_TOKEN} 를 붙여요: 확실히 답할 수 없을 때, 사용자가 사람/상담원과 이야기하고 싶어 할 때, 실제 환불·결제 취소 처리를 요청할 때, 결제 오류·이중결제 등 결제 문제가 있을 때, 계정 문제(탈퇴·해킹 등)를 직접 처리해 달라고 할 때.
 6. ${HANDOFF_TOKEN} 를 붙일 때는 "상담원이 도와드릴게요"라는 취지로 한두 문장만 쓰고 연락처(${handoffContacts})를 한 번 안내해요.

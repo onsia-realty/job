@@ -114,6 +114,42 @@ const SALES_UNIQUE_JOBS = [
   },
 ];
 
+// 한글 주제 조사(은/는)
+function topicParticle(word: string): string {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code <= 11171 && code % 28 !== 0 ? '은' : '는';
+}
+
+// 분양 FAQ "기간은 어떻게 선택하나요?" 답변 — toss.ts PRICING_TIERS 에서 생성 (하드코딩 금지)
+function buildSalesPeriodFaq(): string {
+  const tiers = Object.values(PRICING_TIERS).filter((t) => t.category === 'sales');
+  const group = (keyOf: (t: (typeof tiers)[number]) => string) => {
+    const m = new Map<string, string[]>();
+    for (const t of tiers) {
+      const k = keyOf(t);
+      m.set(k, [...(m.get(k) ?? []), t.name]);
+    }
+    return m;
+  };
+  const join = (names: string[]) => names.join('·');
+
+  const periods = [...group((t) => t.options.map((o) => o.days).join('·'))]
+    .map(([days, names]) => `${join(names)}${topicParticle(join(names))} ${days}일`)
+    .join(', ');
+
+  const bonusGroups = group((t) =>
+    t.options.filter((o) => o.bonusDays > 0).map((o) => `${o.days}일 구매 시 ${o.bonusDays}일`).join(', '),
+  );
+  const noBonus = bonusGroups.get('') ?? [];
+  const withBonus = [...bonusGroups].filter(([k]) => k !== '')
+    .map(([rule, names]) => `${join(names)}${topicParticle(join(names))} ${rule}`);
+
+  let text = `${periods} 중에서 고를 수 있습니다.`;
+  if (withBonus.length) text += ` ${withBonus.join(', ')}을 무료로 더 드립니다.`;
+  if (noBonus.length) text += ` ${join(noBonus)}${topicParticle(join(noBonus))} 무료 증정 기간이 없습니다.`;
+  return `${text} (표시 가격은 공급가, 부가세 별도)`;
+}
+
 // 가격 데이터
 const PRICING_DATA = {
   agent: {
@@ -237,7 +273,7 @@ const PRICING_DATA = {
     faqs: [
       { q: '광고 효과는 언제부터 시작되나요?', a: '결제 완료 후 즉시 광고가 적용됩니다. 관리자 승인 없이 바로 상위 노출이 시작됩니다.' },
       { q: '무료 공고와 베이직의 차이점은?', a: '무료 공고는 24시간 후 자동 만료됩니다. 베이직은 7일+7일=14일 기본 노출이며, 반짝이 효과로 강조됩니다.' },
-      { q: '기간은 어떻게 선택하나요?', a: '베이직은 7일+7일(14일)이 기본이고 20·30일도 고를 수 있으며, 슈페리어·다이아·유니크는 10·20·30일 중 선택합니다. 20일 구매 시 10일을 무료로 더 드립니다(유니크 제외).' },
+      { q: '기간은 어떻게 선택하나요?', a: buildSalesPeriodFaq() },
       { q: '유니크와 슈페리어의 차이점은?', a: '유니크는 최상단에 레인보우 네온 슬라이더 배너로 노출되며, 슈페리어는 유니크 다음 전용 그리드에 노출됩니다.' },
     ],
   },
