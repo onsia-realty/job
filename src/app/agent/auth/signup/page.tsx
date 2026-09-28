@@ -4,7 +4,6 @@ import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowLeft,
   User,
   Mail,
   Lock,
@@ -26,6 +25,30 @@ import type { UserRole } from '@/types';
 import { signUpWithEmail, supabase, updateUserMetadata, getSession } from '@/lib/auth';
 import { safeStayRedirect } from '@/lib/auth-redirect';
 import type { BrokerOfficeInfo } from '@/app/api/broker/route';
+import SignupLayout from '@/components/auth/SignupLayout';
+import LegalDocModal from '@/components/legal/LegalDocModal';
+import TermsContent from '@/components/legal/TermsContent';
+import PrivacyContent from '@/components/legal/PrivacyContent';
+import MarketingConsentContent from '@/components/legal/MarketingConsentContent';
+
+type AgreementKey = 'agreeTerms' | 'agreePrivacy' | 'agreeMarketing';
+
+// 다날 본인인증 필수 여부 — 다날 계약·결제 완료 후 Vercel에 NEXT_PUBLIC_DANAL_REQUIRED=true 설정 + 재배포
+const DANAL_REQUIRED = process.env.NEXT_PUBLIC_DANAL_REQUIRED === 'true';
+
+// 약관 동의 항목 — 약관보기 모달 제목·원문 페이지·본문 매핑
+const AGREEMENTS: {
+  key: AgreementKey;
+  required: boolean;
+  label: string;
+  modalTitle: string;
+  href: string;
+  Content: () => React.ReactNode;
+}[] = [
+  { key: 'agreeTerms', required: true, label: '이용약관 동의', modalTitle: '서비스 이용약관', href: '/terms', Content: TermsContent },
+  { key: 'agreePrivacy', required: true, label: '개인정보 수집·이용 동의', modalTitle: '개인정보처리방침', href: '/privacy', Content: PrivacyContent },
+  { key: 'agreeMarketing', required: false, label: '마케팅 정보 수신 — 결제할인·프로모션 이벤트 알림', modalTitle: '마케팅 정보 수신 동의', href: '/marketing-consent', Content: MarketingConsentContent },
+];
 
 interface SignUpFormData {
   email: string;
@@ -120,6 +143,8 @@ function SignUpPageContent() {
   const [verificationToken, setVerificationToken] = useState<string | null>(null);
   const [isVerified, setIsVerified] = useState(false);
   const [phoneLocked, setPhoneLocked] = useState(false);
+  // 약관보기 모달 (null = 닫힘)
+  const [openDoc, setOpenDoc] = useState<AgreementKey | null>(null);
 
   // 중개사무소 정보 조회
   const fetchBrokerInfo = async () => {
@@ -335,8 +360,8 @@ function SignUpPageContent() {
       newErrors.phone = '이미 등록된 연락처입니다';
     }
 
-    // 휴대폰 본인인증 필수 (다날 UAS) — 미인증 시 가입 차단
-    if (!isVerified || !verificationToken) {
+    // 휴대폰 본인인증 필수 (다날 UAS) — 스위치가 켜진 경우에만 미인증 가입 차단
+    if (DANAL_REQUIRED && (!isVerified || !verificationToken)) {
       newErrors.phone = '휴대폰 본인인증을 완료해주세요';
     }
 
@@ -442,21 +467,9 @@ function SignUpPageContent() {
   if (step === 'agree') {
     const allChecked = form.agreeTerms && form.agreePrivacy && form.agreeMarketing;
     const requiredOk = form.agreeTerms && form.agreePrivacy;
+    const activeDoc = AGREEMENTS.find((doc) => doc.key === openDoc) ?? null;
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-8">
-        <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
-          <div className="max-w-md mx-auto px-4">
-            <div className="flex items-center justify-between h-14">
-              <Link href="/agent/auth/login" className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-              <h1 className="font-bold text-slate-900">약관 동의</h1>
-              <div className="w-5" />
-            </div>
-          </div>
-        </header>
-
-        <main className="max-w-md mx-auto px-4 py-6">
+      <SignupLayout title="약관 동의">
           <h2 className="text-xl font-bold text-slate-900 mb-1">부동산인 시작하기</h2>
           <p className="text-sm text-slate-500 mb-6">서비스 이용을 위해 약관에 동의해주세요.</p>
 
@@ -478,23 +491,33 @@ function SignUpPageContent() {
           </button>
 
           <div className="p-4 bg-white border border-slate-200 rounded-2xl space-y-3.5">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.agreeTerms} onChange={(e) => setForm({ ...form, agreeTerms: e.target.checked })}
-                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
-              <span className="text-sm text-slate-700"><span className="text-red-500 font-semibold">[필수]</span> 이용약관 동의</span>
-              <Link href="/terms" target="_blank" className="ml-auto text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2">보기</Link>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.agreePrivacy} onChange={(e) => setForm({ ...form, agreePrivacy: e.target.checked })}
-                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
-              <span className="text-sm text-slate-700"><span className="text-red-500 font-semibold">[필수]</span> 개인정보 수집·이용 동의</span>
-              <Link href="/privacy" target="_blank" className="ml-auto text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2">보기</Link>
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input type="checkbox" checked={form.agreeMarketing} onChange={(e) => setForm({ ...form, agreeMarketing: e.target.checked })}
-                className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500" />
-              <span className="text-sm text-slate-700"><span className="text-slate-400 font-semibold">[선택]</span> 마케팅 정보 수신 — 결제할인·프로모션 이벤트 알림</span>
-            </label>
+            {AGREEMENTS.map((doc) => (
+              <div key={doc.key} className="flex items-center gap-3">
+                <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                  <input type="checkbox" checked={form[doc.key]} onChange={(e) => setForm({ ...form, [doc.key]: e.target.checked })}
+                    className="w-5 h-5 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 flex-shrink-0" />
+                  <span className="text-sm text-slate-700">
+                    {doc.required
+                      ? <span className="text-red-500 font-semibold">[필수]</span>
+                      : <span className="text-slate-400 font-semibold">[선택]</span>}{' '}
+                    {doc.label}
+                  </span>
+                </label>
+                {/* 일반 클릭은 모달로 열고, 새 탭 열기(Ctrl/⌘·가운데 클릭)는 원문 페이지로 이동 */}
+                <Link
+                  href={doc.href}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+                    e.preventDefault();
+                    setOpenDoc(doc.key);
+                  }}
+                  aria-haspopup="dialog"
+                  className="flex-shrink-0 text-xs text-slate-400 hover:text-slate-600 underline underline-offset-2 whitespace-nowrap"
+                >
+                  약관보기
+                </Link>
+              </div>
+            ))}
           </div>
 
           <p className="text-[11px] text-slate-400 mt-3 leading-relaxed">
@@ -507,14 +530,25 @@ function SignUpPageContent() {
             onClick={() => setStep('form')}
             className="w-full py-4 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl font-bold hover:from-emerald-600 hover:to-cyan-600 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed transition-all mt-5 shadow-lg shadow-emerald-500/25"
           >
-            다음
+            동의하고 시작하기
           </button>
           <p className="text-center text-sm text-slate-500 mt-6">
             이미 회원이신가요?{' '}
             <Link href="/agent/auth/login" className="text-emerald-600 font-semibold hover:text-emerald-700">로그인</Link>
           </p>
-        </main>
-      </div>
+
+          <LegalDocModal
+            open={activeDoc !== null}
+            title={activeDoc?.modalTitle ?? ''}
+            onClose={() => setOpenDoc(null)}
+            onAgree={activeDoc ? () => {
+              setForm(prev => ({ ...prev, [activeDoc.key]: true }));
+              setOpenDoc(null);
+            } : undefined}
+          >
+            {activeDoc && <activeDoc.Content />}
+          </LegalDocModal>
+      </SignupLayout>
     );
   }
 
@@ -585,24 +619,7 @@ function SignUpPageContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 pb-8">
-      {/* 헤더 */}
-      <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-md mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            <Link
-              href="/agent/auth/login"
-              className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-            <h1 className="font-bold text-slate-900">{isSocialSignup ? '추가 정보 입력' : '회원가입'}</h1>
-            <div className="w-5" />
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-md mx-auto px-4 py-6">
+    <SignupLayout title={isSocialSignup ? '추가 정보 입력' : '회원가입'}>
         {/* 개인회원 / 기업회원 탭 */}
         <div className="flex bg-slate-100 rounded-xl p-1 mb-6">
           <button
@@ -847,18 +864,20 @@ function SignUpPageContent() {
                   }`}
                 />
               </div>
-              <button
-                type="button"
-                onClick={openDanalAuth}
-                disabled={isVerified}
-                className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-emerald-500 disabled:cursor-default transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
-              >
-                {isVerified ? (
-                  <><CheckCircle2 className="w-4 h-4" /> 인증완료</>
-                ) : (
-                  <><ShieldCheck className="w-4 h-4" /> 본인인증</>
-                )}
-              </button>
+              {DANAL_REQUIRED && (
+                <button
+                  type="button"
+                  onClick={openDanalAuth}
+                  disabled={isVerified}
+                  className="px-4 py-3.5 bg-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 disabled:bg-emerald-500 disabled:cursor-default transition-colors text-sm whitespace-nowrap flex items-center gap-1.5"
+                >
+                  {isVerified ? (
+                    <><CheckCircle2 className="w-4 h-4" /> 인증완료</>
+                  ) : (
+                    <><ShieldCheck className="w-4 h-4" /> 본인인증</>
+                  )}
+                </button>
+              )}
             </div>
             {errors.phone && (
               <p className="text-red-500 text-sm mt-1 flex items-center gap-1">
@@ -872,7 +891,7 @@ function SignUpPageContent() {
                 연락처 확인 중...
               </p>
             )}
-            {!isVerified && (
+            {DANAL_REQUIRED && !isVerified && (
               <p className="text-xs text-slate-400 mt-1">
                 휴대폰 본인인증으로 이름·연락처가 자동 확인됩니다.
               </p>
@@ -1035,8 +1054,7 @@ function SignUpPageContent() {
             로그인
           </Link>
         </p>
-      </main>
-    </div>
+    </SignupLayout>
   );
 }
 
