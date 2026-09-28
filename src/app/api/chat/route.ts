@@ -1,131 +1,186 @@
+import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { getClientIp } from '@/lib/rate-limit';
+import { createRateLimiter, getClientIp } from '@/lib/rate-limit';
+import { sanitizeChatMessages, type ChatMessage } from '@/lib/ai-assistant';
+import { verifyUser } from '@/lib/auth-server';
+import { supabaseAdmin } from '@/lib/supabase-server';
+import { GEMINI_TEXT_MODEL, GEMINI_LOW_THINKING } from '@/lib/gemini-models';
+import { buildSupportSystemPrompt, extractHandoff, getSupportContact } from '@/lib/support-knowledge';
+import { fetchMemberContext } from '@/lib/support-member-context';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+// 공개 고객센터 챗봇
+// body: { messages: [{ role: 'user'|'assistant', content }], sessionId? }  (하위호환: { message })
+// res : { answer, handoff, sessionId, contact? }  — contact 는 handoff=true 일 때만
 
-const SYSTEM_PROMPT = `당신은 "부동산인" 서비스의 AI 고객센터 상담원입니다.
-부동산인은 공인중개사·분양상담사를 위한 구인구직 플랫폼입니다.
+const SUPPORT_CHAT_MODEL = GEMINI_TEXT_MODEL;
+const MAX_USER_MESSAGE_CHARS = 500;
+const HISTORY_LIMITS = { maxMessages: 12, maxContentChars: 2000, maxTotalChars: 24000 } as const;
+const SESSION_ID_RE = /^[A-Za-z0-9-]{8,64}$/;
 
-## 서비스 안내 범위
+const checkRateLimit = createRateLimiter(10); // 10회/분/IP
 
-### 구인구직
-- 모든 공고는 무료(일반)로 등록, 등록 후 유료 업그레이드 가능
-- 기업회원: 구인글 작성 (마이페이지 → 구인글 작성, 기업 인증 필요)
-- 개인회원: 이력서 등록 (마이페이지 → 내 이력서)
-- 공인중개사 / 분양상담사 카테고리 지원
-
-### 공인중개사 상품
-- 일반(무료): 24시간 노출, 일반 목록 하단
-- BASIC 4,900원/5일: 반짝이 효과, BASIC 배지, 골드 글로우 테두리
-- 프리미엄 9,900원/1주일: 전용 그리드 섹션, 프리미엄 블루 배지, 조회수 3배
-- VIP 24,900원/1주일: 레인보우 네온 슬라이더 최상단, VIP 골드 배지, 조회수 5배
-
-### 분양상담사 상품
-- 일반(무료): 24시간 노출
-- 프리미엄 4,900원/5일: 반짝이 효과, 프리미엄 시안 배지, 시안 글로우 테두리
-- 슈페리어 9,900원/1주일: 전용 그리드 섹션, 슈페리어 블루 배지, 조회수 4배
-- 유니크 24,900원/1주일: 최상단 슬라이더, 유니크 퍼플 배지, 조회수 7배
-
-### 인증
-- 기업 인증: 중개사무소 등록번호, 사업자등록번호, 또는 분양현장 명함
-- 본인 인증: 휴대폰 인증
-
-### 결제
-- 결제 수단: 신용카드 (포트원)
-- 결제 후 즉시 등급 적용, 기간 만료 시 자동으로 일반(무료) 전환
-- 상위 등급에서 하위 등급으로 다운그레이드 불가
-- 결제 및 환불 문의: onsia777@gmail.com
-
-### 계정
-- 회원가입: 이메일 또는 카카오/구글 소셜 로그인
-- 비밀번호 찾기: 로그인 → 비밀번호 찾기 → 이메일 인증
-- 회원 탈퇴: 마이페이지 → 설정 → 회원 탈퇴
-
-### 고객센터
-- 운영시간: 평일 09:00 ~ 18:00 (점심 12:00~13:00)
-- 이메일: onsia777@gmail.com
-
-## 답변 규칙
-1. 간결하고 친절하게 답변 (3~5문장 이내)
-2. 서비스 범위 외 질문은 정중히 안내 ("해당 내용은 고객센터로 문의해주세요")
-3. 불확실한 정보는 추측하지 말고 고객센터 안내
-4. 존댓말 사용, 이모지 적절히 활용
-5. 부동산 법률/세금 질문은 "전문가 상담을 권장합니다"로 안내`;
-
-// IP 기반 간단 rate limit (메모리, 서버 재시작 시 초기화)
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-
-  if (entry.count >= 10) return false;
-
-  entry.count++;
-  return true;
+let ai: GoogleGenAI | null = null;
+function getAi(): GoogleGenAI {
+  if (!ai) ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+  return ai;
 }
 
-// 오래된 엔트리 정리 (5분마다)
-setInterval(() => {
-  const now = Date.now();
-  for (const [ip, entry] of rateLimitMap) {
-    if (now > entry.resetAt) rateLimitMap.delete(ip);
+// ── 대화 로그 (best-effort) ──
+let logUnavailableWarned = false;
+
+interface TranscriptRow {
+  session_id: string;
+  user_id: string | null;
+  role: 'user' | 'assistant';
+  content: string;
+  handoff: boolean;
+  model: string | null;
+}
+
+async function logTranscript(rows: TranscriptRow[]) {
+  if (process.env.SUPPORT_CHAT_LOG_DISABLED === 'true') return;
+  try {
+    const { error } = await supabaseAdmin.from('support_chats').insert(rows);
+    // 테이블 미적용(045 마이그레이션 전) 등 — 한 번만 경고하고 챗은 계속
+    if (error && !logUnavailableWarned) {
+      logUnavailableWarned = true;
+      console.warn('[support-chat] transcript logging unavailable:', error.message);
+    }
+  } catch (e) {
+    if (!logUnavailableWarned) {
+      logUnavailableWarned = true;
+      console.warn('[support-chat] transcript logging failed:', e instanceof Error ? e.message : e);
+    }
   }
-}, 300_000);
+}
+
+function parseMessages(body: Record<string, unknown>): ChatMessage[] | { error: string } {
+  const raw: unknown = Array.isArray(body.messages)
+    ? body.messages
+    : typeof body.message === 'string'
+      ? [{ role: 'user', content: body.message }]
+      : null;
+  if (!Array.isArray(raw) || raw.length === 0) return { error: '메시지를 입력해 주세요.' };
+
+  // 마지막(이번) 사용자 메시지 길이는 잘라내기 전에 검사 — 500자 제한 유지
+  const last = raw[raw.length - 1] as Partial<ChatMessage> | undefined;
+  if (!last || last.role !== 'user' || typeof last.content !== 'string' || !last.content.trim()) {
+    return { error: '메시지를 입력해 주세요.' };
+  }
+  if (last.content.length > MAX_USER_MESSAGE_CHARS) {
+    return { error: `메시지는 ${MAX_USER_MESSAGE_CHARS}자 이내로 입력해 주세요.` };
+  }
+
+  const messages = sanitizeChatMessages(raw, HISTORY_LIMITS)
+    // 과거 사용자 메시지도 500자로 제한 (히스토리 조작으로 긴 프롬프트 주입 방지)
+    .map((m) => (m.role === 'user' ? { ...m, content: m.content.slice(0, MAX_USER_MESSAGE_CHARS) } : m));
+  // Gemini contents 는 user 로 시작해야 한다 (위젯 환영 인사 등 선행 assistant 제거)
+  while (messages.length > 0 && messages[0].role !== 'user') messages.shift();
+  if (messages.length === 0) return { error: '메시지를 입력해 주세요.' };
+  return messages;
+}
+
+const FALLBACK_ANSWER = '죄송해요, 지금은 답변을 만들지 못했어요. 상담원이 도와드릴게요.';
 
 export async function POST(request: NextRequest) {
   try {
-    // x-real-ip / x-vercel-forwarded-for 우선 (XFF 첫 항목은 클라이언트가 위조 가능)
     const ip = getClientIp(request);
-
     if (!checkRateLimit(ip)) {
       return NextResponse.json(
-        { error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
-        { status: 429 }
+        { error: '요청이 너무 많아요. 잠시 후 다시 시도해 주세요.' },
+        { status: 429 },
       );
     }
 
-    const body = await request.json();
-    const { message } = body;
-
-    if (!message || typeof message !== 'string' || !message.trim()) {
-      return NextResponse.json(
-        { error: '메시지를 입력해주세요.' },
-        { status: 400 }
-      );
+    let body: Record<string, unknown>;
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return NextResponse.json({ error: '잘못된 요청이에요.' }, { status: 400 });
+    }
+    if (!body || typeof body !== 'object') {
+      return NextResponse.json({ error: '잘못된 요청이에요.' }, { status: 400 });
     }
 
-    if (message.length > 500) {
-      return NextResponse.json(
-        { error: '메시지는 500자 이내로 입력해주세요.' },
-        { status: 400 }
-      );
+    const parsed = parseMessages(body);
+    if (!Array.isArray(parsed)) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 });
+    }
+    const messages = parsed;
+
+    const sessionId = typeof body.sessionId === 'string' && SESSION_ID_RE.test(body.sessionId)
+      ? body.sessionId
+      : randomUUID();
+
+    // 로그인 회원이면 본인 결제·공고 요약만 주입 (토큰 검증 실패 시 비회원으로 처리)
+    let userId: string | null = null;
+    let memberBlock: string | null = null;
+    if (request.headers.get('authorization')?.startsWith('Bearer ')) {
+      const user = await verifyUser(request).catch(() => null);
+      if (user) {
+        userId = user.id;
+        memberBlock = await fetchMemberContext(user.id);
+      }
     }
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: [{ role: 'user', parts: [{ text: message }] }],
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        temperature: 0.7,
-        maxOutputTokens: 500,
-      },
+    const contents = messages.map((m) => ({
+      role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
+      parts: [{ text: m.content }],
+    }));
+
+    let answer = FALLBACK_ANSWER;
+    let handoff = true;
+    try {
+      const response = await getAi().models.generateContent({
+        model: SUPPORT_CHAT_MODEL,
+        contents,
+        config: {
+          systemInstruction: buildSupportSystemPrompt(memberBlock),
+          temperature: 0.4,
+          // thinking 토큰이 maxOutputTokens 에 포함 → 1500 + thinking LOW 로 잘림 방지
+          maxOutputTokens: 1500,
+          thinkingConfig: GEMINI_LOW_THINKING,
+        },
+      });
+      const text = (response.text ?? '').trim();
+      if (text) {
+        ({ answer, handoff } = extractHandoff(text));
+        // 위젯은 일반 텍스트로 렌더링 — 모델이 넣은 굵게(**) 표시 제거
+        answer = answer.replace(/\*\*/g, '');
+        if (!answer) answer = FALLBACK_ANSWER;
+      }
+      const finish = response.candidates?.[0]?.finishReason;
+      if (finish && finish !== 'STOP') {
+        console.warn('[support-chat] finishReason:', finish, JSON.stringify(response.usageMetadata ?? {}));
+      }
+    } catch (aiErr) {
+      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      console.error('[support-chat] Gemini error:', msg);
+      const rateLimited = /429|RESOURCE_EXHAUSTED|Too Many Requests/i.test(msg);
+      answer = rateLimited
+        ? '지금 문의가 많아 AI 상담이 잠시 어려워요. 잠시 후 다시 시도하시거나 상담원에게 문의해 주세요.'
+        : FALLBACK_ANSWER;
+      handoff = true;
+    }
+
+    const lastUser = messages[messages.length - 1];
+    await logTranscript([
+      { session_id: sessionId, user_id: userId, role: 'user', content: lastUser.content, handoff: false, model: null },
+      { session_id: sessionId, user_id: userId, role: 'assistant', content: answer, handoff, model: SUPPORT_CHAT_MODEL },
+    ]);
+
+    return NextResponse.json({
+      answer,
+      handoff,
+      sessionId,
+      ...(handoff ? { contact: getSupportContact() } : {}),
     });
-
-    const text = response.text ?? '죄송합니다. 답변을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.';
-
-    return NextResponse.json({ answer: text });
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json(
-      { error: '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.' },
-      { status: 500 }
+      { error: '서버 오류가 발생했어요. 잠시 후 다시 시도해 주세요.' },
+      { status: 500 },
     );
   }
 }

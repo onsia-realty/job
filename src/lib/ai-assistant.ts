@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { GEMINI_TEXT_MODEL, GEMINI_LOW_THINKING } from '@/lib/gemini-models';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -114,9 +115,12 @@ export const CHAT_HISTORY_LIMITS = {
 
 // user/assistant 역할 + 문자열 content만 남기고, 최근 20개 / 개당 4000자 / 총 30000자로 trim
 // (총량 초과 시 오래된 메시지부터 제거, 마지막 메시지는 유지)
-export function sanitizeChatMessages(raw: unknown): ChatMessage[] {
+export function sanitizeChatMessages(
+  raw: unknown,
+  limits: Partial<{ maxMessages: number; maxContentChars: number; maxTotalChars: number }> = {},
+): ChatMessage[] {
   if (!Array.isArray(raw)) return [];
-  const { maxMessages, maxContentChars, maxTotalChars } = CHAT_HISTORY_LIMITS;
+  const { maxMessages, maxContentChars, maxTotalChars } = { ...CHAT_HISTORY_LIMITS, ...limits };
 
   const valid: ChatMessage[] = raw
     .filter((m): m is ChatMessage =>
@@ -143,12 +147,14 @@ export async function streamChatResponse(
 
   try {
     const response = await ai.models.generateContentStream({
-      model: 'gemini-2.5-flash',
+      model: GEMINI_TEXT_MODEL,
       contents,
       config: {
         systemInstruction: SYSTEM_PROMPT,
         temperature: 0.7,
-        maxOutputTokens: 4096,
+        // thinking 토큰도 maxOutputTokens 에 포함 → 상세 답변이 잘리지 않게 여유 확보
+        maxOutputTokens: 8192,
+        thinkingConfig: GEMINI_LOW_THINKING,
       },
     });
 

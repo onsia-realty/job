@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { GoogleGenAI } from '@google/genai';
+import { GEMINI_TEXT_MODEL, GEMINI_LOW_THINKING } from '@/lib/gemini-models';
 
 export const maxDuration = 30;
 
@@ -101,8 +102,10 @@ ${growth !== null ? `- 전월 대비 변동률: ${growth > 0 ? '+' : ''}${growth
     try {
       const ai = new GoogleGenAI({ apiKey: gemini_key });
       const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: GEMINI_TEXT_MODEL,
         contents: prompt,
+        // thinking 토큰이 maxOutputTokens 에 포함되므로 2~3문장 요약에도 여유를 둔다
+        config: { maxOutputTokens: 1500, thinkingConfig: GEMINI_LOW_THINKING },
       });
       text = (result.text || '').trim();
     } catch (aiErr) {
