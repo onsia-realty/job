@@ -652,7 +652,7 @@ export default function SalesJobsPage() {
             <a href="mailto:onsia777@gmail.com" className="hover:text-violet-600">문의하기</a>
           </div>
           <div className="text-xs text-gray-400 space-y-1">
-            <p>온시아 공인중개사ㅣ대표이사: 연대겸ㅣ사업자등록번호: 846-23-01501</p>
+            <p>온시아 공인중개사사무소ㅣ대표이사: 연대겸ㅣ사업자등록번호: 846-23-01501</p>
             <p>주소: 서울특별시 송파구 중대로 197, 3동 305층 A169(가락동)ㅣ대표전화: <a href="tel:1555-1245" className="hover:text-violet-600">1555-1245</a></p>
             <p>업태: 정보통신업ㅣ종목: 소프트웨어 개발 및 공급업, 포털 및 인터넷 정보 매개 서비스업</p>
             <p className="mt-2">© {new Date().getFullYear()} BOOIN Corp. All rights reserved.</p>

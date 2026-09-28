@@ -22,7 +22,7 @@ export default function Footer({ variant = 'full' }: FooterProps) {
           <div className="border-t border-white/5 pt-5">
             <div className="text-xs text-gray-600 leading-relaxed space-y-1">
               <p>
-                <span className="text-gray-500">온시아 공인중개사</span>
+                <span className="text-gray-500">온시아 공인중개사사무소</span>
                 <span className="mx-2">|</span>
                 대표이사: 연대겸
                 <span className="mx-2">|</span>
@@ -66,7 +66,7 @@ export default function Footer({ variant = 'full' }: FooterProps) {
         <div className="border-t border-white/5 pt-6">
           <div className="text-xs text-gray-600 leading-relaxed space-y-1">
             <p>
-              <span className="text-gray-500">온시아 공인중개사</span>
+              <span className="text-gray-500">온시아 공인중개사사무소</span>
               <span className="mx-2">|</span>
               대표이사: 연대겸
               <span className="mx-2">|</span>

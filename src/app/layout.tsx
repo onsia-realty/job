@@ -157,7 +157,7 @@ export default function RootLayout({
               description: "공인중개사, 분양상담사를 위한 AI 기반 구인구직 플랫폼",
               publisher: {
                 "@type": "Organization",
-                name: "온시아 공인중개사",
+                name: "온시아 공인중개사사무소",
                 url: SITE_URL,
               },
               potentialAction: {

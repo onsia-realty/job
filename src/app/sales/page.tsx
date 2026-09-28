@@ -508,7 +508,7 @@ export default function SalesListPage() {
         {/* 푸터 */}
         <footer style={{ borderTop: '1px solid #E7E9EE', padding: '28px 24px', maxWidth: 1320, margin: '0 auto' }}>
           <div style={{ fontSize: 17, fontWeight: 800, marginBottom: 8 }}>BOOIN <span style={{ fontSize: 12, color: '#9098A4', fontWeight: 600 }}>부동산인</span></div>
-          <div style={{ fontSize: 11.5, color: '#9098A4', lineHeight: 1.7 }}>온시아 공인중개사 · 대표 연대겸 · 사업자등록번호 846-23-01501<br />서울특별시 송파구 중대로 197 · 대표전화 1555-1245</div>
+          <div style={{ fontSize: 11.5, color: '#9098A4', lineHeight: 1.7 }}>온시아 공인중개사사무소 · 대표 연대겸 · 사업자등록번호 846-23-01501<br />서울특별시 송파구 중대로 197 · 대표전화 1555-1245</div>
           <div style={{ fontSize: 11, color: '#B6BCC6', marginTop: 12 }}>© 2026 BOOIN Corp. All rights reserved.</div>
         </footer>
       </div>
