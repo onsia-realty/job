@@ -7,13 +7,11 @@ import {
 } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import {
-  buildPricingFaqText,
   getSupportContact,
-  REFUND_POLICY,
-  SUPPORT_EMAIL,
   SUPPORT_HOURS,
   type SupportContact,
 } from '@/lib/support-knowledge';
+import { buildFaqAnswer, buildPaymentRefundAnswer } from '@/lib/support-faq';
 
 interface ChatMessage {
   id: number;
@@ -28,44 +26,14 @@ type ViewState = 'faq' | 'chat';
 const MAX_INPUT_CHARS = 500;
 const SESSION_KEY = 'booin_support_session_id';
 
+// 답변은 support-faq 빌더에서 생성 (API 의 FAQ 답변과 같은 출처 — 문구 중복 금지)
 const FAQ_CATEGORIES = [
-  {
-    icon: PenLine,
-    label: '구인글 작성 방법',
-    question: '구인글은 어떻게 작성하나요?',
-    answer: '모든 공고는 무료(일반)로 등록할 수 있어요.\n\n✅ 기업 인증 완료 후 작성 가능해요\n✅ 공인중개사 / 분양상담사 카테고리를 선택해요\n✅ 등록 후 "내 공고보기"에서 유료 등급으로 업그레이드할 수 있어요\n\n📌 무료 공고는 24시간 노출 후 자동 만료돼요.',
-  },
-  {
-    icon: Shield,
-    label: '인증 방법',
-    question: '기업 인증은 어떻게 하나요?',
-    answer: '마이페이지 → 기업 인증에서 아래 서류 중 하나로 인증할 수 있어요.\n\n📋 중개사무소 등록번호\n📋 사업자등록번호\n📋 분양현장 명함\n\n⚠️ 기업 인증이 완료되어야 구인글을 작성할 수 있어요.',
-  },
-  {
-    icon: CreditCard,
-    label: '상품 및 요금 안내',
-    question: '상품 및 요금이 궁금해요.',
-    // toss.ts 가격표에서 생성 (하드코딩 금지)
-    answer: buildPricingFaqText(),
-  },
-  {
-    icon: FileText,
-    label: '이력서 등록',
-    question: '이력서는 어떻게 등록하나요?',
-    answer: '마이페이지 → 내 이력서에서 등록할 수 있어요.\n\n✏️ 경력, 자격증, 희망 근무조건 등을 입력하시면 기업회원에게 노출돼요.\n\n💡 이력서를 자세히 작성할수록 매칭 확률이 높아져요!',
-  },
-  {
-    icon: UserPlus,
-    label: '회원가입 / 계정',
-    question: '회원가입은 어떻게 하나요?',
-    answer: '아래 방법으로 간편하게 가입할 수 있어요.\n\n📧 이메일 회원가입 (약관 동의 → 정보 입력 → 인증 메일 확인)\n🟡 카카오 로그인\n🔵 구글 로그인\n\n비밀번호를 잊으셨다면: 로그인 화면 → 비밀번호 찾기 → 이메일로 재설정할 수 있어요.',
-  },
-  {
-    icon: HelpCircle,
-    label: '결제 및 환불',
-    question: '결제와 환불은 어떻게 하나요?',
-    answer: `💳 결제 안내\n• 토스페이먼츠로 결제해요 (신용카드 등)\n• 결제 즉시 등급이 적용돼요\n• 기간이 끝나면 일반(무료) 공고로 돌아가요\n\n🔄 환불 안내\n• 서비스 개시 전이면 구매일로부터 7일 이내 전액 환불돼요\n• 이미 노출이 시작됐다면 청약철회가 제한될 수 있어요\n• 이메일(${SUPPORT_EMAIL})로 요청하시면 3영업일 이내 검토, 결정 후 3영업일 이내 원결제수단으로 환불돼요\n\n자세한 내용은 ${REFUND_POLICY.pageUrl} 에서 확인해 주세요.`,
-  },
+  { icon: PenLine, label: '구인글 작성 방법', question: '구인글은 어떻게 작성하나요?', answer: () => buildFaqAnswer('post-howto') },
+  { icon: Shield, label: '인증 방법', question: '기업 인증은 어떻게 하나요?', answer: () => buildFaqAnswer('company-verify') },
+  { icon: CreditCard, label: '상품 및 요금 안내', question: '상품 및 요금이 궁금해요.', answer: () => buildFaqAnswer('pricing-all') },
+  { icon: FileText, label: '이력서 등록', question: '이력서는 어떻게 등록하나요?', answer: () => buildFaqAnswer('resume-howto') },
+  { icon: UserPlus, label: '회원가입 / 계정', question: '회원가입은 어떻게 하나요?', answer: () => buildFaqAnswer('signup-howto') },
+  { icon: HelpCircle, label: '결제 및 환불', question: '결제와 환불은 어떻게 하나요?', answer: buildPaymentRefundAnswer },
 ];
 
 function getTimeString() {
@@ -191,7 +159,7 @@ export default function ChatWidget() {
   const handleFaqClick = (faq: typeof FAQ_CATEGORIES[number]) => {
     pushMessage({ type: 'user', text: faq.question });
     setView('chat');
-    setTimeout(() => pushMessage({ type: 'bot', text: faq.answer }), 400);
+    setTimeout(() => pushMessage({ type: 'bot', text: faq.answer() }), 400);
   };
 
   // 상담원 연결 — 모델 호출 없이 핸드오프 카드만 표시

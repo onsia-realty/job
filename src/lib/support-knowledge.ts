@@ -84,6 +84,9 @@ export const REFUND_POLICY = {
 // ────────────────────────────────────────────────────────────
 const won = (n: number) => `${n.toLocaleString('ko-KR')}원`;
 
+/** 일반(무료) 공고 노출 기간 — 챗봇 프롬프트·FAQ 공통 */
+export const FREE_POST_EXPOSURE = '24시간';
+
 const CATEGORY_LABEL: Record<PricingTier['category'], string> = {
   agent: '공인중개사 구인공고',
   sales: '분양상담사 구인공고',
@@ -121,7 +124,7 @@ export function buildPricingSection(): string {
     const tiers = Object.values(PRICING_TIERS).filter((t) => t.category === category);
     if (tiers.length === 0) continue;
     out.push(`### ${CATEGORY_LABEL[category]} 유료 상품 (구매 페이지 ${CATEGORY_PAGE[category]})`);
-    out.push('- 일반(무료): 등록 후 24시간 노출, 이후 자동 비활성화');
+    out.push(`- 일반(무료): 등록 후 ${FREE_POST_EXPOSURE} 노출, 이후 자동 비활성화`);
     for (const tier of tiers) out.push(...formatTierLines(tier));
     out.push('');
   }
@@ -144,7 +147,7 @@ export function buildPricingFaqText(): string {
   for (const category of ['agent', 'sales'] as const) {
     const tiers = Object.values(PRICING_TIERS).filter((t) => t.category === category);
     out.push(`📌 ${CATEGORY_LABEL[category]}`);
-    out.push('• 일반(무료): 24시간 노출');
+    out.push(`• 일반(무료): ${FREE_POST_EXPOSURE} 노출`);
     for (const tier of tiers) {
       if (tier.purchaseEnabled === false) {
         out.push(`• ${tier.name}: 판매 준비 중`);

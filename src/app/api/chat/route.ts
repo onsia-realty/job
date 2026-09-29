@@ -8,10 +8,24 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import { GEMINI_TEXT_MODEL, GEMINI_LOW_THINKING } from '@/lib/gemini-models';
 import { buildSupportSystemPrompt, extractHandoff, getSupportContact } from '@/lib/support-knowledge';
 import { fetchMemberContext } from '@/lib/support-member-context';
+import { resolveCanned } from '@/lib/support-faq';
+import { AnswerCache, isCacheable } from '@/lib/support-answer-cache';
 
 // 공개 고객센터 챗봇
 // body: { messages: [{ role: 'user'|'assistant', content }], sessionId? }  (하위호환: { message })
-// res : { answer, handoff, sessionId, contact? }  — contact 는 handoff=true 일 때만
+// res : { answer, handoff, sessionId, source, contact? }  — contact 는 handoff=true 일 때만
+//
+// 답변 순서 (Gemini 호출 절감):
+//   1) handoff — 상담원·환불 요청·결제 문제 → AI 없이 상담원 연결
+//   2) faq     — 맥락 없는 단순 질문 → support-faq 빌더 답변
+//   3) cache   — 비로그인 첫 턴 질문의 이전 AI 답변 (인스턴스별 메모리, best-effort)
+//   4) ai      — Gemini
+// source 는 로그/분석용 — 위젯은 사용자에게 표시하지 않는다.
+
+type AnswerSource = 'handoff' | 'faq' | 'cache' | 'ai';
+
+// 서버리스 인스턴스별 메모리 캐시 — 인스턴스 간 공유되지 않고 콜드스타트 시 비어 있음 (best-effort)
+const answerCache = new AnswerCache({ maxEntries: 200, ttlMs: 60 * 60 * 1000 });
 
 const SUPPORT_CHAT_MODEL = GEMINI_TEXT_MODEL;
 const MAX_USER_MESSAGE_CHARS = 500;
@@ -113,16 +127,43 @@ export async function POST(request: NextRequest) {
       ? body.sessionId
       : randomUUID();
 
-    // 로그인 회원이면 본인 결제·공고 요약만 주입 (토큰 검증 실패 시 비회원으로 처리)
+    // 로그인 여부 (토큰 검증 실패 시 비회원으로 처리)
     let userId: string | null = null;
-    let memberBlock: string | null = null;
     if (request.headers.get('authorization')?.startsWith('Bearer ')) {
       const user = await verifyUser(request).catch(() => null);
-      if (user) {
-        userId = user.id;
-        memberBlock = await fetchMemberContext(user.id);
-      }
+      if (user) userId = user.id;
     }
+
+    const lastUser = messages[messages.length - 1];
+    const ctx = { text: lastUser.content, hasHistory: messages.length > 1, loggedIn: userId !== null };
+
+    const respond = async (answer: string, handoff: boolean, source: AnswerSource, model: string) => {
+      await logTranscript([
+        { session_id: sessionId, user_id: userId, role: 'user', content: lastUser.content, handoff: false, model: null },
+        { session_id: sessionId, user_id: userId, role: 'assistant', content: answer, handoff, model },
+      ]);
+      return NextResponse.json({
+        answer,
+        handoff,
+        sessionId,
+        source,
+        ...(handoff ? { contact: getSupportContact() } : {}),
+      });
+    };
+
+    // 1) 상담원 요청 / 2) FAQ — AI 호출 없음
+    const canned = resolveCanned(ctx);
+    if (canned) return respond(canned.answer, canned.handoff, canned.source, canned.source);
+
+    // 3) 캐시 — 비로그인 첫 턴만
+    const cacheable = isCacheable(ctx);
+    if (cacheable) {
+      const cached = answerCache.get(lastUser.content);
+      if (cached) return respond(cached, false, 'cache', 'cache');
+    }
+
+    // 4) AI — 로그인 회원이면 본인 결제·공고 요약만 주입
+    const memberBlock = userId ? await fetchMemberContext(userId) : null;
 
     const contents = messages.map((m) => ({
       role: m.role === 'assistant' ? ('model' as const) : ('user' as const),
@@ -131,6 +172,7 @@ export async function POST(request: NextRequest) {
 
     let answer = FALLBACK_ANSWER;
     let handoff = true;
+    let aiOk = false;
     try {
       const response = await getAi().models.generateContent({
         model: SUPPORT_CHAT_MODEL,
@@ -149,6 +191,7 @@ export async function POST(request: NextRequest) {
         // 위젯은 일반 텍스트로 렌더링 — 모델이 넣은 굵게(**) 표시 제거
         answer = answer.replace(/\*\*/g, '');
         if (!answer) answer = FALLBACK_ANSWER;
+        else aiOk = true;
       }
       const finish = response.candidates?.[0]?.finishReason;
       if (finish && finish !== 'STOP') {
@@ -164,18 +207,10 @@ export async function POST(request: NextRequest) {
       handoff = true;
     }
 
-    const lastUser = messages[messages.length - 1];
-    await logTranscript([
-      { session_id: sessionId, user_id: userId, role: 'user', content: lastUser.content, handoff: false, model: null },
-      { session_id: sessionId, user_id: userId, role: 'assistant', content: answer, handoff, model: SUPPORT_CHAT_MODEL },
-    ]);
+    // 정상 AI 답변(핸드오프 아님)만 캐시 — 오류·폴백 답변은 저장하지 않음
+    if (cacheable && aiOk && !handoff) answerCache.set(lastUser.content, answer);
 
-    return NextResponse.json({
-      answer,
-      handoff,
-      sessionId,
-      ...(handoff ? { contact: getSupportContact() } : {}),
-    });
+    return respond(answer, handoff, 'ai', SUPPORT_CHAT_MODEL);
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json(
