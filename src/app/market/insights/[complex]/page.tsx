@@ -19,10 +19,11 @@ import type { ComplexDetail } from '@/lib/market/types';
 import { formatKoreanPrice, formatEokUnit } from '@/lib/market/format';
 
 interface InsightStats {
-  current_avg_price: number;
+  // 최근 3개월 매매 기준 (거래가 적으면 null)
+  current_avg_price: number | null;
   current_trade_count: number;
-  avg_pyeong_price: number;
-  growth_pct: number | null;
+  avg_pyeong_price: number | null;
+  growth_pct: number | null; // 전용 3.3㎡당 평균가 기준 직전 3개월 대비 변동률(%)
   broker_count: number;
   job_count: number;
 }
@@ -104,7 +105,7 @@ export default function ComplexInsightsPage({
           </Link>
           <div className="flex-1 min-w-0">
             <div className="text-[10px] font-semibold text-market-text-faint uppercase tracking-wider">
-              AI 단지 분석
+              단지 실거래 요약
             </div>
             <h1 className="text-base font-bold flex items-center gap-2 truncate">
               <Sparkles className="w-4 h-4 text-deal-jeonse flex-shrink-0" />
@@ -115,10 +116,10 @@ export default function ComplexInsightsPage({
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-5">
-        {/* AI 인사이트 박스 */}
+        {/* 실거래 요약 박스 */}
         {loading ? (
           <div className="py-16 text-center text-market-text-faint text-sm">
-            AI가 분석 중…
+            불러오는 중…
           </div>
         ) : error ? (
           <div className="bg-deal-trade-soft border border-deal-trade/30 rounded-xl p-5 text-sm text-deal-trade">
@@ -132,7 +133,7 @@ export default function ComplexInsightsPage({
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[11px] font-semibold text-market-text-faint uppercase tracking-wider mb-1.5">
-                  AI 인사이트
+                  실거래 요약
                 </div>
                 <p className="text-base text-market-text leading-relaxed whitespace-pre-line">
                   {insight}
@@ -210,15 +211,15 @@ export default function ComplexInsightsPage({
         {/* 핵심 통계 카드 */}
         {stats && (
           <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatCard label="평균 매매가" value={formatKoreanPrice(stats.current_avg_price)} accent="trade" />
-            <StatCard label="평당가" value={formatKoreanPrice(stats.avg_pyeong_price)} />
+            <StatCard label="3개월 평균 매매가" value={formatKoreanPrice(stats.current_avg_price)} accent="trade" />
+            <StatCard label="3.3㎡당(전용)" value={formatKoreanPrice(stats.avg_pyeong_price)} />
             <StatCard
-              label="변동률"
+              label="3.3㎡당 직전 3개월 대비"
               value={stats.growth_pct != null ? `${stats.growth_pct > 0 ? '+' : ''}${stats.growth_pct.toFixed(1)}%` : '-'}
               accent={stats.growth_pct && stats.growth_pct > 0 ? 'trade' : 'jeonse'}
               icon={stats.growth_pct && stats.growth_pct > 0 ? 'up' : 'down'}
             />
-            <StatCard label="월간 거래" value={`${stats.current_trade_count}건`} />
+            <StatCard label="3개월 거래" value={`${stats.current_trade_count}건`} />
             <StatCard label="지역 중개사" value={`${stats.broker_count}곳`} />
           </section>
         )}
@@ -400,7 +401,7 @@ export default function ComplexInsightsPage({
         )}
 
         <div className="text-[11px] text-market-text-faint text-center pt-2 pb-4">
-          본 분석은 AI가 국토부 공공 데이터를 기반으로 생성한 참고 자료입니다.
+          국토교통부 실거래가 공개 자료를 계산한 참고 자료예요.
         </div>
       </main>
     </div>
