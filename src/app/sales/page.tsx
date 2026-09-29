@@ -141,7 +141,6 @@ function WelChip({ w, size = 'md' }: { w: Wel; size?: 'sm' | 'md' | 'lg' }) {
 
 export default function SalesListPage() {
   const router = useRouter();
-  const [tab, setTab] = useState('구인공고');
   const [region, setRegion] = useState('전체');
   const [type, setType] = useState<string>('전체');
   const [query, setQuery] = useState('');
@@ -249,9 +248,8 @@ export default function SalesListPage() {
         <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', borderBottom: '1px solid #E7E9EE' }}>
           <div style={{ maxWidth: 1320, margin: '0 auto', padding: '13px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
             <div className="bn-headtabs" style={{ display: 'flex', gap: 4 }}>
-              {['구인공고', '분양인재', '분양대행'].map((t) => (
-                <button key={t} onClick={() => setTab(t)} style={{ background: tab === t ? '#11141C' : 'transparent', color: tab === t ? '#fff' : '#6B7280', border: 'none', borderRadius: 9, padding: '9px 15px', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>{t}</button>
-              ))}
+              {/* 분양인재·분양대행 탭은 기능 오픈 전까지 숨김 */}
+              <span style={{ background: '#11141C', color: '#fff', borderRadius: 9, padding: '9px 15px', fontSize: 13.5, fontWeight: 700, whiteSpace: 'nowrap' }}>구인공고</span>
             </div>
             <div style={{ flex: 1, minWidth: 160, display: 'flex', alignItems: 'center', gap: 9, background: '#F1F3F6', border: '1px solid #E7E9EE', borderRadius: 11, padding: '10px 14px' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9098A4" strokeWidth="2.2"><circle cx="11" cy="11" r="7" /><path d="M21 21l-4-4" /></svg>

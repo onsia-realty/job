@@ -181,9 +181,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                 <Link href="/sales/jobs" className="text-white/80 hover:text-white">
                   현장구인
                 </Link>
-                <Link href="/sales/talents" className="text-white/80 hover:text-white">
-                  인재정보
-                </Link>
+                {/* 인재정보(/sales/talents)는 기능 오픈 전까지 숨김 */}
               </>
             )}
           </nav>

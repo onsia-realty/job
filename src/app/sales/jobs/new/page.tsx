@@ -468,11 +468,8 @@ export default function NewJobPage() {
         <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(255,255,255,.86)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${C.borderHead}` }}>
           <div style={{ maxWidth: 1320, margin: '0 auto', padding: '13px 24px', display: 'flex', alignItems: 'center', gap: 16 }}>
             <nav style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              {/* 분양인재·분양대행은 기능 오픈 전까지 숨김 */}
               <span style={{ fontSize: 18, fontWeight: 800, color: C.primary }}>구인공고</span>
-              <span style={{ width: 1, height: 11, background: '#D7DBE2' }} />
-              <span style={{ fontSize: 18, fontWeight: 700, color: C.title }}>분양인재</span>
-              <span style={{ width: 1, height: 11, background: '#D7DBE2' }} />
-              <span style={{ fontSize: 18, fontWeight: 700, color: C.title }}>분양대행</span>
             </nav>
             <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ fontSize: 12, color: C.sub, fontWeight: 600 }}>{f.contact ? `${f.contact}님` : '내 계정'}</span>
@@ -933,7 +930,7 @@ export default function NewJobPage() {
       <nav className="bn-bottomnav" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 70, background: '#fff', borderTop: `1px solid ${C.borderHead}`, padding: '8px 0 calc(8px + env(safe-area-inset-bottom))', justifyContent: 'space-around' }}>
         {[
           { ic: '⌂', label: '홈', href: '/sales' }, { ic: '◆', label: '현장', href: '/sales' },
-          { ic: '✎', label: '등록', href: '/sales/jobs/new', active: true }, { ic: '◇', label: '인재', href: '/sales/talents' },
+          { ic: '✎', label: '등록', href: '/sales/jobs/new', active: true },
           { ic: '○', label: 'MY', href: '/sales/mypage' },
         ].map((n) => (
           <Link key={n.label} href={n.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, flex: 1, color: n.active ? C.primary : C.muted, textDecoration: 'none' }}>
