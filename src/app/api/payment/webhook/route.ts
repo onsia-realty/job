@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { recomputeJobAd } from '@/lib/ad-entitlement';
 
 export async function POST(req: NextRequest) {
   try {
@@ -47,18 +48,6 @@ export async function POST(req: NextRequest) {
 
     const payment = await paymentResponse.json();
 
-    // 토스 상태 → DB 상태 매핑
-    const statusMap: Record<string, string> = {
-      DONE: 'completed',
-      CANCELED: 'refunded',
-      PARTIAL_CANCELED: 'refunded',
-      ABORTED: 'failed',
-      EXPIRED: 'failed',
-      WAITING_FOR_DEPOSIT: 'pending',
-      IN_PROGRESS: 'pending',
-    };
-    const dbStatus = statusMap[payment.status] || 'pending';
-
     // DB에서 기존 결제 내역 조회 (job_id 포함)
     const { data: paymentRecord } = await supabaseAdmin
       .from('payments')
@@ -71,32 +60,55 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true });
     }
 
-    // 이미 같은 상태면 스킵
-    if (paymentRecord.payment_status === dbStatus) {
+    // 부분 취소: 기록만 남기고 광고 권리는 그대로 둔다 (payments.payment_status 에 부분취소 값이 없음)
+    if (payment.status === 'PARTIAL_CANCELED') {
+      console.warn('웹훅: 부분 취소 — 광고 기간은 변경하지 않음', {
+        paymentKey: data.paymentKey,
+        jobId: paymentRecord.job_id,
+        totalAmount: payment.totalAmount,
+        balanceAmount: payment.balanceAmount,
+        cancels: Array.isArray(payment.cancels)
+          ? payment.cancels.map((c: { cancelAmount?: number; canceledAt?: string; cancelReason?: string }) => ({
+              cancelAmount: c.cancelAmount, canceledAt: c.canceledAt, cancelReason: c.cancelReason,
+            }))
+          : undefined,
+      });
       return NextResponse.json({ success: true });
     }
 
-    // 결제 상태 업데이트
-    const { error } = await supabaseAdmin
-      .from('payments')
-      .update({ payment_status: dbStatus })
-      .eq('payment_id', data.paymentKey);
+    // 토스 상태 → DB 상태 매핑
+    const statusMap: Record<string, string> = {
+      DONE: 'completed',
+      CANCELED: 'refunded',
+      ABORTED: 'failed',
+      EXPIRED: 'failed',
+      WAITING_FOR_DEPOSIT: 'pending',
+      IN_PROGRESS: 'pending',
+    };
+    const dbStatus = statusMap[payment.status] || 'pending';
 
-    if (error) {
-      console.error('웹훅 결제 상태 업데이트 실패:', error);
+    // 결제 상태 업데이트 (같은 상태면 생략)
+    if (paymentRecord.payment_status !== dbStatus) {
+      const { error } = await supabaseAdmin
+        .from('payments')
+        .update({ payment_status: dbStatus })
+        .eq('payment_id', data.paymentKey);
+
+      if (error) {
+        console.error('웹훅 결제 상태 업데이트 실패:', error);
+        return NextResponse.json({ success: false }, { status: 500 }); // 토스가 재전송하도록
+      }
     }
 
-    // 환불/취소/실패 시 공고 tier를 normal로 복구
-    if ((dbStatus === 'refunded' || dbStatus === 'failed') && paymentRecord.job_id) {
-      const { error: revertError } = await supabaseAdmin
-        .from('jobs')
-        .update({ tier: 'normal' })
-        .eq('id', paymentRecord.job_id);
-
-      if (revertError) {
-        console.error('웹훅: 공고 tier 복구 실패:', revertError);
-      } else {
-        console.log(`웹훅: 공고 ${paymentRecord.job_id} tier를 normal로 복구`);
+    // 남은 완료 결제로 공고 등급·만료일을 다시 계산한다 (멱등 — 재전송 시에도 다시 맞춘다).
+    // (환불돼도 다른 유효 결제가 있으면 그 등급이 유지된다 — 무조건 normal 로 내리지 않음)
+    if (paymentRecord.job_id) {
+      try {
+        const projection = await recomputeJobAd(supabaseAdmin, paymentRecord.job_id);
+        console.log(`웹훅: 공고 ${paymentRecord.job_id} 재계산 → ${projection?.tier ?? '(공고 없음)'}`);
+      } catch (recomputeError) {
+        console.error('웹훅: 공고 등급 재계산 실패:', recomputeError);
+        return NextResponse.json({ success: false }, { status: 500 });
       }
     }
 

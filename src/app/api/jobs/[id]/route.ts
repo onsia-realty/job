@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { effectiveJobTier, isFreeExposureOver } from '@/lib/ad-entitlement';
 
 // Bearer 토큰에서 사용자 확인
 async function verifyUser(req: NextRequest) {
@@ -69,24 +70,23 @@ export async function GET(
     return NextResponse.json({ error: '마감된 공고입니다', expired: true }, { status: 410 });
   }
 
-  // 무료 공고 24시간 만료 체크
-  if ((data.tier === 'normal' || !data.tier)) {
-    const createdAt = new Date(data.created_at);
-    const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
-    if (new Date() > expiresAt) {
-      return NextResponse.json({ error: '마감된 공고입니다 (무료 공고는 24시간 노출)', expired: true }, { status: 410 });
-    }
+  const now = new Date();
+
+  // 무료(유효 등급 normal) 공고: coalesce(ad_expires_at, created_at) + 24시간 (크론 규칙과 동일)
+  if (isFreeExposureOver(data, now)) {
+    return NextResponse.json({ error: '마감된 공고입니다 (무료 공고는 24시간 노출)', expired: true }, { status: 410 });
   }
 
-  // 유료 공고 deadline 만료 체크
-  if (data.deadline && data.tier && data.tier !== 'normal') {
+  // 모집 마감일 만료 체크 (등급 무관)
+  if (data.deadline) {
     const deadline = new Date(data.deadline + 'T23:59:59+09:00');
-    if (new Date() > deadline) {
+    if (now > deadline) {
       return NextResponse.json({ error: '마감된 공고입니다', expired: true }, { status: 410 });
     }
   }
 
-  return NextResponse.json(data);
+  // 광고 창이 끝났으면 크론 전이라도 일반으로 표시
+  return NextResponse.json({ ...data, tier: effectiveJobTier(data, now) });
 }
 
 // PATCH /api/jobs/[id] - 공고 수정
@@ -108,7 +108,7 @@ export async function PATCH(
     return NextResponse.json({ error: '잘못된 요청 형식입니다' }, { status: 400 });
   }
 
-  // 허용된 필드만 업데이트 (tier, is_approved, user_id, views 등 보호)
+  // 허용된 필드만 업데이트 (tier, ad_expires_at, is_approved, user_id, views 등 보호 — 광고 기간은 결제로만)
   // category는 아래에서 별도 처리 (유료 등급은 카테고리별 가격이라 결제 후 변경 금지)
   const ALLOWED_FIELDS = [
     'title', 'description', 'html_content', 'type',

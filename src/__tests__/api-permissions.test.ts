@@ -90,6 +90,12 @@ describe('private rows and ownership', () => {
     for (const handler of [jobDelete, stayDelete]) expect((await handler(request('/item', user, undefined, 'DELETE'), params)).status).toBe(user ? 403 : 401);
     expect(writes).toEqual([]);
   });
+  it('owner PATCH cannot set tier or ad_expires_at (deadline stays editable)', async () => {
+    const response = await jobPatch(request('/item', 'A', { tier: 'unique', ad_expires_at: '2099-01-01T00:00:00Z', deadline: '2099-01-01' }, 'PATCH'), params);
+    expect(response.status).toBe(200);
+    const update = writes.find(w => w.table === 'jobs')!.payload;
+    expect(update).toEqual({ deadline: '2099-01-01' });
+  });
   it('hides unapproved jobs while preserving owner edit read', async () => {
     tables.jobs[0].is_approved = false;
     expect((await jobGet(request('/api/jobs/item'), params)).status).toBe(404);
@@ -155,7 +161,10 @@ describe('server controlled fields and payments', () => {
   it('allows database admin and limits own payments', async () => {
     expect((await adminPayments(request('/api/admin/payments', 'admin'))).status).toBe(200);
     tables.payments = [{ user_id: 'B', payment_status: 'completed', job_id: 'secret' }];
-    expect(await (await myPayments(request('/api/payments/my', 'A'))).json()).toEqual({});
+    // 본인 공고만 (현재 등급·광고 만료일), 타인 결제의 job 은 노출되지 않음
+    expect(await (await myPayments(request('/api/payments/my', 'A'))).json()).toEqual({
+      item: { tier: 'premium', expires_at: null, ad_expires_at: null, paid_at: null },
+    });
   });
   it.each([['B', 'completed', 404], ['A', 'refunded', 409], ['A', 'completed', 200]] as const)('payment replay owner/status %s %s', async (owner, status, expected) => {
     const amount = getTotalPrice(resolveProduct('agent-basic')!.price);

@@ -112,7 +112,7 @@ export default function EmployerDashboardPage() {
     totalApplications: 0,
     totalViews: 0,
   });
-  const [tierExpiry, setTierExpiry] = useState<Record<string, { tier: string; expires_at: string; paid_at: string }>>({});
+  const [tierExpiry, setTierExpiry] = useState<Record<string, { tier: string; expires_at: string | null; paid_at: string | null }>>({});
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [upgradeJobId, setUpgradeJobId] = useState<string | null>(null);
@@ -238,7 +238,21 @@ export default function EmployerDashboardPage() {
     setOpenMenuId(null);
   };
 
+  // 분양 공고는 분양 전용 연장/업그레이드 화면으로 (agent-* 상품을 분양 공고에 붙이지 않는다)
+  const openUpgrade = (job: JobPosting) => {
+    if (job.category === 'sales') {
+      router.push('/sales/mypage');
+      return;
+    }
+    setUpgradeJobId(job.id);
+  };
+
   const handleUpgradeTier = (jobId: string, newTier: string) => {
+    const job = jobs.find(j => j.id === jobId);
+    if (job?.category === 'sales') {
+      router.push('/sales/mypage');
+      return;
+    }
     // 결제 페이지로 이동 (productKey 형식: agent-basic, agent-premium, agent-vip)
     const productKey = `agent-${newTier}`;
     router.push(`/checkout?productKey=${productKey}&jobId=${jobId}`);
@@ -436,8 +450,8 @@ export default function EmployerDashboardPage() {
                             <Calendar className="w-3 h-3" />
                             {formatDate(job.created_at)}
                           </span>
-                          {tierExpiry[job.id] && (() => {
-                            const exp = new Date(tierExpiry[job.id].expires_at);
+                          {tierExpiry[job.id]?.expires_at && (() => {
+                            const exp = new Date(tierExpiry[job.id].expires_at!);
                             const now = new Date();
                             const diffDays = Math.ceil((exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
                             const isExpired = diffDays <= 0;
@@ -446,7 +460,7 @@ export default function EmployerDashboardPage() {
                                 isExpired ? 'text-gray-400 line-through' : diffDays <= 2 ? 'text-red-500 font-medium' : 'text-amber-500'
                               }`}>
                                 <Zap className="w-3 h-3" />
-                                {isExpired ? '결제 만료' : `결제 ~${formatDate(tierExpiry[job.id].expires_at)} (D-${diffDays})`}
+                                {isExpired ? '결제 만료' : `결제 ~${formatDate(tierExpiry[job.id].expires_at!)} (D-${diffDays})`}
                               </span>
                             );
                           })()}
@@ -491,7 +505,7 @@ export default function EmployerDashboardPage() {
 
                           {/* 결제 버튼 */}
                           <button
-                            onClick={() => setUpgradeJobId(job.id)}
+                            onClick={() => openUpgrade(job)}
                             className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg hover:from-amber-600 hover:to-yellow-600 transition-all text-sm font-medium shadow-sm"
                           >
                             <Zap className="w-3.5 h-3.5" />
