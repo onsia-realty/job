@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { fetchJobs } from '@/lib/supabase';
 import { allJobs } from '@/data/salesJobsSample';
+import { amountNum } from '@/lib/sales-jobs-list';
 import type { SalesJobListing } from '@/types';
 
 /* =========================================================================
@@ -108,7 +109,6 @@ const thumbBg = (j: { seed: number; thumb?: string }): CSSProperties =>
   j.thumb
     ? { backgroundImage: `url(${j.thumb})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { background: grad(j.seed) };
-const amountNum = (s?: string | null) => Number((s || '').replace(/[^\d]/g, '')) || 0;
 
 // 광고대행사 전문 노출 (분양 광고 파트너 카드)
 const AGENCY = [
@@ -195,8 +195,9 @@ export default function SalesListPage() {
   const navBase: CSSProperties = { display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px', borderRadius: 10, fontSize: 14, fontWeight: 600, textAlign: 'left', width: '100%', textDecoration: 'none' };
   const quickMenu = [
     { ic: '📝', label: '공고 등록', href: '/sales/jobs/new' },
-    { ic: '🗺', label: '지역별 현장', href: '/sales/jobs' },
-    { ic: '💰', label: '고수수료 현장', href: '/sales/jobs' },
+    // 선택된 지역이 있으면 목록 페이지에 그대로 전달 (목록은 REGIONS 에 없는 값은 무시)
+    { ic: '🗺', label: '지역별 현장', href: region !== '전체' ? `/sales/jobs?region=${encodeURIComponent(region)}` : '/sales/jobs' },
+    { ic: '💰', label: '고수수료 현장', href: '/sales/jobs?sort=commission' },
     { ic: '🎓', label: '교육·세미나', href: '#' },
   ];
   const bottomNav = [
