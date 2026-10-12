@@ -8,6 +8,7 @@ import {
   getDiscountRate,
   findOption,
   resolveProduct,
+  isProductPurchasable,
   PRICING_TIERS,
 } from './toss';
 
@@ -194,5 +195,14 @@ describe('resolveProduct', () => {
   it('잘못된 키/일수 → null', () => {
     expect(resolveProduct('sales-nope', 10)).toBeNull();
     expect(resolveProduct('sales-superior', 99)).toBeNull();
+  });
+});
+
+describe('purchase availability', () => {
+  it('keeps sales-dia visible in the catalog but disables purchase', () => {
+    expect(PRICING_TIERS['sales-dia']).toBeDefined();
+    expect(isProductPurchasable('sales-dia')).toBe(false);
+    expect(isProductPurchasable('sales-superior')).toBe(true);
+    expect(isProductPurchasable('missing-product')).toBe(false);
   });
 });

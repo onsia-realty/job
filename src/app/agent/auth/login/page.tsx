@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   ArrowLeft,
   Mail,
@@ -13,6 +13,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { signInWithProvider, signInWithEmail, resendConfirmationEmail, supabase } from '@/lib/auth';
+import { AUTH_STAY_REDIRECT_KEY, safeStayRedirect } from '@/lib/auth-redirect';
 
 declare global {
   interface Window {
@@ -37,8 +38,10 @@ const KakaoLogo = () => (
 
 type LoginRole = 'seeker' | 'employer';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const stayRedirect = safeStayRedirect(searchParams.get('redirect'));
   const googleBtnRef = useRef<HTMLDivElement>(null);
   const activeRoleRef = useRef<LoginRole>('seeker');
   const [activeRole, setActiveRole] = useState<LoginRole>('seeker');
@@ -65,9 +68,13 @@ export default function LoginPage() {
     activeRoleRef.current = role;
   };
 
-  const redirectByRole = (role: LoginRole) => {
+  const redirectByRole = useCallback((role: LoginRole) => {
+    if (stayRedirect) {
+      router.replace(stayRedirect);
+      return;
+    }
     router.replace(role === 'employer' ? '/agent/employer' : '/agent/jobs');
-  };
+  }, [router, stayRedirect]);
 
   // GIS 콜백 → Supabase signInWithIdToken (ref 사용으로 재초기화 방지)
   const handleGoogleCredential = useCallback(async (response: { credential: string }) => {
@@ -101,7 +108,7 @@ export default function LoginPage() {
     } catch (err: any) {
       setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
     }
-  }, [router]);
+  }, [router, redirectByRole]);
 
   // GIS 초기화
   useEffect(() => {
@@ -218,6 +225,8 @@ export default function LoginPage() {
 
     try {
       localStorage.setItem('social_login_role', activeRole);
+      if (stayRedirect) sessionStorage.setItem(AUTH_STAY_REDIRECT_KEY, stayRedirect);
+      else sessionStorage.removeItem(AUTH_STAY_REDIRECT_KEY);
       await signInWithProvider(provider);
     } catch (err: any) {
       setError(err.message || '소셜 로그인 중 오류가 발생했습니다.');
@@ -332,7 +341,7 @@ export default function LoginPage() {
         </div>
 
         {/* 회원가입 */}
-        <Link href={`/agent/auth/signup?role=${activeRole}`} className="mt-4 w-full py-3.5 border border-slate-300 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-all flex items-center justify-center">
+        <Link href={`/agent/auth/signup?role=${activeRole}${stayRedirect ? `&redirect=${encodeURIComponent(stayRedirect)}` : ''}`} className="mt-4 w-full py-3.5 border border-slate-300 text-slate-700 rounded-xl font-semibold text-sm hover:bg-slate-50 transition-all flex items-center justify-center">
           회원가입
         </Link>
         {/* 아이디 찾기 | 비밀번호 찾기 */}
@@ -354,5 +363,13 @@ export default function LoginPage() {
         </div>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100" />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

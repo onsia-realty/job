@@ -27,10 +27,12 @@ type VerificationTab = 'broker' | 'business' | 'card';
 
 export default function VerificationPage() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [activeTab, setActiveTab] = useState<VerificationTab>('broker');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  // 인증 자체는 성공했지만 public.users 동기화가 실패했을 때의 경고 (조용히 삼키지 않는다)
+  const [syncWarning, setSyncWarning] = useState('');
   const [showForm, setShowForm] = useState(false); // 이미 인증된 상태에서 추가 인증 폼 표시
 
   // URL 해시로 탭 자동 선택 (#broker, #business, #card)
@@ -85,9 +87,9 @@ export default function VerificationPage() {
 
   // 이미 인증된 상태 확인
   const meta = user?.user_metadata;
-  const alreadyBrokerVerified = meta?.brokerVerified === true;
-  const alreadyBusinessVerified = meta?.businessVerified === true;
-  const alreadyCardVerified = meta?.cardVerified === true;
+  const alreadyBrokerVerified = user?.app_metadata?.brokerVerified === true && typeof user.app_metadata.brokerRegNo === 'string' && user.app_metadata.brokerRegNo.trim().length > 0;
+  const alreadyBusinessVerified = user?.app_metadata?.businessVerified === true;
+  const alreadyCardVerified = user?.app_metadata?.cardVerified === true;
   const isAlreadyVerified = alreadyBrokerVerified || alreadyBusinessVerified || alreadyCardVerified;
 
   // 개설등록번호 포맷
@@ -147,6 +149,37 @@ export default function VerificationPage() {
     }
   };
 
+  // public.users 동기화 — 개설등록번호만 보내고, 나머지 값은 서버가 broker_offices 에서 채운다.
+  // 절대 throw 하지 않는다: 인증 성공 자체를 되돌리지 않고 경고 문구만 남긴다.
+  const syncBrokerToUsers = async () => {
+    const retryHint = '매물 등록 전에 이 화면에서 인증을 한 번 더 진행해주세요.';
+    const token = session?.access_token;
+    if (!token) {
+      setSyncWarning(`로그인 정보를 확인할 수 없어 매물 등록용 중개사 정보가 저장되지 않았습니다. ${retryHint}`);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/agent/broker-sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ brokerRegNo }),
+      });
+
+      if (!res.ok) {
+        const result = await res.json().catch(() => ({} as { error?: string }));
+        const reason = result?.error || `오류 ${res.status}`;
+        setSyncWarning(`매물 등록용 중개사 정보 저장에 실패했습니다 (${reason}). ${retryHint}`);
+      }
+    } catch (error) {
+      console.error('Broker sync error:', error);
+      setSyncWarning(`네트워크 오류로 매물 등록용 중개사 정보가 저장되지 않았습니다. ${retryHint}`);
+    }
+  };
+
   // 중개사무소 인증 저장
   const handleBrokerSubmit = async () => {
     if (!brokerVerified) {
@@ -155,16 +188,22 @@ export default function VerificationPage() {
     }
 
     setIsSubmitting(true);
+    setSyncWarning('');
     try {
+      // 조회 정보만 저장한다. 소속 증명 및 권한 부여는 별도 관리자 확인이 필요하다.
       await updateUserMetadata({
         brokerRegNo,
         brokerOfficeName,
         brokerAddress,
         brokerRegDate,
         brokerTaxEmail: brokerTaxEmail.trim(),
-        brokerVerified: true,
+        brokerVerified: false,
       });
-      setSuccessMessage('중개사무소 인증이 완료되었습니다!');
+
+      // 이미 관리자 승인을 받은 사무소만 프로필에 동기화한다.
+      if (alreadyBrokerVerified) await syncBrokerToUsers();
+
+      setSuccessMessage('중개사무소 조회 정보를 저장했습니다.');
     } catch (error) {
       console.error('Save error:', error);
       setBrokerError('저장 중 오류가 발생했습니다');
@@ -253,9 +292,9 @@ export default function VerificationPage() {
         bizEmail: bizEmail.trim(),
         bizType,
         bizTypeLabel,
-        businessVerified: true,
+        businessVerified: false,
       });
-      setSuccessMessage('사업자등록번호 인증이 완료되었습니다!');
+      setSuccessMessage('사업자 조회 정보를 저장했습니다.');
     } catch (error) {
       console.error('Save error:', error);
       setBusinessError('저장 중 오류가 발생했습니다');
@@ -333,14 +372,14 @@ export default function VerificationPage() {
       }
 
       await updateUserMetadata({
-        cardVerified: true,
+        cardVerified: false,
         cardName: cardName.trim(),
         cardCompany: cardCompany.trim(),
         cardProject: cardProject.trim(),
         cardPhone: cardPhone.trim(),
         cardImageUrl: imageUrl,
       });
-      setSuccessMessage('분양현장 명함 인증이 완료되었습니다!');
+      setSuccessMessage('명함 정보를 저장했습니다.');
     } catch (error) {
       console.error('Card save error:', error);
       setCardError('저장 중 오류가 발생했습니다');
@@ -359,8 +398,14 @@ export default function VerificationPage() {
           </div>
           <h1 className="text-2xl font-bold text-gray-900 mb-2">{successMessage}</h1>
           <p className="text-gray-600 mb-8">
-            이제 구인글을 작성하실 수 있습니다.
+            정보 저장만으로 인증 권한이 부여되지 않습니다. 소속 확인 및 관리자 승인이 필요하며, 승인 신청 절차는 준비 중입니다.
           </p>
+          {syncWarning && (
+            <div className="mb-8 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-4 text-left">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <p className="text-sm leading-relaxed text-amber-800">{syncWarning}</p>
+            </div>
+          )}
           <div className="space-y-3">
             <Link
               href="/agent/jobs/new"
@@ -820,7 +865,7 @@ export default function VerificationPage() {
                     저장 중...
                   </>
                 ) : (
-                  '중개사무소 인증 완료'
+                  '중개사무소 조회 정보 저장'
                 )}
               </button>
             </div>
@@ -1050,7 +1095,7 @@ export default function VerificationPage() {
                     저장 중...
                   </>
                 ) : (
-                  '사업자등록번호 인증 완료'
+                  '사업자 조회 정보 저장'
                 )}
               </button>
             </div>
@@ -1212,7 +1257,7 @@ export default function VerificationPage() {
                     업로드 중...
                   </>
                 ) : (
-                  '명함 인증 완료'
+                  '명함 정보 저장'
                 )}
               </button>
             </div>

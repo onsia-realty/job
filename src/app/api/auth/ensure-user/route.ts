@@ -68,7 +68,8 @@ export async function POST(req: NextRequest) {
         name: name,
         nickname: nickname,
         phone: danalPhone ? danalPhone.replace(/[^0-9]/g, '') : (meta.phone || null),
-        user_type: ['employer', 'seeker', 'admin'].includes(userType) ? userType : 'seeker',
+        // 관리자 권한은 클라이언트 입력으로 부여될 수 없음 (DB 수동 승격만 허용)
+        user_type: ['employer', 'seeker'].includes(userType) ? userType : 'seeker',
         avatar_url: meta.avatar_url || meta.picture || null,
         company_name: meta.brokerOfficeName || null,
         business_no: meta.businessNo || null,

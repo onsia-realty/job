@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="450" viewBox="0 0 600 450" role="img" aria-label="이미지 준비 중">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f1f5f9"/>
+      <stop offset="1" stop-color="#e2e8f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="450" fill="url(#bg)"/>
+  <g transform="translate(300 205)" fill="none" stroke="#94a3b8" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-62 4 L0 -48 L62 4"/>
+    <path d="M-46 -8 V54 H46 V-8"/>
+    <path d="M-14 54 V18 H14 V54"/>
+  </g>
+  <circle cx="300" cy="205" r="104" fill="none" stroke="#cbd5e1" stroke-width="4"/>
+  <text x="300" y="352" text-anchor="middle" font-family="'Pretendard','Malgun Gothic','Apple SD Gothic Neo',sans-serif" font-size="26" font-weight="600" fill="#94a3b8">이미지 준비 중</text>
+  <text x="300" y="386" text-anchor="middle" font-family="'Pretendard','Malgun Gothic',sans-serif" font-size="17" font-weight="700" letter-spacing="3" fill="#2563eb" opacity="0.55">BOOIN</text>
+</svg>

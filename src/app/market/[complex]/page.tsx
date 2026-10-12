@@ -329,22 +329,22 @@ export default function ComplexDetailPage({
           )}
         </section>
 
-        {/* AI 인사이트 CTA */}
+        {/* 실거래 요약 CTA */}
         <section className="bg-gradient-to-br from-cyan-900/20 to-pink-900/20 rounded-xl border border-cyan-500/30 p-5">
           <div className="flex items-start gap-3">
             <div className="w-10 h-10 rounded-lg bg-cyan-500/20 flex items-center justify-center flex-shrink-0">
               <Sparkles className="w-5 h-5 text-cyan-400" />
             </div>
             <div className="flex-1">
-              <h3 className="text-sm font-bold mb-1">AI 단지 분석 (로그인 전용)</h3>
+              <h3 className="text-sm font-bold mb-1">단지 실거래 요약</h3>
               <p className="text-xs text-slate-400 mb-3">
-                최근 거래 · 중개사 경쟁 · 채용 현황을 종합한 한 줄 요약.
+                최근 매매 평균 · 면적별 시세 · 최고/최저가를 실거래 자료로 정리했어요.
               </p>
               <Link
                 href={`/market/insights/${encodeURIComponent(complex_key)}`}
                 className="inline-block text-xs px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-[#0B0F14] rounded font-bold"
               >
-                인사이트 보기 →
+                요약 보기 →
               </Link>
             </div>
           </div>

@@ -13,6 +13,7 @@ export async function GET(
       .from('news_toon_episodes')
       .select('*')
       .eq('slug', slug)
+      .eq('status', 'published') // 공개 API: 미발행(초안) 노출 방지 → 404
       .single();
 
     if (error || !episode) {

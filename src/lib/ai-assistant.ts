@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { GEMINI_TEXT_MODEL, GEMINI_LOW_THINKING } from '@/lib/gemini-models';
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
 
@@ -105,6 +106,37 @@ export interface ChatMessage {
   content: string;
 }
 
+// 클라이언트가 보낸 대화 히스토리 제한 (토큰 비용/프롬프트 주입 남용 방지)
+export const CHAT_HISTORY_LIMITS = {
+  maxMessages: 20,
+  maxContentChars: 4000,
+  maxTotalChars: 30000,
+} as const;
+
+// user/assistant 역할 + 문자열 content만 남기고, 최근 20개 / 개당 4000자 / 총 30000자로 trim
+// (총량 초과 시 오래된 메시지부터 제거, 마지막 메시지는 유지)
+export function sanitizeChatMessages(
+  raw: unknown,
+  limits: Partial<{ maxMessages: number; maxContentChars: number; maxTotalChars: number }> = {},
+): ChatMessage[] {
+  if (!Array.isArray(raw)) return [];
+  const { maxMessages, maxContentChars, maxTotalChars } = { ...CHAT_HISTORY_LIMITS, ...limits };
+
+  const valid: ChatMessage[] = raw
+    .filter((m): m is ChatMessage =>
+      !!m && typeof m === 'object'
+      && ((m as ChatMessage).role === 'user' || (m as ChatMessage).role === 'assistant')
+      && typeof (m as ChatMessage).content === 'string')
+    .map((m) => ({ role: m.role, content: m.content.slice(0, maxContentChars) }))
+    .slice(-maxMessages);
+
+  let total = valid.reduce((sum, m) => sum + m.content.length, 0);
+  while (valid.length > 1 && total > maxTotalChars) {
+    total -= valid.shift()!.content.length;
+  }
+  return valid;
+}
+
 export async function streamChatResponse(
   messages: ChatMessage[],
 ) {
@@ -115,12 +147,14 @@ export async function streamChatResponse(
 
   try {
     const response = await ai.models.generateContentStream({
-      model: 'gemini-2.5-flash',
+      model: GEMINI_TEXT_MODEL,
       contents,
       config: {
         systemInstruction: SYSTEM_PROMPT,
         temperature: 0.7,
-        maxOutputTokens: 4096,
+        // thinking 토큰도 maxOutputTokens 에 포함 → 상세 답변이 잘리지 않게 여유 확보
+        maxOutputTokens: 8192,
+        thinkingConfig: GEMINI_LOW_THINKING,
       },
     });
 

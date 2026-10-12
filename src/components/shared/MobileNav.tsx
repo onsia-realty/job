@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Briefcase, Users, User, Search, Sparkles, ClipboardList, PenSquare, Bookmark } from 'lucide-react';
+import { Home, Briefcase, User, Sparkles, ClipboardList, PenSquare, Bookmark } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import type { UserRole } from '@/types';
 
@@ -36,8 +36,7 @@ export default function MobileNav({ variant }: MobileNavProps) {
     : [
         { href: baseUrl, label: '홈', icon: Home },
         { href: `${baseUrl}/jobs`, label: '현장', icon: Briefcase },
-        { href: `${baseUrl}/search`, label: '검색', icon: Search },
-        { href: `${baseUrl}/talents`, label: '인재', icon: Users },
+        // 검색(/sales/search → /sales 리다이렉트)·인재(/sales/talents 준비 중)는 기능 오픈 전까지 숨김
         { href: `${baseUrl}/mypage`, label: 'MY', icon: User },
       ];
 

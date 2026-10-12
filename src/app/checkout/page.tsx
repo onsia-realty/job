@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { TOSS_CONFIG, resolveProduct, generateOrderId, getVat, getTotalPrice } from '@/lib/toss';
+import { TOSS_CONFIG, resolveProduct, generateOrderId, getVat, getTotalPrice, isProductPurchasable } from '@/lib/toss';
 import { ChevronLeft, Loader2, ShieldCheck } from 'lucide-react';
 import type { TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
 
@@ -23,9 +23,10 @@ function CheckoutContent() {
   const initRef = useRef(false);
 
   const product = productKey ? resolveProduct(productKey, days) : null;
+  const purchaseEnabled = productKey ? isProductPurchasable(productKey) : false;
 
   useEffect(() => {
-    if (!product || initRef.current) return;
+    if (!product || !purchaseEnabled || initRef.current) return;
     initRef.current = true;
 
     const initWidget = async () => {
@@ -62,10 +63,10 @@ function CheckoutContent() {
     };
 
     initWidget();
-  }, [product]);
+  }, [product, purchaseEnabled]);
 
   const handlePayment = async () => {
-    if (!widgets || !product || !productKey) return;
+    if (!widgets || !product || !productKey || !purchaseEnabled) return;
     setPaying(true);
 
     try {
@@ -104,6 +105,20 @@ function CheckoutContent() {
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
         <div className="text-center">
           <p className="text-gray-400 mb-4">유효하지 않은 상품입니다.</p>
+          <Link href="/premium" className="text-cyan-400 hover:underline">
+            돌아가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!purchaseEnabled) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-gray-300 mb-2">이 상품은 준비 중입니다.</p>
+          <p className="text-sm text-gray-500 mb-4">현재 결제를 진행할 수 없습니다.</p>
           <Link href="/premium" className="text-cyan-400 hover:underline">
             돌아가기
           </Link>

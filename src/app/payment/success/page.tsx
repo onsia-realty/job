@@ -82,12 +82,18 @@ function PaymentSuccessContent() {
 
         if (result.success) {
           setStatus('success');
-          setMessage(`${product.name} 결제가 완료되었습니다!\n${product.durationLabel}간 광고가 노출됩니다.`);
+          const expiresAt: string | null = result.data?.expires_at ?? null;
+          const until = expiresAt
+            ? new Date(expiresAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' })
+            : null;
+          setMessage(until
+            ? `${product.name} 결제가 완료되었습니다!\n${product.durationLabel} 광고가 ${until}까지 적용됩니다.`
+            : `${product.name} 결제가 완료되었습니다!\n${product.durationLabel}간 광고가 노출됩니다.`);
 
           // 3초 후 자동 이동
           setTimeout(() => {
             if (jobId) {
-              router.push(product.category === 'agent' ? '/agent/employer' : '/sales/jobs');
+              router.push(product.category === 'agent' ? '/agent/employer' : '/sales/mypage');
             } else {
               router.push(product.category === 'agent'
                 ? `/agent/jobs/new?tier=${product.tier}`

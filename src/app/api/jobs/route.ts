@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { jobCreateSchema, JOB_FIELD_MESSAGES } from '@/lib/validations/job';
+import { isVerifiedBusinessUser } from '@/lib/auth-server';
 
 // Bearer 토큰에서 사용자 확인
 async function verifyUser(req: NextRequest) {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 서버에서 강제 설정하는 필드 (클라이언트 값 무시)
-  const { tier: _t, is_approved: _a, is_active: _ac, user_id: _u, views: _v, ...safeBody } = parsed.data;
+  const safeBody = parsed.data;
 
   // 무료(normal) 공고: deadline을 KST 기준 24시간 후로 자동 설정
   const now = new Date();
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     user_id: user.id,
     tier: 'normal',       // 무료 등급 강제 (결제 후에만 변경 가능)
     is_active: true,
-    is_approved: true,
+    is_approved: await isVerifiedBusinessUser(user),
     deadline: kstExpires.toISOString().slice(0, 10),
   };
 

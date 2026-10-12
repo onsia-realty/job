@@ -24,11 +24,16 @@ import {
   PenSquare,
   Users,
   CreditCard,
+  Home,
 } from 'lucide-react';
 import type { QuickApplication, Bookmark as BookmarkType, VerificationStatus } from '@/types';
 import { VERIFICATION_STATUS_LABELS, VERIFICATION_STATUS_COLORS } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/auth';
+
+// NEXT_PUBLIC_ 접두 환경변수는 빌드타임에 인라인되므로 클라이언트에서도 읽힌다.
+// /stay, /stay/new 는 플래그 off 면 서버에서 redirect('/') 하므로 링크도 함께 감춘다.
+const STAY_ENABLED = process.env.NEXT_PUBLIC_STAY_ENABLED === 'true';
 
 export default function MyPage() {
   const { user: authUser, signOut } = useAuth();
@@ -57,9 +62,9 @@ export default function MyPage() {
       const role = meta?.role;
       setIsEmployer(role === 'employer');
 
-      const hasBroker = meta?.brokerVerified === true;
-      const hasBusiness = meta?.businessVerified === true;
-      const hasCard = meta?.cardVerified === true;
+      const hasBroker = authUser.app_metadata?.brokerVerified === true && typeof authUser.app_metadata.brokerRegNo === 'string' && authUser.app_metadata.brokerRegNo.trim().length > 0;
+      const hasBusiness = authUser.app_metadata?.businessVerified === true;
+      const hasCard = authUser.app_metadata?.cardVerified === true;
 
       if (hasBroker && (hasBusiness || hasCard)) {
         setVerificationStatus('both_verified');
@@ -252,7 +257,7 @@ export default function MyPage() {
 
             {/* 인증됨: 3개 카드 분류 */}
             {verificationStatus !== 'unverified' && (() => {
-              const m = authUser?.user_metadata;
+              const m: NonNullable<typeof authUser>['user_metadata'] = { ...authUser?.user_metadata, brokerVerified: authUser?.app_metadata?.brokerVerified === true && typeof authUser.app_metadata.brokerRegNo === 'string' && authUser.app_metadata.brokerRegNo.trim().length > 0, businessVerified: authUser?.app_metadata?.businessVerified === true, cardVerified: authUser?.app_metadata?.cardVerified === true };
               return (
                 <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
                   {/* 중개업소 인증 */}
@@ -419,6 +424,35 @@ export default function MyPage() {
                 <Users className="w-5 h-5" />
               </div>
               <span className="flex-1 font-medium text-gray-900">분양상담사 공고보기</span>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </Link>
+          </div>
+        )}
+
+        {/* 사업자: 단기임대 */}
+        {isEmployer && user && STAY_ENABLED && (
+          <div className="bg-white rounded-2xl border border-gray-200 mb-6 overflow-hidden">
+            <h3 className="px-4 py-3 text-sm font-medium text-gray-500 bg-gray-50 border-b border-gray-100">
+              단기임대
+            </h3>
+            <Link
+              href="/agent/stays"
+              className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
+            >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-teal-100 text-teal-600">
+                <Home className="w-5 h-5" />
+              </div>
+              <span className="flex-1 font-medium text-gray-900">내 단기임대 매물 관리</span>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </Link>
+            <Link
+              href="/stay/new"
+              className="flex items-center gap-4 px-4 py-4 hover:bg-gray-50 transition-colors"
+            >
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-cyan-100 text-cyan-600">
+                <PenSquare className="w-5 h-5" />
+              </div>
+              <span className="flex-1 font-medium text-gray-900">단기임대 매물 등록</span>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </Link>
           </div>

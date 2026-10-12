@@ -22,6 +22,8 @@ import {
   COMPANY_TYPE_LABELS,
 } from '@/types';
 import { allJobs } from '@/data/salesJobsSample';
+import { fetchJobById } from '@/lib/supabase';
+import Image from 'next/image';
 
 const VWorldMap = dynamic(() => import('@/components/shared/VWorldMap'), { ssr: false });
 
@@ -83,106 +85,9 @@ function generateHtmlContent(job: SalesJobListing): string {
   `;
 }
 
-// 폴백 상세 데이터 (allJobs에 없는 id용)
-const FALLBACK_DETAIL = {
-  id: '1',
-  title: '엘리프 검단 포레듀 - 첫 조직투입',
-  description: '인천권 신규분상제 최대 수수료/ 주단위 지급',
-  type: 'apartment' as const,
-  tier: 'unique' as const,
-  badges: ['new', 'popular'] as ('new' | 'hot' | 'jackpot' | 'popular')[],
-  position: 'teamLead' as const,
-  salary: { type: 'commission' as const, amount: '최대 3,000만원' },
-  benefits: ['숙소제공', '일비지급', '교통비지원'],
-  experience: 'none' as const,
-  company: '엠비엔',
-  companyType: undefined as undefined,
-  companyInfo: {
-    representative: '홍길동',
-    employees: '50명',
-    founded: '2015년',
-    address: '인천광역시 서구 검단로 123',
-  },
-  region: '인천 검단',
-  address: '인천광역시 서구 검단로 123, 견본주택',
-  views: 3241,
-  createdAt: '2026.01.17',
-  deadline: '2026.02.28',
-  phone: '010-1234-5678',
-  contactName: '홍길동',
-  ageRange: undefined as undefined,
-  gender: undefined as undefined,
-  requirements: undefined as undefined,
-  headcount: undefined as undefined,
-  recruitPeriod: undefined as undefined,
-  htmlContent: `
-    <div class="job-content">
-      <h2 style="font-size: 24px; font-weight: bold; color: #333; margin-bottom: 20px; border-bottom: 2px solid #8B5CF6; padding-bottom: 10px;">
-        🏠 엘리프 검단 포레듀 - 분양상담사 모집
-      </h2>
-      <div style="background: linear-gradient(135deg, #F3E8FF 0%, #E0E7FF 100%); padding: 20px; border-radius: 12px; margin-bottom: 24px;">
-        <h3 style="font-size: 18px; color: #7C3AED; margin-bottom: 12px;">✨ 현장 소개</h3>
-        <p style="color: #374151; line-height: 1.8;">
-          인천 검단신도시 최초 분양 현장!<br/>
-          대단지 아파트 + 역세권 + 브랜드 아파트<br/>
-          <strong style="color: #7C3AED;">▶ 신규 조직 투입으로 최고의 조건 제시!</strong>
-        </p>
-      </div>
-      <div style="margin-bottom: 24px;">
-        <h3 style="font-size: 18px; font-weight: bold; color: #333; margin-bottom: 12px;">📋 모집 내용</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px;">
-          <tr style="border-bottom: 1px solid #E5E7EB;">
-            <td style="padding: 12px; background: #F9FAFB; width: 120px; font-weight: 600; color: #374151;">모집직종</td>
-            <td style="padding: 12px; color: #374151;">본부장 / 팀장 / 팀원</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #E5E7EB;">
-            <td style="padding: 12px; background: #F9FAFB; font-weight: 600; color: #374151;">급여조건</td>
-            <td style="padding: 12px; color: #374151;">
-              <strong style="color: #DC2626;">계약 수수료 최대 3,000만원</strong><br/>
-              <span style="color: #6B7280; font-size: 14px;">* 주단위 정산 / 익일 지급</span>
-            </td>
-          </tr>
-          <tr style="border-bottom: 1px solid #E5E7EB;">
-            <td style="padding: 12px; background: #F9FAFB; font-weight: 600; color: #374151;">자격요건</td>
-            <td style="padding: 12px; color: #374151;">경력무관 (신입/경력 모두 환영)</td>
-          </tr>
-          <tr style="border-bottom: 1px solid #E5E7EB;">
-            <td style="padding: 12px; background: #F9FAFB; font-weight: 600; color: #374151;">근무지역</td>
-            <td style="padding: 12px; color: #374151;">인천광역시 서구 검단로 123</td>
-          </tr>
-          <tr>
-            <td style="padding: 12px; background: #F9FAFB; font-weight: 600; color: #374151;">근무시간</td>
-            <td style="padding: 12px; color: #374151;">09:00 ~ 18:00 (주 6일 근무)</td>
-          </tr>
-        </table>
-      </div>
-      <div style="margin-bottom: 24px;">
-        <h3 style="font-size: 18px; font-weight: bold; color: #333; margin-bottom: 12px;">🎁 복리후생</h3>
-        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-          <span style="background: #DCFCE7; color: #166534; padding: 8px 16px; border-radius: 20px; font-size: 14px;">✓ 숙소제공</span>
-          <span style="background: #DCFCE7; color: #166534; padding: 8px 16px; border-radius: 20px; font-size: 14px;">✓ 일비지급</span>
-          <span style="background: #DCFCE7; color: #166534; padding: 8px 16px; border-radius: 20px; font-size: 14px;">✓ 교통비지원</span>
-          <span style="background: #DCFCE7; color: #166534; padding: 8px 16px; border-radius: 20px; font-size: 14px;">✓ 식대제공</span>
-          <span style="background: #DCFCE7; color: #166534; padding: 8px 16px; border-radius: 20px; font-size: 14px;">✓ 광고비지원</span>
-        </div>
-      </div>
-      <div style="margin-bottom: 24px;">
-        <h3 style="font-size: 18px; font-weight: bold; color: #333; margin-bottom: 12px;">📞 지원 방법</h3>
-        <div style="background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%); padding: 20px; border-radius: 12px; color: white;">
-          <p style="margin-bottom: 12px; font-size: 16px;">지원 문의: <strong style="font-size: 20px;">010-1234-5678</strong></p>
-          <p style="font-size: 14px; opacity: 0.9;">* 전화 또는 문자로 연락 주시면 상담 도와드립니다.</p>
-          <p style="font-size: 14px; opacity: 0.9;">* 이력서 제출 필요 없이 바로 면접 가능!</p>
-        </div>
-      </div>
-      <div style="text-align: center; padding: 20px; background: #F3F4F6; border-radius: 12px;">
-        <p style="color: #6B7280; font-size: 14px;">
-          본 채용공고의 저작권은 (주)엠비엔에 있으며, 무단 전재 및 재배포를 금지합니다.
-        </p>
-      </div>
-    </div>
-  `,
-};
-
+// (제거됨) 과거 FALLBACK_DETAIL 하드코딩:
+// 존재하지 않는 공고에 샘플(엘리프 검단) 데이터를 채워 넣던 경로였음.
+// 이제는 DB → mock 순으로 조회하고, 둘 다 없으면 "공고를 찾을 수 없습니다" 빈 상태를 보여준다.
 // 전화번호 마스킹 (가운데 4자리)
 function maskPhone(phone: string): string {
   const digits = phone.replace(/[^\d]/g, '');
@@ -205,10 +110,34 @@ export default function JobDetailPage() {
   const [copiedAddress, setCopiedAddress] = useState(false);
 
   const id = params.id as string;
-  const foundJob = allJobs.find(j => j.id === id);
+  const [foundJob, setFoundJob] = useState<SalesJobListing | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [thumbError, setThumbError] = useState(false);
+
+  // DB 우선 조회 → 없으면 mock 폴백 → 둘 다 없으면 null (빈 상태)
+  useEffect(() => {
+    let cancelled = false;
+    setIsLoading(true);
+    setThumbError(false);
+    const mockJob = allJobs.find(j => j.id === id) ?? null;
+
+    fetchJobById(id)
+      .then(dbJob => {
+        if (cancelled) return;
+        setFoundJob(dbJob ?? mockJob);
+        setIsLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setFoundJob(mockJob);
+        setIsLoading(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [id]);
 
   const jobDetail = useMemo(() => {
-    if (!foundJob) return FALLBACK_DETAIL;
+    if (!foundJob) return null;
     return {
       id: foundJob.id,
       title: foundJob.title,
@@ -230,9 +159,10 @@ export default function JobDetailPage() {
       },
       region: foundJob.region,
       address: foundJob.address || '',
+      thumbnail: foundJob.thumbnail,
       views: foundJob.views,
       createdAt: foundJob.createdAt,
-      deadline: foundJob.recruitPeriod || '채용시까지',
+      deadline: foundJob.deadline || foundJob.recruitPeriod || '채용시까지',
       phone: foundJob.phone || '',
       contactName: foundJob.contactName,
       ageRange: foundJob.ageRange,
@@ -240,9 +170,9 @@ export default function JobDetailPage() {
       requirements: foundJob.requirements,
       headcount: foundJob.headcount,
       recruitPeriod: foundJob.recruitPeriod,
-      htmlContent: generateHtmlContent(foundJob),
+      htmlContent: foundJob.htmlContent || generateHtmlContent(foundJob),
     };
-  }, [id, foundJob]);
+  }, [foundJob]);
 
   const relatedJobs = useMemo(() =>
     allJobs.filter(j => j.id !== id).slice(0, 2),
@@ -254,14 +184,14 @@ export default function JobDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (!jobDetail.address) return;
+    if (!jobDetail?.address) return;
     let cancelled = false;
     fetch(`/api/geocode?address=${encodeURIComponent(jobDetail.address)}`)
       .then(r => r.json())
       .then(data => { if (!cancelled && data.lat && data.lng) setMapCoord({ lat: data.lat, lng: data.lng }); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [jobDetail.address]);
+  }, [jobDetail?.address]);
 
   const scrollToSection = (sectionId: string) => {
     setActiveTab(sectionId);
@@ -271,6 +201,68 @@ export default function JobDetailPage() {
       window.scrollTo({ top, behavior: 'smooth' });
     }
   };
+
+  // ── 로딩 상태 ──
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-sales-bg pb-32 md:pb-0">
+        <header className="bg-white border-b border-sales-border sticky top-0 z-50">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center h-14">
+              <Link href="/sales" className="flex items-center gap-2 text-sales-text-mute hover:text-sales-text min-w-[44px] min-h-[44px] -ml-2 px-2">
+                <ArrowLeft className="w-5 h-5" />
+                <span className="hidden sm:inline text-sm font-medium">목록으로</span>
+              </Link>
+            </div>
+          </div>
+        </header>
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4 animate-pulse">
+          <div className="w-full rounded-2xl bg-sales-border/60" style={{ aspectRatio: '3 / 2' }} />
+          <div className="h-7 w-2/3 rounded-lg bg-sales-border/60" />
+          <div className="h-4 w-1/2 rounded-lg bg-sales-border/60" />
+          <div className="h-40 w-full rounded-2xl bg-sales-border/40" />
+        </div>
+        <MobileNav variant="sales" />
+      </div>
+    );
+  }
+
+  // ── 공고를 찾을 수 없음 (DB·mock 모두 없음) ──
+  if (!jobDetail) {
+    return (
+      <div className="min-h-screen bg-sales-bg pb-32 md:pb-0">
+        <header className="bg-white border-b border-sales-border sticky top-0 z-50">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center h-14">
+              <Link href="/sales" className="flex items-center gap-2 text-sales-text-mute hover:text-sales-text min-w-[44px] min-h-[44px] -ml-2 px-2">
+                <ArrowLeft className="w-5 h-5" />
+                <span className="hidden sm:inline text-sm font-medium">목록으로</span>
+              </Link>
+            </div>
+          </div>
+        </header>
+        <main className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="flex flex-col items-center text-center gap-3">
+            <div className="w-14 h-14 rounded-full bg-sales-primary-soft flex items-center justify-center">
+              <Briefcase className="w-7 h-7 text-sales-primary" />
+            </div>
+            <h1 className="text-lg font-extrabold text-sales-text">공고를 찾을 수 없습니다</h1>
+            <p className="text-sm text-sales-text-mute">
+              삭제되었거나 마감된 공고일 수 있습니다.
+            </p>
+            <Link
+              href="/sales"
+              className="mt-2 inline-flex items-center gap-1.5 min-h-[44px] px-5 rounded-xl bg-sales-primary text-white text-sm font-bold hover:bg-purple-700 transition-colors"
+            >
+              공고 목록으로
+              <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </main>
+        <MobileNav variant="sales" />
+      </div>
+    );
+  }
 
   const handleShare = async () => {
     const shareData = {
@@ -335,6 +327,28 @@ export default function JobDetailPage() {
           </div>
         </div>
       </header>
+
+      {/* ── 썸네일 히어로 (thumbnail 있을 때만) ── */}
+      {jobDetail.thumbnail && !thumbError && (
+        <div className="bg-white">
+          <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+            <div
+              className="relative w-full overflow-hidden rounded-2xl bg-sales-bg"
+              style={{ aspectRatio: '3 / 2' }}
+            >
+              <Image
+                src={jobDetail.thumbnail}
+                alt={jobDetail.title}
+                fill
+                priority
+                className="object-cover"
+                sizes="(max-width: 1280px) 100vw, 1280px"
+                onError={() => setThumbError(true)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Hero 타이틀 블록 ── */}
       <div className="bg-white border-b border-sales-border">

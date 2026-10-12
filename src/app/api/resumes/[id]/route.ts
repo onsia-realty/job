@@ -36,5 +36,20 @@ export async function GET(
     return NextResponse.json({ error: '이력서를 찾을 수 없습니다' }, { status: 404 });
   }
 
+  if (data.user_id !== user.id && data.is_public !== true) {
+    // 비공개 이력서는 실제 지원한 공고의 소유자에게만 공유한다.
+    // 잘못 연결된 과거 지원서도 권한을 부여하지 않도록 지원자 ID를 함께 확인한다.
+    const { data: applications, error: accessError } = await supabaseAdmin
+      .from('applications')
+      .select('id, jobs!inner(user_id)')
+      .eq('resume_id', id)
+      .eq('user_id', data.user_id)
+      .eq('jobs.user_id', user.id)
+      .limit(1);
+    if (accessError || !applications?.length) {
+      return NextResponse.json({ error: '이력서를 찾을 수 없습니다' }, { status: 404 });
+    }
+  }
+
   return NextResponse.json(data);
 }

@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { createRateLimiter, getClientIp } from '@/lib/rate-limit';
+
+// 이메일 존재 여부 조회(계정 열거) 남용 방지: IP당 분당 10회
+const checkRateLimit = createRateLimiter(10);
 
 export async function GET(request: NextRequest) {
+  if (!checkRateLimit(getClientIp(request))) {
+    return NextResponse.json({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' }, { status: 429 });
+  }
+
   const email = request.nextUrl.searchParams.get('email');
 
   if (!email) {
@@ -14,40 +22,25 @@ export async function GET(request: NextRequest) {
   }
 
   const normalizedEmail = email.toLowerCase();
+  // ilike 와일드카드(%, _) 및 이스케이프 문자 escape → 대소문자 무시 "정확 일치"
+  const emailPattern = normalizedEmail.replace(/[\\%_]/g, '\\$&');
 
   try {
-    // 1. users 테이블에서 확인 (가입 완료된 유저)
-    const { data: existingUser, error: userError } = await supabaseAdmin
+    // users 테이블에서 직접 조회 (가입 완료된 유저, 대소문자 무시)
+    // 기존 auth.admin.listUsers({ perPage: 1000 }) 전체 스캔은 1000명 초과 시 누락되어 제거.
+    // 인증 미완료 등 users 행이 없는 경우는 signup 단계의 'already registered' 처리가 최종 방어.
+    const { data: existingUsers, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
-      .eq('email', normalizedEmail)
-      .maybeSingle();
+      .ilike('email', emailPattern)
+      .limit(1);
 
     if (userError) {
       console.error('Check email (users) error:', userError);
       return NextResponse.json({ error: '확인 중 오류가 발생했습니다' }, { status: 500 });
     }
 
-    if (existingUser) {
-      return NextResponse.json({ exists: true });
-    }
-
-    // 2. Supabase Auth 확인 (이메일 가입 후 인증 미완료 유저 포함)
-    //    signUp에 같은 이메일 + 임의 비밀번호로 dry-run 불가하므로,
-    //    auth.admin.listUsers 사용 (소규모 서비스에서 충분)
-    try {
-      const { data: { users } } = await supabaseAdmin.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
-      });
-      if (users?.some(u => u.email?.toLowerCase() === normalizedEmail)) {
-        return NextResponse.json({ exists: true });
-      }
-    } catch {
-      // auth admin 조회 실패 시 users 테이블 결과만 사용
-    }
-
-    return NextResponse.json({ exists: false });
+    return NextResponse.json({ exists: (existingUsers?.length ?? 0) > 0 });
   } catch (err) {
     console.error('Check email error:', err);
     return NextResponse.json({ error: '서버 오류가 발생했습니다' }, { status: 500 });

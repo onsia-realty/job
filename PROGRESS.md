@@ -5,6 +5,34 @@
 
 ---
 
+## 마지막 작업 (2026-09-15) — 부인 STAY 호스트·게스트·안심중개사 흐름 완성
+
+- 제품 방향: 건축물대장 기반 선제 DB 구축은 후순위로 두고, 호스트 직접 등록·게스트 문의로 공급자 DB를 합법적으로 축적한다. 공인중개사 등록은 기존 인증·법정표기 구조를 유지한 별도 안심중개사 경로로 운영한다.
+- UI: 지도형 STAY 홈, 상세 날짜 선택·예상 임대료, 호스트 주 단가 등록, 등록 도움 신청, 내 신청, 운영자 접수·위임 초안·소유주 확인·관리자 승인 화면을 연결했다.
+- 데이터·보안: 공개 매물 DTO로 연락처·내부 필드를 차단하고, 신규 매물은 모두 검토 후 공개한다. 문의·비공개 읽기 경계·등록 도움 워크플로용 041~043 마이그레이션을 작성했다.
+- 인증: 개인/기업 이메일 로그인과 카카오·구글 콜백이 안전한 `/stay` 내부 경로로 복귀하도록 보완했다. 외부 URL과 경로 우회 redirect는 거부한다.
+- 실계정 검증: Supabase에 `booin.stay.personal.test@example.com`(seeker), `booin.stay.company.test@example.com`(employer) 테스트 계정을 만들었다. 기업 계정은 사업자·중개사 인증을 부여하지 않은 미인증 상태다. 비밀번호는 저장소와 이 문서에 기록하지 않는다.
+- 검증: 전체 Vitest 26파일 306테스트, TypeScript, Next.js 프로덕션 빌드 통과. 로그인 빌드 오류는 로그인 페이지에 Suspense 경계를 추가해 해결했다.
+- 배포 순서: 애플리케이션 코드를 먼저 배포한 뒤 운영 Supabase에 041 → 042 → 043 순서로 적용하고, 공개 익명 읽기 차단·인증 사용자 자기 매물 읽기·문의·도움 신청 저장을 라이브에서 확인한다.
+
+---
+
+## 마지막 작업 (2026-09-15) — P0 인증·소유권·RLS·결제 로컬 보완
+
+- 인증·자동 승인: 사용자 수정 가능 `user_metadata` 대신 서버 관리 `app_metadata`만 신뢰. 중개사 승인은 `brokerVerified + brokerRegNo` 연결을 요구하며 기존 플래그는 자동 승격하지 않음.
+- 사무소 연결: 등록번호 조회와 계정 소속 승인을 분리. `broker-sync`는 승인된 등록번호만 동기화하고 users 행 누락은 409. 법정표기 사무소·대표자 프로필 fallback 제거.
+- API 권한: 비공개 이력서와 실제 지원 관계, 타인 이력서 지원, 미승인 공고, 공고/매물 조회수, 지원 상태 값, 결제 재요청과 webhook secret 경계를 보완.
+- 결제 P0-04 1차: 공고와 상품 카테고리를 서버에서 강제 일치시켜 저가 상품 교차 승급을 차단. DB/UI가 아직 지원하지 않는 `sales-dia`는 카탈로그에 준비 중으로 표시하고 checkout·confirm을 모두 차단. 결제 승인 뒤 공고 tier 반영 실패는 성공으로 응답하지 않으며 동일 결제 재요청에서 반영을 재시도.
+- 결제 P0-04 잔여: 모집 마감일과 광고 만료일 분리, 서버 주문 원장·상태 머신·재조정, webhook 순서 역전/부분 환불/최신 entitlement 재계산, 공고 삭제 시 결제 원장 보존은 DB 설계와 테스트가 필요하므로 미완료.
+- DB 준비: `039_p0_authorization_boundaries.sql`, 적용 전 audit와 적용 후 catalog check SQL 작성. 운영에서 공개 실행 중인 `increment_ai_usage`도 service_role 전용으로 닫도록 보완. 운영 DB에는 미적용.
+- 검증: 기존 P0 핵심 5파일 50테스트 재통과. 결제 관련 3파일 70테스트 통과, TypeScript 통과, 결제 변경 파일 lint 0 errors/5 warnings, diff check 통과. 기존 종합 검증은 Vitest 13파일 223개, 변경 TS/TSX lint 0 errors/44 warnings. localhost:3000에서 stays mine 401, admin payments 403, my payments 401, 공개 stays 200 및 9건 모두 active+approved 확인.
+- 운영 읽기 전용: 앱 프로젝트 `pkbnudkbkhzqjhwffkbj`; 익명 REST에서 비공개 stays/jobs/resumes/payments/users 건수 0. SQL Editor 카탈로그 확인 결과 6개 테이블 RLS는 활성화됐지만 anon/authenticated에 전체 테이블·컬럼 grant가 있고, users 본인 `user_type` 변경과 jobs/stays 승인 필드 직접 쓰기 경로가 성립. 공개 SECURITY DEFINER RPC 2개도 확인. 데이터 쓰기는 시도하지 않음.
+- Advisor CRITICAL 4건: 네 객체 모두 익명 SELECT 가능. `public.notices`는 RLS 없이 익명/인증 전체 쓰기·TRUNCATE까지 허용되어, 공개 SELECT/service_role 쓰기로 제한하는 미적용 `040_security_advisor_hardening.sql` 초안 작성. 세 Security Definer View는 `public_bookings` 저장소 정의와 하위 권한이 불명확해 변경하지 않고 전용 read-only audit SQL 작성.
+- 상세: `docs/P0_SECURITY_REVIEW.md`. 다음은 결제 entitlement/주문 원장 설계, 테스트 DB audit→039→040 적용→catalog check→실계정 검증, Advisor 뷰 의존성 audit, 소속 증빙·승인/회수 정책 확정.
+- 재시작 인계: 공식 VS Code Codex 확장 `openai.chatgpt` 26.908.40401 설치 확인. VS Code 프로세스(04:32)가 확장 설치(07:14)보다 먼저 시작돼 `Developer: Reload Window` 1회 권장. Windows 재부팅은 불필요.
+- 재개 시 현재 미커밋 작업을 보존하고 이 블록과 `docs/P0_SECURITY_REVIEW.md`를 읽는다. 운영 DB 변경·배포·커밋·push는 아직 수행하지 않았다.
+
+---
 ## 마지막 작업 (2026-07-28) — 구글 로그인 장애 복구 + /sales 썸네일 파이프라인
 
 - **✅ 구글 로그인 복구 (origin_mismatch)**: 증상은 GIS 버튼은 뜨는데 계정 선택 시 `400 origin_mismatch`. 원인은 코드가 아니라 **GCP OAuth 클라이언트 설정**. `onsia-job 20260210`(client ID `856766890364-4bt9afmvj…`, 프로젝트 `onsia-job`)의 **승인된 JavaScript 원본**에 `https://www.booin.co.kr`만 있고 **apex `https://booin.co.kr`이 누락**돼 있었음. 서비스는 www로 들어와도 apex로 리다이렉트하므로 브라우저 최종 출처는 항상 apex → 구글이 거부. apex 추가로 즉시 해결.

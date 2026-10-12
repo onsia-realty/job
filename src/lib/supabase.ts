@@ -3,6 +3,7 @@
 import { supabase } from '@/lib/auth';
 export { supabase };
 import type { SalesJobListing, AgentResume, AgentCareer, CompanyProfile } from '@/types';
+import { effectiveJobTier, isFreeExposureOver } from '@/lib/ad-entitlement';
 
 // DB 데이터를 SalesJobListing 타입으로 변환
 export function mapDbJobToListing(job: any): SalesJobListing {
@@ -11,7 +12,8 @@ export function mapDbJobToListing(job: any): SalesJobListing {
     title: job.title,
     description: job.description || '',
     type: job.type,
-    tier: job.tier,
+    // 광고 창이 끝났으면 크론 전이라도 일반으로 표시
+    tier: effectiveJobTier(job) as SalesJobListing['tier'],
     badges: job.badges || [],
     position: job.position,
     salary: {
@@ -29,28 +31,32 @@ export function mapDbJobToListing(job: any): SalesJobListing {
       month: '2-digit',
       day: '2-digit',
     }).replace(/\. /g, '.').replace(/\.$/, ''),
+    createdAtIso: job.created_at || undefined,
+    adExpiresAt: job.ad_expires_at ?? null,
     thumbnail: job.thumbnail || undefined,
+    // 상세 화면용 필드 (jobs 테이블 실제 컬럼)
+    phone: job.phone || undefined,
+    address: job.address || undefined,
+    contactName: job.contact_name || undefined,
+    htmlContent: job.html_content || undefined,
+    deadline: job.deadline || undefined,
   };
 }
 
-// 공고 만료 여부 체크
+// 공고 만료 여부 체크 (크론 규칙과 동일 — 크론이 돌기 전에도 목록에서 걸러낸다)
 function isJobExpired(job: any): boolean {
   const now = new Date();
 
-  // 무료(normal) 공고: 등록 후 24시간 만료
-  if (job.tier === 'normal' || !job.tier) {
-    const createdAt = new Date(job.created_at);
-    const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
-    return now > expiresAt;
-  }
+  // 무료(유효 등급 normal) 공고: coalesce(ad_expires_at, created_at) + 24시간
+  if (isFreeExposureOver(job, now)) return true;
 
-  // 유료 공고: deadline 기준 만료 (상시채용이면 만료 없음)
+  // 모집 마감일 기준 만료 (등급 무관, 상시채용이면 만료 없음)
   if (job.deadline) {
     const deadline = new Date(job.deadline + 'T23:59:59+09:00'); // KST 자정까지
     return now > deadline;
   }
 
-  return false; // deadline 없으면 (상시채용) 만료 안 됨
+  return false;
 }
 
 // 공고 목록 가져오기
@@ -73,15 +79,22 @@ export async function fetchJobs(category: 'sales' | 'agent' = 'sales') {
   return activeJobs.map(mapDbJobToListing);
 }
 
-// 단일 공고 가져오기
+// jobs.id 는 UUID 컬럼. 샘플 데이터의 '1','8' 같은 id 로 조회하면
+// Postgres 가 22P02(invalid input syntax for type uuid)를 뱉으므로 미리 걸러낸다.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// 단일 공고 가져오기 (UUID 가 아니면 조회하지 않고 null → 호출부가 샘플로 폴백)
 export async function fetchJobById(id: string) {
+  if (!UUID_RE.test(id)) return null;
+
   const { data, error } = await supabase
     .from('jobs')
     .select('*')
     .eq('id', id);
 
   if (error) {
-    console.error('Error fetching job:', error);
+    // PostgrestError 는 그대로 찍으면 {} 로 보이므로 필드를 펼쳐서 남긴다
+    console.error('Error fetching job:', error.code, error.message, error.details ?? '');
     return null;
   }
 

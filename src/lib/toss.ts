@@ -25,6 +25,7 @@ export interface PricingTier {
   name: string;                // 표시명
   category: 'agent' | 'sales';
   exclusive: boolean;          // 지역 독점(유니크/VIP) 여부
+  purchaseEnabled?: boolean;   // false면 카탈로그 표시는 유지하되 결제는 비활성화
   options: DurationOption[];   // 입문/agent는 길이 1, 나머지 3
 }
 
@@ -69,6 +70,7 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
   },
   'sales-dia': {
     id: 'dia', name: '다이아', category: 'sales', exclusive: false,
+    purchaseEnabled: false,
     options: [
       { days: 10, bonusDays: 0, price: 150000, listPrice: 210000 },
       { days: 20, bonusDays: 10, price: 300000, listPrice: 430000 },
@@ -98,6 +100,11 @@ export const PRICING_TIERS: Record<string, PricingTier> = {
     options: [{ days: 7, bonusDays: 0, price: 24900, listPrice: 249000 }],
   },
 };
+
+export function isProductPurchasable(productKey: string): boolean {
+  const tier = PRICING_TIERS[productKey];
+  return Boolean(tier && tier.purchaseEnabled !== false);
+}
 
 // 특정 등급의 기간 옵션 조회. days 미지정 시: 단일옵션이면 그것, 다중이면 20일(주력) 우선 → 첫 옵션.
 export function findOption(productKey: string, days?: number): DurationOption | undefined {

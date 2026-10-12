@@ -38,6 +38,8 @@ interface ToonEpisode {
   created_at: string;
 }
 
+const STAY_ENABLED = process.env.NEXT_PUBLIC_STAY_ENABLED === 'true';
+
 // 광고 배너 데이터
 const adBanners = [
   {
@@ -164,9 +166,11 @@ export default function LandingPage() {
                 <Link href="/sales" className="text-gray-300 hover:text-white transition-colors">
                   분양상담사
                 </Link>
-                <a href="https://stay.booin.co.kr" className="text-gray-300 hover:text-white transition-colors">
-                  단기임대
-                </a>
+                {STAY_ENABLED && (
+                  <Link href="/stay" className="text-gray-300 hover:text-white transition-colors">
+                    단기임대
+                  </Link>
+                )}
                 <Link href="/event/premium" className="text-gray-300 hover:text-white transition-colors">
                   플랫폼 소개
                 </Link>
@@ -471,26 +475,28 @@ export default function LandingPage() {
                 </div>
               </Link>
 
-              {/* 단기임대 (외부 서비스 - same-tab) */}
-              <a
-                href="https://stay.booin.co.kr"
-                className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer"
-              >
-                <Image
-                  src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop"
-                  alt="단기임대"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-emerald-900/40 to-transparent" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  <Home className="w-10 h-10 mb-2" />
-                  <h3 className="text-xl lg:text-2xl font-bold">단기임대</h3>
-                  <p className="text-sm text-white/80 mt-1">검증된 안심 단기임대</p>
-                </div>
-              </a>
+              {/* 단기임대 (STAY_ENABLED일 때만 노출, 내부 /stay) */}
+              {STAY_ENABLED && (
+                <Link
+                  href="/stay"
+                  className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer"
+                >
+                  <Image
+                    src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop"
+                    alt="단기임대"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-emerald-900/40 to-transparent" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+                    <Home className="w-10 h-10 mb-2" />
+                    <h3 className="text-xl lg:text-2xl font-bold">단기임대</h3>
+                    <p className="text-sm text-white/80 mt-1">검증된 안심 단기임대</p>
+                  </div>
+                </Link>
+              )}
             </div>
           </div>
         </section>

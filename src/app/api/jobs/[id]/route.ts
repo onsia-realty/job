@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { effectiveJobTier, isFreeExposureOver } from '@/lib/ad-entitlement';
 
 // Bearer 토큰에서 사용자 확인
 async function verifyUser(req: NextRequest) {
@@ -52,6 +53,7 @@ export async function GET(
     .from('jobs')
     .select('*')
     .eq('id', id)
+    .eq('is_approved', true)
     .maybeSingle();
 
   if (error) {
@@ -68,24 +70,23 @@ export async function GET(
     return NextResponse.json({ error: '마감된 공고입니다', expired: true }, { status: 410 });
   }
 
-  // 무료 공고 24시간 만료 체크
-  if ((data.tier === 'normal' || !data.tier)) {
-    const createdAt = new Date(data.created_at);
-    const expiresAt = new Date(createdAt.getTime() + 24 * 60 * 60 * 1000);
-    if (new Date() > expiresAt) {
-      return NextResponse.json({ error: '마감된 공고입니다 (무료 공고는 24시간 노출)', expired: true }, { status: 410 });
-    }
+  const now = new Date();
+
+  // 무료(유효 등급 normal) 공고: coalesce(ad_expires_at, created_at) + 24시간 (크론 규칙과 동일)
+  if (isFreeExposureOver(data, now)) {
+    return NextResponse.json({ error: '마감된 공고입니다 (무료 공고는 24시간 노출)', expired: true }, { status: 410 });
   }
 
-  // 유료 공고 deadline 만료 체크
-  if (data.deadline && data.tier && data.tier !== 'normal') {
+  // 모집 마감일 만료 체크 (등급 무관)
+  if (data.deadline) {
     const deadline = new Date(data.deadline + 'T23:59:59+09:00');
-    if (new Date() > deadline) {
+    if (now > deadline) {
       return NextResponse.json({ error: '마감된 공고입니다', expired: true }, { status: 410 });
     }
   }
 
-  return NextResponse.json(data);
+  // 광고 창이 끝났으면 크론 전이라도 일반으로 표시
+  return NextResponse.json({ ...data, tier: effectiveJobTier(data, now) });
 }
 
 // PATCH /api/jobs/[id] - 공고 수정
@@ -107,9 +108,10 @@ export async function PATCH(
     return NextResponse.json({ error: '잘못된 요청 형식입니다' }, { status: 400 });
   }
 
-  // 허용된 필드만 업데이트 (tier, is_approved, user_id, views 등 보호)
+  // 허용된 필드만 업데이트 (tier, ad_expires_at, is_approved, user_id, views 등 보호 — 광고 기간은 결제로만)
+  // category는 아래에서 별도 처리 (유료 등급은 카테고리별 가격이라 결제 후 변경 금지)
   const ALLOWED_FIELDS = [
-    'title', 'description', 'html_content', 'type', 'category',
+    'title', 'description', 'html_content', 'type',
     'company', 'region', 'region_detail', 'address',
     'salary_type', 'salary_amount', 'work_days', 'work_start', 'work_end',
     'deadline', 'contact_name', 'contact_phone', 'contact_email',
@@ -121,20 +123,35 @@ export async function PATCH(
     if (key in body) sanitized[key] = body[key];
   }
 
-  if (Object.keys(sanitized).length === 0) {
+  if (Object.keys(sanitized).length === 0 && !('category' in body)) {
     return NextResponse.json({ error: '수정할 내용이 없습니다' }, { status: 400 });
   }
 
   // 소유권 확인
   const { data: existing } = await supabaseAdmin
     .from('jobs')
-    .select('id')
+    .select('id, tier, category')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
 
   if (!existing) {
     return NextResponse.json({ error: '수정 권한이 없거나 공고를 찾을 수 없습니다' }, { status: 403 });
+  }
+
+  // category 변경: 무료(normal) 공고만 허용. 유료 공고는 같은 값이면 무시, 다르면 거부
+  if ('category' in body && body.category !== existing.category) {
+    if (existing.tier && existing.tier !== 'normal') {
+      return NextResponse.json({ error: '유료 공고는 구분(분양상담사/공인중개사)을 변경할 수 없습니다' }, { status: 400 });
+    }
+    if (body.category !== 'agent' && body.category !== 'sales') {
+      return NextResponse.json({ error: '구분(분양상담사/공인중개사)을 확인해주세요' }, { status: 400 });
+    }
+    sanitized.category = body.category;
+  }
+
+  if (Object.keys(sanitized).length === 0) {
+    return NextResponse.json({ error: '수정할 내용이 없습니다' }, { status: 400 });
   }
 
   const { data, error } = await supabaseAdmin

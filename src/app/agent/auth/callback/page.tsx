@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/auth';
+import { AUTH_STAY_REDIRECT_KEY, safeStayRedirect } from '@/lib/auth-redirect';
 import { Loader2 } from 'lucide-react';
 
 async function ensureUserRecord(accessToken: string): Promise<{ created?: boolean; exists?: boolean; error?: string }> {
@@ -29,6 +30,12 @@ function AuthCallbackContent() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const requestedRedirect = safeStayRedirect(sessionStorage.getItem(AUTH_STAY_REDIRECT_KEY));
+    const finishExistingLogin = (role: string | undefined) => {
+      sessionStorage.removeItem(AUTH_STAY_REDIRECT_KEY);
+      router.replace(requestedRedirect || (role === 'employer' ? '/agent/employer' : '/agent/jobs'));
+    };
+
     const handleAuthCallback = async () => {
       try {
         // URL에서 code 파라미터 확인
@@ -60,11 +67,13 @@ function AuthCallbackContent() {
             const role = localStorage.getItem('social_login_role') || 'seeker';
             localStorage.removeItem('social_login_role');
             if (result.created) {
-              router.replace(`/agent/auth/signup?role=${role}&social=true`);
+              const suffix = requestedRedirect ? `&redirect=${encodeURIComponent(requestedRedirect)}` : '';
+              sessionStorage.removeItem(AUTH_STAY_REDIRECT_KEY);
+              router.replace(`/agent/auth/signup?role=${role}&social=true${suffix}`);
             } else {
               // 기존 유저: role 기반 리다이렉트
               const userRole = data.session.user?.user_metadata?.role;
-              router.replace(userRole === 'employer' ? '/agent/employer' : '/agent/jobs');
+              finishExistingLogin(userRole);
             }
             return;
           }
@@ -82,13 +91,17 @@ function AuthCallbackContent() {
           const role = localStorage.getItem('social_login_role') || 'seeker';
           localStorage.removeItem('social_login_role');
           if (result.created) {
-            router.replace(`/agent/auth/signup?role=${role}&social=true`);
+            const suffix = requestedRedirect ? `&redirect=${encodeURIComponent(requestedRedirect)}` : '';
+            sessionStorage.removeItem(AUTH_STAY_REDIRECT_KEY);
+            router.replace(`/agent/auth/signup?role=${role}&social=true${suffix}`);
           } else {
             const userRole = session.user?.user_metadata?.role;
-            router.replace(userRole === 'employer' ? '/agent/employer' : '/agent/jobs');
+            finishExistingLogin(userRole);
           }
         } else {
-          router.replace('/agent/auth/login');
+          router.replace(requestedRedirect
+            ? `/agent/auth/login?redirect=${encodeURIComponent(requestedRedirect)}`
+            : '/agent/auth/login');
         }
       } catch (err) {
         console.error('Auth callback error:', err);

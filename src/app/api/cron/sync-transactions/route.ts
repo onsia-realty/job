@@ -118,7 +118,7 @@ async function runSync(req: NextRequest) {
               monthly_manwon: r.monthly_manwon,
               cancel_yn: r.cancel_yn,
               deal_channel: r.deal_channel,
-              raw: r.raw,
+              // raw(국토부 원본 JSON)는 미사용 + DB 용량의 절반이라 저장하지 않음 (migration 044)
               fetched_at: new Date().toISOString(),
             })),
             { onConflict: 'property_type,deal_type,lawd_cd,deal_ymd,complex_name,jibun,exclusive_area,floor,deal_date,price_manwon,deposit_manwon', ignoreDuplicates: true }

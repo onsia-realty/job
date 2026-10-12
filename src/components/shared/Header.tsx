@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { User, LogIn, Building2, HardHat, Crown, Sparkles, ClipboardList, PenSquare, MapPin, Home } from 'lucide-react';
 
 const MARKET_ENABLED = process.env.NEXT_PUBLIC_MARKET_ENABLED === 'true';
+const STAY_ENABLED = process.env.NEXT_PUBLIC_STAY_ENABLED === 'true';
 import { useAuth } from '@/contexts/AuthContext';
 import type { UserRole } from '@/types';
 
@@ -75,13 +76,15 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                   <HardHat className="w-4 h-4" />
                   <span>분양상담사</span>
                 </Link>
-                <a
-                  href="https://stay.booin.co.kr"
-                  className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
-                >
-                  <Home className="w-4 h-4" />
-                  <span>단기임대</span>
-                </a>
+                {STAY_ENABLED && (
+                  <Link
+                    href="/stay"
+                    className="flex items-center gap-1 text-white/90 hover:text-white transition-colors"
+                  >
+                    <Home className="w-4 h-4" />
+                    <span>단기임대</span>
+                  </Link>
+                )}
               </>
             )}
             {variant === 'agent' && (() => {
@@ -123,6 +126,12 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                       <MapPin className="w-3.5 h-3.5" />
                       시세지도
                       <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-cyan-100 text-cyan-700 ml-0.5">NEW</span>
+                    </Link>
+                  )}
+                  {STAY_ENABLED && user && (
+                    <Link href="/agent/stays" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
+                      <Home className="w-3.5 h-3.5" />
+                      단기임대 관리
                     </Link>
                   )}
                   <Link href="/premium?category=agent" className="text-gray-500 hover:text-blue-600 flex items-center gap-1">
@@ -172,9 +181,7 @@ export default function Header({ variant = 'landing' }: HeaderProps) {
                 <Link href="/sales/jobs" className="text-white/80 hover:text-white">
                   현장구인
                 </Link>
-                <Link href="/sales/talents" className="text-white/80 hover:text-white">
-                  인재정보
-                </Link>
+                {/* 인재정보(/sales/talents)는 기능 오픈 전까지 숨김 */}
               </>
             )}
           </nav>

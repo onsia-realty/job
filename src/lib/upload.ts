@@ -13,7 +13,19 @@ const IMAGE_SIZE_LIMITS: Record<string, { maxWidth: number; maxHeight: number; q
   'company-images':  { maxWidth: 800,  maxHeight: 800,  quality: 0.80 },
   'profile-photos':  { maxWidth: 400,  maxHeight: 400,  quality: 0.80 },
   'card-images':     { maxWidth: 800,  maxHeight: 600,  quality: 0.80 },
+  'stay-images':     { maxWidth: 1200, maxHeight: 900,  quality: 0.80 },
 };
+
+/** Storage 버킷 내 업로드 폴더 (IMAGE_SIZE_LIMITS 키와 1:1) */
+export type UploadFolder =
+  | 'thumbnails'
+  | 'agent-images'
+  | 'editor-images'
+  | 'banner-images'
+  | 'company-images'
+  | 'profile-photos'
+  | 'card-images'
+  | 'stay-images';
 
 /** 이미지를 최대 크기에 맞게 리사이즈 + JPEG 압축 (클라이언트) */
 function resizeImage(
@@ -87,7 +99,7 @@ function generateFileName(file: File, prefix: string): string {
 
 export async function uploadImage(
   file: File,
-  folder: 'thumbnails' | 'agent-images' | 'editor-images' | 'banner-images' | 'company-images' | 'profile-photos' | 'card-images'
+  folder: UploadFolder
 ): Promise<string | null> {
   // 파일 크기 검증 (최대 2MB)
   if (file.size > MAX_FILE_SIZE) {
@@ -119,7 +131,7 @@ export async function uploadImage(
 
 export async function uploadMultipleImages(
   files: Record<string, File | null>,
-  folder: 'thumbnails' | 'agent-images' | 'editor-images' | 'banner-images' | 'company-images' | 'profile-photos' | 'card-images'
+  folder: UploadFolder
 ): Promise<Record<string, string>> {
   const urls: Record<string, string> = {};
 
@@ -127,6 +139,32 @@ export async function uploadMultipleImages(
     if (file) {
       const url = await uploadImage(file, folder);
       if (url) urls[key] = url;
+    }
+  }
+
+  return urls;
+}
+
+/**
+ * 파일 배열을 입력 순서 그대로 순차 업로드하고 성공한 publicUrl 배열을 반환.
+ * (단기임대 매물 images[] 등 첫 장=썸네일처럼 순서가 의미를 갖는 경우용)
+ *
+ * uploadMultipleImages 를 쓰지 않는 이유: 키-값 맵(Record) 기반이라 배열 순서를 보존할 수 없다.
+ * 실패한 파일은 건너뛰고 console.warn 으로 인덱스·파일명을 남긴다. 빈 배열이면 빈 배열 반환.
+ */
+export async function uploadImagesInOrder(
+  files: File[],
+  folder: UploadFolder
+): Promise<string[]> {
+  const urls: string[] = [];
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const url = await uploadImage(file, folder);
+    if (url) {
+      urls.push(url);
+    } else {
+      console.warn(`[uploadImagesInOrder] 업로드 실패 — 건너뜀 (index ${i}, ${file.name})`);
     }
   }
 
