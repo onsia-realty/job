@@ -3,7 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-server';
 import { verifyUser, isAdminUserId } from '@/lib/auth-server';
 import { stayUpdateSchema, STAY_FIELD_MESSAGES } from '@/lib/validations/stay';
 import { buildAgentSnapshot } from '@/lib/stay/agent-snapshot';
-import { PUBLIC_STAY_SELECT, toPublicStay } from '@/lib/stay/public-dto';
+import { PUBLIC_STAY_DETAIL_SELECT, toPublicStayDetail } from '@/lib/stay/public-dto';
 
 // GET /api/stays/[id] - 매물 단건 조회
 // 공개(is_active && is_approved)면 누구나. 비공개 행은 소유자 또는 관리자만.
@@ -38,7 +38,7 @@ export async function GET(
   }
 
   let query = supabaseAdmin.from('stays')
-    .select(canManage ? '*' : PUBLIC_STAY_SELECT).eq('id', id);
+    .select(canManage ? '*' : PUBLIC_STAY_DETAIL_SELECT).eq('id', id);
   // Repeat visibility checks on the actual read so a concurrent withdrawal is respected.
   if (!canManage) query = query.eq('is_active', true).eq('is_approved', true);
   else if (access.user_id === user?.id) query = query.eq('user_id', user.id);
@@ -47,7 +47,19 @@ export async function GET(
     return NextResponse.json({ error: '매물을 불러올 수 없습니다' }, { status: 500 });
   }
   if (!data) return NextResponse.json({ error: '매물을 찾을 수 없습니다' }, { status: 404 });
-  return NextResponse.json(canManage ? data : toPublicStay(data), {
+  // Legacy agent snapshots can contain users.phone. Public detail may expose only
+  // the registered office contact, never that stored personal-profile fallback.
+  const publicDetail = canManage ? null : toPublicStayDetail(data);
+  if (publicDetail?.owner_type === 'agent' && typeof publicDetail.agent_reg_no === 'string') {
+    try {
+      const { data: office, error: officeError } = await supabaseAdmin.from('broker_offices')
+        .select('tel_no').eq('estbl_reg_no', publicDetail.agent_reg_no).limit(1).maybeSingle();
+      if (!officeError && typeof office?.tel_no === 'string') publicDetail.agent_phone = office.tel_no.trim() || null;
+    } catch {
+      // Contact lookup failure must not fall back to a private snapshot or hide the listing.
+    }
+  }
+  return NextResponse.json(canManage ? data : publicDetail, {
     headers: { 'Cache-Control': 'private, no-store', Vary: 'Authorization' },
   });
 }

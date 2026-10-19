@@ -1,8 +1,8 @@
 'use client';
 
-// 담당 중개사 블록 — 공인중개사법 제18조의2 법정 필수 표기.
+// 매물 상세 하단 담당 중개사 블록 — 공개 등록번호는 이 블록에만 표기한다.
 //
-// ⚠️ 아래 6개 항목은 하나라도 빠지면 안 된다:
+// ⚠️ 아래 5개 사무소 항목과 전속 여부를 표시한다:
 //    ① 중개사무소 명칭 ② 소재지 ③ 연락처 ④ 등록번호 ⑤ 대표자 성명 (+ 전속 여부)
 // ⚠️ 중개보조원 성명은 어떤 경우에도 표기하지 않는다. (관련 필드 자체가 없다)
 //
@@ -76,14 +76,14 @@ export default function StayAgentBlock({ stay }: { stay: Stay }) {
         <Row icon={Building2} label="중개사무소" value={stay.agent_office_name ?? ''} />
         <Row icon={MapPin} label="소재지" value={stay.agent_office_address ?? ''} />
         <Row icon={User} label="대표자" value={stay.agent_representative ?? ''} />
-        <Row icon={BadgeCheck} label="등록번호" value={stay.agent_reg_no ?? ''} />
+        <Row icon={BadgeCheck} label="개설등록번호" value={stay.agent_reg_no ?? ''} />
         <div className="flex items-start gap-2.5">
           <Phone className="mt-0.5 h-4 w-4 flex-shrink-0 text-slate-400" aria-hidden />
           <dt className="w-[92px] flex-shrink-0 text-xs text-slate-500">연락처</dt>
           <dd className="min-w-0 flex-1">
-            <a href={`tel:${stay.agent_phone ?? ''}`} className="text-sm font-semibold text-blue-700 hover:underline">
+            {stay.agent_phone ? <a href={`tel:${stay.agent_phone}`} className="text-sm font-semibold text-blue-700 hover:underline">
               {stay.agent_phone}
-            </a>
+            </a> : <span className="text-sm text-slate-500">매물 문의를 이용해 주세요</span>}
           </dd>
         </div>
       </dl>

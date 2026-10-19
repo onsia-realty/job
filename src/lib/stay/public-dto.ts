@@ -14,15 +14,29 @@ export const PUBLIC_STAY_FIELDS = [
   'amenities', 'appliances', 'parking_available', 'pets_allowed', 'smoking_allowed',
   'thumbnail', 'images', 'owner_type', 'views', 'is_active', 'is_approved',
   'created_at', 'updated_at', 'status', 'is_exclusive',
-  'agent_office_name', 'agent_office_address', 'agent_phone',
-  'agent_reg_no', 'agent_representative',
+  // Registration belongs only in the detail broker block, never list responses.
+  'agent_office_name', 'agent_office_address',
+  'agent_representative',
 ] as const satisfies readonly (keyof Stay)[];
 
 export type PublicStay = Pick<Stay, (typeof PUBLIC_STAY_FIELDS)[number]>;
 export const PUBLIC_STAY_SELECT = PUBLIC_STAY_FIELDS.join(',');
+export const PUBLIC_STAY_DETAIL_SELECT = `${PUBLIC_STAY_SELECT},agent_reg_no`;
+export type PublicStayDetail = PublicStay & Partial<Pick<Stay, 'agent_reg_no' | 'agent_phone'>>;
 
 export function toPublicStay(row: unknown): PublicStay {
   if (!row || typeof row !== 'object' || Array.isArray(row)) throw new TypeError('Invalid stay row');
   const record = row as Record<string, unknown>;
-  return Object.fromEntries(PUBLIC_STAY_FIELDS.map((field) => [field, record[field]])) as PublicStay;
+  return Object.fromEntries(PUBLIC_STAY_FIELDS.map((field) => [
+    field,
+    // Direct-owner rows must not expose a stale broker snapshot.
+    field.startsWith('agent_') && record.owner_type !== 'agent' ? null : record[field],
+  ])) as PublicStay;
+}
+
+export function toPublicStayDetail(row: unknown, officePhone: string | null = null): PublicStayDetail {
+  const stay = toPublicStay(row);
+  return stay.owner_type === 'agent'
+    ? { ...stay, agent_reg_no: (row as Stay).agent_reg_no, agent_phone: officePhone }
+    : stay;
 }
