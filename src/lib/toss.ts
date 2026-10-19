@@ -150,10 +150,3 @@ export function resolveProduct(productKey: string, days?: number): ResolvedProdu
     durationLabel: `${exposureDays}일`,
   };
 }
-
-// 고유 주문 ID 생성
-export function generateOrderId(): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  return `order-${timestamp}-${random}`;
-}

@@ -146,40 +146,44 @@ describe('read-path helpers', () => {
 });
 
 describe('recomputeJobAd', () => {
-  function fakeDb(payments: Record<string, unknown>[]) {
-    const updates: Record<string, unknown>[] = [];
-    const from = vi.fn((table: string) => {
-      const chain: Record<string, unknown> = {};
-      let rows = table === 'payments' ? [...payments] : [{ id: 'job-1', category: 'sales' }];
-      let isUpdate = false;
-      chain.select = vi.fn(() => chain);
-      chain.eq = vi.fn((k: string, v: unknown) => {
-        if (!isUpdate) rows = rows.filter((r) => r[k] === v);
-        return chain;
-      });
-      chain.update = vi.fn((payload: Record<string, unknown>) => {
-        isUpdate = true;
-        updates.push(payload);
-        return chain;
-      });
-      chain.maybeSingle = vi.fn(async () => ({ data: rows[0] ?? null, error: null }));
-      chain.then = (resolve: (v: unknown) => unknown) =>
-        Promise.resolve({ data: isUpdate ? null : rows, error: null }).then(resolve);
-      return chain;
-    });
-    return { db: { from } as unknown as SupabaseClient, updates };
+  function fakeDb() {
+    const rpc = vi.fn().mockResolvedValue({ data: { tier: 'superior', ad_expires_at: iso('2026-10-21') }, error: null });
+    const from = vi.fn(() => { throw new Error('Non-atomic projection query forbidden'); });
+    return { db: { rpc, from } as unknown as SupabaseClient, rpc, from };
   }
 
-  it('is idempotent and ignores non-completed payments', async () => {
-    const { db, updates } = fakeDb([
-      { job_id: 'job-1', payment_status: 'completed', tier: 'superior', starts_at: null, paid_at: iso('2026-10-01'), expires_at: iso('2026-10-21') },
-      { job_id: 'job-1', payment_status: 'refunded', tier: 'unique', starts_at: iso('2026-10-05'), paid_at: iso('2026-10-05'), expires_at: iso('2026-10-15') },
-    ]);
+  it('delegates every replay to the atomic projection RPC and maps its timestamp', async () => {
+    const { db, rpc, from } = fakeDb();
     const a = await recomputeJobAd(db, 'job-1', d('2026-10-10'));
     const b = await recomputeJobAd(db, 'job-1', d('2026-10-10'));
     expect(a).toEqual(b);
-    expect(updates).toHaveLength(2);
-    expect(updates[0]).toEqual({ tier: 'superior', ad_expires_at: iso('2026-10-21') });
-    expect(updates[1]).toEqual(updates[0]);
+    expect(a).toEqual({ tier: 'superior', adExpiresAt: d('2026-10-21') });
+    expect(rpc).toHaveBeenCalledTimes(2);
+    expect(rpc).toHaveBeenCalledWith('recompute_payment_job_ad', { p_job_id: 'job-1', p_now: iso('2026-10-10') });
+    expect(from).not.toHaveBeenCalled();
+  });
+  it('returns null when the locked job was deleted', async () => {
+    const { db, rpc } = fakeDb();
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+    expect(await recomputeJobAd(db, 'deleted')).toBeNull();
+  });
+  it('fails closed when the transaction or RPC is unavailable', async () => {
+    const { db, rpc, from } = fakeDb();
+    rpc.mockResolvedValueOnce({ data: null, error: { code: '42883' } });
+    await expect(recomputeJobAd(db, 'job-1')).rejects.toThrow('광고 재계산 실패');
+    expect(from).not.toHaveBeenCalled();
+  });
+  it('uses the latest RPC projection after an interleaved legacy cancellation', async () => {
+    const { db, rpc } = fakeDb();
+    const canceled = { data: { tier: 'normal', ad_expires_at: null }, error: null };
+    let resume: (value: typeof canceled) => void = () => undefined;
+    // A waits for the DB lock; B commits a refund and projects before A resumes.
+    rpc.mockImplementationOnce(() => new Promise(resolve => { resume = resolve; }))
+      .mockResolvedValueOnce(canceled);
+    const delayed = recomputeJobAd(db, 'job-1');
+    expect(await recomputeJobAd(db, 'job-1')).toEqual({ tier: 'normal', adExpiresAt: null });
+    resume(canceled);
+    expect(await delayed).toEqual({ tier: 'normal', adExpiresAt: null });
+    expect(rpc).toHaveBeenCalledTimes(2);
   });
 });

@@ -5,11 +5,13 @@ import Link from 'next/link';
 import Image from 'next/image';
 import {
   Building2, HardHat, Newspaper,
-  ArrowRight, ChevronLeft, ChevronRight,
+  ArrowRight, ChevronRight,
   Sparkles, TrendingUp, User, Eye, Home
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/shared/Footer';
+import AnnouncementSlider from '@/components/home/AnnouncementSlider';
+import ServiceCard from '@/components/home/ServiceCard';
 
 // 뉴스 타입 정의
 interface NewsItem {
@@ -69,7 +71,6 @@ const announcements = [
     badge: '공지',
     title: '부동산인 정식 오픈!',
     description: '부동산 전문가를 위한 AI 기반 구인구직 플랫폼이 오픈했습니다.',
-    color: 'from-purple-500 to-blue-500',
     link: null,
   },
   {
@@ -77,7 +78,6 @@ const announcements = [
     badge: 'AI',
     title: 'AI 부동산인 실무비서 오픈',
     description: '중개보수 계산, 특약 작성, 판례 검색까지 AI가 즉시 답변합니다.',
-    color: 'from-cyan-500 to-emerald-500',
     link: '/event/ai-assistant',
   },
   {
@@ -85,7 +85,6 @@ const announcements = [
     badge: '업데이트',
     title: 'AI 매칭 시스템 업그레이드',
     description: '더욱 정확한 구인구직 매칭을 위한 AI 시스템이 개선되었습니다.',
-    color: 'from-cyan-500 to-green-500',
     link: null,
   },
 ];
@@ -95,7 +94,6 @@ const announcements = [
 
 export default function LandingPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [toonEpisodes, setToonEpisodes] = useState<ToonEpisode[]>([]);
 
@@ -113,19 +111,13 @@ export default function LandingPage() {
     fetchToon();
   }, []);
 
-  // 자동 슬라이드
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % announcements.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
   // RSS 뉴스 가져오기 (sessionStorage 캐싱으로 뒤로가기 깜빡임 방지)
   useEffect(() => {
     const cached = sessionStorage.getItem('booin_news_cache');
     if (cached) {
       try {
+        // Restore the browser-only cache after hydration before refreshing the feed.
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setNewsItems(JSON.parse(cached));
       } catch {}
     }
@@ -142,16 +134,13 @@ export default function LandingPage() {
     fetchNews();
   }, []);
 
-  const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % announcements.length);
-  const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + announcements.length) % announcements.length);
-
   return (
     <div className="min-h-screen bg-[#141517] text-white">
       {/* 헤더 */}
       <header className="border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4 lg:py-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
+          <div className="flex flex-wrap items-center justify-between gap-y-4">
+            <div className="contents xl:flex xl:items-center xl:gap-8">
               <h1>
                 <Link href="/" className="text-xl lg:text-2xl font-bold">
                   <span className="text-white">부동산</span>
@@ -159,7 +148,7 @@ export default function LandingPage() {
                   <span className="sr-only"> - 부동산 전문가 구인구직 플랫폼</span>
                 </Link>
               </h1>
-              <nav className="hidden md:flex items-center gap-6 lg:gap-8">
+              <nav className="order-1 hidden basis-full flex-wrap items-center gap-x-5 gap-y-3 md:flex xl:order-none xl:basis-auto">
                 <Link href="/agent" className="text-gray-300 hover:text-white transition-colors">
                   공인중개사
                 </Link>
@@ -180,21 +169,17 @@ export default function LandingPage() {
                 <Link href="/toon" className="text-gray-300 hover:text-white transition-colors">
                   BOOIN AI 웹툰
                 </Link>
-                <button onClick={() => alert('커뮤니티 기능은 준비 중입니다.')} className="text-gray-300 hover:text-white transition-colors">
-                  커뮤니티
-                </button>
+                <span aria-disabled="true" className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm text-gray-500">커뮤니티 <span className="rounded bg-white/5 px-1.5 text-[10px]">준비 중</span></span>
               </nav>
             </div>
             <div className="flex items-center gap-4">
-              <button className="hidden md:flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-                <span className="text-sm">검색</span>
-              </button>
+              <span aria-disabled="true" className="hidden 2xl:inline-flex items-center gap-1.5 text-sm text-gray-500">검색 <span className="rounded bg-white/5 px-1.5 text-[10px]">준비 중</span></span>
               {authLoading ? (
                 <div className="w-16 h-9" />
               ) : user ? (
                 <Link
                   href="/agent/mypage"
-                  className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors font-medium"
+                  className="inline-flex min-h-[44px] items-center gap-1.5 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 text-sm text-gray-300 hover:text-white transition-colors font-medium"
                 >
                   <User className="w-4 h-4" />
                   {user.user_metadata?.name || '마이페이지'}
@@ -202,7 +187,7 @@ export default function LandingPage() {
               ) : (
                 <Link
                   href="/agent/auth/login"
-                  className="bg-[#FEE500] text-black text-sm font-medium px-4 py-2 rounded-md hover:bg-[#FDD800] transition-colors"
+                  className="inline-flex min-h-[44px] items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 bg-[#FEE500] text-black text-sm font-medium px-4 py-2 rounded-md hover:bg-[#FDD800] transition-colors"
                 >
                   로그인
                 </Link>
@@ -214,155 +199,14 @@ export default function LandingPage() {
 
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
         {/* 히어로 섹션 - 슬라이더 */}
-        <section className="mb-12 lg:mb-16">
-          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-center">
-            {/* 좌측: 공지 슬라이더 */}
-            <div className="relative">
-              {announcements[currentSlide].link !== null ? (
-                <Link
-                  href={announcements[currentSlide].link as string}
-                  className={`block bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 lg:p-10 min-h-[280px] lg:min-h-[340px] flex flex-col justify-between hover:scale-[1.02] transition-transform cursor-pointer relative`}
-                >
-                  <div>
-                    <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
-                      {announcements[currentSlide].badge}
-                    </span>
-                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">
-                      {announcements[currentSlide].title}
-                    </h2>
-                    <p className="text-white/80">
-                      {announcements[currentSlide].description}
-                    </p>
-                  </div>
-                  {/* 슬라이더 컨트롤 */}
-                  <div className="flex items-center gap-4 mt-6">
-                    <div className="flex gap-2">
-                      {announcements.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            setCurrentSlide(idx);
-                          }}
-                          className={`w-2 h-2 rounded-full transition-all ${
-                            idx === currentSlide ? 'bg-white w-6' : 'bg-white/40'
-                          }`}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex gap-1 ml-auto">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          prevSlide();
-                        }}
-                        className="p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                      >
-                        <ChevronLeft className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          nextSlide();
-                        }}
-                        className="p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                      >
-                        <ChevronRight className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  {/* 클릭 유도 아이콘 */}
-                  <div className="absolute top-4 right-4 bg-white/20 rounded-full p-2">
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                </Link>
-              ) : (
-                <div className={`bg-gradient-to-br ${announcements[currentSlide].color} rounded-2xl p-8 lg:p-10 min-h-[280px] lg:min-h-[340px] flex flex-col justify-between`}>
-                  <div>
-                    <span className="inline-block bg-white/20 text-white text-xs px-3 py-1 rounded-full mb-4">
-                      {announcements[currentSlide].badge}
-                    </span>
-                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3">
-                      {announcements[currentSlide].title}
-                    </h2>
-                    <p className="text-white/80">
-                      {announcements[currentSlide].description}
-                    </p>
-                  </div>
-                {/* 슬라이더 컨트롤 */}
-                <div className="flex items-center gap-4 mt-6">
-                  <div className="flex gap-2">
-                    {announcements.map((_, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setCurrentSlide(idx)}
-                        className={`w-2 h-2 rounded-full transition-all ${
-                          idx === currentSlide ? 'bg-white w-6' : 'bg-white/40'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex gap-1 ml-auto">
-                    <button
-                      onClick={prevSlide}
-                      className="p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={nextSlide}
-                      className="p-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-              )}
-            </div>
+        <section className="mb-10 lg:mb-16">
+          <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
+            <AnnouncementSlider items={announcements} />
 
             {/* 우측: 플랫폼 소개 + 광고 배너 */}
-            <div className="flex flex-col gap-4">
-              {/* 플랫폼 소개 배너 - 모바일 전용 */}
-              <Link
-                href="/event/premium"
-                className="block md:hidden relative overflow-hidden rounded-2xl backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] hover:border-amber-400/40 transition-all duration-500 group"
-              >
-                {/* 상단 네온 라인 */}
-                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
-                {/* 배경 글로우 */}
-                <div className="absolute -top-20 -left-20 w-48 h-48 bg-amber-500/[0.07] rounded-full blur-2xl" />
-                <div className="absolute -bottom-16 -right-16 w-40 h-40 bg-cyan-500/[0.05] rounded-full blur-2xl" />
-                {/* 도트 패턴 */}
-                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
-
-                <div className="relative z-10 px-5 py-6">
-                  <div className="flex items-center gap-4">
-                    {/* 네온 글로우 아이콘 */}
-                    <div className="relative flex-shrink-0">
-                      <div className="absolute inset-0 bg-amber-400/30 rounded-2xl blur-xl group-hover:bg-amber-400/50 transition-all duration-500" />
-                      <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 flex items-center justify-center shadow-[0_0_20px_rgba(251,191,36,0.3)]">
-                        <Sparkles className="w-5 h-5 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
-                      </div>
-                    </div>
-                    {/* 텍스트 */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-amber-300 text-[15px] font-bold tracking-tight">부동산인</p>
-                      <p className="text-white/40 text-xs mt-0.5 tracking-wide">AI 구인구직 플랫폼</p>
-                    </div>
-                    {/* CTA 버튼 */}
-                    <div className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.1] text-amber-300 text-xs font-semibold group-hover:bg-amber-400/10 group-hover:border-amber-400/30 transition-all duration-300">
-                      <span>소개 보기</span>
-                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-                {/* 하단 네온 라인 */}
-                <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
-              </Link>
-
+            <div className="hidden md:flex flex-col gap-4">
               {/* 광고 배너 - 데스크톱 전용 */}
-              <div className="hidden md:block bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 flex-1 relative overflow-hidden">
+              <div className="hidden md:block bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl border border-white/10 p-5 flex-1 relative overflow-hidden">
                 <div className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-400">AD</div>
                 <div className="relative z-10 h-full flex flex-col justify-between">
                   <div>
@@ -396,114 +240,72 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 미디어 섹션 (직방 스타일 - 영상 2/3 + 카테고리 1/3) */}
-        <section className="mb-16 lg:mb-20">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
-            {/* 영상 (2/3) */}
-            <div className="md:col-span-2 relative rounded-lg overflow-hidden h-[400px] lg:h-[480px]">
+        {/* 서비스 선택 → 모바일 소개 → 영상 순서. 데스크톱에서는 영상이 왼쪽에 배치됩니다. */}
+        <section className="mb-10 lg:mb-16" aria-label="서비스와 소개 영상">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:gap-6">
+            <div className="flex flex-col gap-4 md:col-start-3 md:row-start-1 md:h-[400px] lg:h-[480px]" aria-label="서비스 선택">
+              <ServiceCard href="/agent/jobs" img="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop" title="공인중개사" desc="중개사무소 구인구직" Icon={Building2} accent="bg-cyan-400" className="flex md:hidden" />
+              <ServiceCard href="/agent" img="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop" title="공인중개사" desc="중개사무소 구인구직" Icon={Building2} accent="bg-cyan-400" className="hidden md:flex" />
+              <ServiceCard href="/sales" img="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop" title="분양상담사" desc="분양현장 구인구직" Icon={HardHat} accent="bg-blue-400" className="flex" />
+              {STAY_ENABLED && <ServiceCard href="/stay" img="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop" title="단기임대" desc="검증된 안심 단기임대" Icon={Home} accent="bg-emerald-400" className="flex" />}
+            </div>
+              {/* 플랫폼 소개 배너 - 모바일 전용 */}
+              <Link
+                href="/event/premium"
+                className="block md:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 relative overflow-hidden rounded-2xl backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] hover:border-amber-400/40 transition-all duration-500 group"
+              >
+                {/* 상단 네온 라인 */}
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-400/60 to-transparent" />
+                {/* 배경 글로우 */}
+                <div className="absolute -top-20 -left-20 w-48 h-48 bg-amber-500/[0.07] rounded-full blur-2xl" />
+                <div className="absolute -bottom-16 -right-16 w-40 h-40 bg-cyan-500/[0.05] rounded-full blur-2xl" />
+                {/* 도트 패턴 */}
+                <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+
+                <div className="relative z-10 px-5 py-6">
+                  <div className="flex items-center gap-4">
+                    {/* 네온 글로우 아이콘 */}
+                    <div className="relative flex-shrink-0">
+                      <div className="absolute inset-0 bg-amber-400/30 rounded-2xl blur-xl group-hover:bg-amber-400/50 transition-all duration-500" />
+                      <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 flex items-center justify-center shadow-[0_0_20px_rgba(251,191,36,0.3)]">
+                        <Sparkles className="w-5 h-5 text-white drop-shadow-[0_0_6px_rgba(255,255,255,0.8)]" />
+                      </div>
+                    </div>
+                    {/* 텍스트 */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-amber-300 text-[15px] font-bold tracking-tight">부동산인</p>
+                      <p className="text-gray-400 text-xs mt-0.5 tracking-wide">AI 구인구직 플랫폼</p>
+                    </div>
+                    {/* CTA 버튼 */}
+                    <div className="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.1] text-amber-300 text-xs font-semibold group-hover:bg-amber-400/10 group-hover:border-amber-400/30 transition-all duration-300">
+                      <span>소개 보기</span>
+                      <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </div>
+                {/* 하단 네온 라인 */}
+                <div className="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
+              </Link>
+
+
+            <div className="relative aspect-video overflow-hidden rounded-2xl border border-white/10 md:col-span-2 md:col-start-1 md:row-start-1 md:aspect-auto md:h-[400px] lg:h-[480px]">
               <video
+                aria-label="부동산인 플랫폼 소개 영상"
                 src="https://pkbnudkbkhzqjhwffkbj.supabase.co/storage/v1/object/public/job-images/videos/intro-main.mp4"
                 autoPlay
                 muted
                 loop
                 playsInline
                 preload="metadata"
-                className="w-full h-full object-cover"
+                className="h-full w-full object-cover"
               />
-            </div>
-
-            {/* 카테고리 카드 (1/3) */}
-            <div className="flex flex-col gap-4 h-[400px] lg:h-[480px]">
-              {/* 공인중개사 - 모바일: /agent/jobs, PC: /agent */}
-              <Link
-                href="/agent/jobs"
-                className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer md:hidden"
-              >
-                <Image
-                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
-                  alt="공인중개사"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  <Building2 className="w-10 h-10 mb-2" />
-                  <h3 className="text-xl lg:text-2xl font-bold">공인중개사</h3>
-                  <p className="text-sm text-white/80 mt-1">중개사무소 구인구직</p>
-                </div>
-              </Link>
-              <Link
-                href="/agent"
-                className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer hidden md:block"
-              >
-                <Image
-                  src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop"
-                  alt="공인중개사"
-                  fill
-                  sizes="33vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-blue-900/90 via-blue-900/40 to-transparent" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  <Building2 className="w-10 h-10 mb-2" />
-                  <h3 className="text-xl lg:text-2xl font-bold">공인중개사</h3>
-                  <p className="text-sm text-white/80 mt-1">중개사무소 구인구직</p>
-                </div>
-              </Link>
-
-              {/* 분양상담사 */}
-              <Link
-                href="/sales"
-                className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer"
-              >
-                <Image
-                  src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop"
-                  alt="분양상담사"
-                  fill
-                  sizes="(max-width: 768px) 100vw, 33vw"
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-purple-900/90 via-purple-900/40 to-transparent" />
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                  <HardHat className="w-10 h-10 mb-2" />
-                  <h3 className="text-xl lg:text-2xl font-bold">분양상담사</h3>
-                  <p className="text-sm text-white/80 mt-1">분양현장 구인구직</p>
-                </div>
-              </Link>
-
-              {/* 단기임대 (STAY_ENABLED일 때만 노출, 내부 /stay) */}
-              {STAY_ENABLED && (
-                <Link
-                  href="/stay"
-                  className="flex-1 relative rounded-lg overflow-hidden group cursor-pointer"
-                >
-                  <Image
-                    src="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop"
-                    alt="단기임대"
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-emerald-900/40 to-transparent" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-                    <Home className="w-10 h-10 mb-2" />
-                    <h3 className="text-xl lg:text-2xl font-bold">단기임대</h3>
-                    <p className="text-sm text-white/80 mt-1">검증된 안심 단기임대</p>
-                  </div>
-                </Link>
-              )}
             </div>
           </div>
         </section>
 
         {/* 프리미엄 채용공고 - 모바일 전용 */}
-        <section className="mb-8 md:hidden">
-          <div className="bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl p-6 min-h-[200px] relative overflow-hidden">
+        <section className="mb-10 md:hidden">
+          <div className="bg-gradient-to-br from-[#1a1f35] to-[#0d1117] rounded-2xl border border-white/10 p-5 min-h-[200px] relative overflow-hidden">
             <div className="absolute top-3 right-3 px-2 py-0.5 bg-white/10 rounded text-[10px] text-gray-400">AD</div>
             <div className="relative z-10 h-full flex flex-col justify-between">
               <div>
@@ -536,19 +338,19 @@ export default function LandingPage() {
         </section>
 
         {/* 부동산 뉴스 + 광고 배너 */}
-        <section className="mb-16 lg:mb-20">
+        <section className="mb-10 lg:mb-16">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {/* BOOIN AI 웹툰 + 부동산 뉴스 (2/3) */}
             <div className="md:col-span-2 space-y-6">
               {/* 상단: BOOIN AI 웹툰 */}
               {toonEpisodes.length > 0 && (
-                <div className="bg-[#1C1D1F] rounded-2xl p-6 lg:p-8">
+                <div className="bg-[#1C1D1F] rounded-2xl border border-white/10 p-5 lg:p-8">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">🦀</span>
                       <h3 className="text-lg font-bold">BOOIN NEWS TOON</h3>
                     </div>
-                    <Link href="/toon" className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors">
+                    <Link href="/toon" className="inline-flex min-h-[44px] items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 text-sm text-gray-400 hover:text-white transition-colors">
                       전체보기 <ArrowRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
@@ -557,7 +359,7 @@ export default function LandingPage() {
                       <Link
                         key={ep.id}
                         href={`/toon/${ep.slug}`}
-                        className="rounded-xl overflow-hidden bg-[#252628] hover:bg-[#2a2b2d] transition-colors group"
+                        className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 overflow-hidden bg-[#252628] hover:bg-[#2a2b2d] transition-colors group"
                       >
                         {ep.toon_image_url && (
                           <div className="relative w-full h-[140px] lg:h-[180px] overflow-hidden">
@@ -590,7 +392,7 @@ export default function LandingPage() {
               )}
 
               {/* 하단: 부동산 뉴스 (기존 UI) */}
-              <div className="bg-[#1C1D1F] rounded-2xl p-6 lg:p-8">
+              <div className="bg-[#1C1D1F] rounded-2xl border border-white/10 p-5 lg:p-8">
                 <div className="flex items-center gap-2 mb-4">
                   <Newspaper className="w-5 h-5 text-blue-400" />
                   <h3 className="text-lg font-medium">부동산 뉴스</h3>
@@ -605,7 +407,7 @@ export default function LandingPage() {
                         href={news.link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex gap-4 p-3 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
+                        className="flex gap-4 p-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 bg-[#252628] rounded-xl hover:bg-[#2a2b2d] transition-colors group"
                       >
                         <div className="w-24 h-16 lg:w-32 lg:h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-700 relative">
                           <Image
@@ -668,7 +470,7 @@ export default function LandingPage() {
                   <Link
                     key={banner.id}
                     href={banner.link}
-                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl p-6 lg:p-8 min-h-[140px] lg:min-h-[160px] hover:opacity-90 transition-opacity overflow-hidden`}
+                    className={`flex-1 bg-gradient-to-br ${banner.gradient} rounded-2xl border border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 p-6 lg:p-8 min-h-[140px] lg:min-h-[160px] hover:opacity-90 transition-opacity overflow-hidden`}
                   >
                     {inner}
                   </Link>
@@ -686,8 +488,8 @@ export default function LandingPage() {
         </section>
 
         {/* 하단 배너 */}
-        <section className="mb-16 lg:mb-20">
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1a1f35] to-[#0f172a] p-8 lg:p-10">
+        <section className="mb-10 lg:mb-16">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-[#1a1f35] to-[#0f172a] p-8 lg:p-10">
             <div className="relative z-10">
               <h3 className="text-xl lg:text-2xl font-bold mb-2">
                 함께 성장하는<br className="md:hidden" /> 부동산 전문가 커뮤니티

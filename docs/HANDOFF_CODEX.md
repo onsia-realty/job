@@ -1,9 +1,29 @@
 # 부동산인(BOOIN) / onsia-job — 개발 현황 핸드오프
 
 > 대상: Codex(신규 합류 AI 에이전트)
-> 작성일: 2026-09-15 · 기준 브랜치: `feature/stay-mvp-2026-09`
+> 현행 갱신: 2026-10-20 · 기준 브랜치: `main` · 배포 결과는 `PROGRESS.md` 최신 블록 우선
 > 이 문서 하나로 "무엇을 / 어떻게 만들었고 / 지금 어디까지 왔는지"를 파악할 수 있게 썼다.
 > 세션 단기기억은 루트 `PROGRESS.md`, /stay 전용은 `docs/stay-progress.md`.
+
+---
+
+## 현재 인계 요약 (2026-10-20)
+
+- 홈 디자인 반영 후 SecurityShield의 창 크기 차이 기반 차단·반복 debugger를 제거했다. production 우회 없는 회귀18개 포함 전체528테스트, 연결기12·격리DB26검사 및 빌드110페이지 통과. 운영 빌드320/390/768/1440px에서 보호 화면·가로 넘침이 없었다. 물리 기기·실결제 검증은 별도다.
+- 사용자 요청으로 검증한 결제/집계/홈/보안 변경의 커밋·배포를 진행한다. 별도 STAY 등록번호 비노출2파일·DB 백업·로컬 bridge 설정은 보존/제외한다. 아래 미배포 설명은 당시 이력이며 최종 배포 결과는 PROGRESS 최신 블록을 따른다.
+
+- 사용자 승인으로 운영 047/048 적용 완료. 예상 프로젝트 main PRODUCTION/postgres에서 실행 성공, 실제 구조·권한34·DB ROLLBACK 통합15검사 통과, 기존 users14/jobs7/payments6 fingerprint 동일 및 orders0·합성 공고0 확인. 카탈로그/고객 행 없는 baseline 증적은 `supabase/backups/`에 저장했다. 이력 테이블이 없어 실행 결과·카탈로그로 판정한다.
+- 운영 기존 결제 만료 트리거를 047에서 조건부 호환 보완해 명시 expires_at은 보존하고 레거시 NULL 계산·원본 속성은 유지한다. 048 함수 전용 timeout60초와 schema reload로 최초57014를 해결한 뒤 service_role 집계 REST204·10.9초 성공. 전역/역할 설정 변경 없음. 운영 전세 MV(033)는 없으므로 추가 적용은 후속이다.
+- 앱 배포·실카드 결제·커밋은 하지 않았다. 아래 운영 미준비/미검증 설명은 승인 전 기준선이며 최신 결과는 이 블록을 우선한다.
+- 2026-10-13 병합 후 로컬/GitHub `main` HEAD가 일치한다. 아래 과거 작업 방식·운영 수치·완료 기록은 이력으로 읽고 현재 코드와 재확인 결과를 우선한다.
+- 31파일 442테스트는 추가 구현 전 기준선이다. 이후 039 정책·046 컬럼 존재와 047/048 적용·권한/ROLLBACK 통합을 확인했다. 039~046 전체 파일 적용 이력·실계정 UI·실결제·앱 배포는 후속이다.
+- 추가 구현 후 현재 검증은 32파일 494테스트 통과, TypeScript 오류 0, 변경·신규 소스 19개 ESLint 오류/경고 0, diff check와 프로덕션 빌드 통과(정적 페이지 110개)다. 기존 middleware 폐기 예정 안내 1건이 남아 있다. 격리 SQL 26검사는 운영 DB 검증을 대신하지 않는다.
+- STAY 호스트 등록·게스트 문의·등록 도움·내 신청·위임 초안·소유주 확인·관리자 승인 구현 완료. 관리자 위임 흐름은 `/stay/admin`을 포함한다. 기존 미커밋 등록번호 비노출 2파일과 `supabase/backups/`는 보존한다.
+- 046 광고 기간 관리에 이어 047 서버 주문 스냅샷·멱등 claim/apply·제공사 확인/복구·부분취소 이력/잔액·공고 삭제 후 원장 보존을 로컬 구현했다. checkout 주문 API·success 재확인 및 관리자 잔액 기준 통계가 연결된다. 공통 재계산도 `recompute_payment_job_ad` 잠금 RPC로 레거시 confirm/webhook·만료 cron까지 최신 창 조회와 등급 반영을 한 트랜잭션에 처리한다. 격리 PGlite SQL 26검사(047/048) 통과. DIA 판매 차단·사용자 삭제 CASCADE 정책은 유지한다.
+- `/sales/jobs`는 실제 공고·URL 필터·정렬이 추가됐지만 `/sales` 메인에는 샘플 병합이 남아 있다. 고객센터는 상담원→FAQ→캐시→AI, 시세 인사이트는 실거래 통계 계산으로 전환됐다.
+- 집계 GET/POST·06:00 KST cron 연결과 회귀12테스트가 완료됐다. 운영 048은 두 public MV만 갱신하는 definer·빈 search_path·timeout60초·service_role 전용 EXECUTE를 확인했고 실제 HTTP204·10.9초로 갱신했다. 운영 전세 MV가 없어 매매만 갱신하며 앱 cron 배포 후 실행 확인은 후속이다.
+- 다음은 앱 배포→실계정·토스 테스트 결제다. 원장 없는 구버전 checkout 미승인 주문은 새 checkout에서 다시 시작한다. 공고 없는 기존 선결제는 보존하지만 신규 공고 자동 연결은 후속이다. 현재 체크리스트는 `docs/IMPROVEMENT_ROADMAP.md` 참조.
+- 적용 전 REST HEAD 이력은 046컬럼200·047테이블404/추가컬럼400이며 이후 승인된 047/048 적용·검증으로 준비를 완료했다. 최초 읽기 점검에는 DB 변경·행 본문/키 출력이 없었다. 사후 권한/timeout 증적은 `supabase/backups/post-048-refresh-2026-10-16.json` 및 PNG에 있다.
 
 ---
 
@@ -68,7 +88,7 @@ Claude Design으로 `.dc.html` 시안을 만들고 → README(토큰/레이아�
 | Framework | Next.js **16.1.3** (App Router) / React **19.2.3** / TypeScript 5 |
 | Styling | Tailwind CSS 4 (`@theme` 토큰) + 일부 인라인 스타일(디자인 핸드오프 이식분) |
 | DB/Auth/Storage | Supabase (PostgreSQL + Auth + Storage + RLS) |
-| 상태/데이터 | TanStack Query 5, react-hook-form + Zod 4 |
+| 상태/데이터 | TanStack Query 5, Zod 4 |
 | 지도 | NCP Naver Maps (시세지도·stay) / Leaflet + react-leaflet-cluster (보조) |
 | 결제 | 토스페이먼츠 SDK 2.5 (PortOne 키도 남아있으나 **토스가 정본**) |
 | 본인인증 | 다날 UAS 휴대폰 본인확인 (NICE 아님 — 결정 완료) |
@@ -108,7 +128,7 @@ onsia-job/
 │   │   └── validations/                       Zod 스키마 (job, stay, ai-photo)
 │   ├── middleware.ts                봇/UA 차단 + 외부 콜백 예외
 │   └── types/                       index.ts, stay.ts
-├── supabase/migrations/             001~038 + ai_photo_generations
+├── supabase/migrations/             001~048 + ai_photo_generations (운영 적용은 현행 요약 확인)
 ├── scripts/                         백필·시딩·툰 합성 (24개 .mjs/.js)
 └── docs/ claudedocs/                기능별 스펙·벤치마크 분석
 ```
@@ -152,24 +172,25 @@ onsia-job/
 - 과밀 방지: 줌 14에서 거래량 상위 90개만, 줌 15+ 전량
 - 파생: `/market/[complex]` 단지, `/market/insights/[complex]` 인사이트, `/market/rankings` 랭킹
 
-### 5.4 단기임대 `/stay` 🟡 MVP 완성 — Phase 9(플래그 on + 스테이징 1회전) 남음
+### 5.4 단기임대 `/stay` 🟡 코드 구현 완료·실계정 통합 검증 잔여
 - Phase 0~8 전부 ✅ (플래그 → 마이그 035~038 → API → PNU조회 → 이미지갤러리 → 등록폼 → 목록/상세 → 관리자탭 → 소유주 랜딩)
-- 마이그레이션 035~038 **라이브 DB 적용 완료** (`GET /api/stays` 200, 검증 9항목 일치)
-- 화면: `/stay`(홈) `/stay/map` `/stay/list` `/stay/[id]` `/stay/new` `/stay/owner`
-- **중개사 법정표기 6항목은 서버 스냅샷** — `lib/stay/agent-snapshot.ts`가 `users.broker_reg_no`를 키로 `broker_offices`(LOCALDATA 캐시)에서 읽는다. 클라이언트가 보낸 상호명/소재지/대표자명은 **절대 저장 안 함** (공인중개사법 제18조의2)
-- 현재 `NEXT_PUBLIC_STAY_ENABLED=true` (로컬), dev 포트 3007
+- 035~038은 과거 라이브 적용 기록이 있다. 현재 운영 DB 적용 이력은 이번 점검에서 재검증하지 않았다.
+- 화면: `/stay`(홈) `/stay/map` `/stay/list` `/stay/[id]` `/stay/new` `/stay/owner` 및 `/stay/inquiries`·`/stay/requests`·`/stay/admin`
+- **서버 중개사 스냅샷** — `lib/stay/agent-snapshot.ts`가 서버 승인 `app_metadata.brokerVerified + brokerRegNo`로 `broker_offices`를 읽는다. 사용자 프로필 등록번호는 승인 증거가 아니다. 로컬 미커밋 공개 DTO/UI는 등록번호를 제외해 사무소명·소재지·연락처·대표자만 표시한다. 법률 적합성을 판단한 문구가 아니다.
+- 플래그와 dev 포트는 세션 시작 시 실제 환경을 확인한다. 과거 작업에서는 STAY 활성화·3007을 사용했다.
 
 **미완**
 - admin 토큰 실검증 (무토큰 403 경로만 확인됨)
 - 주입차단 실증 (`agent_*` / `is_approved` 강제 주입 무시 확인)
-- `/public/images/stay/` 자산 0장 → 전 카드 폴백
+- `public/images/stay/` 자산 13파일 존재. 카드별 연결·브라우저 품질 검증은 별도
 - 메뉴명 미확정: 단기임대 / 한달살기 / 중기임대 (`lib/stay/constants.ts` 한 곳)
 
-### 5.5 결제 / 광고상품 ✅
+### 5.5 결제 / 광고상품 — 광고 기간 관리 구현·주문 원장 후속
 - 토스페이먼츠 라이브 키 적용. `/premium`(안내) → `/checkout`(위젯) → `/payment/success|fail`
 - `api/payment/confirm`(승인) + `api/payment/webhook`(웹훅)
 - **가격은 `src/lib/toss.ts` 단일 출처**. 4등급 × 기간선택(10/20/30일), 엔트리=베이직 7+7=14일 기본
 - 광고 미리보기는 등록폼 안에서 **iframe**으로 렌더 (지우면 안 됨)
+- 046의 `jobs.ad_expires_at`·`payments.starts_at` 및 `lib/ad-entitlement.ts`로 광고 창을 서버 계산한다. 유효 완료 결제 중 등급을 선택하며 동급 연장·즉시 업그레이드·환불 후 재계산·만료 cron이 연결돼 있다. 047은 서버 주문 원장·부분취소 이력/잔액·공고 삭제 후 보존과 원자 적용·복구를 로컬 구현한다. 운영 검증은 후속이며 `sales-dia` 구매는 차단돼 있다.
 
 ### 5.6 본인인증 (다날 UAS) ✅
 - `api/auth/danal/{ready,callback,cancel}` + `lib/danal.ts` + 마이그 034
@@ -183,8 +204,8 @@ onsia-job/
 - 상세 페이지 좌우 스왑(왼쪽 툰 / 오른쪽 기사)
 - EP.01 "규제 찍자, 옆동네가 부풀었다" — **draft 상태, 발행 SQL 미실행**
 
-### 5.8 관리자 `/onsia` ✅
-- ⚠️ **`/admin` 경로는 쓰지 않는다.** 관리자는 `/onsia` 전용
+### 5.8 관리자 `/onsia` 및 STAY 운영 `/stay/admin`
+- 일반 관리자 경로는 `/onsia`다. `/admin` 페이지를 새로 가정하지 않는다. STAY 등록 도움·위임·승인은 `/stay/admin`에도 구현돼 있다.
 - 대시보드·회원·공고·결제·설정 + 단기임대 탭
 - API: `api/admin/{jobs,members,payments,stays,stay-leads}` — 토큰 없으면 403
 
@@ -202,6 +223,10 @@ onsia-job/
 | 027~033 | 시세지도 2차: 단지 마스터 · 관리비 · 화성 행정구 분할 · AI사용량 원자증가 · users 중개사 컬럼 · 랭킹 · 전월세 집계 |
 | 034 | 다날 본인인증 |
 | 035~038 | 단기임대: stays · owner_leads · RPC/Storage · status/agent/lead_detail |
+| 039~043 | 권한 경계·Advisor 하드닝·문의·비공개 읽기·등록 도움/소유주 승인 워크플로 |
+| 044~046 | 실거래 raw 정리·고객센터 채팅·광고 만료/결제 시작일 및 재계산 백필 |
+| 047 | 서버 주문 스냅샷·멱등/원자적 결제 적용·부분취소 이력/잔액·공고 삭제 후 원장 보존·기존 만료 트리거 호환 (운영 적용·권한/ROLLBACK 검증 완료) |
+| 048 | 집계 고정 MV·service_role 전용 RPC·함수 timeout60초 (운영 적용·실제 REST204 검증, 전세 MV는 없음) |
 
 **적용 방법**: Supabase SQL Editor에서 파일 열어 전체 복사 → Run. 큰 마이그레이션은 단계 분할. 이후 `NOTIFY pgrst, 'reload schema';` 단독 실행.
 
@@ -219,8 +244,9 @@ onsia-job/
 | `/api/cron/sync-transactions` | `0 19 * * *` | 국토부 실거래가 수집 |
 | `/api/cron/geocode-complexes` | `30 19 * * *` | 단지 좌표 백필 (NCP 우선) |
 | `/api/cron/sync-mgmt-costs` | `0 20 * * *` | K-apt 관리비 |
+| `/api/cron/refresh-aggregates` | `0 21 * * *` | 06:00 KST, RPC 운영 REST 갱신 검증 완료·앱 cron 배포 후 실행 확인 잔여 (운영 전세 MV 없음) |
 
-코드에 있으나 **vercel.json 미등록**: `sync-building-ledgers`, `refresh-aggregates`, `build-rankings` → 등록 필요.
+코드에 있으나 **vercel.json 미등록**: `sync-building-ledgers`, `build-rankings` → 등록 필요.
 `CRON_SECRET`으로 보호.
 
 로컬 백필 스크립트: `scripts/backfill-{geocode,building-ledgers,complex-coords,kapt-codes,mgmt-costs}.mjs`
@@ -258,7 +284,7 @@ NEXT_PUBLIC_STAY_ENABLED
 1. 라우트는 HTTP 200 + **기대값 일치**까지 확인. "에러 안 남"은 검증이 아니다
 2. `curl` 에는 **User-Agent 필수**. 없으면 미들웨어가 403
 3. 지도/마커는 스크린샷으로 실물 확인
-4. `npm run lint` 는 리포 전체 **106 errors / 217 warnings 가 사전 베이스라인**. "lint 0"은 달성 불가 → 변경한 파일만 eslint 돌려 비교
+4. 106 errors / 217 warnings는 과거 lint 기준선이다. 코드 정리 이후 현재 값으로 인용하지 않고 검사 결과를 새로 기록한다
 5. dev 서버가 죽은 채 포트를 잡고 있으면 `_error`가 500을 뱉는다. `.next/dev/lock` 확인
 
 **Supabase**
@@ -281,7 +307,9 @@ NEXT_PUBLIC_STAY_ENABLED
 
 ---
 
-## 10. 지금 상태 / 다음 할 일
+## 10. 과거 인계 기록 (2026-09-15 당시)
+
+이 절의 브랜치·미커밋 목록·백로그는 당시 기록이다. 현재 상태와 우선순위는 상단 '현재 인계 요약'과 개선 로드맵을 따른다. 과거 미실행 SQL·데이터 건수도 적용 전에 다시 확인한다.
 
 ### 브랜치
 `feature/stay-mvp-2026-09` (origin 동기화됨). 최신 커밋 `cd7400c feat(stay): 3화면 재편 + 실거래 마커 레이어 + 이미지 자산`
@@ -304,7 +332,7 @@ M src/components/stay/StayCreateForm.tsx     (+235줄, 가장 큼)
 ### 백로그 (우선순위 순)
 1. **`/stay` Phase 9** — 플래그 on + 스테이징 전체 1회전 + admin 토큰 실검증 + 주입차단 실증
 2. **미실행 SQL 2건** — ① `033_price_table_rent_aggregates.sql` (MV+인덱스+함수, refresh 호출은 금지) ② EP.01 발행 `UPDATE news_toon_episodes SET status='published', published_at=NOW() WHERE id='36cd3918-ba55-4678-8ed8-c3d7a7939b75';`
-3. **cron 미등록 3종** — `sync-building-ledgers` / `refresh-aggregates` / `build-rankings` 를 `vercel.json`에 추가. `refresh-aggregates`는 `SELECT refresh_market_aggregates()` RPC 호출로 연결
+3. **cron 미등록 2종(2026-10-16 정정)** — `sync-building-ledgers` / `build-rankings` 스케줄 검토. `refresh-aggregates`는 실제 RPC·GET/POST·06:00 KST cron 구현 완료이며 운영 실행 검증 상태는 상단 현행 요약을 따른다.
 4. **건축물대장 잔여 ~2,400건** — `node scripts/backfill-building-ledgers.mjs --ledger-only` (일일 쿼터 리셋 후)
 5. **`/sales` Phase 2** — AI 이력서 흐름(`agent/mypage/resume` + `dna`)과 인재검색(`/sales/talents`)을 BOOIN 셸/톤으로 통일
 6. **미사용 구컴포넌트 정리** — `VipSlider`, `SalesFeaturedCard`, `SalesSidebar`
@@ -320,8 +348,8 @@ M src/components/stay/StayCreateForm.tsx     (+235줄, 가장 큼)
 pnpm install
 pnpm dev          # 기본 3000. stay 작업 시 3007 + NEXT_PUBLIC_STAY_ENABLED=true
 pnpm build
-pnpm test         # vitest, 현재 165개 통과
-pnpm lint         # 베이스라인 106E/217W — 변경 파일만 비교할 것
+pnpm test         # 2026-10-16 추가 구현 후: 32파일 494테스트 통과
+pnpm lint         # 현재 결과를 새로 기록 (과거 106E/217W 인용 금지)
 ```
 
 테스트 위치: `src/__tests__/stay-*.test.ts`, `src/lib/{commission-calculator,toss,market/format}.test.ts`, `src/lib/validations/ai-photo.test.ts`, `src/app/api/business-verify/route.test.ts`

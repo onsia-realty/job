@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  generateOrderId,
   TOSS_CONFIG,
   getVat,
   getTotalPrice,
@@ -18,26 +17,6 @@ import {
 describe('TOSS_CONFIG', () => {
   it('clientKey가 존재한다 (setup.ts에서 stubEnv)', () => {
     expect(TOSS_CONFIG.clientKey).toBe('test-toss-client-key');
-  });
-});
-
-// ============================================================
-// generateOrderId
-// ============================================================
-describe('generateOrderId', () => {
-  it('order- 접두사로 시작', () => {
-    expect(generateOrderId()).toMatch(/^order-/);
-  });
-  it('포맷: order-{timestamp}-{random}', () => {
-    const parts = generateOrderId().split('-');
-    expect(parts.length).toBe(3);
-    expect(parts[0]).toBe('order');
-    expect(Number(parts[1])).toBeGreaterThan(0);
-    expect(parts[2]).toMatch(/^[a-z0-9]{1,6}$/);
-  });
-  it('100회 생성 시 모두 고유', () => {
-    const ids = new Set(Array.from({ length: 100 }, () => generateOrderId()));
-    expect(ids.size).toBe(100);
   });
 });
 

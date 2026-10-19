@@ -1,222 +1,258 @@
 // @vitest-environment node
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 type Row = Record<string, unknown>;
-
 const mock = vi.hoisted(() => ({
-  getUser: vi.fn(),
-  from: vi.fn(),
-  tables: {} as Record<string, Row[]>,
-  jobUpdateError: null as Error | null,
+  getUser: vi.fn(), from: vi.fn(), rpc: vi.fn(), recompute: vi.fn(),
+  tables: {} as Record<string, Row[]>, errors: {} as Record<string, unknown>,
+  beforeUpdate: null as (() => void) | null,
 }));
+vi.mock('@/lib/supabase-server', () => ({ supabaseAdmin: { auth: { getUser: mock.getUser }, from: mock.from, rpc: mock.rpc } }));
+vi.mock('@/lib/ad-entitlement', () => ({ recomputeJobAd: mock.recompute }));
+import { POST as confirm } from './route';
+import { POST as orders } from '../orders/route';
+import { POST as webhook } from '../webhook/route';
+import { GET as adminPayments } from '../../admin/payments/route';
 
-vi.mock('@/lib/supabase-server', () => ({
-  supabaseAdmin: { auth: { getUser: mock.getUser }, from: mock.from },
-}));
-
-import { POST } from './route';
-import { getTotalPrice, resolveProduct } from '@/lib/toss';
-
-function request(body: Row) {
-  return new NextRequest('http://localhost/api/payment/confirm', {
-    method: 'POST',
-    headers: { authorization: 'Bearer token', 'content-type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+const jobId = '11111111-1111-4111-8111-111111111111';
+const order = () => ({ order_id: 'order-one', user_id: 'user-a', amount: 5390, currency: 'KRW', product_key: 'agent-basic',
+  product_name: 'Snapshot name', days: 5, duration: '5일', tier: 'basic', category: 'agent', job_id: jobId,
+  job_id_snapshot: jobId, payment_key: null, status: 'pending', idempotency_key: '11111111-1111-4111-8111-222222222222' });
+const approved = () => ({ paymentKey: 'key', orderId: 'order-one', totalAmount: 5390, currency: 'KRW', status: 'DONE', balanceAmount: 5390, cancels: [] });
+const body = () => ({ paymentKey: 'key', orderId: 'order-one', amount: 5390 });
+function request(payload: unknown, auth = true) {
+  return new NextRequest('http://localhost/api/payment/confirm', { method: 'POST',
+    headers: { 'content-type': 'application/json', ...(auth ? { authorization: 'Bearer token' } : {}) }, body: JSON.stringify(payload) });
 }
-
-function body(productKey: string, jobId?: string, days?: number, paymentKey = 'payment-key') {
-  const product = resolveProduct(productKey, days)!;
-  return {
-    paymentKey,
-    orderId: 'order-id',
-    productKey,
-    ...(jobId ? { jobId } : {}),
-    ...(days ? { days } : {}),
-    amount: getTotalPrice(product.price),
-  };
+function provider(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), { status });
 }
-
-function tossDone(totalAmount: number, approvedAt = '2026-09-15T00:00:00.000Z') {
-  vi.mocked(fetch).mockResolvedValueOnce({
-    ok: true,
-    json: async () => ({ status: 'DONE', totalAmount, approvedAt, method: 'CARD' }),
-  } as Response);
-}
-
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubEnv('TOSS_SECRET_KEY', 'test-secret');
-  mock.tables = { jobs: [], payments: [] };
-  mock.jobUpdateError = null;
-  mock.getUser.mockResolvedValue({ data: { user: { id: 'user-a' } }, error: null });
-  // 필터·업데이트를 실제로 반영하는 얕은 인메모리 테이블
+  vi.stubEnv('TOSS_SECRET_KEY', 'secret');
+  vi.stubEnv('TOSS_WEBHOOK_SECRET', '');
+  mock.tables = { payment_orders: [order()], payments: [], jobs: [{ id: jobId, user_id: 'user-a', category: 'agent', title: 'Job' }] };
+  mock.errors = {};
+  mock.beforeUpdate = null;
+  mock.getUser.mockResolvedValue({ data: { user: { id: 'user-a' } } });
   mock.from.mockImplementation((table: string) => {
     let rows = [...(mock.tables[table] ?? [])];
-    let operation: 'select' | 'insert' | 'update' = 'select';
-    let updatePayload: Row = {};
-    const filters: [string, unknown][] = [];
-    const chain: Record<string, unknown> = {};
-    chain.select = vi.fn(() => chain);
-    chain.eq = vi.fn((key: string, value: unknown) => {
-      filters.push([key, value]);
-      rows = rows.filter((row) => row[key] === value);
-      return chain;
-    });
-    chain.maybeSingle = vi.fn(async () => ({ data: rows[0] ?? null, error: null }));
-    chain.insert = vi.fn((payload: Row) => {
-      operation = 'insert';
-      mock.tables[table].push(payload);
-      return chain;
-    });
-    chain.update = vi.fn((payload: Row) => {
-      operation = 'update';
-      updatePayload = payload;
-      return chain;
-    });
-    chain.then = (resolve: (value: unknown) => unknown) => {
-      const error = operation === 'update' && table === 'jobs' ? mock.jobUpdateError : null;
-      if (operation === 'update' && !error) {
-        for (const row of mock.tables[table]) {
-          if (filters.every(([k, v]) => row[k] === v)) Object.assign(row, updatePayload);
-        }
-      }
-      return Promise.resolve({ data: operation === 'select' ? rows : null, error }).then(resolve);
+    let update: Row | null = null;
+    const chain = {
+      select: vi.fn(() => chain), eq: vi.fn((key: string, value: unknown) => { rows = rows.filter(row => row[key] === value); return chain; }),
+      is: vi.fn((key: string) => { rows = rows.filter(row => row[key] == null); return chain; }),
+      maybeSingle: vi.fn(async () => ({ data: rows[0] ? { ...rows[0] } : null, error: mock.errors[table] ?? null })),
+      order: vi.fn(() => chain), limit: vi.fn(() => chain), gte: vi.fn(() => chain),
+      insert: vi.fn((payload: Row) => { if (!mock.errors[table]) mock.tables[table].push(payload); return chain; }),
+      update: vi.fn((payload: Row) => { mock.beforeUpdate?.(); update = payload; return chain; }),
+      then: (resolve: (value: unknown) => unknown) => {
+        if (update && !mock.errors[table]) rows.forEach(row => Object.assign(row, update));
+        return Promise.resolve({ data: rows, error: mock.errors[table] ?? null }).then(resolve);
+      },
     };
     return chain;
   });
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: true,
-    json: async () => ({ status: 'DONE', totalAmount: 5390, approvedAt: '2026-09-15T00:00:00.000Z', method: 'CARD' }),
-  }));
+  mock.rpc.mockImplementation(async (name: string) => ({ data: name === 'apply_payment_order'
+    ? { payment_status: 'completed', starts_at: '2026-10-16T00:00:00Z', expires_at: '2026-10-21T00:00:00Z' } : order(), error: null }));
+  vi.stubGlobal('fetch', vi.fn().mockImplementation(async () => provider(approved())));
 });
 
-afterEach(() => {
-  vi.useRealTimers();
-});
-
-describe('POST /api/payment/confirm product and job integrity', () => {
-  it.each([
-    ['sales job with agent product', 'sales', 'agent-basic'],
-    ['agent job with sales product', 'agent', 'sales-premium'],
-    ['job with null category', null, 'agent-basic'],
-  ])('rejects %s before Toss confirm', async (_name, category, productKey) => {
-    mock.tables.jobs = [{ id: 'job-1', user_id: 'user-a', category, tier: 'normal' }];
-
-    const response = await POST(request(body(productKey as string, 'job-1', productKey === 'sales-premium' ? 7 : undefined)));
-
-    expect(response.status).toBe(400);
+describe('server payment orders', () => {
+  it('requires authentication', async () => expect((await orders(request({ productKey: 'agent-basic' }, false))).status).toBe(401));
+  it.each([{ productKey: 'sales-dia' }, { productKey: 'agent-basic', days: '5' }, { productKey: 'agent-basic', days: null },
+    { productKey: 'agent-basic', jobId: 1 }, { productKey: 'agent-basic', jobId: 'invalid' }, { productKey: 5 }])('rejects invalid purchase %j', async payload => {
+    expect((await orders(request(payload))).status).toBe(400);
     expect(fetch).not.toHaveBeenCalled();
   });
-
-  it('rejects sales-dia on the server before Toss confirm', async () => {
-    const response = await POST(request(body('sales-dia', undefined, 20)));
-
-    expect(response.status).toBe(400);
-    expect(fetch).not.toHaveBeenCalled();
-  });
-
-  it.each([
-    ['agent', 'agent-basic', undefined],
-    ['sales', 'sales-premium', 7],
-  ] as const)('keeps valid %s job and product combinations working', async (category, productKey, days) => {
-    mock.tables.jobs = [{ id: 'job-1', user_id: 'user-a', category, tier: 'normal' }];
-    tossDone(body(productKey, 'job-1', days).amount);
-
-    const response = await POST(request(body(productKey, 'job-1', days)));
-
-    expect(response.status).toBe(200);
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
-
-  it('returns non-2xx when the job tier update fails after payment insertion', async () => {
-    mock.tables.jobs = [{ id: 'job-1', user_id: 'user-a', category: 'agent', tier: 'normal' }];
-    mock.jobUpdateError = new Error('update failed');
-
-    const response = await POST(request(body('agent-basic', 'job-1')));
-
-    expect(response.status).toBe(500);
-    expect(mock.tables.payments).toHaveLength(1);
-  });
-});
-
-describe('POST /api/payment/confirm ad window', () => {
-  const NOW = new Date('2026-09-15T00:00:00.000Z');
-  const priorSuperior = {
-    payment_id: 'older', user_id: 'user-a', job_id: 'job-1', payment_status: 'completed', tier: 'superior',
-    starts_at: '2026-09-10T00:00:00.000Z', paid_at: '2026-09-10T00:00:00.000Z', expires_at: '2026-09-20T00:00:00.000Z',
-  };
-
-  beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'] });
-    vi.setSystemTime(NOW);
-  });
-
-  it('stacks a same-tier extension on the existing expiry and pulls the deadline up', async () => {
-    mock.tables.jobs = [{ id: 'job-1', user_id: 'user-a', category: 'sales', tier: 'superior', deadline: '2026-09-16', is_active: false }];
-    mock.tables.payments = [{ ...priorSuperior }];
-    tossDone(body('sales-superior', 'job-1', 10).amount);
-
-    const response = await POST(request(body('sales-superior', 'job-1', 10)));
+  it('creates a VAT-inclusive immutable server snapshot with independent UUIDs', async () => {
+    const response = await orders(request({ productKey: 'agent-basic', jobId }));
     const json = await response.json();
-
     expect(response.status).toBe(200);
-    const inserted = mock.tables.payments[1];
-    expect(inserted.starts_at).toBe('2026-09-20T00:00:00.000Z');
-    expect(inserted.expires_at).toBe('2026-09-30T00:00:00.000Z');
-    expect(json.data.expires_at).toBe('2026-09-30T00:00:00.000Z');
-    // 지금은 기존 창이 유효 → 등급 유지, 현재 창 끝. 마감일은 전체 광고 끝(KST)까지.
-    expect(mock.tables.jobs[0]).toMatchObject({
-      tier: 'superior',
-      ad_expires_at: '2026-09-20T00:00:00.000Z',
-      deadline: '2026-09-30',
-      is_active: true,
-    });
+    expect(mock.tables.payment_orders[1]).toMatchObject({ amount: 5390, job_id_snapshot: jobId, job_title: 'Job', exposure_days: 5, user_id: 'user-a' });
+    expect(mock.tables.payment_orders[1].order_id).not.toBe(mock.tables.payment_orders[1].idempotency_key);
+    expect(json.data).not.toHaveProperty('idempotency_key');
+    expect(json.data).not.toHaveProperty('user_id');
   });
+  it('preserves prepayment without a job', async () => {
+    expect((await orders(request({ productKey: 'agent-basic' }))).status).toBe(200);
+    expect(mock.tables.payment_orders[1].job_id).toBeNull();
+  });
+  it('rejects another owner', async () => {
+    mock.tables.jobs[0].user_id = 'other';
+    expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(403);
+  });
+  it('rejects category mismatch', async () => {
+    mock.tables.jobs[0].category = 'sales';
+    expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(400);
+  });
+  it('fails closed without order migration', async () => {
+    mock.errors.payment_orders = new Error('missing relation');
+    expect((await orders(request({ productKey: 'agent-basic' }))).status).toBe(503);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
 
-  it('starts an upgrade immediately', async () => {
-    mock.tables.jobs = [{ id: 'job-1', user_id: 'user-a', category: 'sales', tier: 'superior', deadline: '2026-12-31' }];
-    mock.tables.payments = [{ ...priorSuperior }];
-    tossDone(body('sales-unique', 'job-1', 10).amount);
-
-    const response = await POST(request(body('sales-unique', 'job-1', 10)));
-
+describe('snapshot confirmation and recovery', () => {
+  it('requires authentication', async () => expect((await confirm(request(body(), false))).status).toBe(401));
+  it('rejects unknown orders before provider approval', async () => {
+    mock.tables.payment_orders = [];
+    expect((await confirm(request(body()))).status).toBe(404);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it.each([{ amount: 1 }, { productKey: 'sales-premium' }, { days: 7 }, { jobId: 'different' }])('rejects tampered snapshot hints %j', async patch => {
+    expect((await confirm(request({ ...body(), ...patch }))).status).toBe(409);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it('uses original price and name even after product is disabled or changed', async () => {
+    Object.assign(mock.tables.payment_orders[0], { product_key: 'sales-dia', product_name: 'Old product', amount: 12345 });
+    vi.mocked(fetch).mockResolvedValue(provider({ ...approved(), totalAmount: 12345 }));
+    const response = await confirm(request({ ...body(), amount: 12345 }));
     expect(response.status).toBe(200);
-    expect(mock.tables.payments[1]).toMatchObject({
-      starts_at: '2026-09-15T00:00:00.000Z',
-      expires_at: '2026-09-25T00:00:00.000Z',
-    });
-    // 더 늦은 마감일은 당기지 않는다
-    expect(mock.tables.jobs[0]).toMatchObject({ tier: 'unique', ad_expires_at: '2026-09-25T00:00:00.000Z', deadline: '2026-12-31' });
+    expect((await response.json()).data.productName).toBe('Old product');
   });
-
-  it('sets deadline for a fresh purchase when the free +24h deadline would close the ad early', async () => {
-    mock.tables.jobs = [{ id: 'job-1', user_id: 'user-a', category: 'sales', tier: 'normal', deadline: '2026-09-16' }];
-    tossDone(body('sales-premium', 'job-1', 7).amount);
-
-    const response = await POST(request(body('sales-premium', 'job-1', 7)));
-
-    expect(response.status).toBe(200);
-    expect(mock.tables.jobs[0]).toMatchObject({ tier: 'premium', ad_expires_at: '2026-09-29T00:00:00.000Z', deadline: '2026-09-29' });
+  it('rejects a different payment key without provider calls', async () => {
+    mock.tables.payment_orders[0].payment_key = 'another';
+    expect((await confirm(request(body()))).status).toBe(409);
+    expect(fetch).not.toHaveBeenCalled();
   });
+  it('claims before networking and uses the server idempotency key for approval', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(provider({}, 404)).mockResolvedValueOnce(provider(approved()));
+    expect((await confirm(request(body()))).status).toBe(200);
+    expect(mock.rpc.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(fetch).mock.invocationCallOrder[0]);
+    expect(vi.mocked(fetch).mock.calls[1][1]).toMatchObject({ method: 'POST', headers: { 'Idempotency-Key': order().idempotency_key } });
+  });
+  it('recovers a confirmation timeout with verified GET', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(provider({}, 404)).mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce(provider(approved()));
+    expect((await confirm(request(body()))).status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+  it.each([{ paymentKey: 'other' }, { orderId: 'other' }, { totalAmount: 1 }, { currency: 'USD' }])('rejects provider identity mismatch %j', async patch => {
+    vi.mocked(fetch).mockResolvedValue(provider({ ...approved(), ...patch }));
+    expect((await confirm(request(body()))).status).toBe(409);
+    expect(mock.rpc).not.toHaveBeenCalledWith('apply_payment_order', expect.anything());
+  });
+  it('returns retryable failure on atomic apply failure then recovers the same order', async () => {
+    mock.rpc.mockResolvedValueOnce({ data: order(), error: null }).mockResolvedValueOnce({ data: null, error: new Error('insert failed') });
+    const failed = await confirm(request(body()));
+    expect(failed.status).toBe(503);
+    expect((await failed.json()).retryable).toBe(true);
+    expect((await confirm(request(body()))).status).toBe(200);
+    expect(vi.mocked(fetch).mock.calls.every(([, options]) => options?.method !== 'POST')).toBe(true);
+  });
+  it('reconfirms without a second provider charge', async () => {
+    expect((await confirm(request(body()))).status).toBe(200);
+    mock.tables.payment_orders[0].status = 'completed';
+    mock.tables.payment_orders[0].payment_key = 'key';
+    expect((await confirm(request(body()))).status).toBe(200);
+    expect(vi.mocked(fetch).mock.calls.every(([, options]) => options?.method !== 'POST')).toBe(true);
+  });
+  it('reports a concurrent key claim conflict without provider calls', async () => {
+    mock.rpc.mockResolvedValue({ data: null, error: { code: '23505' } });
+    expect((await confirm(request(body()))).status).toBe(409);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it('replays a persisted legacy payment without current catalog or provider approval', async () => {
+    mock.tables.payment_orders = [];
+    mock.tables.payments = [{ payment_id: 'key', user_id: 'user-a', amount: 5390, product_key: 'disabled-old', payment_status: 'completed', job_id: jobId }];
+    expect((await confirm(request({ ...body(), productKey: 'disabled-old' }))).status).toBe(200);
+    expect(mock.recompute).toHaveBeenCalledWith(expect.anything(), jobId);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+});
 
-  it('re-confirm is idempotent (no second window, no second Toss call)', async () => {
-    mock.tables.jobs = [{ id: 'job-1', user_id: 'user-a', category: 'sales', tier: 'normal', deadline: null }];
-    tossDone(body('sales-superior', 'job-1', 10).amount);
-
-    const first = await POST(request(body('sales-superior', 'job-1', 10)));
-    expect(first.status).toBe(200);
-    const snapshot = { ...mock.tables.jobs[0] };
-
-    const second = await POST(request(body('sales-superior', 'job-1', 10)));
-    const json = await second.json();
-
-    expect(second.status).toBe(200);
-    expect(json.message).toBe('이미 처리된 결제입니다.');
-    expect(json.data.expires_at).toBe('2026-09-25T00:00:00.000Z');
+describe('verified webhook reconciliation', () => {
+  const event = () => request({ data: { paymentKey: 'key' } });
+  it('accepts native missing custom header only after provider identity verification', async () => {
+    vi.stubEnv('TOSS_WEBHOOK_SECRET', 'custom-proxy-secret');
+    mock.tables.payment_orders[0].payment_key = 'key';
+    expect((await webhook(event())).status).toBe(200);
     expect(fetch).toHaveBeenCalledTimes(1);
-    expect(mock.tables.payments).toHaveLength(1);
-    expect(mock.tables.jobs[0]).toEqual(snapshot);
+  });
+  it('rejects an explicitly wrong custom proxy secret before provider calls', async () => {
+    vi.stubEnv('TOSS_WEBHOOK_SECRET', 'custom-proxy-secret');
+    const req = event();
+    req.headers.set('x-webhook-secret', 'wrong');
+    expect((await webhook(req)).status).toBe(401);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it('does not bind an unclaimed order', async () => {
+    expect((await webhook(event())).status).toBe(409);
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
+  it.each(['DONE', 'PARTIAL_CANCELED', 'CANCELED', 'ABORTED', 'EXPIRED'])('reconciles bound %s even if payment insertion was missing', async status => {
+    mock.tables.payment_orders[0].payment_key = 'key';
+    vi.mocked(fetch).mockResolvedValue(provider({ ...approved(), status, ...(status === 'PARTIAL_CANCELED' ? { balanceAmount: 4390 } : {}) }));
+    expect((await webhook(event())).status).toBe(200);
+    expect(mock.rpc).toHaveBeenCalledWith('apply_payment_order', expect.objectContaining({ p_order_id: 'order-one', p_payment_key: 'key', p_provider: expect.objectContaining({ status }) }));
+  });
+  it('returns non-2xx for unknown status', async () => {
+    vi.mocked(fetch).mockResolvedValue(provider({ ...approved(), status: 'NEW_STATUS' }));
+    expect((await webhook(event())).status).toBe(400);
+  });
+  it('returns non-2xx on DB failure for provider retry', async () => {
+    mock.tables.payment_orders[0].payment_key = 'key';
+    mock.rpc.mockResolvedValue({ data: null, error: new Error('DB down') });
+    expect((await webhook(event())).status).toBe(503);
+  });
+  it('persists full partial refund history and recomputes legacy entitlement', async () => {
+    mock.tables.payment_orders = [];
+    mock.tables.payments = [{ payment_id: 'key', job_id: jobId, amount: 5390, currency: 'KRW', payment_status: 'completed' }];
+    const cancels = [{ transactionKey: 'refund-1', cancelAmount: 1000 }];
+    vi.mocked(fetch).mockResolvedValue(provider({ ...approved(), status: 'PARTIAL_CANCELED', balanceAmount: 4390, cancels }));
+    expect((await webhook(event())).status).toBe(200);
+    expect(mock.tables.payments[0]).toMatchObject({ payment_status: 'completed', provider_status: 'PARTIAL_CANCELED', balance_amount: 4390, cancels });
+    expect(mock.recompute).toHaveBeenCalled();
+  });
+  it('persists full refund and revokes only through entitlement recomputation', async () => {
+    mock.tables.payment_orders = [];
+    mock.tables.payments = [{ payment_id: 'key', job_id: jobId, amount: 5390, currency: 'KRW', payment_status: 'completed' }];
+    vi.mocked(fetch).mockResolvedValue(provider({ ...approved(), status: 'CANCELED', balanceAmount: 0 }));
+    expect((await webhook(event())).status).toBe(200);
+    expect(mock.tables.payments[0].payment_status).toBe('refunded');
+    expect(mock.recompute).toHaveBeenCalled();
+  });
+  it.each(['READY', 'IN_PROGRESS', 'WAITING_FOR_DEPOSIT', 'EXPIRED', 'ABORTED'])('rejects legacy completed regression to %s', async status => {
+    mock.tables.payment_orders = [];
+    mock.tables.payments = [{ payment_id: 'key', amount: 5390, currency: 'KRW', payment_status: 'completed' }];
+    vi.mocked(fetch).mockResolvedValue(provider({ ...approved(), status }));
+    expect((await webhook(event())).status).toBe(409);
+    expect(mock.tables.payments[0].payment_status).toBe('completed');
+  });
+  it('rejects stale DONE after a persisted partial refund', async () => {
+    mock.tables.payment_orders = [];
+    mock.tables.payments = [{ payment_id: 'key', amount: 5390, currency: 'KRW', payment_status: 'completed', provider_status: 'PARTIAL_CANCELED', balance_amount: 4390 }];
+    expect((await webhook(event())).status).toBe(409);
+    expect(mock.tables.payments[0].balance_amount).toBe(4390);
+  });
+  it('rejects malformed partial refund balance and inherited status keys', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(provider({ ...approved(), status: 'PARTIAL_CANCELED', balanceAmount: undefined }))
+      .mockResolvedValueOnce(provider({ ...approved(), status: '__proto__' }));
+    expect((await webhook(event())).status).toBe(400);
+    expect((await webhook(event())).status).toBe(400);
+  });
+  it('does not overwrite a concurrent full refund with a stale DONE read', async () => {
+    mock.tables.payment_orders = [];
+    mock.tables.payments = [{ payment_id: 'key', amount: 5390, currency: 'KRW', payment_status: 'completed', provider_status: 'DONE', balance_amount: 5390 }];
+    mock.beforeUpdate = () => { Object.assign(mock.tables.payments[0], { payment_status: 'refunded', provider_status: 'CANCELED', balance_amount: 0 }); };
+    expect((await webhook(event())).status).toBe(503);
+    expect(mock.tables.payments[0]).toMatchObject({ payment_status: 'refunded', provider_status: 'CANCELED', balance_amount: 0 });
+  });
+});
+
+describe('admin payment revenue', () => {
+  it('counts remaining partial-refund balance, includes legacy amount, and excludes full refunds', async () => {
+    mock.tables.users = [{ id: 'user-a', user_type: 'admin' }];
+    mock.tables.payments = [
+      { payment_status: 'completed', amount: 5390, balance_amount: 4390, job_title: 'Deleted job snapshot' },
+      { payment_status: 'completed', amount: 1000, balance_amount: null },
+      { payment_status: 'refunded', amount: 2000, balance_amount: 0 },
+    ];
+    const response = await adminPayments(request({}));
+    expect(response.status).toBe(200);
+    const json = await response.json();
+    expect(json.stats.totalRevenue).toBe(5390);
+    expect(json.stats.monthRevenue).toBe(5390);
+    expect(json.payments[0].job_title).toBe('Deleted job snapshot');
   });
 });

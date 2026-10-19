@@ -3,9 +3,7 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { resolveProduct, getTotalPrice } from '@/lib/toss';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
-import Link from 'next/link';
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams();
@@ -15,6 +13,7 @@ function PaymentSuccessContent() {
   const [message, setMessage] = useState('');
   const [productName, setProductName] = useState('');
   const confirmedRef = useRef(false);
+  const [retry, setRetry] = useState(0);
 
   const paymentKey = searchParams.get('paymentKey');
   const orderId = searchParams.get('orderId');
@@ -25,6 +24,7 @@ function PaymentSuccessContent() {
   const jobId = searchParams.get('jobId');
 
   useEffect(() => {
+    const confirmPayment = async () => {
     // 세션 로딩 중이면 대기
     if (authLoading) return;
 
@@ -34,33 +34,17 @@ function PaymentSuccessContent() {
       return;
     }
 
-    if (!paymentKey || !orderId || !amount || !productKey) {
+    if (!paymentKey || !orderId || !amount || !Number.isSafeInteger(Number(amount))) {
       setStatus('error');
       setMessage('결제 정보가 누락되었습니다.');
       return;
     }
 
-    const product = resolveProduct(productKey, days);
-    if (!product) {
-      setStatus('error');
-      setMessage('유효하지 않은 상품입니다.');
-      return;
-    }
-
-    // 금액 검증 (클라이언트 조작 방지 — 총액 = 공급가액 + 부가세)
-    if (parseInt(amount) !== getTotalPrice(product.price)) {
-      setStatus('error');
-      setMessage('결제 금액이 일치하지 않습니다.');
-      return;
-    }
-
-    setProductName(product.name);
-
     // 이미 호출됐으면 중복 실행 방지 (StrictMode, 새로고침)
     if (confirmedRef.current) return;
     confirmedRef.current = true;
+    setStatus('loading');
 
-    const confirmPayment = async () => {
       try {
         const res = await fetch('/api/payment/confirm', {
           method: 'POST',
@@ -71,7 +55,7 @@ function PaymentSuccessContent() {
           body: JSON.stringify({
             paymentKey,
             orderId,
-            amount: parseInt(amount),
+            amount: Number(amount),
             productKey,
             days: days ?? null,
             jobId: jobId || null,
@@ -81,18 +65,20 @@ function PaymentSuccessContent() {
         const result = await res.json();
 
         if (result.success) {
+          const product = result.data;
+          setProductName(product.productName);
           setStatus('success');
           const expiresAt: string | null = result.data?.expires_at ?? null;
           const until = expiresAt
             ? new Date(expiresAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' })
             : null;
           setMessage(until
-            ? `${product.name} 결제가 완료되었습니다!\n${product.durationLabel} 광고가 ${until}까지 적용됩니다.`
-            : `${product.name} 결제가 완료되었습니다!\n${product.durationLabel}간 광고가 노출됩니다.`);
+            ? `${product.productName} 결제가 완료되었습니다!\n${product.duration} 광고가 ${until}까지 적용됩니다.`
+            : `${product.productName} 결제가 완료되었습니다!\n${product.duration}간 광고가 노출됩니다.`);
 
           // 3초 후 자동 이동
           setTimeout(() => {
-            if (jobId) {
+            if (product.jobId) {
               router.push(product.category === 'agent' ? '/agent/employer' : '/sales/mypage');
             } else {
               router.push(product.category === 'agent'
@@ -106,12 +92,12 @@ function PaymentSuccessContent() {
         }
       } catch {
         setStatus('error');
-        setMessage('결제 승인 중 오류가 발생했습니다.');
+        setMessage('결제 상태를 확인하지 못했습니다. 새로 결제하지 말고 같은 결제를 다시 확인해주세요.');
       }
     };
 
     confirmPayment();
-  }, [paymentKey, orderId, amount, productKey, jobId, session, authLoading, router]);
+  }, [paymentKey, orderId, amount, productKey, days, jobId, session, authLoading, router, retry]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
@@ -137,14 +123,14 @@ function PaymentSuccessContent() {
         {status === 'error' && (
           <>
             <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-            <h1 className="text-xl font-bold text-white mb-2">결제 실패</h1>
+            <h1 className="text-xl font-bold text-white mb-2">결제 상태 확인</h1>
             <p className="text-gray-400 text-sm mb-6">{message}</p>
-            <Link
-              href="/premium"
+            <button
+              onClick={() => { confirmedRef.current = false; setRetry((value) => value + 1); }}
               className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-white text-sm hover:opacity-90 transition-all"
             >
-              다시 시도하기
-            </Link>
+              같은 결제 다시 확인하기
+            </button>
           </>
         )}
       </div>

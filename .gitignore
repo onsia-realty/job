@@ -48,3 +48,7 @@ next-env.d.ts
 
 # Supabase CLI local state
 supabase/.temp/
+
+# Local collaboration configuration and database evidence
+/scripts/claude-design-bridge.config.json
+/supabase/backups/

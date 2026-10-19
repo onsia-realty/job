@@ -33,8 +33,13 @@ export async function GET(req: NextRequest) {
         id,
         user_id,
         job_id,
+        job_id_snapshot,
+        job_title,
         tier,
         amount,
+        balance_amount,
+        provider_status,
+        cancels,
         payment_method,
         payment_status,
         start_date,
@@ -57,10 +62,10 @@ export async function GET(req: NextRequest) {
     // 전체 완료 매출
     const { data: totalData } = await supabaseAdmin
       .from('payments')
-      .select('amount')
+      .select('amount,balance_amount')
       .eq('payment_status', 'completed');
 
-    const totalRevenue = (totalData || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalRevenue = (totalData || []).reduce((sum, p) => sum + (p.balance_amount ?? p.amount ?? 0), 0);
 
     // 이번달 매출
     const firstOfMonth = new Date();
@@ -69,11 +74,11 @@ export async function GET(req: NextRequest) {
 
     const { data: monthData } = await supabaseAdmin
       .from('payments')
-      .select('amount')
+      .select('amount,balance_amount')
       .eq('payment_status', 'completed')
       .gte('created_at', firstOfMonth.toISOString());
 
-    const monthRevenue = (monthData || []).reduce((sum, p) => sum + (p.amount || 0), 0);
+    const monthRevenue = (monthData || []).reduce((sum, p) => sum + (p.balance_amount ?? p.amount ?? 0), 0);
 
     // 완료 건수
     const { count: completedCount } = await supabaseAdmin

@@ -1,0 +1,6 @@
+{
+  "vaultPath": "D:/path/to/obsidian-vault",
+  "projectPath": "D:/path/to/onsia-job",
+  "claudePath": "C:/path/to/claude.exe",
+  "timeoutMs": 180000
+}

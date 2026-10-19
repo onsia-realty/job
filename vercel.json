@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/sync-mgmt-costs",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/cron/refresh-aggregates",
+      "schedule": "0 21 * * *"
     }
   ]
 }

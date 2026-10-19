@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useState, useRef, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { TOSS_CONFIG, resolveProduct, generateOrderId, getVat, getTotalPrice, isProductPurchasable } from '@/lib/toss';
+import { TOSS_CONFIG, resolveProduct, getVat, getTotalPrice, isProductPurchasable } from '@/lib/toss';
 import { ChevronLeft, Loader2, ShieldCheck } from 'lucide-react';
 import type { TossPaymentsWidgets } from '@tosspayments/tosspayments-sdk';
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
-  const { user } = useAuth();
+  const { user, session, isLoading: authLoading } = useAuth();
   const productKey = searchParams.get('productKey');
   const daysParam = searchParams.get('days');
   const days = daysParam ? Number(daysParam) : undefined;
@@ -20,57 +20,87 @@ function CheckoutContent() {
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const initRef = useRef(false);
 
   const product = productKey ? resolveProduct(productKey, days) : null;
   const purchaseEnabled = productKey ? isProductPurchasable(productKey) : false;
+  const authenticated = Boolean(session?.access_token);
 
   useEffect(() => {
-    if (!product || !purchaseEnabled || initRef.current) return;
-    initRef.current = true;
+    if (!productKey || !purchaseEnabled || authLoading) return;
+    const selectedProduct = resolveProduct(productKey, days);
+    if (!selectedProduct) return;
+    if (!user?.id || !authenticated) {
+      setError('로그인 후 결제를 진행해주세요.');
+      setLoading(false);
+      return;
+    }
+    let canceled = false;
+    const rendered: { destroy: () => Promise<void> }[] = [];
+    const track = async <T extends { destroy: () => Promise<void> }>(pending: Promise<T>) => {
+      const element = await pending;
+      if (canceled) await element.destroy();
+      else rendered.push(element);
+    };
+    setLoading(true);
+    setError(null);
+    setWidgets(null);
 
     const initWidget = async () => {
       try {
         const { loadTossPayments, ANONYMOUS } = await import('@tosspayments/tosspayments-sdk');
+        if (canceled) return;
 
         const tossPayments = await loadTossPayments(TOSS_CONFIG.clientKey);
+        if (canceled) return;
 
         const widgetInstance = tossPayments.widgets({ customerKey: ANONYMOUS });
 
         await widgetInstance.setAmount({
           currency: 'KRW',
-          value: getTotalPrice(product.price),
+          value: getTotalPrice(selectedProduct.price),
         });
+        if (canceled) return;
 
         await Promise.all([
-          widgetInstance.renderPaymentMethods({
+          track(widgetInstance.renderPaymentMethods({
             selector: '#payment-method',
             variantKey: 'DEFAULT',
-          }),
-          widgetInstance.renderAgreement({
+          })),
+          track(widgetInstance.renderAgreement({
             selector: '#agreement',
             variantKey: 'AGREEMENT',
-          }),
+          })),
         ]);
 
-        setWidgets(widgetInstance);
+        if (!canceled) setWidgets(widgetInstance);
       } catch (err) {
         console.error('토스 위젯 초기화 실패:', err);
-        setError('결제 위젯을 불러오는데 실패했습니다.');
+        if (!canceled) setError('결제 위젯을 불러오는데 실패했습니다.');
       } finally {
-        setLoading(false);
+        if (!canceled) setLoading(false);
       }
     };
 
     initWidget();
-  }, [product, purchaseEnabled]);
+    return () => {
+      canceled = true;
+      for (const element of rendered) void element.destroy().catch(() => undefined);
+    };
+  }, [productKey, days, purchaseEnabled, authLoading, user?.id, authenticated]);
 
   const handlePayment = async () => {
-    if (!widgets || !product || !productKey || !purchaseEnabled) return;
+    if (!widgets || !product || !productKey || !purchaseEnabled || !session?.access_token) return;
     setPaying(true);
 
     try {
-      const orderId = generateOrderId();
+      const response = await fetch('/api/payment/orders', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ productKey, ...(days != null ? { days } : {}), jobId }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || '결제 준비에 실패했습니다.');
+      const order = result.data;
+      await widgets.setAmount({ currency: 'KRW', value: order.amount });
 
       const successUrl = new URL('/payment/success', window.location.origin);
       successUrl.searchParams.set('productKey', productKey);
@@ -80,8 +110,8 @@ function CheckoutContent() {
       const failUrl = new URL('/payment/fail', window.location.origin);
 
       await widgets.requestPayment({
-        orderId,
-        orderName: product.name,
+        orderId: order.orderId,
+        orderName: order.orderName,
         customerName: user?.user_metadata?.name || '사용자',
         customerEmail: user?.email || undefined,
         customerMobilePhone: user?.user_metadata?.phone || undefined,
@@ -94,7 +124,7 @@ function CheckoutContent() {
         // 사용자 취소 - 무시
       } else {
         console.error('결제 요청 실패:', err);
-        alert('결제 요청 중 오류가 발생했습니다.');
+        setError(errObj.message || '결제 요청 중 오류가 발생했습니다.');
       }
       setPaying(false);
     }

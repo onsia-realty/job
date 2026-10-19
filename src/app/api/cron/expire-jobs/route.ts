@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { recomputeJobAd, FREE_EXPOSURE_MS } from '@/lib/ad-entitlement';
 
-// Vercel Cron: 매시간 실행 (vercel.json 의 crons 설정 필요)
+// Vercel Cron: 매일 UTC 15:00 = KST 00:00 실행 (vercel.json)
 // 1) 유료 광고 창이 끝난 공고 → 결제 기록으로 등급 재계산 (하위 등급으로 이어지거나 일반으로 내려감. 비활성화하지 않음)
 //    + 환불로 생긴 공백 뒤에 대기 중인 창이 있는 일반 공고도 재계산
 // 2) 무료(일반) 공고: coalesce(ad_expires_at, created_at) + 24h 경과 → 비활성화
 // 3) 모집 마감일(deadline) 지난 공고 → 비활성화 (등급 무관)
-// 전제: migration 046 (jobs.ad_expires_at)
+// 전제: migration 046 및 047 (광고 재계산 RPC)
 
 const RECOMPUTE_BATCH = 500;
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   // 1. 광고 창 종료 / 대기 창 시작 → 등급 재계산
   const { data: lapsed, error: lapsedError } = await supabaseAdmin
     .from('jobs')
-    .select('id, category')
+    .select('id')
     // 타임스탬프의 ':' '.' 는 PostgREST 논리 필터 예약 문자라 큰따옴표로 감싼다
     .or(`and(tier.neq.normal,ad_expires_at.lte."${now}"),and(tier.eq.normal,ad_expires_at.gt."${now}")`)
     .limit(RECOMPUTE_BATCH);
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
   } else {
     for (const job of lapsed ?? []) {
       try {
-        await recomputeJobAd(supabaseAdmin, job.id, nowDate, { category: job.category });
+        await recomputeJobAd(supabaseAdmin, job.id, nowDate);
         recomputedCount++;
       } catch (e) {
         recomputeFailed++;

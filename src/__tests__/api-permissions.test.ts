@@ -172,10 +172,15 @@ describe('server controlled fields and payments', () => {
     expect((await confirmPost(request('/api/payment/confirm', 'A', { paymentKey: 'key', orderId: 'order', productKey: 'agent-basic', amount }))).status).toBe(expected);
     expect(writes).toEqual([]);
   });
-  it('requires configured webhook secret even when header omitted', async () => {
+  it('verifies native webhook without custom header through provider API and rejects spoofed payload', async () => {
     vi.stubEnv('TOSS_WEBHOOK_SECRET', 'test-secret');
-    expect((await webhookPost(request('/api/payment/webhook', undefined, { data: { paymentKey: 'key' } }))).status).toBe(401);
+    vi.stubEnv('TOSS_SECRET_KEY', 'provider-secret');
+    const provider = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('{}', { status: 404 }));
+    expect((await webhookPost(request('/api/payment/webhook', undefined, { data: { paymentKey: 'key', status: 'CANCELED' } }))).status).toBe(400);
+    expect(provider).toHaveBeenCalledWith('https://api.tosspayments.com/v1/payments/key', expect.objectContaining({ headers: expect.objectContaining({ Authorization: expect.stringContaining('Basic ') }) }));
+    expect(writes).toEqual([]);
     expect(db.from).not.toHaveBeenCalled();
+    provider.mockRestore();
   });
   it('payment replay rejects another job and changed duration', async () => {
     const amount = getTotalPrice(resolveProduct('sales-premium', 7)!.price);

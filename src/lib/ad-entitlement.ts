@@ -1,7 +1,7 @@
 // 광고 기간(엔타이틀먼트) 계산 — 결제 1건 = 광고 창(window) 1개 [starts_at, expires_at).
 // 순수 함수(tierRank/computeWindow/projectJobAd/effectiveJobTier)는 I/O 없음 → 클라이언트에서도 사용.
 // recomputeJobAd 만 DB 를 건드리며, 호출자가 service_role 클라이언트를 넘긴다.
-// 전제: migration 046(jobs.ad_expires_at, payments.starts_at) 적용.
+// 전제: migration 046 및 047(행 잠금 기반 재계산 RPC) 적용.
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -230,39 +230,18 @@ export async function loadJobWindows(db: SupabaseClient, jobId: string): Promise
 
 /**
  * 완료 결제로부터 jobs.tier / jobs.ad_expires_at 를 다시 계산해 저장한다. 멱등.
- * extraUpdate 는 같은 UPDATE 에 함께 실어 보낼 필드(예: is_active, deadline).
+ * 공고 행 잠금과 최신 결제 조회·갱신을 한 트랜잭션에서 수행한다.
  */
 export async function recomputeJobAd(
   db: SupabaseClient,
   jobId: string,
   now: Date = new Date(),
-  opts: { category?: string | null; extraUpdate?: Record<string, unknown> } = {},
 ): Promise<JobAdProjection | null> {
-  let category = opts.category;
-  if (category === undefined) {
-    const { data: job, error } = await db.from('jobs').select('category').eq('id', jobId).maybeSingle();
-    if (error) {
-      console.error('[ad-entitlement] jobs 조회 실패:', error);
-      throw new AdEntitlementError('jobs 조회 실패');
-    }
-    if (!job) return null;
-    category = (job as { category: string | null }).category;
+  const { data, error } = await db.rpc('recompute_payment_job_ad', { p_job_id: jobId, p_now: now.toISOString() });
+  if (error) {
+    console.error('[ad-entitlement] 광고 재계산 실패 — migration 047 RPC 적용 여부를 확인하세요:', error);
+    throw new AdEntitlementError('광고 재계산 실패');
   }
-
-  const windows = await loadJobWindows(db, jobId);
-  const projection = projectJobAd(now, windows, category);
-
-  const { error: updateError } = await db
-    .from('jobs')
-    .update({
-      ...(opts.extraUpdate ?? {}),
-      tier: projection.tier,
-      ad_expires_at: projection.adExpiresAt ? projection.adExpiresAt.toISOString() : null,
-    })
-    .eq('id', jobId);
-  if (updateError) {
-    console.error('[ad-entitlement] jobs.tier/ad_expires_at 갱신 실패 — migration 046(jobs.ad_expires_at, jobs_tier_check dia) 적용 여부를 확인하세요:', updateError);
-    throw new AdEntitlementError('jobs 갱신 실패');
-  }
-  return projection;
+  if (!data) return null;
+  return { tier: data.tier, adExpiresAt: data.ad_expires_at ? new Date(data.ad_expires_at) : null };
 }
