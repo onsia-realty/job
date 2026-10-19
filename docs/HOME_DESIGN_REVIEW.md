@@ -48,7 +48,7 @@
 - 사용자 승인 후 창 크기 차이 기반 보호 오버레이·반복 debugger를 제거했다. 기존 콘텐츠 복사 가드와 서버 인증/권한은 유지한다.
 - 우회 없는 production 회귀18개 포함 전체528테스트·변경24소스 lint·빌드110페이지 통과. 운영 빌드320/390/768/1440px에서 가로 넘침/보호 화면 없음, 모바일 공지 조작·서비스 이동 확인. 모바일 서비스 href는 `/agent/jobs`이며 데스크톱 Chrome 모바일 폭에서는 기존 페이지 전환 로직으로 `/agent`에 도착했다.
 - `production-mobile-fixed.png`, `production-mobile-320-fixed.png`, `production-tablet-fixed.png`를 보존했다. 물리 모바일 기기를 검증한 것은 아니다. 아래 보호 화면 기록은 수정 전 이력이다.
-- 사용자 요청에 따라 GitHub 커밋과 운영 배포를 진행하며 최종 결과는 PROGRESS 최신 블록에 기록한다. 아래 미커밋·미배포 기록은 최초 홈 구현 당시 기준이다.
+- 앱 `383caca` GitHub main 푸시 후 Vercel 운영 배포 Ready·booin.co.kr alias 연결을 확인했다. 실제 운영320/390px 보호 화면/가로 넘침 없음·공지 수동 조작 확인, `live-mobile-390.png` 저장. 최종 결과는 PROGRESS 최신 블록에 기록한다. 아래 미커밋·미배포 기록은 최초 홈 구현 당시 기준이다.
 
 - `claudedocs/home-review-2026-10-20/`: before/after desktop·mobile PNG, tablet·320px PNG, `browser-checks.json` 실제 DOM 실측.
 - Claude 1차: Obsidian `AI-Sessions/conversations/booin-collaboration/HOME-20261020-db429cb7-26b5-4c48-817c-6862fcb7b005-claude.md`

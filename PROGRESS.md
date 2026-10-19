@@ -5,7 +5,10 @@
 
 ---
 
-## 보안 오탐 수정·배포 준비 (2026-10-20)
+## 보안 오탐 수정·운영 배포 완료 (2026-10-20)
+
+- 앱 커밋 `383caca`를 GitHub main에 푸시했고 Vercel Git 배포 `dpl_C4rqTeteAUPezAbYLVnkCiwAQ8K3`가 Ready로 완료됐다(05:17 KST). `booin.co.kr`·www alias 연결 확인. 배포 URL: https://onsia-8rvd4q8va-realtors77-7871s-projects.vercel.app
+- 실제 운영 Chrome 320/390px에서 우회 없이 보호 화면 없음·가로 넘침 없음, 공지 수동 이동 확인. `live-mobile-390.png`는 로컬 증적이다. 공개 홈/STAY/뉴스/웹툰 HTTP200, 비로그인 주문 POST401·관리자 결제403·집계 cron401을 확인했다. 신규 결제·실카드 과금·운영 DB 변경은 수행하지 않았다.
 
 - 사용자 승인으로 창 바깥/안쪽 크기 차이 기반 SecurityShield 전체화면 차단과 반복 debugger를 제거했다. 기존 복사/선택/키보드 가드와 서버 인증·권한은 유지했다.
 - 우회 query/localStorage 없이 production 모드 회귀18개 추가. 전체36파일528테스트, 변경24소스 ESLint 오류/경고0, TypeScript 포함 프로덕션 빌드110페이지, 연결기12검사·격리DB26검사 통과. 기존 middleware 폐기 예정 안내만 남는다.
