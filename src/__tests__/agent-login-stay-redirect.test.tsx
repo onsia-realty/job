@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   signInWithEmail: vi.fn(),
   signInWithProvider: vi.fn(),
   resendConfirmationEmail: vi.fn(),
+  signInWithIdToken: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -18,7 +19,7 @@ vi.mock('@/lib/auth', () => ({
   signInWithEmail: mocks.signInWithEmail,
   signInWithProvider: mocks.signInWithProvider,
   resendConfirmationEmail: mocks.resendConfirmationEmail,
-  supabase: { auth: { signInWithIdToken: vi.fn() } },
+  supabase: { auth: { signInWithIdToken: mocks.signInWithIdToken } },
 }));
 
 function setLoginUrl(redirect?: string) {
@@ -27,7 +28,7 @@ function setLoginUrl(redirect?: string) {
 }
 
 function renderLogin(role: 'seeker' | 'employer' = 'seeker') {
-  mocks.signInWithEmail.mockResolvedValue({ user: { user_metadata: { role } } });
+  mocks.signInWithEmail.mockResolvedValue({ user: { user_metadata: { role } }, session: { access_token: 'email-test' } });
   render(<LoginPage />);
   fireEvent.change(screen.getByPlaceholderText('이메일을 입력하세요'), {
     target: { value: 'member@example.com' },
@@ -40,6 +41,9 @@ function renderLogin(role: 'seeker' | 'employer' = 'seeker') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+    ok: true, json: async () => ({ needsProfileCompletion: null, needsIdentityVerification: false }),
+  }));
   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'test-google-client';
   Object.defineProperty(window, 'google', {
     configurable: true,
@@ -57,6 +61,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   cleanup();
   delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   delete window.google;
@@ -64,7 +69,51 @@ afterEach(() => {
   sessionStorage.clear();
 });
 
+describe('Google profile completion redirect', () => {
+  it('uses explicit server state and carries the internal STAY destination', async () => {
+    setLoginUrl('/stay/requests');
+    mocks.signInWithIdToken.mockResolvedValue({ data: { session: { access_token: 'test' } } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ needsProfileCompletion: true, needsIdentityVerification: false }),
+    }));
+    render(<LoginPage />);
+    const initialize = vi.mocked(window.google!.accounts.id.initialize);
+    const config = initialize.mock.calls[0][0];
+    await config.callback({ credential: 'test-google' });
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(
+      '/agent/auth/signup?role=seeker&social=true&redirect=%2Fstay%2Frequests'
+    ));
+  });
+});
+
 describe('existing email login STAY redirect', () => {
+  it.each([
+    { needsProfileCompletion: true, needsIdentityVerification: true },
+    { needsProfileCompletion: null, needsIdentityVerification: true },
+    { needsProfileCompletion: true, needsIdentityVerification: false },
+  ])('honors server completion state %j and preserves STAY', async (state) => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => state } as Response);
+    setLoginUrl('/stay/owner#assisted-registration');
+    renderLogin('employer');
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(
+      '/agent/auth/signup?role=employer&social=true&redirect=%2Fstay%2Fowner%23assisted-registration'
+    ));
+    expect(fetch).toHaveBeenCalledWith('/api/auth/ensure-user', {
+      method: 'POST', headers: { Authorization: 'Bearer email-test' },
+    });
+  });
+  it('does not forward unsafe redirects to completion', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ needsIdentityVerification: true }) } as Response);
+    setLoginUrl('//evil.example/stay');
+    renderLogin();
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith('/agent/auth/signup?role=seeker&social=true'));
+  });
+  it('does not redirect when the profile check fails', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
+    renderLogin();
+    await screen.findByText('사용자 정보 처리에 실패했습니다.');
+    expect(mocks.replace).not.toHaveBeenCalled();
+  });
   it('honors a same-origin STAY destination including its fragment', async () => {
     setLoginUrl('/stay/owner#assisted-registration');
     renderLogin();

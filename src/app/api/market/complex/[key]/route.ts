@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { readTransactionPages, transactionMetadata } from '@/lib/market/transactionData';
+import { koreanDate, marketMonthsAgo, marketMonthEnd } from '@/lib/market/types';
 
 interface RawTx {
+  id: number;
+  fetched_at: string | null;
   deal_date: string;
   price_manwon: number | null;
   deposit_manwon: number | null;
@@ -30,26 +34,30 @@ export async function GET(
   const months = RANGE_MONTHS[range] ?? 6;
 
   try {
+    const now = new Date();
+    const sinceStr = marketMonthsAgo(months, now);
+    const untilStr = koreanDate(now);
     // 월별 집계 (기간 범위) — complex_aggregates Materialized View
-    const { data: monthly } = await supabaseAdmin
+    const { data: monthly, error: monthlyError } = await supabaseAdmin
       .from('complex_aggregates')
       .select('*')
       .eq('complex_key', complex_key)
       .order('ym', { ascending: false })
+      .order('property_type', { ascending: true })
       .limit(months);
+    if (monthlyError) throw new Error(monthlyError.message);
 
     // 기간 범위 거래 raw (매매 + 전세 분리 집계용)
-    const sinceDate = new Date();
-    sinceDate.setMonth(sinceDate.getMonth() - months);
-    const sinceStr = sinceDate.toISOString().slice(0, 10);
-
-    const { data: allTxs } = await supabaseAdmin
+    const allTxs = await readTransactionPages<RawTx>((from, to) => supabaseAdmin
       .from('price_transactions')
-      .select('deal_date, price_manwon, deposit_manwon, monthly_manwon, exclusive_area, floor, deal_type, cancel_yn, complex_name, dong, lawd_cd')
+      .select('id, fetched_at, deal_date, price_manwon, deposit_manwon, monthly_manwon, exclusive_area, floor, deal_type, cancel_yn, complex_name, dong, lawd_cd')
       .eq('complex_key', complex_key)
       .gte('deal_date', sinceStr)
+      .lte('deal_date', untilStr)
       .eq('cancel_yn', false)
-      .order('deal_date', { ascending: false }) as { data: RawTx[] | null };
+      .order('deal_date', { ascending: false })
+      .order('id', { ascending: false })
+      .range(from, to));
 
     // 단지 마스터 (좌표 + 메타) — 마이그 미적용 시 graceful
     let complex_meta: {
@@ -376,6 +384,12 @@ export async function GET(
     const lease_ratio = (tradeAvg > 0 && rentAvg > 0) ? Math.round((rentAvg / tradeAvg) * 1000) / 10 : null;
 
     return NextResponse.json({
+      metadata: transactionMetadata(allTxs, { source: 'price_transactions', periodStart: sinceStr, periodEnd: untilStr }),
+      monthlyMetadata: transactionMetadata([], {
+        source: 'complex_aggregates',
+        periodStart: monthly?.length ? monthly[monthly.length - 1].ym : null,
+        periodEnd: monthly?.[0]?.ym ? marketMonthEnd(monthly[0].ym, now) : null,
+      }),
       complex_key,
       complex_name: monthly?.[0]?.complex_name || allTxs?.[0]?.complex_name || null,
       dong: allTxs?.[0]?.dong || null,

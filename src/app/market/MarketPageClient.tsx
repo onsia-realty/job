@@ -6,8 +6,9 @@ import Script from 'next/script';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, MapPin, TrendingUp, TrendingDown, BarChart3, Coins, Ruler, Crown, Building2, Filter, Store, Briefcase, X, SlidersHorizontal } from 'lucide-react';
-import type { MapComplexPoint, DealTypeFilter, MarkerMode, RouteOverlay } from '@/components/market/MarketMap.client';
-import ComplexListPanel from '@/components/market/ComplexListPanel';
+import type { DealTypeFilter, MarkerMode, RouteOverlay } from '@/components/market/MarketMap.client';
+import ComplexListPanel, { type MarketListPoint } from '@/components/market/ComplexListPanel';
+import { combineMarketMetadata, type MarketMetadata } from '@/components/market/MarketDataNotice';
 import ComplexDetailView from '@/components/market/ComplexDetailView';
 import BottomSheet, { type SheetSnap } from '@/components/market/BottomSheet';
 import MarketFilterSheet from '@/components/market/MarketFilterSheet';
@@ -91,12 +92,15 @@ export default function MarketPageClient() {
   const [householdBand, setHouseholdBand] = useState<HouseholdBand>(() =>
     validBand(searchParams.get('hhld'), HOUSEHOLD_OPTIONS, 'all'),
   );
-  const [points, setPoints] = useState<MapComplexPoint[]>([]);
+  const [points, setPoints] = useState<MarketListPoint[]>([]);
   // complex_key → 법정동명 (동 집계 마커용 — 거래 데이터에서 수집)
   const [dongByKey, setDongByKey] = useState<Record<string, string | null>>({});
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [metadata, setMetadata] = useState<MarketMetadata | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const [selectedKey, setSelectedKey] = useState<string | null>(() => searchParams.get('sel') || null);
-  const [indicatorMetric, setIndicatorMetric] = useState<IndicatorMetric | null>('rise'); // 기본 열림 (최근상승부터)
+  const [indicatorMetric, setIndicatorMetric] = useState<IndicatorMetric | null>(null);
 
   // 줌 레벨별 마커 모드 (idle 콜백에서 갱신)
   const [markerMode, setMarkerMode] = useState<MarkerMode>(() => modeForZoom(zoom));
@@ -121,7 +125,7 @@ export default function MarketPageClient() {
   const { data: jobs = [] } = useJobsNearby(lawd_cd, showJobs);
 
   // 구(시군구) 집계 — 줌아웃 시에만 fetch (React Query 1시간 캐시)
-  const { data: guAggregates = [] } = useGuAggregates(property_type, markerMode === 'gu');
+  const { data: guAggregates = [], metadata: guMetadata } = useGuAggregates(property_type, markerMode === 'gu');
 
   // 동(洞) 집계 — viewport 단지 클라이언트 집계 (bounds 캡 500단지 기준)
   const dongAggregates = useMemo(
@@ -198,10 +202,18 @@ export default function MarketPageClient() {
 
   useEffect(() => {
     // 구 집계 모드에서는 bounds 거래 조회 생략 (서버 집계 API만 사용 — 네트워크 절약)
-    if (markerMode === 'gu') return;
+    if (markerMode === 'gu') {
+      setMetadata(null);
+      setPoints([]);
+      setDongByKey({});
+      setLoadError(false);
+      setLoading(false);
+      return;
+    }
     loadData(lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand, markerMode]);
+    const requestSequence = loadSeqRef.current;
+    return () => { loadSeqRef.current = requestSequence + 1; };
+  }, [lawd_cd, boundsStr, property_type, dealType, areaBand, ageBand, householdBand, markerMode, retryCount]);
 
   const loadData = async (
     lc: string,
@@ -214,6 +226,10 @@ export default function MarketPageClient() {
   ) => {
     const seq = ++loadSeqRef.current;
     setLoading(true);
+    setLoadError(false);
+    setMetadata(null);
+      setPoints([]);
+    setDongByKey({});
     try {
       type Tx = {
         complex_key: string;
@@ -230,6 +246,7 @@ export default function MarketPageClient() {
 
       // 집 마커가 매매+전세를 병기하므로 trade/rent를 항상 함께 fetch. 분양권 탭이면 +1.
       const apiDeals = dt === 'presale' ? ['trade', 'rent', 'presale_resale'] : ['trade', 'rent'];
+      const metadataParts: (MarketMetadata | undefined)[] = [];
       const complex_coords: Record<string, CoordEntry> = {};
       const txsByDeal: Record<string, Tx[]> = {};
 
@@ -237,8 +254,9 @@ export default function MarketPageClient() {
         // bounds 모드 우선, 미설정(초기 마운트) 시 lawd_cd 안전망 (최근 3개월 순차)
         if (bStr) {
           const res = await fetch(`/api/market/transactions?bounds=${bStr}&type=${pt}&deal=${apiDeal}&months=6`);
-          if (!res.ok) return [];
+          if (!res.ok) throw new Error(`Transaction request failed: ${res.status}`);
           const data = await res.json();
+          metadataParts.push(data.metadata);
           Object.assign(complex_coords, data.complex_coords || {});
           return (data.transactions || []) as Tx[];
         }
@@ -247,8 +265,9 @@ export default function MarketPageClient() {
           const d = new Date(now.getFullYear(), now.getMonth() - lag, 1);
           const ym = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
           const res = await fetch(`/api/market/transactions?lawd_cd=${lc}&ym=${ym}&type=${pt}&deal=${apiDeal}`);
-          if (!res.ok) continue;
+          if (!res.ok) throw new Error(`Transaction request failed: ${res.status}`);
           const data = await res.json();
+          metadataParts.push(data.metadata);
           const arr = (data.transactions || []) as Tx[];
           if (arr.length > 0) {
             Object.assign(complex_coords, data.complex_coords || {});
@@ -355,7 +374,7 @@ export default function MarketPageClient() {
 
       // 표시 단지 = 현재 탭 거래가 있고 좌표가 있는 단지. 세대수 필터는 단지 단위.
       const dongMap: Record<string, string | null> = {};
-      const pts: MapComplexPoint[] = Array.from(map.entries())
+      const pts: MarketListPoint[] = Array.from(map.entries())
         .filter(([key, v]) => {
           if (v.primary.length === 0) return false;
           const real = complex_coords[key];
@@ -375,6 +394,7 @@ export default function MarketPageClient() {
             avg_trade_manwon: avg(v.trades),
             avg_jeonse_manwon: avg(v.jeonses),
             latest_price_manwon: v.latestPrice,
+            latest_deal_date: v.latestDate || undefined,
             latest_monthly_manwon: v.latestMonthly,
             rep_area: median(v.primaryAreas),
             trade_count: v.primary.length,
@@ -383,11 +403,16 @@ export default function MarketPageClient() {
         });
 
       if (seq !== loadSeqRef.current) return; // 더 최신 요청이 있으면 이 결과는 폐기
+      setMetadata(combineMarketMetadata(metadataParts));
       setPoints(pts);
       setDongByKey(dongMap);
     } catch (e) {
+      if (seq !== loadSeqRef.current) return;
       console.error('[market] load error:', e);
-      if (seq === loadSeqRef.current) setPoints([]);
+      setMetadata(null);
+      setPoints([]);
+      setDongByKey({});
+      setLoadError(true);
     } finally {
       if (seq === loadSeqRef.current) setLoading(false);
     }
@@ -411,6 +436,7 @@ export default function MarketPageClient() {
 
   // 단지 선택 (마커/리스트/검색) — 모바일은 시트 half로 올림
   const handleSelect = useCallback((key: string) => {
+    setIndicatorMetric(null);
     setSelectedKey(key);
     setSheetSnap((s) => (s === 'peek' ? 'half' : s));
   }, []);
@@ -477,25 +503,33 @@ export default function MarketPageClient() {
   // 사이드 패널 내용 (데스크탑 좌측 / 모바일 바텀시트 공용)
   const sidePanelContent = selectedKey ? (
     <ComplexDetailView
+      key={selectedKey}
       complexKey={selectedKey}
       point={selectedPoint}
       dealType={dealType}
       onClose={() => setSelectedKey(null)}
       onShowRoute={handleShowRoute}
     />
+  ) : loadError ? (
+    <div role="alert" className="p-6 text-sm text-market-text">
+      <p>거래 데이터를 불러오지 못했습니다. 매매·전월세 참고 데이터도 함께 확인해야 표시할 수 있습니다.</p>
+      <button type="button" className="mt-3 underline" onClick={() => setRetryCount((n) => n + 1)}>다시 시도</button>
+    </div>
   ) : (
     <ComplexListPanel
+      metadata={markerMode === 'gu' ? guMetadata : loading ? null : metadata}
       points={points}
       dealType={dealType}
       loading={loading}
       markerMode={markerMode}
+      mixedArea={areaBand === 'all'}
       selectedKey={selectedKey}
       onSelect={handleListSelect}
     />
   );
 
   return (
-    <div className="relative h-screen flex flex-col bg-market-bg font-jakarta">
+    <div className="relative h-dvh min-h-0 min-w-0 w-full flex flex-col bg-market-bg font-jakarta">
       {NAVER_CLIENT_ID && (
         // ⚠️ 파라미터는 ncpKeyId — ncpClientId는 deprecated로 silent fail (라이브 검증 완료 파라미터)
         <Script
@@ -504,8 +538,8 @@ export default function MarketPageClient() {
         />
       )}
       {/* 헤더 */}
-      <header className="bg-market-surface/95 backdrop-blur border-b border-market-border sticky top-0 z-20">
-        <div className="px-4 py-3 flex items-center gap-3">
+      <header className="min-w-0 shrink-0 bg-market-surface/95 backdrop-blur border-b border-market-border sticky top-0 z-20">
+        <div className="px-3 md:px-4 py-3 flex flex-wrap md:flex-nowrap items-center gap-2 md:gap-3 min-w-0">
           <Link
             href="/"
             className="p-2 rounded-lg hover:bg-market-surface-2 text-market-text-mute transition-colors"
@@ -517,7 +551,7 @@ export default function MarketPageClient() {
             <MapPin className="w-4 h-4 text-deal-trade" />
             시세·거래량 지도
           </h1>
-          <div className="flex-1 flex justify-center px-2 max-w-md mx-auto">
+          <div className="order-last md:order-none w-full md:w-auto md:flex-1 min-w-0 flex justify-center md:max-w-md mx-auto">
             <MarketSearch onSelect={handleSearchSelect} />
           </div>
           <Link
@@ -537,7 +571,11 @@ export default function MarketPageClient() {
             return (
               <button
                 key={metric}
-                onClick={() => setIndicatorMetric(on ? null : metric)}
+                aria-pressed={on}
+                onClick={() => {
+                  setIndicatorMetric(on ? null : metric);
+                  if (!on) setSheetSnap('half');
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold text-xs whitespace-nowrap flex-shrink-0 transition-colors border ${
                   on ? 'bg-market-text text-white border-transparent shadow-sm' : 'bg-market-surface-2 hover:bg-market-border text-market-text border-market-border'
                 }`}
@@ -551,7 +589,7 @@ export default function MarketPageClient() {
       </header>
 
       {/* 필터바 — 1줄 (지역 칩 제거: 지도 이동 기반) */}
-      <div className="bg-market-surface border-b border-market-border">
+      <div className="min-w-0 shrink-0 bg-market-surface border-b border-market-border">
         <div className="px-4 py-2.5 flex items-center gap-2 overflow-x-auto scrollbar-hide">
           <Filter className="w-3.5 h-3.5 text-market-text-faint flex-shrink-0 hidden md:block" />
           {/* 거래 유형 */}
@@ -620,20 +658,20 @@ export default function MarketPageClient() {
             </LayerToggle>
             <div className="hidden md:flex text-[11px] text-market-text-faint items-center gap-1 tabular-nums pl-1">
               <Building2 className="w-3 h-3" />
-              {loading ? '로딩' : `${points.length}개 단지`}
+              {loading ? '로딩' : loadError ? '거래 데이터 조회 실패' : `${points.length}개 단지`}
             </div>
           </div>
         </div>
       </div>
 
       {/* 메인 영역: 데스크탑 좌측 패널 1개 + 지도 최대화 / 모바일 지도 + 바텀시트 */}
-      <div className="flex-1 flex relative overflow-hidden">
+      <div className="flex-1 min-h-0 min-w-0 flex relative overflow-hidden [contain:layout]">
         {/* 데스크탑 좌측 통합 패널 — 미선택: 단지 리스트 / 선택: 상세+차트 */}
         <aside className="hidden md:flex md:w-[400px] md:flex-col md:border-r md:border-market-border md:bg-market-surface md:shadow-sm flex-shrink-0 overflow-hidden">
           {sidePanelContent}
         </aside>
 
-        {/* 부인 시세자료 지표 — 단지목록 옆 도킹 패널 (항상 표시, X로 닫기). 항목 클릭 시 지도 이동 */}
+        {/* 요청한 지표만 데스크톱 도킹 패널에 표시 */}
         {indicatorMetric && (
           <div className="hidden md:flex md:w-[360px] md:flex-col md:border-r md:border-market-border flex-shrink-0 overflow-hidden">
             <MarketIndicatorPanel
@@ -647,10 +685,19 @@ export default function MarketPageClient() {
 
         {/* 지도 영역 */}
         <div className="flex-1 relative min-w-0">
+          {markerMode === 'complex' && mapPoints.length < points.length && (
+            <div className="absolute top-2 left-2 right-2 z-10 pointer-events-none text-center text-[11px]">
+              <span className="inline-block rounded-lg bg-market-surface/95 px-3 py-2 text-market-text shadow">
+                목록 {points.length}개 중 지도 {mapPoints.length}개 표시 · 확대하면 더 볼 수 있습니다
+              </span>
+            </div>
+          )}
           <MarketMap
             center={center}
             zoom={zoom}
             points={mapPoints}
+            loading={loading}
+            error={loadError}
             onSelect={handleSelect}
             selectedKey={selectedKey}
             dealType={dealType}
@@ -708,25 +755,34 @@ export default function MarketPageClient() {
           snap={sheetSnap}
           onSnapChange={setSheetSnap}
           peekContent={
-            selectedKey && selectedPoint ? (
+            indicatorMetric ? (
+              <div className="text-sm font-semibold text-market-text">{INDICATOR_CHIPS.find((chip) => chip.metric === indicatorMetric)?.label} 지표 · 펼쳐 보기</div>
+            ) : selectedKey && selectedPoint ? (
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
                   <div className="text-sm font-bold text-market-text truncate">{selectedPoint.complex_name}</div>
                   <div className="text-[11px] text-market-text-mute tabular-nums">거래 {selectedPoint.trade_count}건</div>
                 </div>
                 <div className="text-lg font-extrabold text-market-text tabular-nums flex-shrink-0">
-                  {formatKoreanPrice(selectedPoint.avg_price_manwon, 'compact')}
+                  평균 약 {formatKoreanPrice(selectedPoint.avg_price_manwon, 'compact')}
                 </div>
               </div>
             ) : (
               <div className="flex items-center gap-1.5 text-sm font-semibold text-market-text">
                 <Building2 className="w-4 h-4 text-market-text-mute" />
-                지도 내 단지 <span className="tabular-nums">{loading ? '…' : points.length.toLocaleString()}</span>개
+                {loadError ? '거래 데이터 조회 실패' : <>지도 내 단지 <span className="tabular-nums">{loading ? '…' : points.length.toLocaleString()}</span>개</>}
               </div>
             )
           }
         >
-          {sidePanelContent}
+          {indicatorMetric ? (
+            <MarketIndicatorPanel
+              metric={indicatorMetric}
+              onMetricChange={setIndicatorMetric}
+              onClose={() => { setIndicatorMetric(null); setSelectedKey(null); }}
+              onSelectComplex={handleIndicatorSelect}
+            />
+          ) : sidePanelContent}
         </BottomSheet>
       </div>
 

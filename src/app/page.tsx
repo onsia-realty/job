@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import Footer from '@/components/shared/Footer';
 import AnnouncementSlider from '@/components/home/AnnouncementSlider';
 import ServiceCard from '@/components/home/ServiceCard';
+import HomeJourneys from '@/components/home/HomeJourneys';
 
 // 뉴스 타입 정의
 interface NewsItem {
@@ -198,7 +199,9 @@ export default function LandingPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-8 lg:py-12">
-        {/* 히어로 섹션 - 슬라이더 */}
+        <HomeJourneys stayEnabled={STAY_ENABLED} />
+
+        {/* 공지 및 광고 안내 */}
         <section className="mb-10 lg:mb-16">
           <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-stretch">
             <AnnouncementSlider items={announcements} />
@@ -213,24 +216,24 @@ export default function LandingPage() {
                     <p className="text-cyan-400 text-sm font-medium mb-2">PREMIUM</p>
                     <h3 className="text-xl font-bold mb-2">프리미엄 채용공고</h3>
                     <p className="text-gray-400 text-sm leading-relaxed">
-                      상위 노출로 최고의 인재를<br />
-                      빠르게 만나보세요
+                      채용 목적에 맞는 광고 등급과<br />
+                      노출 기간을 확인하세요
                     </p>
                   </div>
                   <div className="space-y-3 mt-4">
                     <div className="flex items-center gap-2 text-sm text-gray-300">
                       <Sparkles className="w-4 h-4 text-yellow-400" />
-                      <span>최대 1주일 상위 노출</span>
+                      <span>상품별 노출 기간 선택</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-gray-300">
                       <TrendingUp className="w-4 h-4 text-green-400" />
-                      <span>조회수 최대 5배 증가</span>
+                      <span>등급별 배지와 강조 디자인</span>
                     </div>
                     <Link
                       href="/premium"
                       className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl text-center font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
                     >
-                      광고 문의하기
+                      광고 상품 보기
                     </Link>
                   </div>
                 </div>
@@ -247,7 +250,7 @@ export default function LandingPage() {
               <ServiceCard href="/agent/jobs" img="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop" title="공인중개사" desc="중개사무소 구인구직" Icon={Building2} accent="bg-cyan-400" className="flex md:hidden" />
               <ServiceCard href="/agent" img="https://images.unsplash.com/photo-1560518883-ce09059eeffa?w=400&h=300&fit=crop" title="공인중개사" desc="중개사무소 구인구직" Icon={Building2} accent="bg-cyan-400" className="hidden md:flex" />
               <ServiceCard href="/sales" img="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=400&h=300&fit=crop" title="분양상담사" desc="분양현장 구인구직" Icon={HardHat} accent="bg-blue-400" className="flex" />
-              {STAY_ENABLED && <ServiceCard href="/stay" img="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop" title="단기임대" desc="검증된 안심 단기임대" Icon={Home} accent="bg-emerald-400" className="flex" />}
+              {STAY_ENABLED && <ServiceCard href="/stay" img="https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=400&h=300&fit=crop" title="단기임대" desc="머물 공간 찾기" Icon={Home} accent="bg-emerald-400" className="flex" />}
             </div>
               {/* 플랫폼 소개 배너 - 모바일 전용 */}
               <Link
@@ -312,24 +315,24 @@ export default function LandingPage() {
                 <p className="text-cyan-400 text-sm font-medium mb-2">PREMIUM</p>
                 <h3 className="text-xl font-bold mb-2">프리미엄 채용공고</h3>
                 <p className="text-gray-400 text-sm leading-relaxed">
-                  상위 노출로 최고의 인재를<br />
-                  빠르게 만나보세요
+                  채용 목적에 맞는 광고 등급과<br />
+                  노출 기간을 확인하세요
                 </p>
               </div>
               <div className="space-y-3 mt-4">
                 <div className="flex items-center gap-2 text-sm text-gray-300">
                   <Sparkles className="w-4 h-4 text-yellow-400" />
-                  <span>최대 1주일 상위 노출</span>
+                  <span>상품별 노출 기간 선택</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-300">
                   <TrendingUp className="w-4 h-4 text-green-400" />
-                  <span>조회수 최대 5배 증가</span>
+                  <span>등급별 배지와 강조 디자인</span>
                 </div>
                 <Link
                   href="/premium"
                   className="block w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl text-center font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
                 >
-                  광고 문의하기
+                  광고 상품 보기
                 </Link>
               </div>
             </div>

@@ -11,6 +11,13 @@ function dates() {
 }
 afterEach(() => vi.useRealTimers());
 describe('host quote', () => {
+  it('replaces demo date inquiry with a sample explanation and registration link', () => {
+    render(<StayHostQuote stay={{ ...stay, id: '5eed0000-0000-4000-8000-000000000001' }} />);
+    expect(screen.getByText('샘플 매물')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '호스트로 내 매물 등록하기' })).toHaveAttribute('href', '/stay/new');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('inquiry-context')).not.toBeInTheDocument();
+  });
   it('quotes a week excluding deposit and resets inquiry after changing dates', () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-15T00:00:00Z'));
     render(<StayHostQuote stay={stay} />);

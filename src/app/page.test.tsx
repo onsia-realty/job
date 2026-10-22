@@ -36,11 +36,20 @@ describe('home page functionality', () => {
     const services = container.querySelector('[aria-label="서비스 선택"]') as HTMLElement;
     const links = within(services).getAllByRole('link');
     expect(links.map((link) => link.getAttribute('href'))).toEqual(stayEnabled ? ['/agent/jobs', '/agent', '/sales', '/stay'] : ['/agent/jobs', '/agent', '/sales']);
-    expect(container.querySelectorAll('a[href="/stay"]')).toHaveLength(stayEnabled ? 2 : 0);
+    expect(container.querySelectorAll('a[href="/stay"]')).toHaveLength(stayEnabled ? 3 : 0);
     expect(screen.getByRole('link', { name: '로그인' })).toHaveAttribute('href', '/agent/auth/login');
-    expect(container.querySelectorAll('a[href="/premium"]')).toHaveLength(2);
+    expect(container.querySelectorAll('a[href="/premium"]')).toHaveLength(3);
     expect(container.querySelector('video')).toHaveAttribute('src', 'https://pkbnudkbkhzqjhwffkbj.supabase.co/storage/v1/object/public/job-images/videos/intro-main.mp4');
     expect(container.querySelector('a button')).toBeNull();
+    const journeys = screen.getByRole('region', { name: '다음 일터를 찾고, 함께할 사람을 만나다.' });
+    expect(within(journeys).getAllByRole('link').map(link => link.getAttribute('href'))).toEqual([
+      '/agent/jobs', '/sales/jobs', '/agent/jobs/new', '/sales/jobs/new', '/premium',
+      ...(stayEnabled ? ['/stay', '/stay/new'] : []),
+    ]);
+    expect(container.querySelectorAll('a[href="/stay/new"]')).toHaveLength(stayEnabled ? 1 : 0);
+    expect(container.textContent).not.toMatch(/조회수.*5배|최대 1주일|검증된 안심/);
+    expect(journeys.compareDocumentPosition(screen.getByRole('region', { name: '서비스와 소개 영상' })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
   });
 
   it('keeps API news and toon destinations, external-link safety and the news cache', async () => {

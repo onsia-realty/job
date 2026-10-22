@@ -6,6 +6,8 @@
 // 로그인한 게스트의 문의를 저장하고 문의함에서 답변을 확인한다.
 
 import { useState } from 'react';
+import { isDemoStay } from '@/lib/stay/demo';
+import StayDemoNotice from './StayDemoNotice';
 import Link from 'next/link';
 import StayInquiryForm from './StayInquiryForm';
 import { MessageCircle, Phone, ShieldCheck } from 'lucide-react';
@@ -36,6 +38,7 @@ export default function StayInquiryBar({
   variant: 'sidebar' | 'mobile';
 }) {
   const [notice, setNotice] = useState<string | null>(null);
+  if (isDemoStay(stayId)) return <div className={variant === 'mobile' ? 'lg:hidden' : ''}><StayDemoNotice /></div>;
 
   const isOwner = ownerType === 'owner';
   const primaryLabel = isOwner ? '호스트에게 문의' : '입주 문의';

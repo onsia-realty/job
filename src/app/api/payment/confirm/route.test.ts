@@ -32,7 +32,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv('TOSS_SECRET_KEY', 'secret');
   vi.stubEnv('TOSS_WEBHOOK_SECRET', '');
-  mock.tables = { payment_orders: [order()], payments: [], jobs: [{ id: jobId, user_id: 'user-a', category: 'agent', title: 'Job' }] };
+  mock.tables = { payment_orders: [order()], payments: [], jobs: [{ id: jobId, user_id: 'user-a', category: 'agent', title: 'Job', is_active: true, is_approved: true, deadline: null }] };
   mock.errors = {};
   mock.beforeUpdate = null;
   mock.getUser.mockResolvedValue({ data: { user: { id: 'user-a' } } });
@@ -65,7 +65,7 @@ describe('server payment orders', () => {
     expect((await orders(request(payload))).status).toBe(400);
     expect(fetch).not.toHaveBeenCalled();
   });
-  it('creates a VAT-inclusive immutable server snapshot with independent UUIDs', async () => {
+  it('creates a VAT-inclusive immutable server snapshot for an approved active job with independent UUIDs', async () => {
     const response = await orders(request({ productKey: 'agent-basic', jobId }));
     const json = await response.json();
     expect(response.status).toBe(200);
@@ -74,26 +74,78 @@ describe('server payment orders', () => {
     expect(json.data).not.toHaveProperty('idempotency_key');
     expect(json.data).not.toHaveProperty('user_id');
   });
-  it('preserves prepayment without a job', async () => {
-    expect((await orders(request({ productKey: 'agent-basic' }))).status).toBe(200);
-    expect(mock.tables.payment_orders[1].job_id).toBeNull();
+  it.each([undefined, null, '', '   ', 'invalid', 1])('rejects missing or invalid target %j without inserting', async jobId => {
+    expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(400);
+    expect(mock.tables.payment_orders).toHaveLength(1);
+    expect(mock.from).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+  it('rejects a nonexistent job without inserting', async () => {
+    mock.tables.jobs = [];
+    expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(404);
+    expect(mock.tables.payment_orders).toHaveLength(1);
+  });
+  it.each([{ is_active: false }, { is_active: null }, { deadline: '2000-01-01' }])('rejects an ineligible job %j', async patch => {
+    Object.assign(mock.tables.jobs[0], patch);
+    expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(400);
+    expect(mock.tables.payment_orders).toHaveLength(1);
+  });
+  it('fails closed on job lookup failure', async () => {
+    mock.errors.jobs = new Error('unavailable');
+    expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(503);
+    expect(mock.tables.payment_orders).toHaveLength(1);
+  });
+  it.each([false, null, undefined])('rejects an active unapproved job (%s) before order insertion or provider calls', async is_approved => {
+    mock.tables.jobs[0].is_approved = is_approved;
+    const response = await orders(request({ productKey: 'agent-basic', jobId }));
+    expect(response.status).toBe(400);
+    expect((await response.json()).message).toContain('승인된 활성 공고');
+    expect(mock.tables.payment_orders).toHaveLength(1);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mock.rpc).not.toHaveBeenCalled();
+  });
+  it('keeps DIA disabled even with an owned eligible sales job', async () => {
+    mock.tables.jobs[0].category = 'sales';
+    expect((await orders(request({ productKey: 'sales-dia', jobId }))).status).toBe(400);
+    expect(mock.tables.payment_orders).toHaveLength(1);
   });
   it('rejects another owner', async () => {
     mock.tables.jobs[0].user_id = 'other';
     expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(403);
+    expect(mock.tables.payment_orders).toHaveLength(1);
   });
   it('rejects category mismatch', async () => {
     mock.tables.jobs[0].category = 'sales';
     expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(400);
+    expect(mock.tables.payment_orders).toHaveLength(1);
   });
   it('fails closed without order migration', async () => {
     mock.errors.payment_orders = new Error('missing relation');
-    expect((await orders(request({ productKey: 'agent-basic' }))).status).toBe(503);
+    expect((await orders(request({ productKey: 'agent-basic', jobId }))).status).toBe(503);
     expect(fetch).not.toHaveBeenCalled();
   });
 });
 
 describe('snapshot confirmation and recovery', () => {
+  it('preserves confirmation of an existing order even when its job is now unapproved', async () => {
+    mock.tables.jobs[0].is_approved = false;
+    expect((await confirm(request(body()))).status).toBe(200);
+    expect(mock.rpc).toHaveBeenCalledWith('apply_payment_order', expect.anything());
+  });
+  it('still confirms an existing unattached order', async () => {
+    Object.assign(mock.tables.payment_orders[0], { job_id: null, job_id_snapshot: null });
+    const response = await confirm(request(body()));
+    expect(response.status).toBe(200);
+    expect((await response.json()).data.jobId).toBeNull();
+    expect(mock.rpc).toHaveBeenCalledWith('apply_payment_order', expect.anything());
+  });
+  it('still recovers an unattached paid legacy record without provider approval', async () => {
+    mock.tables.payment_orders = [];
+    mock.tables.payments = [{ payment_id: 'key', user_id: 'user-a', amount: 5390, payment_status: 'completed', job_id: null, job_id_snapshot: null }];
+    expect((await confirm(request(body()))).status).toBe(200);
+    expect(mock.recompute).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
   it('requires authentication', async () => expect((await confirm(request(body(), false))).status).toBe(401));
   it('rejects unknown orders before provider approval', async () => {
     mock.tables.payment_orders = [];

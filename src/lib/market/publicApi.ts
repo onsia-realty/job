@@ -124,36 +124,85 @@ export interface MolitFetchParams {
   lawd_cd: string;                 // 5자리
   deal_ymd: string;                // YYYYMM
   num_of_rows?: number;            // default 1000
-  page_no?: number;                // default 1
+  page_no?: number;                // default 1; explicit start page fetches the remaining suffix
   service_key: string;             // decode된 키
 }
 
 export async function fetchMolit<T = unknown>(params: MolitFetchParams): Promise<T[]> {
   const { endpoint, lawd_cd, deal_ymd, num_of_rows = 1000, page_no = 1, service_key } = params;
-
-  const url = new URL(endpoint);
+  if (!Number.isSafeInteger(num_of_rows) || num_of_rows < 1 || num_of_rows > 1000 ||
+      !Number.isSafeInteger(page_no) || page_no < 1 || page_no > 20) {
+    throw new Error('MOLIT API invalid pagination parameters');
+  }
+  // Never propagate provider messages, fetch errors or URL constructor errors: they may contain keys.
+  let url: URL;
+  try { url = new URL(endpoint); } catch { throw new Error('MOLIT API invalid endpoint'); }
   url.searchParams.set('serviceKey', service_key);
   url.searchParams.set('LAWD_CD', lawd_cd);
   url.searchParams.set('DEAL_YMD', deal_ymd);
   url.searchParams.set('numOfRows', String(num_of_rows));
-  url.searchParams.set('pageNo', String(page_no));
-
-  const res = await fetch(url.toString(), {
-    // 국토부 API는 캐시를 Next fetch cache로
-    next: { revalidate: 3600 },
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      reject(new Error('MOLIT API timeout'));
+    }, 30_000);
   });
-
-  if (!res.ok) {
-    throw new Error(`MOLIT API error: ${res.status} ${res.statusText}`);
+  const collect = async (): Promise<T[]> => {
+    const rows: T[] = [];
+    const seenPages = new Set<string>();
+    let total: number | undefined;
+    for (let page = page_no; page <= 20; page++) {
+      if (controller.signal.aborted) throw new Error('MOLIT API timeout');
+      url.searchParams.set('pageNo', String(page));
+      const res = await fetch(url.toString(), {
+        next: { revalidate: 3600 }, signal: controller.signal,
+      });
+      if (!res.ok) throw new Error('MOLIT API HTTP failure');
+      const parsed = parseXmlResponse<PublicApiResponse<T>>(await res.text());
+      if (controller.signal.aborted) throw new Error('MOLIT API timeout');
+      if (!isSuccessResponse(parsed)) throw new Error('MOLIT API provider failure');
+      const body = parsed?.response?.body;
+      const count = molitCount(body?.totalCount);
+      if (molitCount(body?.pageNo) !== page || molitCount(body?.numOfRows) !== num_of_rows) {
+        throw new Error('MOLIT API inconsistent pagination');
+      }
+      if (count > 20_000 || Math.ceil(count / num_of_rows) > 20) {
+        throw new Error('MOLIT API pagination budget exceeded');
+      }
+      if (total !== undefined && total !== count) throw new Error('MOLIT API totalCount changed');
+      total = count;
+      const items = extractItems(parsed);
+      const expected = Math.min(num_of_rows, Math.max(0, count - (page - 1) * num_of_rows));
+      if (items.length !== expected || items.some(item => !item || typeof item !== 'object')) {
+        throw new Error('MOLIT API incomplete page');
+      }
+      // Sorting also catches a provider repeating a page in a different row order.
+      const fingerprint = JSON.stringify(items.map(item => JSON.stringify(item)).sort());
+      if (items.length && seenPages.has(fingerprint)) throw new Error('MOLIT API repeated page');
+      seenPages.add(fingerprint);
+      rows.push(...items);
+      if (page * num_of_rows >= count) return rows;
+    }
+    throw new Error('MOLIT API pagination budget exceeded');
+  };
+  try {
+    return await Promise.race([collect(), timeout]);
+  } catch {
+    // Fixed text only, including parser/network failures (no cause containing a request URL).
+    throw new Error(controller.signal.aborted ? 'MOLIT API timeout' : 'MOLIT API incomplete response');
+  } finally {
+    clearTimeout(timer);
+    controller.abort();
   }
+}
 
-  const xml = await res.text();
-  const parsed = parseXmlResponse<PublicApiResponse<T>>(xml);
-
-  if (!isSuccessResponse(parsed)) {
-    const msg = parsed?.response?.header?.resultMsg || 'Unknown error';
-    throw new Error(`MOLIT API failed: ${msg}`);
+function molitCount(value: unknown): number {
+  if (typeof value !== 'number' && (typeof value !== 'string' || !/^\d+$/.test(value))) {
+    throw new Error('MOLIT API invalid count');
   }
-
-  return extractItems(parsed);
+  const count = Number(value);
+  if (!Number.isSafeInteger(count) || count < 0) throw new Error('MOLIT API invalid count');
+  return count;
 }

@@ -17,6 +17,19 @@ function chain(result: object) {
 }
 beforeEach(() => { vi.clearAllMocks(); mocks.user.mockResolvedValue({ id: 'guest' }); mocks.admin.mockResolvedValue(false); });
 describe('stay inquiry boundaries', () => {
+  it.each(Array.from({ length: 12 }, (_, i) => `5eed0000-0000-4000-8000-0000000000${String(i + 1).padStart(2, '0')}`))('rejects demo %s before any DB access', async id => {
+    const response = await POST(request('POST', { ...inquiry, stay_id: id }));
+    expect(response.status).toBe(403);
+    expect((await response.json()).error).toContain('샘플');
+    expect(mocks.from).not.toHaveBeenCalled();
+  });
+  it.each([stayId, '5eed0000-0000-4000-8000-000000000013'])('preserves real listing inquiry creation for %s', async id => {
+    const insert = vi.fn().mockResolvedValue({ error: null });
+    mocks.from.mockReturnValueOnce(chain({ data: { id, user_id: 'host', is_active: true, is_approved: true, status: 'available' }, error: null }))
+      .mockReturnValueOnce(chain({ count: 0, error: null })).mockReturnValueOnce({ insert });
+    expect((await POST(request('POST', { ...inquiry, stay_id: id }))).status).toBe(201);
+    expect(insert).toHaveBeenCalledWith({ stay_id: id, guest_id: 'guest', host_id: 'host', message: inquiry.message });
+  });
   it('requires authentication for every action', async () => {
     mocks.user.mockResolvedValue(null);
     expect((await GET(request('GET'))).status).toBe(401);

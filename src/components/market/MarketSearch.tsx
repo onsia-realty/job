@@ -32,12 +32,9 @@ export default function MarketSearch({ onSelect }: Props) {
     return () => clearTimeout(t);
   }, [q]);
 
-  const { data: results = [], isFetching: loading } = useMarketSearch(debouncedQ);
-
-  // 검색 결과 도착 시 드롭다운 열기
-  useEffect(() => {
-    if (debouncedQ && results.length > 0) setOpen(true);
-  }, [debouncedQ, results.length]);
+  const { data: results = [], isFetching, isError, refetch } = useMarketSearch(debouncedQ);
+  const loading = q.trim() !== debouncedQ || isFetching;
+  const visibleResults = loading || isError ? [] : results;
 
   // 외부 클릭 시 닫기
   useEffect(() => {
@@ -51,19 +48,22 @@ export default function MarketSearch({ onSelect }: Props) {
   }, []);
 
   return (
-    <div ref={wrapRef} className="relative w-full max-w-[280px]">
+    <div ref={wrapRef} className="relative min-w-0 w-full md:max-w-[280px]">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-market-text-faint" />
         <input
           type="text"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onFocus={() => results.length > 0 && setOpen(true)}
+          aria-label="단지명 검색"
+          onChange={(e) => { setQ(e.target.value); setOpen(true); }}
+          onFocus={() => q.trim() && setOpen(true)}
+          onKeyDown={(e) => { if (e.key === 'Escape') setOpen(false); }}
           placeholder="단지명 검색 (예: 래미안)"
           className="w-full pl-9 pr-8 py-1.5 text-xs bg-market-surface-2 border border-transparent rounded-full focus:outline-none focus:bg-market-surface focus:border-market-border placeholder:text-market-text-faint text-market-text"
         />
         {q && (
           <button
+            aria-label="검색어 지우기"
             onClick={() => { setQ(''); setDebouncedQ(''); setOpen(false); }}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-market-text-faint hover:text-market-text"
           >
@@ -72,17 +72,23 @@ export default function MarketSearch({ onSelect }: Props) {
         )}
       </div>
 
-      {open && q && (
+      {open && q.trim() && (
         <div className="absolute top-full left-0 right-0 mt-1.5 bg-market-surface border border-market-border rounded-xl shadow-xl z-40 max-h-[60vh] overflow-y-auto">
-          {loading && results.length === 0 && (
-            <div className="px-3 py-4 text-xs text-market-text-faint text-center">검색 중…</div>
+          {loading && (
+            <div role="status" className="px-3 py-4 text-xs text-market-text-faint text-center">검색 중…</div>
           )}
-          {!loading && results.length === 0 && (
-            <div className="px-3 py-4 text-xs text-market-text-faint text-center">
+          {!loading && isError && (
+            <div role="alert" className="px-3 py-4 text-xs text-center">
+              검색하지 못했습니다.
+              <button type="button" className="ml-2 underline" onClick={() => void refetch()}>다시 시도</button>
+            </div>
+          )}
+          {!loading && !isError && results.length === 0 && (
+            <div role="status" className="px-3 py-4 text-xs text-market-text-faint text-center">
               결과 없음
             </div>
           )}
-          {results.map((r) => {
+          {visibleResults.map((r) => {
             const noCoord = r.lat == null || r.lng == null;
             return (
               <button

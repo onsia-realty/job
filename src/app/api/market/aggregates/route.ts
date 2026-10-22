@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { readTransactionPages, transactionMetadata } from '@/lib/market/transactionData';
+import { marketMonthStart, marketMonthEnd } from '@/lib/market/types';
 
 /**
  * GET /api/market/aggregates?level=gu&type=apt
@@ -12,7 +14,7 @@ import { supabaseAdmin } from '@/lib/supabase-server';
  * 응답: { aggregates: [{ lawd_cd, name, sido, lat, lng, avg_price_manwon, trade_count, complex_count }] }
  */
 
-const PAGE = 1000;
+
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -20,28 +22,20 @@ export async function GET(req: NextRequest) {
 
   try {
     // 최근 3개월 (실거래 신고 지연 고려)
-    const since = new Date();
-    since.setMonth(since.getMonth() - 3);
-    since.setDate(1);
-    const sinceStr = since.toISOString().slice(0, 10);
+    const now = new Date();
+    const sinceStr = marketMonthStart(3, now);
+    const untilStr = marketMonthStart(0, now);
 
-    // MV 페이지 조회 (PostgREST aggregate 미지원 → 서버에서 집계)
-    type Row = { lawd_cd: string; avg_price_manwon: number | null; trade_count: number | null; complex_key: string };
-    const rows: Row[] = [];
-    for (let offset = 0; ; offset += PAGE) {
-      const { data, error } = await supabaseAdmin
-        .from('complex_aggregates')
-        .select('lawd_cd, avg_price_manwon, trade_count, complex_key')
-        .eq('property_type', type)
-        .gte('ym', sinceStr)
-        .range(offset, offset + PAGE - 1);
-      if (error) {
-        console.error('[market/aggregates] MV query error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
-      }
-      rows.push(...((data || []) as Row[]));
-      if (!data || data.length < PAGE) break;
-    }
+    type Row = { lawd_cd: string; avg_price_manwon: number | null; trade_count: number | null; complex_key: string; ym: string };
+    const rows = await readTransactionPages<Row>((from, to) => supabaseAdmin
+      .from('complex_aggregates')
+      .select('lawd_cd, avg_price_manwon, trade_count, complex_key, ym')
+      .eq('property_type', type)
+      .gte('ym', sinceStr)
+      .lte('ym', untilStr)
+      .order('ym', { ascending: false })
+      .order('complex_key', { ascending: true })
+      .range(from, to));
 
     // lawd_cd별 가중평균 (거래건수 가중) + 단지 수
     const byGu = new Map<string, { priceSum: number; count: number; complexes: Set<string> }>();
@@ -84,7 +78,7 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.trade_count - a.trade_count);
 
     return NextResponse.json(
-      { aggregates },
+      { aggregates, metadata: transactionMetadata([], { source: 'complex_aggregates', periodStart: sinceStr, periodEnd: rows.length ? marketMonthEnd(rows[0].ym, now) : null }) },
       { headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' } },
     );
   } catch (e) {

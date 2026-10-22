@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { hasVerifiedIdentity, identityRequired, verifiedIdentity } from '@/lib/auth-profile-state';
 import {
   getConfirmedVerificationByToken,
   isDiTaken,
@@ -55,15 +56,24 @@ export async function POST(req: NextRequest) {
 
     const userType = ['employer', 'seeker'].includes(role) ? role : 'seeker';
 
+    const { data: existingProfile, error: lookupError } = await supabaseAdmin.from('users')
+      .select('id, realname_verified, di, verified_at, name, phone').eq('id', user.id).maybeSingle();
+    if (lookupError) throw lookupError;
+    const previouslyVerified = hasVerifiedIdentity(existingProfile);
+    if (danalToken === undefined && identityRequired() && !previouslyVerified) {
+      return NextResponse.json({ error: '본인인증이 필요합니다', needsIdentityVerification: true }, { status: 400 });
+    }
+
     // 다날 본인인증 토큰 소비 (전달된 경우) — CI/DI 는 서버에서만 기록
-    let danalPhone: string | null = null;
+    let identity = previouslyVerified ? { name: existingProfile!.name, phone: existingProfile!.phone } : null;
     let danalFields: Record<string, unknown> = {};
-    if (danalToken) {
-      if (typeof danalToken !== 'string') {
+    if (danalToken !== undefined) {
+      if (typeof danalToken !== 'string' || !danalToken.trim()) {
         return NextResponse.json({ error: '본인인증 정보가 유효하지 않습니다' }, { status: 400 });
       }
       const verification = await getConfirmedVerificationByToken(danalToken);
-      if (!verification || !verification.di) {
+      const proofIdentity = verifiedIdentity(verification);
+      if (!verification || !verification.di || !proofIdentity) {
         return NextResponse.json({ error: '본인인증 정보가 유효하지 않습니다. 다시 인증해주세요.' }, { status: 400 });
       }
       if (await isDiTaken(verification.di, user.id)) {
@@ -75,15 +85,15 @@ export async function POST(req: NextRequest) {
         realname_verified: true,
         verified_at: new Date().toISOString(),
       };
-      danalPhone = verification.phone; // 응답에 번호가 있으면 사용
+      identity = proofIdentity;
     }
 
     // users 테이블 업데이트 (소셜 로그인 이메일 포함)
     const updateData: Record<string, unknown> = {
       email: user.email,
-      name: trimmedName,
+      name: identity ? identity.name : trimmedName,
       nickname: trimmedNickname,
-      phone: danalPhone ? danalPhone.replace(/[^0-9]/g, '') : cleanPhone,
+      phone: identity ? identity.phone : cleanPhone,
       user_type: userType,
       company_name: brokerOfficeName ? String(brokerOfficeName).trim() : null,
       business_no: businessNo ? String(businessNo).replace(/[^0-9-]/g, '') : null,
@@ -97,10 +107,10 @@ export async function POST(req: NextRequest) {
       updateData.broker_reg_date = brokerRegDate || null;
     }
 
-    const { data: updatedUser, error: updateError } = await supabaseAdmin
-      .from('users')
-      .update(updateData)
-      .eq('id', user.id)
+    const write = existingProfile
+      ? supabaseAdmin.from('users').update(updateData).eq('id', user.id)
+      : supabaseAdmin.from('users').insert({ id: user.id, ...updateData });
+    const { data: updatedUser, error: updateError } = await write
       .select('id')
       .maybeSingle();
 
@@ -123,12 +133,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Auth 메타데이터도 업데이트
-    await supabaseAdmin.auth.admin.updateUserById(user.id, {
+    const { error: metadataError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: {
         ...user.user_metadata,
-        name: trimmedName,
+        name: updateData.name,
         nickname: trimmedNickname,
-        phone: cleanPhone,
+        phone: updateData.phone,
         role: userType,
         profile_completed: true,
         ...(userType === 'employer' && brokerRegNo && {
@@ -139,6 +149,7 @@ export async function POST(req: NextRequest) {
         }),
       },
     });
+    if (metadataError) throw metadataError;
 
     return NextResponse.json({ success: true });
   } catch (error) {

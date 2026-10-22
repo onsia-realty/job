@@ -1,5 +1,6 @@
 'use client';
 
+import MarketDataNotice from './MarketDataNotice';
 import { useState } from 'react';
 import {
   ResponsiveContainer,
@@ -111,8 +112,8 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
     }
   };
 
-  const { data, isFetching } = useComplexDetail(complexKey, range);
-  const detail: ComplexDetail | null = data ?? null;
+  const { data, isFetching, isError } = useComplexDetail(complexKey, range);
+  const detail: ComplexDetail | null = isError ? null : data ?? null;
   const busy = isFetching;
 
   // 인근 탭 — 학교/지하철/버스 (탭 진입 시에만 fetch, 24h 캐시)
@@ -262,6 +263,11 @@ export default function ComplexDetailView({ complexKey, point, dealType, onClose
 
       {/* 스크롤 영역 (탭 콘텐츠) */}
       <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
+        {isError && <p role="alert" className="p-4 text-sm">단지 데이터를 불러오지 못했습니다.</p>}
+        {!isFetching && !isError && <>
+          <MarketDataNotice metadata={detail?.metadata} label="단지 실거래" />
+          <MarketDataNotice metadata={detail?.monthlyMetadata} label="월별 집계" />
+        </>}
         {tab === 'price' && (
         <>
         {/* 메인 KPI */}

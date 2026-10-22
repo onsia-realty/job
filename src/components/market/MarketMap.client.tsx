@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import MarketMapNotice from './MarketMapNotice';
 import {
   buildAggMarkerHTML,
   buildMarkerHTML,
@@ -32,6 +33,8 @@ interface MarketMapProps {
   center: [number, number];
   zoom?: number;
   points: MapComplexPoint[];
+  loading?: boolean;
+  error?: boolean;
   onSelect?: (key: string) => void;
   selectedKey?: string | null;
   height?: string;
@@ -158,6 +161,8 @@ export default function MarketMap({
   center,
   zoom = 13,
   points,
+  loading = false,
+  error = false,
   onSelect,
   selectedKey = null,
   height = '100%',
@@ -508,13 +513,7 @@ export default function MarketMap({
     >
       <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
 
-      {markerMode === 'complex' && points.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="bg-white/95 text-market-text-mute text-sm px-4 py-2.5 rounded-xl border border-market-border shadow-lg font-jakarta">
-            이 지역의 최근 거래 데이터가 아직 수집되지 않았습니다
-          </div>
-        </div>
-      )}
+      <MarketMapNotice enabled={markerMode === 'complex'} pointCount={points.length} loading={loading} error={error} />
     </div>
   );
 }

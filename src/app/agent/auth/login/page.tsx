@@ -97,8 +97,9 @@ function LoginPageContent() {
           throw new Error('사용자 정보 처리에 실패했습니다.');
         }
         const result = await res.json();
-        if (result.created) {
-          router.replace(`/agent/auth/signup?role=${currentRole}&social=true`);
+        if (result.needsProfileCompletion || result.needsIdentityVerification) {
+          const suffix = stayRedirect ? `&redirect=${encodeURIComponent(stayRedirect)}` : '';
+          router.replace(`/agent/auth/signup?role=${currentRole}&social=true${suffix}`);
         } else {
           localStorage.removeItem('social_login_role');
           const role = data.session.user?.user_metadata?.role as LoginRole | undefined;
@@ -108,7 +109,7 @@ function LoginPageContent() {
     } catch (err: any) {
       setError(err.message || '구글 로그인 중 오류가 발생했습니다.');
     }
-  }, [router, redirectByRole]);
+  }, [router, redirectByRole, stayRedirect]);
 
   // GIS 초기화
   useEffect(() => {
@@ -184,6 +185,19 @@ function LoginPageContent() {
     try {
       const result = await signInWithEmail(email, password);
       const role = result?.user?.user_metadata?.role as LoginRole | undefined;
+      if (!result.session) throw new Error('로그인 세션을 확인할 수 없습니다.');
+      const res = await fetch('/api/auth/ensure-user', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${result.session.access_token}` },
+      });
+      if (!res.ok) throw new Error('사용자 정보 처리에 실패했습니다.');
+      const state = await res.json();
+      if (state.error) throw new Error(state.error);
+      if (state.needsProfileCompletion || state.needsIdentityVerification) {
+        const suffix = stayRedirect ? `&redirect=${encodeURIComponent(stayRedirect)}` : '';
+        router.replace(`/agent/auth/signup?role=${role || activeRole}&social=true${suffix}`);
+        return;
+      }
       redirectByRole(role || activeRole);
     } catch (err: any) {
       if (err.message.includes('Invalid login credentials')) {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyUser, isAdminUserId } from '@/lib/auth-server';
 import { supabaseAdmin } from '@/lib/supabase-server';
 import { inquirySchema, inquiryReplySchema } from '@/lib/stay/inquiry';
+import { isDemoStay, DEMO_STAY_INQUIRY_MESSAGE } from '@/lib/stay/demo';
 const fail = (error: string, status: number) => NextResponse.json({ error }, { status });
 const unavailable = () => fail('문의 서비스를 사용할 수 없습니다. 잠시 후 다시 시도해주세요.', 503);
 export async function GET(req: NextRequest) {
@@ -23,6 +24,7 @@ export async function POST(req: NextRequest) {
   try { body = JSON.parse(raw); } catch { return fail('잘못된 요청입니다.', 400); }
   const parsed = inquirySchema.safeParse(body);
   if (!parsed.success) return fail(parsed.error.issues[0].message, 400);
+  if (isDemoStay(parsed.data.stay_id)) return fail(DEMO_STAY_INQUIRY_MESSAGE, 403);
   const { data: stay, error: stayError } = await supabaseAdmin.from('stays').select('id,user_id,is_active,is_approved,status').eq('id', parsed.data.stay_id).maybeSingle();
   if (stayError) return unavailable();
   if (!stay || !stay.user_id || stay.is_active !== true || stay.is_approved !== true || stay.status === 'occupied') return fail('현재 문의할 수 없는 매물입니다.', 404);

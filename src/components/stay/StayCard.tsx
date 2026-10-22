@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { isDemoStay } from '@/lib/stay/demo';
+import { StayDemoBadge } from './StayDemoNotice';
 import { BadgeCheck, Building2, UserRound } from 'lucide-react';
 import {
   StayExclusiveBadge,
@@ -139,7 +141,7 @@ export default function StayCard({
             isTile ? '' : 'left-1 top-1 origin-top-left scale-[0.75]'
           }`}
         >
-          <StayStatusBadge status={stay.status} className="shadow-sm" />
+          {isDemoStay(stay.id) ? <StayDemoBadge /> : <StayStatusBadge status={stay.status} className="shadow-sm" />}
         </div>
         {stay.is_exclusive && (
           <div

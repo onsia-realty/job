@@ -1,5 +1,7 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
+import { isDemoStay } from '@/lib/stay/demo';
+import StayDemoNotice, { StayDemoBadge } from '@/components/stay/StayDemoNotice';
 import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import {
@@ -194,7 +196,7 @@ async function NearbyStays({ sigungu, excludeId }: { sigungu: string; excludeId:
             >
               <div className="min-w-0 flex-1">
                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
-                  <StayStatusBadge status={item.status} />
+                  {isDemoStay(item.id) ? <StayDemoBadge /> : <StayStatusBadge status={item.status} />}
                   <span className="text-[11px] text-slate-400">
                     {STAY_TYPE_LABELS[item.stay_type]}
                   </span>
@@ -299,12 +301,13 @@ export default async function StayDetailPage({
         <div className="flex flex-col gap-6 lg:flex-row">
           {/* ── 본문 ── */}
           <div className="min-w-0 flex-1 space-y-4">
-            <StayGallery images={stay.images} title={stay.title} />
+            {isDemoStay(stay.id) && <StayDemoNotice />}
+            <StayGallery images={stay.images} title={isDemoStay(stay.id) ? `예시 이미지 · ${stay.title}` : stay.title} />
 
             {/* 헤더 블록 */}
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
-                <StayStatusBadge status={stay.status} />
+                {isDemoStay(stay.id) ? <StayDemoBadge /> : <StayStatusBadge status={stay.status} />}
                 {stay.owner_type === 'agent' ? <Chip>안심임대 공인중개사</Chip> : stay.owner_type === 'owner' ? <Chip>호스트 직접 임대</Chip> : null}
                 {stay.is_exclusive && <StayExclusiveBadge />}
                 <Chip>{STAY_DEAL_TYPE_LABELS[stay.deal_type]}</Chip>
@@ -544,7 +547,7 @@ export default async function StayDetailPage({
       </main>
 
       {/* ── 모바일 하단 고정 CTA ── */}
-      {isHost ? <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:hidden"><a href="#host-dates" className="block rounded-xl bg-slate-900 p-3 text-center text-sm font-bold text-white">날짜 선택 · 예상 금액 확인</a></div> : <StayInquiryBar
+      {isHost ? <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] lg:hidden"><a href="#host-dates" className="block rounded-xl bg-slate-900 p-3 text-center text-sm font-bold text-white">{isDemoStay(stay.id) ? '샘플 안내 보기' : '날짜 선택 · 예상 금액 확인'}</a></div> : <StayInquiryBar
         stayId={stay.id}
         variant="mobile"
         ownerType={stay.owner_type}

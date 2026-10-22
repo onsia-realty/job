@@ -7,7 +7,7 @@ import { supabase } from '@/lib/auth';
 import { AUTH_STAY_REDIRECT_KEY, safeStayRedirect } from '@/lib/auth-redirect';
 import { Loader2 } from 'lucide-react';
 
-async function ensureUserRecord(accessToken: string): Promise<{ created?: boolean; exists?: boolean; error?: string }> {
+async function ensureUserRecord(accessToken: string): Promise<{ needsProfileCompletion?: boolean | null; needsIdentityVerification?: boolean; error?: string }> {
   try {
     const res = await fetch('/api/auth/ensure-user', {
       method: 'POST',
@@ -66,7 +66,7 @@ function AuthCallbackContent() {
             }
             const role = localStorage.getItem('social_login_role') || 'seeker';
             localStorage.removeItem('social_login_role');
-            if (result.created) {
+            if (result.needsProfileCompletion || result.needsIdentityVerification) {
               const suffix = requestedRedirect ? `&redirect=${encodeURIComponent(requestedRedirect)}` : '';
               sessionStorage.removeItem(AUTH_STAY_REDIRECT_KEY);
               router.replace(`/agent/auth/signup?role=${role}&social=true${suffix}`);
@@ -90,7 +90,7 @@ function AuthCallbackContent() {
           }
           const role = localStorage.getItem('social_login_role') || 'seeker';
           localStorage.removeItem('social_login_role');
-          if (result.created) {
+          if (result.needsProfileCompletion || result.needsIdentityVerification) {
             const suffix = requestedRedirect ? `&redirect=${encodeURIComponent(requestedRedirect)}` : '';
             sessionStorage.removeItem(AUTH_STAY_REDIRECT_KEY);
             router.replace(`/agent/auth/signup?role=${role}&social=true${suffix}`);

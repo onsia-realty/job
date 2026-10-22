@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { isDemoStay } from '@/lib/stay/demo';
+import StayDemoNotice from './StayDemoNotice';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { calculateHostQuote, koreaToday, type HostQuoteStay } from '@/lib/stay/host-pricing';
 import StayInquiryForm from './StayInquiryForm';
@@ -16,6 +18,7 @@ export default function StayHostQuote({ stay, preview = false }: { stay: HostQuo
   const [month, setMonth] = useState(firstDate.slice(0, 7));
   const [selecting, setSelecting] = useState<'in' | 'out'>('in');
   const [showInquiry, setShowInquiry] = useState(false);
+  if (isDemoStay(stay.id)) return <section id="host-dates"><StayDemoNotice /></section>;
   const quote = calculateHostQuote(stay, checkIn, checkOut, today);
   const hasRate = Number.isSafeInteger(stay.weekly_fee_won) && (stay.weekly_fee_won ?? 0) > 0;
   const canInquire = ['available', 'inquiring', 'leaving'].includes(stay.status);

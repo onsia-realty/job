@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-server';
-import { computeSlowOne, cacheKey, SLOW_METRICS, type SlowMetric } from '@/lib/market/rankings';
+import { transactionMetadata } from '@/lib/market/transactionData';
+import { marketMonthStart, marketMonthEnd } from '@/lib/market/types';
+import { computeSlowOne, slowRankingPeriod, cacheKey, SLOW_METRICS, type SlowMetric } from '@/lib/market/rankings';
 
 // GET /api/market/rankings/top10?metric=count|price|pyeong|highest|drop|rise&type=apt|officetel&sido=서울특별시
 // - highest/drop/rise: 사전계산 캐시(market_rankings) 읽기 → 즉시. 없으면 폴백 계산.
@@ -28,32 +30,42 @@ export async function GET(req: NextRequest) {
   try {
     // ── 신고가 / 최근하락 / 최근상승: 사전계산 캐시 읽기 ──
     if ((SLOW_METRICS as readonly string[]).includes(metric)) {
-      const { data: cached } = await supabaseAdmin
+      const { data: cached, error: cacheError } = await supabaseAdmin
         .from('market_rankings')
         .select('data, updated_at')
         .eq('cache_key', cacheKey(metric, sido, property_type))
         .maybeSingle();
 
+      if (cacheError) throw new Error(cacheError.message);
+      const computationAnchor = new Date();
+      let rankingComputedAt: string | null = null;
       let rankings: unknown[];
       let source: 'cache' | 'live';
       if (cached) {
         rankings = (cached.data as unknown[]) || [];
         source = 'cache';
+        rankingComputedAt = cached.updated_at ?? null;
       } else {
-        rankings = await computeSlowOne(metric as SlowMetric, property_type, sido);
+        rankings = await computeSlowOne(metric as SlowMetric, property_type, sido, computationAnchor);
+        rankingComputedAt = new Date().toISOString();
         source = 'live';
       }
 
+      const computedMs = Date.parse(rankingComputedAt ?? '');
+      const periodAnchor = source === 'cache' ? new Date(computedMs) : computationAnchor;
+      const period = Number.isFinite(periodAnchor.getTime())
+        ? slowRankingPeriod(periodAnchor) : { periodStart: null, periodEnd: null };
+      const stale = !Number.isFinite(computedMs) || Date.now() - computedMs > 24 * 60 * 60 * 1000;
       return NextResponse.json(
-        { metric, property_type, sido, source, updated_at: cached?.updated_at ?? null, rankings },
+        { metric, property_type, sido, source, updated_at: rankingComputedAt, rankingComputedAt, stale, rankings,
+          metadata: { ...transactionMetadata([], { source: source === 'cache' ? 'market_rankings' : 'price_transactions', ...period, stale }), rankingComputedAt } },
         { headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=86400' } },
       );
     }
 
     // ── 거래량 / 평균가 / 평당가: MV 즉석 조회 ──
     const now = new Date();
-    const targetYm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const ymStr = targetYm.toISOString().slice(0, 10);
+    const ymStr = marketMonthStart(1, now);
 
     let query = supabaseAdmin
       .from('complex_aggregates')
@@ -68,12 +80,12 @@ export async function GET(req: NextRequest) {
     else if (metric === 'price') query = query.order('avg_price_manwon', { ascending: false });
     else if (metric === 'pyeong') query = query.order('avg_pyeong_price', { ascending: false });
 
-    const { data, error } = await query.limit(10);
+    const { data, error } = await query.order('complex_key', { ascending: true }).limit(10);
     if (error) throw error;
 
     const rankings = await attachRegionNames((data || []) as Array<{ lawd_cd: string | null }>);
     return NextResponse.json(
-      { ym: ymStr, metric, property_type, sido, rankings },
+      { ym: ymStr, metric, property_type, sido, rankings, metadata: transactionMetadata([], { source: 'complex_aggregates', periodStart: ymStr, periodEnd: marketMonthEnd(ymStr, now) }) },
       { headers: { 'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=3600' } },
     );
   } catch (e) {

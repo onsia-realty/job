@@ -1,5 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { isDemoStay } from '@/lib/stay/demo';
+import StayDemoNotice from './StayDemoNotice';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 export default function StayInquiryForm({ stayId, contextMessage = '' }: { stayId: string; contextMessage?: string }) {
@@ -10,6 +12,7 @@ export default function StayInquiryForm({ stayId, contextMessage = '' }: { stayI
   const [notice, setNotice] = useState('');
   const [sent, setSent] = useState(false);
   const combinedMessage = contextMessage ? `${message}\n\n${contextMessage}` : message;
+  if (isDemoStay(stayId)) return <StayDemoNotice />;
   const messageLimit = Math.max(0, 1000 - (contextMessage ? contextMessage.length + 2 : 0));
   if (!session) return <p className="p-4 text-sm"><Link className="text-blue-700 underline" href="/agent/auth/login">로그인</Link> 후 문의할 수 있습니다.</p>;
   return <form className="space-y-3 rounded-xl bg-slate-50 p-4" onSubmit={async e => {

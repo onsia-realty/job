@@ -10,6 +10,7 @@
 //    (스크립트 태그 자체는 부모 페이지가 <Script strategy="afterInteractive"> 로 넣는다)
 
 import { useEffect, useRef, useState } from 'react';
+import { isDemoStay } from '@/lib/stay/demo';
 import { formatStayPrice, formatWon } from '@/lib/stay/format';
 import type { Stay } from '@/types/stay';
 import {
@@ -135,6 +136,7 @@ function buildMarkerHTML(p: StayMapPoint, isActive: boolean): string {
 
   // 2줄: 보증금 + 층. 월세가 주인공일 때만 보증금을 보조로 내린다.
   const subParts: string[] = [];
+  if (isDemoStay(p.id)) subParts.push('샘플 매물');
   if ((isWeeklyHost || p.monthly_fee_won != null) && p.deposit_won != null) {
     subParts.push(isWeeklyHost ? `보증 ${p.deposit_won.toLocaleString('ko-KR')}원` : `보증 ${formatWon(p.deposit_won)}`);
   }

@@ -1,3 +1,5 @@
+import type { TransactionMetadata } from './transactionData';
+
 /**
  * 시세지도 공용 타입 — /api/market/complex/[key] 응답 등.
  * (구 MarketDetailPanel.tsx에서 이동)
@@ -40,6 +42,8 @@ export interface MgmtCostRow {
 }
 
 export interface ComplexDetail {
+  metadata?: TransactionMetadata;
+  monthlyMetadata?: TransactionMetadata;
   complex_key: string;
   complex_name: string | null;
   dong: string | null;
@@ -137,4 +141,28 @@ export interface ComplexDetail {
     presale_count?: number;
   }>;
   lease_ratio: number | null;
+}
+
+// Business dates are Korean calendar dates, independent of the server timezone.
+export function koreanDate(at: Date = new Date()): string {
+  return new Date(at.getTime() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export function marketMonthStart(monthsAgo: number, at: Date = new Date()): string {
+  const [year, month] = koreanDate(at).split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1 - monthsAgo, 1)).toISOString().slice(0, 10);
+}
+
+// Monthly bucket keys stay on day 1; coverage ends at month-end or Korean today.
+export function marketMonthEnd(ym: string, at: Date = new Date()): string {
+  const [year, month] = ym.split('-').map(Number);
+  const end = new Date(Date.UTC(year, month, 0)).toISOString().slice(0, 10);
+  const today = koreanDate(at);
+  return end < today ? end : today;
+}
+
+export function marketMonthsAgo(monthsAgo: number, at: Date = new Date()): string {
+  const [year, month, day] = koreanDate(at).split('-').map(Number);
+  const lastDay = new Date(Date.UTC(year, month - monthsAgo, 0)).getUTCDate();
+  return new Date(Date.UTC(year, month - 1 - monthsAgo, Math.min(day, lastDay))).toISOString().slice(0, 10);
 }

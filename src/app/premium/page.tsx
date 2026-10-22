@@ -8,12 +8,13 @@ import Footer from '@/components/shared/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { resolveProduct, getTotalPrice, PRICING_TIERS, findOption, getExposureDays, getDiscountRate, isProductPurchasable } from '@/lib/toss';
 import {
-  Crown, Star, Check, Zap, TrendingUp, Eye, Users, Clock,
+  Crown, Star, Check, Zap,
   Building2, HardHat, ArrowRight, Sparkles, Shield, MessageCircle,
   ChevronLeft, ChevronRight, MapPin, Briefcase, Tag, User, Loader2,
   X, FileText, Plus,
 } from 'lucide-react';
-import { fetchMyJobs } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { isAdvertisementJobEligible, isAdvertisementJobId } from '@/lib/advertisement-job';
 
 // 카테고리 타입
 type CategoryType = 'agent' | 'sales';
@@ -30,6 +31,10 @@ interface MyJob {
   tier: string;
   category: string;
   created_at: string;
+  is_active: boolean;
+  is_approved: boolean | null;
+  deadline: string | null;
+  user_id: string;
   [key: string]: unknown;
 }
 
@@ -120,9 +125,9 @@ function topicParticle(word: string): string {
   return code >= 0 && code <= 11171 && code % 28 !== 0 ? '은' : '는';
 }
 
-// 분양 FAQ "기간은 어떻게 선택하나요?" 답변 — toss.ts PRICING_TIERS 에서 생성 (하드코딩 금지)
-function buildSalesPeriodFaq(): string {
-  const tiers = Object.values(PRICING_TIERS).filter((t) => t.category === 'sales');
+// 카테고리별 기간 안내 및 FAQ — toss.ts PRICING_TIERS 에서 생성 (하드코딩 금지)
+function buildPeriodFaq(category: CategoryType): string {
+  const tiers = Object.values(PRICING_TIERS).filter((t) => t.category === category && t.purchaseEnabled !== false);
   const group = (keyOf: (t: (typeof tiers)[number]) => string) => {
     const m = new Map<string, string[]>();
     for (const t of tiers) {
@@ -134,7 +139,7 @@ function buildSalesPeriodFaq(): string {
   const join = (names: string[]) => names.join('·');
 
   const periods = [...group((t) => t.options.map((o) => o.days).join('·'))]
-    .map(([days, names]) => `${join(names)}${topicParticle(join(names))} ${days}일`)
+    .map(([days, names]) => `${join(names)}: ${days}일`)
     .join(', ');
 
   const bonusGroups = group((t) =>
@@ -186,7 +191,7 @@ const PRICING_DATA = {
         gradientFrom: 'from-blue-600', gradientTo: 'to-blue-500',
         borderColor: 'border-blue-400', checkColor: 'text-blue-400',
         originalPrice: 99000, discountedPrice: 9900, duration: '1주일', perDay: '1,414원',
-        features: ['VIP 아래 전용 그리드 섹션', '프리미엄 블루 배지', '조회수 3배 증가 효과', '로고 강조 표시', '지원자 알림'],
+        features: ['VIP 아래 전용 그리드 섹션', '프리미엄 블루 배지', '로고 강조 표시', '지원자 알림'],
         recommended: false,
       },
       {
@@ -194,18 +199,12 @@ const PRICING_DATA = {
         gradientFrom: 'from-amber-500', gradientTo: 'to-yellow-500',
         borderColor: 'border-amber-400', checkColor: 'text-amber-400',
         originalPrice: 249000, discountedPrice: 24900, duration: '1주일', perDay: '3,557원',
-        features: ['레인보우 네온 슬라이더 최상단', '4열 × 2행 VIP 전용 그리드', 'VIP 골드 배지', '조회수 5배 증가 효과', '지원자 우선 알림', '상세페이지 하이라이트'],
+        features: ['레인보우 네온 슬라이더 최상단', '4열 × 2행 VIP 전용 그리드', 'VIP 골드 배지', '지원자 우선 알림', '상세페이지 하이라이트'],
         recommended: true,
       },
     ],
-    stats: [
-      { icon: Eye, value: '5배', label: 'VIP 평균 조회수 증가', color: 'text-amber-500' },
-      { icon: Users, value: '3.2배', label: '프리미엄 지원자 증가', color: 'text-blue-500' },
-      { icon: Clock, value: '48시간', label: '평균 채용 완료 시간', color: 'text-green-500' },
-      { icon: TrendingUp, value: '89%', label: '광고주 만족도', color: 'text-blue-500' },
-    ],
     faqs: [
-      { q: '광고 효과는 언제부터 시작되나요?', a: '결제 완료 후 즉시 광고가 적용됩니다. 관리자 승인 없이 바로 상위 노출이 시작됩니다.' },
+      { q: '광고 효과는 언제부터 시작되나요?', a: '승인된 활성 공고에 대해 결제가 완료되면 선택한 상품의 광고가 적용됩니다. 미승인 공고는 먼저 승인이 필요하며, 모집 마감일이 지난 공고는 구매할 수 없습니다.' },
       { q: '무료 공고와 BASIC의 차이점은?', a: '무료 공고는 24시간 후 자동 만료됩니다. BASIC(₩4,900)은 5일간 반짝이 효과로 강조 노출됩니다.' },
       { q: 'VIP와 프리미엄의 차이점은?', a: 'VIP는 최상단에 레인보우 네온 슬라이더 배너로 노출되며, 프리미엄은 VIP 다음 전용 그리드에 노출됩니다.' },
     ],
@@ -244,7 +243,7 @@ const PRICING_DATA = {
         gradientFrom: 'from-blue-600', gradientTo: 'to-indigo-500',
         borderColor: 'border-blue-400', checkColor: 'text-blue-400',
         originalPrice: 99000, discountedPrice: 9900, duration: '1주일', perDay: '1,414원',
-        features: ['유니크 아래 전용 그리드 섹션', '슈페리어 블루 배지', '조회수 4배 증가 효과', '현장 로고 강조', '지원자 우선 알림'],
+        features: ['유니크 아래 전용 그리드 섹션', '슈페리어 블루 배지', '현장 로고 강조', '지원자 우선 알림'],
         recommended: false,
       },
       {
@@ -252,7 +251,7 @@ const PRICING_DATA = {
         gradientFrom: 'from-violet-500', gradientTo: 'to-fuchsia-500',
         borderColor: 'border-violet-400', checkColor: 'text-violet-400',
         originalPrice: 0, discountedPrice: 0, duration: '', perDay: '',
-        features: ['추천 영역 상단 고정 노출', '다이아 강조 배지', '조회수 5배 증가 효과', '현장 로고 강조', '지원자 우선 알림'],
+        features: ['추천 영역 상단 고정 노출', '다이아 강조 배지', '현장 로고 강조', '지원자 우선 알림'],
         recommended: false,
       },
       {
@@ -260,30 +259,23 @@ const PRICING_DATA = {
         gradientFrom: 'from-purple-600', gradientTo: 'to-pink-500',
         borderColor: 'border-purple-400', checkColor: 'text-purple-400',
         originalPrice: 249000, discountedPrice: 24900, duration: '1주일', perDay: '3,557원',
-        features: ['레인보우 네온 슬라이더 최상단', '4열 × 2행 유니크 전용 그리드', '유니크 퍼플 배지', '조회수 7배 증가 효과', '지원자 실시간 알림', '현장 상세정보 하이라이트', '분양팀 직접 연결'],
+        features: ['레인보우 네온 슬라이더 최상단', '4열 × 2행 유니크 전용 그리드', '유니크 퍼플 배지', '지원자 실시간 알림', '현장 상세정보 하이라이트', '분양팀 직접 연결'],
         recommended: true,
       },
     ],
-    stats: [
-      { icon: Eye, value: '7배', label: '유니크 평균 조회수 증가', color: 'text-purple-500' },
-      { icon: Users, value: '4.5배', label: '슈페리어 지원자 증가', color: 'text-blue-500' },
-      { icon: Clock, value: '36시간', label: '평균 채용 완료 시간', color: 'text-green-500' },
-      { icon: TrendingUp, value: '92%', label: '광고주 만족도', color: 'text-purple-500' },
-    ],
     faqs: [
-      { q: '광고 효과는 언제부터 시작되나요?', a: '결제 완료 후 즉시 광고가 적용됩니다. 관리자 승인 없이 바로 상위 노출이 시작됩니다.' },
+      { q: '광고 효과는 언제부터 시작되나요?', a: '승인된 활성 공고에 대해 결제가 완료되면 선택한 상품의 광고가 적용됩니다. 미승인 공고는 먼저 승인이 필요하며, 모집 마감일이 지난 공고는 구매할 수 없습니다.' },
       { q: '무료 공고와 베이직의 차이점은?', a: '무료 공고는 24시간 후 자동 만료됩니다. 베이직은 7일+7일=14일 기본 노출이며, 반짝이 효과로 강조됩니다.' },
-      { q: '기간은 어떻게 선택하나요?', a: buildSalesPeriodFaq() },
+      { q: '기간은 어떻게 선택하나요?', a: buildPeriodFaq('sales') },
       { q: '유니크와 슈페리어의 차이점은?', a: '유니크는 최상단에 레인보우 네온 슬라이더 배너로 노출되며, 슈페리어는 유니크 다음 전용 그리드에 노출됩니다.' },
     ],
   },
 };
 
 function PremiumPricingContent() {
-  const { user, isLoading: authLoading, session } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const searchParams = useSearchParams();
   const jobId = searchParams.get('job');        // 공고 ID (공고 작성 후 이동 시)
-  const paramTier = searchParams.get('tier');    // 선택된 티어
   const paramCategory = searchParams.get('category') as CategoryType | null;
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>(paramCategory || 'agent');
   const [slideIndex, setSlideIndex] = useState(0);
@@ -292,10 +284,13 @@ function PremiumPricingContent() {
   const [showJobModal, setShowJobModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string | null>(null);
   const [myJobs, setMyJobs] = useState<MyJob[]>([]);
-  const [jobPayments, setJobPayments] = useState<Record<string, JobPaymentInfo>>({});
+  const [hasUnapprovedJobs, setHasUnapprovedJobs] = useState(false);
+  const [jobPayments] = useState<Record<string, JobPaymentInfo>>({});
   const [jobsLoading, setJobsLoading] = useState(false);
+  const [jobsError, setJobsError] = useState<string | null>(null);
+  const jobsRequest = useRef(0);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  const [adDaysByTier, setAdDaysByTier] = useState<Record<string, number>>({}); // 등급별 기간 선택 (10/20/30)
+  const [adDaysByTier, setAdDaysByTier] = useState<Record<string, number>>({}); // 등급별 구매 기간 선택
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
@@ -314,38 +309,6 @@ function PremiumPricingContent() {
   const slideJobs = selectedCategory === 'agent' ? AGENT_VIP_JOBS : SALES_UNIQUE_JOBS;
   const currentSlide = slideJobs[slideIndex];
 
-  // Mock 테스트 공고 (DB에 공고가 없을 때 테스트용)
-  const MOCK_JOBS: MyJob[] = [
-    {
-      id: 'mock-agent-1',
-      title: '[테스트] 강남역 초역세권 공인중개사 모집',
-      tier: 'normal',
-      category: 'agent',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'mock-agent-2',
-      title: '[테스트] 판교 상업용 부동산 전문 중개사',
-      tier: 'normal',
-      category: 'agent',
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-    },
-    {
-      id: 'mock-sales-1',
-      title: '[테스트] 힐스테이트 광교 분양상담사 모집',
-      tier: 'normal',
-      category: 'sales',
-      created_at: new Date().toISOString(),
-    },
-    {
-      id: 'mock-sales-2',
-      title: '[테스트] 세종시 지식산업센터 분양팀 급구',
-      tier: 'normal',
-      category: 'sales',
-      created_at: new Date(Date.now() - 86400000).toISOString(),
-    },
-  ];
-
   // 티어 선택 → 공고 선택 모달 열기
   const handleSelectJob = async (tier: string) => {
     if (tier === 'normal') {
@@ -355,38 +318,44 @@ function PremiumPricingContent() {
 
     if (!isProductPurchasable(`${selectedCategory}-${tier}`)) return;
 
+    const requestId = ++jobsRequest.current;
     setSelectedTier(tier);
     setSelectedJobId(null);
+    setMyJobs([]);
+    setHasUnapprovedJobs(false);
+    setJobsError(null);
     setShowJobModal(true);
     setJobsLoading(true);
 
     try {
-      if (user) {
-        const jobs = await fetchMyJobs(user.id);
-        const categoryJobs = jobs.filter((j: MyJob) =>
-          selectedCategory === 'agent'
-            ? !j.category || j.category === 'agent'
-            : j.category === 'sales'
-        );
-        // DB 공고가 있으면 사용, 없으면 mock 데이터
-        if (categoryJobs.length > 0) {
-          setMyJobs(categoryJobs);
-        } else {
-          setMyJobs(MOCK_JOBS.filter(j => j.category === selectedCategory));
-        }
-      } else {
-        // 비로그인 시 mock 데이터
-        setMyJobs(MOCK_JOBS.filter(j => j.category === selectedCategory));
+      if (!user) {
+        setJobsError('로그인 후 본인의 공고를 선택해주세요.');
+        return;
       }
+      // Purchase selectors must distinguish an empty list from a failed query.
+      const { data, error } = await supabase.from('jobs')
+        .select('id,title,tier,category,created_at,is_active,is_approved,deadline,user_id')
+        .eq('user_id', user.id).eq('category', selectedCategory)
+        .order('created_at', { ascending: false });
+      if (jobsRequest.current !== requestId) return;
+      if (error) throw error;
+      const ownedJobs = (data ?? []).filter((job: MyJob) =>
+        job.user_id === user.id && job.category === selectedCategory
+        && isAdvertisementJobId(job.id));
+      setHasUnapprovedJobs(ownedJobs.some((job: MyJob) => job.is_approved === false));
+      const jobs = ownedJobs.filter((job: MyJob) => isAdvertisementJobEligible(job));
+      setMyJobs(jobs);
+      if (jobs.some((job: MyJob) => job.id === jobId)) setSelectedJobId(jobId);
     } catch {
-      setMyJobs(MOCK_JOBS.filter(j => j.category === selectedCategory));
+      if (jobsRequest.current === requestId) setJobsError('공고 목록을 불러오지 못했습니다. 다시 시도해주세요.');
     } finally {
-      setJobsLoading(false);
+      if (jobsRequest.current === requestId) setJobsLoading(false);
     }
   };
 
   // 모달 닫기
   const closeJobModal = () => {
+    jobsRequest.current += 1;
     setShowJobModal(false);
     setSelectedTier(null);
     setSelectedJobId(null);
@@ -423,7 +392,8 @@ function PremiumPricingContent() {
       return;
     }
 
-    const effectiveJobId = targetJobId || jobId;
+    const effectiveJobId = targetJobId;
+    if (!effectiveJobId || !myJobs.some(job => job.id === effectiveJobId && isAdvertisementJobEligible(job))) return;
     const productKey = `${selectedCategory}-${tier}`;
     if (!isProductPurchasable(productKey)) return;
     const product = resolveProduct(productKey);
@@ -509,14 +479,13 @@ function PremiumPricingContent() {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full border border-cyan-500/30 mb-6">
             <Tag className="w-4 h-4 text-cyan-400" />
-            <span className="text-sm text-cyan-300 font-bold">오픈 기념 특별가! 경쟁사 대비 합리적인 가격</span>
+            <span className="text-sm text-cyan-300 font-bold">오픈 기념 특별가! 등급별 노출 위치와 기간을 확인하세요</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold mb-4">
             광고 상품 안내
           </h1>
-          <p className="text-gray-400 max-w-2xl mx-auto">
-            필요한 기간(10·20·30일)만큼 골라 노출하세요.<br />
-            부동산인에서 최고의 인재를 빠르게 만나보세요.
+          <p className="text-gray-400 max-w-2xl mx-auto leading-relaxed">
+            {buildPeriodFaq(selectedCategory)}
           </p>
         </div>
 
@@ -554,6 +523,7 @@ function PremiumPricingContent() {
             <Star className={`w-5 h-5 ${currentData.accentColor} fill-current`} />
             <h2 className="text-lg font-bold">{currentData.slideTitle}</h2>
           </div>
+          <p className="mb-3 text-sm text-amber-300">광고 디자인 예시입니다. 아래 업체·채용 조건은 실제 모집 공고가 아닙니다.</p>
           <div
             className={`relative bg-gradient-to-r ${currentData.slideGradient} rounded-xl overflow-hidden`}
             onTouchStart={handleTouchStart}
@@ -643,7 +613,7 @@ function PremiumPricingContent() {
         <div className="mb-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold mb-2">상품 가격</h2>
-            <p className="text-gray-400 text-sm">오픈 기념 특별가! <span className="text-cyan-400 font-bold text-lg">경쟁사 대비 합리적인 가격</span></p>
+            <p className="text-gray-400 text-sm">오픈 기념 특별가! <span className="text-cyan-400 font-bold text-lg">등급별 노출 위치와 기간을 확인하세요</span></p>
             <p className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-medium animate-pulse">
               <span>※</span> 표시 가격은 공급가액이며, <span className="font-bold text-amber-300">부가세(10%) 별도</span>
             </p>
@@ -773,24 +743,15 @@ function PremiumPricingContent() {
           </div>
         </div>
 
-        {/* 효과 통계 */}
-        <div className="bg-slate-800/30 rounded-2xl p-8 border border-slate-700 mb-16">
-          <h2 className="text-xl font-bold text-center mb-8">광고 효과</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {currentData.stats.map((stat, idx) => {
-              const StatIcon = stat.icon;
-              return (
-                <div key={idx} className="text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-700/50 flex items-center justify-center">
-                    <StatIcon className={`w-6 h-6 ${stat.color}`} />
-                  </div>
-                  <p className="text-2xl font-bold mb-1">{stat.value}</p>
-                  <p className="text-xs text-gray-500">{stat.label}</p>
-                </div>
-              );
-            })}
+        <section aria-label="광고 상품 기능" className="mb-16 rounded-2xl border border-slate-700 bg-slate-800/30 p-8">
+          <h2 className="mb-6 text-center text-xl font-bold">광고 상품으로 달라지는 점</h2>
+          <div className="grid gap-6 md:grid-cols-3">
+            <div><h3 className="font-semibold">등급별 노출 영역</h3><p className="mt-2 text-sm text-gray-400">목록 강조, 전용 그리드, 상단 슬라이더 등 상품별 노출 위치를 확인하세요.</p></div>
+            <div><h3 className="font-semibold">배지와 강조 디자인</h3><p className="mt-2 text-sm text-gray-400">등급별 배지와 공고 디자인으로 채용 정보를 보여줍니다.</p></div>
+            <div><h3 className="font-semibold">기간과 비용 확인</h3><p className="mt-2 text-sm text-gray-400">구매 기간과 추가 노출일, 부가세를 확인하고 신청할 수 있습니다.</p></div>
           </div>
-        </div>
+          <p className="mt-6 text-center text-sm text-gray-400">조회수·지원자 수·채용 결과는 공고와 채용 조건에 따라 달라지며 보장되지 않습니다.</p>
+        </section>
 
         {/* FAQ */}
         <div className="mb-16">
@@ -877,28 +838,36 @@ function PremiumPricingContent() {
 
             {/* 본문 */}
             <div className="flex-1 overflow-y-auto p-5">
+              <p className="text-gray-400 text-sm mb-4">승인된 활성 공고 중 모집 마감일이 지나지 않은 본인의 공고만 광고를 구매할 수 있습니다.</p>
+              {!jobsLoading && !jobsError && hasUnapprovedJobs && (
+                <p role="status" className="text-amber-300 text-sm mb-4">아직 승인되지 않은 공고가 있습니다. 승인 대기 중인 공고는 승인 후 선택해주세요.</p>
+              )}
               {jobsLoading ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-cyan-400 mb-3" />
                   <p className="text-gray-400 text-sm">공고 목록을 불러오는 중...</p>
                 </div>
+              ) : jobsError ? (
+                <div role="alert" className="py-12 text-center">
+                  <p className="text-gray-400 mb-4">{jobsError}</p>
+                  {user ? (
+                    <button onClick={() => handleSelectJob(selectedTier)} className="text-cyan-400">다시 시도</button>
+                  ) : (
+                    <Link href="/agent/auth/login" className="text-cyan-400">로그인하기</Link>
+                  )}
+                </div>
               ) : myJobs.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
                   <FileText className="w-12 h-12 text-gray-600 mb-3" />
-                  <p className="text-gray-400 mb-1">등록된 공고가 없습니다</p>
-                  <p className="text-gray-500 text-sm mb-6">공고를 먼저 작성한 후 프리미엄을 적용하세요.</p>
-                  <button
-                    onClick={() => {
-                      closeJobModal();
-                      window.location.href = selectedCategory === 'agent'
-                        ? `/agent/jobs/new?tier=${selectedTier}`
-                        : `/sales/jobs/new?tier=${selectedTier}`;
-                    }}
+                  <p className="text-gray-400 mb-1">광고를 적용할 수 있는 공고가 없습니다</p>
+                  <p className="text-gray-500 text-sm mb-6">공고 등록 후 승인 및 활성 상태를 확인한 뒤 광고 상품을 구매하세요.</p>
+                  <Link
+                    href={`/${selectedCategory}/jobs/new`}
                     className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-xl font-bold text-sm hover:opacity-90 transition-all"
                   >
                     <Plus className="w-4 h-4" />
                     새 공고 작성하기
-                  </button>
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -970,8 +939,8 @@ function PremiumPricingContent() {
                     onClick={() => {
                       closeJobModal();
                       window.location.href = selectedCategory === 'agent'
-                        ? `/agent/jobs/new?tier=${selectedTier}`
-                        : `/sales/jobs/new?tier=${selectedTier}`;
+                        ? '/agent/jobs/new'
+                        : '/sales/jobs/new';
                     }}
                     className="flex items-center gap-2 w-full p-4 rounded-xl border border-dashed border-slate-600 text-gray-400 hover:text-white hover:border-slate-500 transition-all text-sm"
                   >
@@ -983,7 +952,7 @@ function PremiumPricingContent() {
             </div>
 
             {/* 푸터 (공고가 있을 때만) */}
-            {!jobsLoading && myJobs.length > 0 && (
+            {!jobsLoading && !jobsError && myJobs.length > 0 && (
               <div className="p-5 border-t border-slate-700">
                 {(() => {
                   const mProductKey = `${selectedCategory}-${selectedTier}`;

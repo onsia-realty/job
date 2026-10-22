@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { isAdvertisementJobId } from '@/lib/advertisement-job';
 import { useAuth } from '@/contexts/AuthContext';
 import { TOSS_CONFIG, resolveProduct, getVat, getTotalPrice, isProductPurchasable } from '@/lib/toss';
 import { ChevronLeft, Loader2, ShieldCheck } from 'lucide-react';
@@ -15,6 +16,7 @@ function CheckoutContent() {
   const daysParam = searchParams.get('days');
   const days = daysParam ? Number(daysParam) : undefined;
   const jobId = searchParams.get('jobId');
+  const hasJob = isAdvertisementJobId(jobId);
 
   const [widgets, setWidgets] = useState<TossPaymentsWidgets | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,7 +28,7 @@ function CheckoutContent() {
   const authenticated = Boolean(session?.access_token);
 
   useEffect(() => {
-    if (!productKey || !purchaseEnabled || authLoading) return;
+    if (!productKey || !purchaseEnabled || !hasJob || authLoading) return;
     const selectedProduct = resolveProduct(productKey, days);
     if (!selectedProduct) return;
     if (!user?.id || !authenticated) {
@@ -86,10 +88,10 @@ function CheckoutContent() {
       canceled = true;
       for (const element of rendered) void element.destroy().catch(() => undefined);
     };
-  }, [productKey, days, purchaseEnabled, authLoading, user?.id, authenticated]);
+  }, [productKey, days, purchaseEnabled, hasJob, authLoading, user?.id, authenticated]);
 
   const handlePayment = async () => {
-    if (!widgets || !product || !productKey || !purchaseEnabled || !session?.access_token) return;
+    if (!widgets || !product || !productKey || !purchaseEnabled || !hasJob || !session?.access_token) return;
     setPaying(true);
 
     try {
@@ -152,6 +154,18 @@ function CheckoutContent() {
           <Link href="/premium" className="text-cyan-400 hover:underline">
             돌아가기
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasJob) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4 text-center">
+        <div>
+          <p className="text-gray-300 mb-4">광고를 적용할 공고를 먼저 등록하고 선택해주세요.</p>
+          <Link href={`/${product.category}/jobs/new`} className="text-cyan-400 block mb-4">공고 먼저 등록하기</Link>
+          <Link href={`/premium?category=${product.category}`} className="text-cyan-400">기존 공고 선택하기</Link>
         </div>
       </div>
     );

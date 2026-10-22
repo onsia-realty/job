@@ -25,6 +25,7 @@ import { POST as completeProfile } from '@/app/api/auth/complete-profile/route';
 type Row = Record<string, unknown>;
 let tables: Record<string, Row[]>;
 let writes: { table: string; payload: Row }[];
+let insertErrors: Record<string, { code: string; message: string }>;
 const params = { params: Promise.resolve({ id: 'item' }) };
 function request(path: string, user?: string, body?: Row, method = body ? 'POST' : 'GET') {
   return new NextRequest(`http://localhost${path}`, { method,
@@ -40,20 +41,28 @@ beforeEach(() => {
     stays: [{ id: 'item', user_id: 'A', is_active: false, is_approved: false }],
     resumes: [{ id: 'item', user_id: 'A', is_public: false, phone: 'private' }], applications: [], payments: [] };
   writes = [];
+  insertErrors = {};
+  db.updateUserById.mockResolvedValue({ data: { user: null }, error: null });
   db.rpc.mockResolvedValue({ error: { message: 'missing RPC' } });
   db.getUser.mockImplementation(async (id: string) => ({ data: { user: { id, user_metadata: { brokerVerified: true }, app_metadata: {} } }, error: null }));
   db.from.mockImplementation((table: string) => {
     let rows = [...(tables[table] || [])];
+    let error: { code: string; message: string } | null = null;
     const chain: Record<string, unknown> = {};
-    const result = () => ({ data: rows, error: null, count: rows.length });
+    const result = () => ({ data: error ? null : rows, error, count: rows.length });
     chain.select = vi.fn(() => chain);
     chain.eq = vi.fn((key: string, value: unknown) => { rows = rows.filter(r => r[key] === value); return chain; });
     chain.in = vi.fn((key: string, values: unknown[]) => { rows = rows.filter(r => values.includes(r[key])); return chain; });
     for (const method of ['order', 'limit', 'range', 'not', 'gte']) chain[method] = vi.fn(() => chain);
-    chain.insert = vi.fn((payload: Row) => { writes.push({ table, payload }); rows = [payload]; return chain; });
+    chain.insert = vi.fn((payload: Row) => {
+      writes.push({ table, payload });
+      error = insertErrors[table] ?? null;
+      rows = error ? [] : [payload];
+      return chain;
+    });
     chain.update = vi.fn((payload: Row) => { writes.push({ table, payload }); return chain; });
     chain.delete = vi.fn(() => { writes.push({ table, payload: {} }); return chain; });
-    chain.maybeSingle = vi.fn(async () => ({ data: rows[0] ?? null, error: null }));
+    chain.maybeSingle = vi.fn(async () => ({ data: error ? null : rows[0] ?? null, error }));
     chain.then = (resolve: (value: unknown) => unknown) => Promise.resolve(result()).then(resolve);
     return chain;
   });
@@ -136,12 +145,38 @@ describe('server controlled fields and payments', () => {
     expect(writes).toEqual([]);
     expect(db.rpc).toHaveBeenCalledWith('increment_public_job_views', { job_id: 'item' });
   });
-  it('profile completion rejects missing public user instead of setting completed metadata', async () => {
+  it('optional profile completion creates missing public user with authenticated id and safe role', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DANAL_REQUIRED', 'false');
+    tables.users = [];
+    const response = await completeProfile(request('/api/auth/complete-profile', 'A', { id: 'B', user_id: 'B', name: '홍길동', nickname: '테스트', phone: '01012345678', role: 'admin' }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true });
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({ table: 'users', payload: { id: 'A', user_type: 'seeker' } });
+    expect(writes[0].payload).not.toHaveProperty('user_id');
+    expect(db.updateUserById).toHaveBeenCalledExactlyOnceWith('A', {
+      user_metadata: { brokerVerified: true, name: '홍길동', nickname: '테스트', phone: '01012345678', role: 'seeker', profile_completed: true },
+    });
+  });
+  it('required profile completion rejects missing proof without writes or completed metadata', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DANAL_REQUIRED', 'true');
     tables.users = [];
     const response = await completeProfile(request('/api/auth/complete-profile', 'A', { name: '홍길동', nickname: '테스트', phone: '01012345678', role: 'admin' }));
-    expect(response.status).toBe(409);
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({ needsIdentityVerification: true });
+    expect(writes).toEqual([]);
     expect(db.updateUserById).not.toHaveBeenCalled();
-    expect(writes[0].payload.user_type).toBe('seeker');
+  });
+  it('profile insert failure never sets completed metadata', async () => {
+    vi.stubEnv('NEXT_PUBLIC_DANAL_REQUIRED', 'false');
+    tables.users = [];
+    insertErrors.users = { code: '23505', message: 'duplicate key value violates unique constraint users_pkey' };
+    const response = await completeProfile(request('/api/auth/complete-profile', 'A', { name: '홍길동', nickname: '테스트', phone: '01012345678', role: 'admin' }));
+    expect(response.status).toBe(500);
+    expect(await response.json()).toEqual({ error: '프로필 업데이트 실패' });
+    expect(writes).toHaveLength(1);
+    expect(writes[0]).toMatchObject({ table: 'users', payload: { id: 'A', user_type: 'seeker' } });
+    expect(db.updateUserById).not.toHaveBeenCalled();
   });
   it('strips stay approval/ownership injection despite forged user metadata', async () => {
     const response = await stayPost(request('/api/stays', 'A', { title: 'stay', stay_type: 'officetel', deal_type: 'short_term', owner_type: 'owner', daily_fee_won: 50000, user_id: 'B', is_approved: true, views: 999, agent_reg_no: 'forged' }));

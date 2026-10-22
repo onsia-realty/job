@@ -1,5 +1,6 @@
 'use client';
 
+import MarketDataNotice, { type MarketMetadata } from './MarketDataNotice';
 import { useState, useEffect } from 'react';
 import { X, BarChart3 } from 'lucide-react';
 import { formatKoreanPrice } from '@/lib/market/format';
@@ -58,20 +59,26 @@ export default function MarketIndicatorPanel({
   const [sido, setSido] = useState<Sido>('서울특별시');
   const [pt, setPt] = useState<PT>('apt');
   const [items, setItems] = useState<PanelItem[]>([]);
+  const [metadata, setMetadata] = useState<MarketMetadata | null>(null);
+  const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
     (async () => {
       setLoading(true);
+      setMetadata(null);
+      setError(false);
+      setItems([]);
       try {
         const p = new URLSearchParams({ metric, type: pt });
         if (sido !== 'all') p.set('sido', sido);
         const r = await fetch(`/api/market/rankings/top10?${p}`);
+        if (!r.ok) throw new Error(`Ranking request failed: ${r.status}`);
         const d = await r.json();
-        if (alive) setItems(d.rankings || []);
+        if (alive) { setItems(d.rankings || []); setMetadata(d.metadata ? { ...d.metadata, rankingComputedAt: d.metadata.rankingComputedAt ?? null } : null); }
       } catch {
-        if (alive) setItems([]);
+        if (alive) { setItems([]); setMetadata(null); setError(true); }
       } finally {
         if (alive) setLoading(false);
       }
@@ -82,12 +89,12 @@ export default function MarketIndicatorPanel({
   const accent = TABS.find((t) => t.key === metric)!.accent;
 
   return (
-    <div className="flex flex-col h-full w-full bg-market-surface font-jakarta">
+    <div className="flex flex-col h-full min-h-0 min-w-0 w-full bg-market-surface font-jakarta">
       {/* 헤더 */}
       <div className="flex items-center gap-2 px-4 py-3 border-b border-market-border flex-shrink-0">
         <BarChart3 className="w-4 h-4 text-deal-jeonse" />
-        <span className="text-sm font-bold text-market-text">부인(BOOIN) 시세자료 지표</span>
-        <button onClick={onClose} className="ml-auto text-market-text-faint hover:text-market-text" aria-label="닫기">
+        <span className="min-w-0 text-sm font-bold text-market-text">부인(BOOIN) 시세자료 지표</span>
+        <button onClick={onClose} className="ml-auto shrink-0 text-market-text-faint hover:text-market-text" aria-label="지표 닫고 목록으로">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -98,6 +105,7 @@ export default function MarketIndicatorPanel({
           <button
             key={t.key}
             onClick={() => onMetricChange(t.key)}
+            aria-pressed={metric === t.key}
             className={`px-3 py-1.5 text-xs rounded-lg font-semibold whitespace-nowrap transition-colors ${
               metric === t.key ? 'text-white' : 'text-market-text-mute hover:text-market-text bg-market-surface-2'
             }`}
@@ -109,7 +117,7 @@ export default function MarketIndicatorPanel({
       </div>
 
       {/* 필터: 시도 셀렉트 + 매물유형 + 직거래 제외 */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-market-border flex-shrink-0">
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-market-border flex-shrink-0">
         <select
           value={sido}
           onChange={(e) => setSido(e.target.value as Sido)}
@@ -134,9 +142,12 @@ export default function MarketIndicatorPanel({
       </div>
 
       {/* 리스트 */}
-      <div className="overflow-y-auto overscroll-contain flex-1">
+      <div className="min-h-0 min-w-0 overflow-y-auto overscroll-contain flex-1">
+        {!loading && !error && <MarketDataNotice metadata={metadata} label="시세 지표" />}
         {loading ? (
           <div className="py-16 text-center text-sm text-market-text-faint">불러오는 중…</div>
+        ) : error ? (
+          <div role="alert" className="p-4 text-sm text-market-text-mute">시세 지표를 불러오지 못했습니다. 잠시 후 다시 선택해 주세요.</div>
         ) : items.length === 0 ? (
           <div className="py-16 text-center text-sm text-market-text-faint">데이터가 없습니다</div>
         ) : (
@@ -163,13 +174,13 @@ export default function MarketIndicatorPanel({
                         <div className="text-[10px] text-market-text-faint truncate mb-1">
                           {it.region_name || it.lawd_cd}{it.hhld_cnt ? ` · ${it.hhld_cnt.toLocaleString()}세대` : ''}{it.exclusive_area ? ` · ${it.exclusive_area}㎡` : ''}
                         </div>
-                        <div className="text-[11px] tabular-nums flex gap-2">
+                        <div className="text-[11px] tabular-nums flex flex-wrap gap-x-2">
                           <span className="text-market-text-faint w-12 flex-shrink-0">최근</span>
                           <span className="text-market-text-mute">{fmtDate(it.recent_date)}</span>
                           <span className="font-semibold text-market-text">{formatKoreanPrice(it.recent_price_manwon ?? 0)}</span>
                           {it.recent_floor != null && <span className="text-market-text-faint">{it.recent_floor}층</span>}
                         </div>
-                        <div className="text-[11px] tabular-nums flex gap-2">
+                        <div className="text-[11px] tabular-nums flex flex-wrap gap-x-2">
                           <span className="text-market-text-faint w-12 flex-shrink-0">과거최고</span>
                           <span className="text-market-text-mute">{fmtDate(it.base_date)}</span>
                           <span className="font-semibold text-market-text">{formatKoreanPrice(it.base_price_manwon ?? 0)}</span>

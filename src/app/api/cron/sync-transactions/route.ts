@@ -5,6 +5,7 @@ import {
   fetchOfficetelTrades, fetchOfficetelRents,
   fetchApartmentSilvTrades,
 } from '@/lib/market/realEstate';
+import { deduplicateTransactionBatch, TRANSACTION_CONFLICT_COLUMNS } from '@/lib/market/transactionBatch';
 import { getLastNMonths } from '@/lib/market/publicApi';
 
 // Vercel 서버리스 함수 최대 실행 시간 (Pro 플랜 기준 최대 300초)
@@ -70,11 +71,26 @@ async function runSync(req: NextRequest) {
   async function processOne(t: { lawd_cd: string; sigungu: string; ym: string }) {
     try {
       const [aptT, aptR, offiT, offiR, aptS] = await Promise.allSettled([
-        fetchApartmentTrades(t.lawd_cd, t.ym, service_key!),
-        fetchApartmentRents(t.lawd_cd, t.ym, service_key!),
-        fetchOfficetelTrades(t.lawd_cd, t.ym, service_key!),
-        fetchOfficetelRents(t.lawd_cd, t.ym, service_key!),
-        fetchApartmentSilvTrades(t.lawd_cd, t.ym, service_key!),
+        fetchApartmentTrades(t.lawd_cd, t.ym, service_key!).then(rows => {
+          const fetched_at = new Date().toISOString();
+          return rows.map(row => ({ ...row, fetched_at }));
+        }),
+        fetchApartmentRents(t.lawd_cd, t.ym, service_key!).then(rows => {
+          const fetched_at = new Date().toISOString();
+          return rows.map(row => ({ ...row, fetched_at }));
+        }),
+        fetchOfficetelTrades(t.lawd_cd, t.ym, service_key!).then(rows => {
+          const fetched_at = new Date().toISOString();
+          return rows.map(row => ({ ...row, fetched_at }));
+        }),
+        fetchOfficetelRents(t.lawd_cd, t.ym, service_key!).then(rows => {
+          const fetched_at = new Date().toISOString();
+          return rows.map(row => ({ ...row, fetched_at }));
+        }),
+        fetchApartmentSilvTrades(t.lawd_cd, t.ym, service_key!).then(rows => {
+          const fetched_at = new Date().toISOString();
+          return rows.map(row => ({ ...row, fetched_at }));
+        }),
       ]);
 
       const allRows = [
@@ -100,7 +116,7 @@ async function runSync(req: NextRequest) {
         const { error: upErr } = await supabaseAdmin
           .from('price_transactions')
           .upsert(
-            allRows.map((r) => ({
+            deduplicateTransactionBatch(allRows).map((r) => ({
               property_type: r.property_type,
               deal_type: r.deal_type,
               lawd_cd: r.lawd_cd,
@@ -119,9 +135,9 @@ async function runSync(req: NextRequest) {
               cancel_yn: r.cancel_yn,
               deal_channel: r.deal_channel,
               // raw(국토부 원본 JSON)는 미사용 + DB 용량의 절반이라 저장하지 않음 (migration 044)
-              fetched_at: new Date().toISOString(),
+              fetched_at: r.fetched_at,
             })),
-            { onConflict: 'property_type,deal_type,lawd_cd,deal_ymd,complex_name,jibun,exclusive_area,floor,deal_date,price_manwon,deposit_manwon', ignoreDuplicates: true }
+            { onConflict: TRANSACTION_CONFLICT_COLUMNS.join(','), ignoreDuplicates: false }
           );
         if (upErr) summary.errors.push(`upsert ${t.sigungu} ${t.ym}: ${upErr.message}`);
       }
@@ -143,7 +159,7 @@ async function runSync(req: NextRequest) {
   await Promise.all(workers);
 
   summary.elapsed_ms = Date.now() - started_at;
-  return NextResponse.json({ ok: true, summary });
+  return NextResponse.json({ ok: summary.errors.length === 0, partial: summary.errors.length > 0, summary }, { status: summary.errors.length ? 503 : 200 });
 }
 
 export async function GET(req: NextRequest) {

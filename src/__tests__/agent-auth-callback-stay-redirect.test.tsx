@@ -51,6 +51,17 @@ afterEach(() => {
 });
 
 describe('OAuth callback STAY redirect', () => {
+  it('routes an existing unverified profile to signup when the server requires identity', async () => {
+    sessionStorage.setItem('auth_stay_redirect', '/stay/requests');
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ exists: true, needsProfileCompletion: null, needsIdentityVerification: true }),
+    } as Response);
+    render(<AuthCallbackPage />);
+    await waitFor(() => expect(mocks.replace).toHaveBeenCalledWith(
+      '/agent/auth/signup?role=seeker&social=true&redirect=%2Fstay%2Frequests'
+    ));
+  });
   it('returns an existing user to the stored STAY route and consumes it', async () => {
     sessionStorage.setItem('auth_stay_redirect', '/stay/owner#assisted-registration');
     render(<AuthCallbackPage />);
@@ -82,7 +93,7 @@ describe('OAuth callback STAY redirect', () => {
     sessionStorage.setItem('auth_stay_redirect', '/stay/requests');
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ created: true }),
+      json: async () => ({ needsProfileCompletion: true, needsIdentityVerification: false }),
     } as Response);
     render(<AuthCallbackPage />);
 

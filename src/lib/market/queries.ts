@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import type { ComplexDetail } from '@/lib/market/types';
 import type { SearchResult } from '@/components/market/MarketSearch';
 import type { GuAggregate } from '@/lib/market/aggregateMarkers';
@@ -24,8 +24,7 @@ export function useComplexDetail(complexKey: string | null, range: ChartRange = 
       fetchJson<ComplexDetail>(
         `/api/market/complex/${encodeURIComponent(complexKey!)}?range=${range}`,
       ),
-    // 기간 탭 전환 시 이전 데이터 유지해 깜빡임 방지.
-    placeholderData: keepPreviousData,
+    // 다른 단지의 상세가 새 단지 아래 표시되지 않도록 이전 응답을 빌리지 않는다.
   });
 }
 
@@ -41,21 +40,21 @@ export function useMarketSearch(q: string) {
       ).then((d) => d.results || []),
     // 검색은 더 빨리 stale 처리 (입력 변화 잦음).
     staleTime: 30_000,
-    placeholderData: keepPreviousData,
   });
 }
 
 // 구(시군구) 집계 — /api/market/aggregates (줌아웃 마커용, 매매 기준)
 export function useGuAggregates(propertyType: 'apt' | 'officetel', enabled: boolean) {
-  return useQuery({
+  const query = useQuery({
     queryKey: ['market', 'agg', 'gu', propertyType],
     enabled,
     queryFn: () =>
-      fetchJson<{ aggregates: GuAggregate[] }>(
+      fetchJson<{ aggregates: GuAggregate[]; metadata?: import('./transactionData').TransactionMetadata }>(
         `/api/market/aggregates?level=gu&type=${propertyType}`,
-      ).then((d) => d.aggregates || []),
-    staleTime: 60 * 60 * 1000, // 구 평균은 일 단위 변동 — 1시간 캐시
+      ),
+    staleTime: 60 * 60 * 1000,
   });
+  return { ...query, data: query.data?.aggregates, metadata: query.isError || query.isFetching ? null : query.data?.metadata };
 }
 
 // 단지 주변 학교/지하철/버스 — /api/market/surroundings (인근 탭)

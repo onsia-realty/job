@@ -28,11 +28,13 @@ const ORDER: SheetSnap[] = ['peek', 'half', 'full'];
  */
 export default function BottomSheet({ snap, onSnapChange, children, peekContent }: Props) {
   const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const dragging = useRef(false);
   const startY = useRef(0);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     dragging.current = true;
+    setIsDragging(true);
     startY.current = e.touches[0].clientY;
   }, []);
 
@@ -44,6 +46,7 @@ export default function BottomSheet({ snap, onSnapChange, children, peekContent 
   const handleTouchEnd = useCallback(() => {
     if (!dragging.current) return;
     dragging.current = false;
+    setIsDragging(false);
     const dy = dragOffset;
     setDragOffset(0);
     if (Math.abs(dy) < 36) return;
@@ -60,8 +63,9 @@ export default function BottomSheet({ snap, onSnapChange, children, peekContent 
       className="md:hidden absolute left-0 right-0 bottom-0 z-30 bg-market-surface rounded-t-2xl shadow-[0_-8px_30px_rgba(0,0,0,0.12)] border-t border-market-border flex flex-col overflow-hidden"
       style={{
         height: SNAP_HEIGHTS[snap],
+        maxHeight: '100%',
         transform: `translateY(${translate}px)`,
-        transition: dragging.current ? 'none' : 'height 0.25s ease-out, transform 0.2s ease-out',
+        transition: isDragging ? 'none' : 'height 0.25s ease-out, transform 0.2s ease-out',
       }}
     >
       {/* grabber — 드래그/탭 전용 영역 */}

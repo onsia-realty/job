@@ -1,10 +1,11 @@
 import { supabaseAdmin } from '@/lib/supabase-server';
+import { readTransactionPages } from './transactionData';
+import { koreanDate, marketMonthStart } from './types';
 
 // 시세자료 지표 — 느린(원자료 스캔) 지표 계산 로직.
 // cron이 미리 계산해 market_rankings에 저장하고, API는 읽기만 → 즉시 응답.
 // 여기 함수는 cron(빌드)과 API(폴백) 양쪽에서 공유.
 
-const PAGE = 1000;
 const MAX_PAGES = 80;
 const LOOKBACK_MONTHS = 6;
 const RECENT_MONTHS = 3;       // "최근" 거래 인정 기간
@@ -30,23 +31,21 @@ type Bucket = { complex_name: string | null; lawd_cd: string | null; deals: Deal
 
 const median = (a: number[]) => { const s = [...a].sort((x, y) => x - y); const m = Math.floor(s.length / 2); return s.length % 2 ? s[m] : Math.round((s[m - 1] + s[m]) / 2); };
 
-async function fetchTrades(property_type: string, sido: string): Promise<Tx[]> {
-  const since = new Date(); since.setMonth(since.getMonth() - LOOKBACK_MONTHS); since.setDate(1);
-  const sinceStr = since.toISOString().slice(0, 10);
+export function slowRankingPeriod(at: Date) {
+  return { periodStart: marketMonthStart(LOOKBACK_MONTHS, at), periodEnd: koreanDate(at) };
+}
+
+async function fetchTrades(property_type: string, sido: string, at: Date): Promise<Tx[]> {
+  const period = slowRankingPeriod(at);
   const prefix = sido !== 'all' ? SIDO_PREFIX[sido] : undefined;
-  const rows: Tx[] = [];
-  for (let p = 0; p < MAX_PAGES; p++) {
+  return readTransactionPages<Tx>((from, to) => {
     let q = supabaseAdmin.from('price_transactions')
-      .select('complex_key, complex_name, lawd_cd, exclusive_area, price_manwon, deal_date, floor')
+      .select('id, complex_key, complex_name, lawd_cd, exclusive_area, price_manwon, deal_date, floor')
       .eq('property_type', property_type).eq('deal_type', 'trade').eq('cancel_yn', false)
-      .neq('deal_channel', '직거래').gte('deal_date', sinceStr);
+      .neq('deal_channel', '직거래').gte('deal_date', period.periodStart).lte('deal_date', period.periodEnd);
     if (prefix) q = q.like('lawd_cd', `${prefix}%`);
-    const { data, error } = await q.range(p * PAGE, (p + 1) * PAGE - 1);
-    if (error) throw error;
-    rows.push(...((data || []) as Tx[]));
-    if (!data || data.length < PAGE) break;
-  }
-  return rows;
+    return q.order('deal_date', { ascending: false }).order('id', { ascending: false }).range(from, to);
+  }, { pages: 0, maxPages: MAX_PAGES });
 }
 
 function groupByComplexArea(rows: Tx[]): Map<string, Bucket> {
@@ -80,9 +79,8 @@ function rankHighest(groups: Map<string, Bucket>) {
   return dedupeByComplex(entries);
 }
 
-function rankGap(groups: Map<string, Bucket>, isRise: boolean) {
-  const recentSince = new Date(); recentSince.setMonth(recentSince.getMonth() - RECENT_MONTHS); recentSince.setDate(1);
-  const recentSinceStr = recentSince.toISOString().slice(0, 10);
+function rankGap(groups: Map<string, Bucket>, isRise: boolean, at: Date) {
+  const recentSinceStr = marketMonthStart(RECENT_MONTHS, at);
   const entries = [];
   for (const [gk, g] of groups) {
     if (g.deals.length < 2) continue;
@@ -125,7 +123,7 @@ async function enrich(rows: Array<{ complex_key: string; lawd_cd: string | null;
   const codes = [...new Set(rows.map((r) => r.lawd_cd).filter((c): c is string => !!c))];
   const [{ data: cx }, { data: rc }] = await Promise.all([
     supabaseAdmin.from('complexes').select('complex_key, hhld_cnt').in('complex_key', keys.slice(0, 1000)),
-    codes.length ? supabaseAdmin.from('region_codes').select('lawd_cd, sido, sigungu').in('lawd_cd', codes) : Promise.resolve({ data: [] as any[] }),
+    codes.length ? supabaseAdmin.from('region_codes').select('lawd_cd, sido, sigungu').in('lawd_cd', codes) : Promise.resolve({ data: [] as { lawd_cd: string; sido: string; sigungu: string }[] }),
   ]);
   const hmap = new Map((cx || []).map((c) => [c.complex_key, c.hhld_cnt]));
   const nmap = new Map((rc || []).map((r) => [r.lawd_cd, r.sigungu || r.sido || r.lawd_cd]));
@@ -133,18 +131,18 @@ async function enrich(rows: Array<{ complex_key: string; lawd_cd: string | null;
 }
 
 // (sido,type) 1회 fetch로 highest/drop/rise 모두 계산 (cron 효율)
-export async function buildSlowRankings(property_type: string, sido: string) {
-  const rows = await fetchTrades(property_type, sido);
+export async function buildSlowRankings(property_type: string, sido: string, at: Date = new Date()) {
+  const rows = await fetchTrades(property_type, sido, at);
   const groups = groupByComplexArea(rows);
   const highest = rankHighest(groups);
-  const drop = rankGap(groups, false);
-  const rise = rankGap(groups, true);
+  const drop = rankGap(groups, false, at);
+  const rise = rankGap(groups, true, at);
   await enrich([...highest, ...drop, ...rise]);
   return { highest, drop, rise };
 }
 
 // API 폴백 — 테이블에 없을 때 1개만 계산
-export async function computeSlowOne(metric: SlowMetric, property_type: string, sido: string) {
-  const b = await buildSlowRankings(property_type, sido);
+export async function computeSlowOne(metric: SlowMetric, property_type: string, sido: string, at: Date = new Date()) {
+  const b = await buildSlowRankings(property_type, sido, at);
   return b[metric] ?? [];
 }
